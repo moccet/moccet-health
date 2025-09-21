@@ -16,7 +16,6 @@ const navItems = [
   { href: '#health', label: 'moccet Health' },
   { href: '#wellness', label: 'The Wellness' },
   { href: '#stories', label: 'Stories' },
-  { href: '#company', label: 'Company' },
   { href: '#news', label: 'News' },
 ];
 
@@ -26,7 +25,7 @@ export default function MobileMenu({ onLoginClick }: MobileMenuProps) {
   return (
     <div className="lg:hidden">
       {/* Mobile Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 px-4 py-4 flex items-center justify-between">
+      <div className="fixed top-0 left-0 right-0 bg-white z-50 px-4 py-4 flex items-center justify-between">
         <Link href="/" className="text-[19px] font-bold tracking-tight">
           moccet
         </Link>

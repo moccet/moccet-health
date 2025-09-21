@@ -45,7 +45,7 @@ export default async function DashboardPage() {
         <div className="mt-12">
           <h3 className="text-lg font-semibold mb-6">Your Health Data</h3>
           <p className="text-gray-600">
-            Your personal health AI dashboard is coming soon. We're building the most advanced health monitoring system with complete privacy.
+            Your personal health AI dashboard is coming soon. We&apos;re building the most advanced health monitoring system with complete privacy.
           </p>
         </div>
       </div>

@@ -66,7 +66,7 @@ export default function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5">I'm interested in moccet health for:</label>
+                <label className="block text-sm font-medium mb-1.5">I&apos;m interested in moccet health for:</label>
                 <select
                   required
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
@@ -117,9 +117,9 @@ export default function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
             <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-5 text-white text-[32px]">
               ✓
             </div>
-            <h2 className="text-2xl font-semibold mb-2">You're on the list!</h2>
+            <h2 className="text-2xl font-semibold mb-2">You&apos;re on the list!</h2>
             <p className="text-sm text-gray-600">
-              We'll email you when moccet health launches. You'll be among the first to experience
+              We&apos;ll email you when moccet health launches. You&apos;ll be among the first to experience
               personal health AI with complete privacy.
             </p>
           </div>

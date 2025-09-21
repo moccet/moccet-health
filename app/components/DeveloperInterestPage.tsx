@@ -175,7 +175,7 @@ export default function DeveloperInterestPage({ onClose }: DeveloperInterestPage
             </div>
             <h2 className="text-3xl font-semibold mb-3">Thank you for your interest</h2>
             <p className="text-gray-600 text-lg">
-              We'll reach out when positions open.
+              We&apos;ll reach out when positions open.
               Exceptional talent shapes the future of healthcare AI.
             </p>
           </div>

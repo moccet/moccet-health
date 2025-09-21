@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '#safety', label: 'Safety' },
@@ -36,13 +37,13 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
 
   return (
     <aside className="hidden lg:block w-[280px] bg-white p-6 fixed h-screen overflow-y-auto border-r border-gray-200">
-      <a
+      <Link
         href="/"
         onClick={(e) => handleClick(e, '/')}
         className="block text-[22px] font-bold mb-12 pl-4 cursor-pointer tracking-tight"
       >
         moccet
-      </a>
+      </Link>
 
       <nav className="space-y-1">
         {navItems.map((item) => (

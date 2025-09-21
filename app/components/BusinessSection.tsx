@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { businessArticles } from '@/lib/business-articles';
+import { businessArticles, type BusinessArticle } from '@/lib/business-articles';
 import ResearchArticlePage from './ResearchArticlePage';
 
 export default function BusinessSection() {
-  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [selectedArticle, setSelectedArticle] = useState<BusinessArticle | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
 
   const handleCardClick = (articleId: string) => {
@@ -23,7 +23,7 @@ export default function BusinessSection() {
     setFadeOut(false);
   };
 
-  const handleNavigateArticle = (article: any) => {
+  const handleNavigateArticle = (article: BusinessArticle) => {
     const businessArticle = businessArticles.find(a => a.id === article.id);
     if (businessArticle) {
       setSelectedArticle(businessArticle);

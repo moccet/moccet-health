@@ -50,15 +50,15 @@ export default function LoginPage({ onClose }: LoginPageProps) {
             }
           })
         });
-      } catch (error) {
-        console.error('Error sending notification:', error);
+      } catch {
+        // Silently fail for Slack notifications
       }
 
       setIsSubmitting(false);
       setShowSuccess(true);
 
       // Don't auto-close, let user see the success message
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
@@ -123,7 +123,7 @@ export default function LoginPage({ onClose }: LoginPageProps) {
 
               <div className="text-center">
                 <p className="text-sm text-gray-500">
-                  By continuing, you agree to moccet's{' '}
+                  By continuing, you agree to moccet&apos;s{' '}
                   <a href="#" className="text-black hover:underline">Terms</a> and{' '}
                   <a href="#" className="text-black hover:underline">Privacy Policy</a>
                 </p>
@@ -139,7 +139,7 @@ export default function LoginPage({ onClose }: LoginPageProps) {
             </div>
             <h2 className="text-3xl font-semibold mb-3">Check your email</h2>
             <p className="text-gray-600 text-lg mb-6">
-              We've sent a magic link to <span className="font-semibold">{email}</span>
+              We&apos;ve sent a magic link to <span className="font-semibold">{email}</span>
             </p>
             <p className="text-sm text-gray-500 mb-8">
               Click the link in your email to sign in to moccet. The link expires in 1 hour.

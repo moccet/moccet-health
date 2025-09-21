@@ -5,7 +5,7 @@ export interface ChatMessage {
   timestamp: Date;
   metadata?: {
     options?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -15,7 +15,7 @@ export interface ChatAction {
   value: string;
   metadata?: {
     serviceId?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

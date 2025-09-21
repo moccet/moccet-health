@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { X, Send, MessageCircle, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { AssistantClient } from '@/lib/chatbot/assistant-client';
 import { ChatMessage, ChatAction } from '@/lib/chatbot/types';
 import ChatBubble from './ChatBubble';
@@ -36,7 +36,7 @@ export default function ChatWidget() {
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
 
-      let viewport = document.querySelector('meta[name=viewport]');
+      const viewport = document.querySelector('meta[name=viewport]');
       const originalContent = viewport?.getAttribute('content');
       if (viewport) {
         viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
@@ -173,8 +173,8 @@ export default function ChatWidget() {
 
     if (action.type === 'demo') {
       // Trigger waitlist page
-      if ((window as any).handleShowWaitlist) {
-        (window as any).handleShowWaitlist();
+      if ((window as unknown as {handleShowWaitlist?: () => void}).handleShowWaitlist) {
+        (window as unknown as {handleShowWaitlist: () => void}).handleShowWaitlist();
       }
       setIsOpen(false);
     } else if (action.type === 'brief') {
@@ -424,7 +424,7 @@ export default function ChatWidget() {
             onMouseLeave={() => windowWidth >= 450 && setIsHoveringWelcome(false)}
           >
             <p className="text-white text-base leading-relaxed mb-3" style={{ fontWeight: '400', color: '#ffffff' }}>
-              Hi 👋 I'm <span className="font-bold">moccet AI</span>, how can I help?
+              Hi 👋 I&apos;m <span className="font-bold">moccet AI</span>, how can I help?
             </p>
 
             {/* X Close Button */}
@@ -448,8 +448,8 @@ export default function ChatWidget() {
               <button
                 onClick={() => {
                   setShowWelcomePopup(false);
-                  if ((window as any).handleShowWaitlist) {
-                    (window as any).handleShowWaitlist();
+                  if ((window as unknown as {handleShowWaitlist?: () => void}).handleShowWaitlist) {
+                    (window as unknown as {handleShowWaitlist: () => void}).handleShowWaitlist();
                   }
                 }}
                 className="moccet-welcome-button text-white rounded-full text-sm transition-all duration-200 shadow-md"

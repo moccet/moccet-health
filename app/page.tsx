@@ -83,9 +83,14 @@ export default function Home() {
 
   // Make functions available globally
   useEffect(() => {
-    (window as any).handleShowLogin = handleShowLogin;
-    (window as any).handleShowWaitlist = handleShowWaitlist;
-    (window as any).handleSmoothScroll = handleSmoothScroll;
+    interface ExtendedWindow extends Window {
+      handleShowLogin?: () => void;
+      handleShowWaitlist?: () => void;
+      handleSmoothScroll?: (targetId: string) => void;
+    }
+    (window as ExtendedWindow).handleShowLogin = handleShowLogin;
+    (window as ExtendedWindow).handleShowWaitlist = handleShowWaitlist;
+    (window as ExtendedWindow).handleSmoothScroll = handleSmoothScroll;
   }, []);
 
   return (

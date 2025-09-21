@@ -2,21 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ResearchArticle } from '@/lib/research-articles';
 
-interface ResearchArticlePageProps {
-  article: ResearchArticle;
-  allArticles: ResearchArticle[];
-  onClose: () => void;
-  onNavigate: (article: ResearchArticle) => void;
+interface ArticleType {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  readTime: string;
+  image: string;
+  category?: string;
+  subtitle?: string;
+  description?: string;
+  label?: string;
+  overlayText?: string;
 }
 
-export default function ResearchArticlePage({
+interface ResearchArticlePageProps<T extends ArticleType> {
+  article: T;
+  allArticles: T[];
+  onClose: () => void;
+  onNavigate: (article: T) => void;
+}
+
+export default function ResearchArticlePage<T extends ArticleType>({
   article,
   allArticles,
   onClose,
   onNavigate
-}: ResearchArticlePageProps) {
+}: ResearchArticlePageProps<T>) {
   const [fadeOut, setFadeOut] = useState(false);
   const currentIndex = allArticles.findIndex(a => a.id === article.id);
   const hasNext = currentIndex < allArticles.length - 1;

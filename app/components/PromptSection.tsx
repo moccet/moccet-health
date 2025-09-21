@@ -25,11 +25,11 @@ export default function PromptSection() {
             </p>
 
             <p className="text-base lg:text-lg text-gray-700 leading-relaxed">
-              This isn't cloud-based health tracking. Your AI lives on your device. Learns only from you. Tracks 24/7. Never shares your data. Complete privacy by design.
+              This isn&apos;t cloud-based health tracking. Your AI lives on your device. Learns only from you. Tracks 24/7. Never shares your data. Complete privacy by design.
             </p>
 
             <p className="text-base lg:text-lg text-gray-700 leading-relaxed">
-              In testing, we've detected pancreatic cancer 18 months early with 94% accuracy using routine blood work. The same patterns exist for heart disease, diabetes, and 200+ conditions. We just haven't been looking with the right tools.
+              In testing, we&apos;ve detected pancreatic cancer 18 months early with 94% accuracy using routine blood work. The same patterns exist for heart disease, diabetes, and 200+ conditions. We just haven&apos;t been looking with the right tools.
             </p>
 
             <p className="text-base lg:text-lg text-gray-700 leading-relaxed">

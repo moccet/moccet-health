@@ -12,7 +12,7 @@ export default function DevelopersSection({ onWaitlistClick }: DevelopersSection
           Build with us
         </h2>
         <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed">
-          We're building specialized AI models that detect diseases years before symptoms appear.
+          We&apos;re building specialized AI models that detect diseases years before symptoms appear.
           Working on privacy-first systems where users own their health data.
           Express interest to be notified when engineering positions open.
         </p>

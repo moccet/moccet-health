@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { newsArticles } from '@/lib/news-articles';
+import { newsArticles, type NewsArticle } from '@/lib/news-articles';
 import ResearchArticlePage from './ResearchArticlePage';
 
 export default function NewsCards() {
@@ -23,7 +23,7 @@ export default function NewsCards() {
     setFadeOut(false);
   };
 
-  const handleNavigateArticle = (article: any) => {
+  const handleNavigateArticle = (article: NewsArticle) => {
     const newsArticle = newsArticles.find(a => a.id === article.id);
     if (newsArticle) {
       setSelectedArticle(newsArticle);

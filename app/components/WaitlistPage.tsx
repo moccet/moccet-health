@@ -113,7 +113,7 @@ export default function WaitlistPage({ onClose }: WaitlistPageProps) {
                   paddingRight: '3.5rem'
                 }}
               >
-                <option value="">I'm interested in moccet health for...</option>
+                <option value="">I&apos;m interested in moccet health for...</option>
                 <option value="personal">Personal health tracking</option>
                 <option value="family">Family health management</option>
                 <option value="hospital">Hospital or healthcare system</option>
@@ -175,9 +175,9 @@ export default function WaitlistPage({ onClose }: WaitlistPageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-3xl font-semibold mb-3">You're on the list!</h2>
+            <h2 className="text-3xl font-semibold mb-3">You&apos;re on the list!</h2>
             <p className="text-gray-600 text-lg">
-              We'll email you when moccet health launches. You'll be among the first to experience
+              We&apos;ll email you when moccet health launches. You&apos;ll be among the first to experience
               personal health AI with complete privacy.
             </p>
           </div>

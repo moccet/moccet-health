@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { storiesArticles } from '@/lib/stories-articles';
+import { storiesArticles, type StoryArticle } from '@/lib/stories-articles';
 import ResearchArticlePage from './ResearchArticlePage';
 
 export default function StoriesSection() {
@@ -23,7 +23,7 @@ export default function StoriesSection() {
     setFadeOut(false);
   };
 
-  const handleNavigateArticle = (article: any) => {
+  const handleNavigateArticle = (article: StoryArticle) => {
     const storyArticle = storiesArticles.find(a => a.id === article.id);
     if (storyArticle) {
       setSelectedArticle(storyArticle);

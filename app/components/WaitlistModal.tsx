@@ -1,126 +1,177 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { ArrowRight } from 'lucide-react';
+import styles from './WaitlistModal.module.css';
 
 interface WaitlistModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
+export default function WaitlistModal({ onClose }: WaitlistModalProps) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [useCase, setUseCase] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!email || !name || !useCase || !agreed) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Send Slack notification
+      await fetch('/api/slack-notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'early-access',
+          data: {
+            name,
+            email,
+            company: company || 'Not provided',
+            useCase
+          }
+        })
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+
+    // Simulate additional processing
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setIsSubmitting(false);
     setShowSuccess(true);
 
+    // Auto close after showing success
     setTimeout(() => {
       onClose();
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 500);
     }, 3000);
   };
 
-  if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-white rounded-xl p-8 w-[440px] max-w-[90%] relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-xl"
-        >
-          ×
-        </button>
+    <div className={styles.modalOverlay}>
+      {/* Close button - X icon */}
+      <button
+        onClick={onClose}
+        className={styles.closeButton}
+        aria-label="Close"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div className={styles.modalContent}>
 
         {!showSuccess ? (
           <>
-            <h2 className="text-2xl font-semibold mb-2">Join the moccet health waitlist</h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Be first to experience personal health AI with complete privacy
-            </p>
+            <div className={styles.modalHeader}>
+              <h1 className={styles.modalTitle}>Get Early Access</h1>
+              <p className={styles.modalSubtitle}>
+                Be among the first to experience autonomous AI that discovers insights without prompting
+              </p>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Email</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="your@email.com"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-black"
-                />
-              </div>
+            <form onSubmit={handleSubmit} className={styles.form}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Work email"
+                required
+                disabled={isSubmitting}
+                className={styles.input}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full name"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-black"
-                />
-              </div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full name"
+                required
+                disabled={isSubmitting}
+                className={styles.input}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1.5">I&apos;m interested in moccet health for:</label>
-                <select
-                  required
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
-                >
-                  <option value="">Select an option</option>
-                  <option value="personal">Personal health tracking</option>
-                  <option value="family">Family health management</option>
-                  <option value="hospital">Hospital or healthcare system</option>
-                  <option value="clinic">Private clinic or practice</option>
-                  <option value="wellness">The Wellness partnership</option>
-                  <option value="research">Medical research</option>
-                  <option value="enterprise">Enterprise health programs</option>
-                </select>
-              </div>
+              <input
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Company (optional)"
+                disabled={isSubmitting}
+                className={styles.input}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Organization (optional)</label>
-                <input
-                  type="text"
-                  placeholder="Hospital, clinic, or company name"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-black"
-                />
-              </div>
+              <select
+                value={useCase}
+                onChange={(e) => setUseCase(e.target.value)}
+                required
+                disabled={isSubmitting}
+                className={styles.select}
+              >
+                <option value="">How will you use moccet?</option>
+                <option value="data-insights">Data insights & analytics</option>
+                <option value="process-automation">Process automation</option>
+                <option value="customer-intelligence">Customer intelligence</option>
+                <option value="risk-management">Risk management</option>
+                <option value="supply-chain">Supply chain optimization</option>
+                <option value="fraud-detection">Fraud detection</option>
+                <option value="research">Research & development</option>
+                <option value="personal">Personal use</option>
+                <option value="other">Other</option>
+              </select>
 
-              <div className="flex items-start gap-2 my-5">
+              <div className={styles.checkboxContainer}>
                 <input
                   type="checkbox"
-                  id="privacy"
+                  id="waitlist-agree"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
                   required
-                  className="mt-0.5"
+                  disabled={isSubmitting}
+                  className={styles.checkbox}
                 />
-                <label htmlFor="privacy" className="text-[13px] text-gray-600">
-                  I understand moccet health will use end-to-end encryption and I will hold my own data keys.
-                  I agree to receive updates about moccet health.
+                <label htmlFor="waitlist-agree" className={styles.checkboxLabel}>
+                  I agree to receive updates about moccet and understand that my data will be processed in accordance with the privacy policy.
                 </label>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-black text-white py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+                disabled={isSubmitting || !email || !name || !useCase || !agreed}
+                className={styles.submitButton}
               >
-                Join Waitlist
+                {isSubmitting ? (
+                  <div className={styles.spinner} />
+                ) : (
+                  <>
+                    Join Waitlist
+                    <ArrowRight size={20} />
+                  </>
+                )}
               </button>
             </form>
           </>
         ) : (
-          <div className="text-center py-10">
-            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-5 text-white text-[32px]">
-              ✓
+          <div className={styles.successContainer}>
+            <div className={styles.successIcon}>
+              <svg width="40" height="40" fill="none" stroke="white" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <h2 className="text-2xl font-semibold mb-2">You&apos;re on the list!</h2>
-            <p className="text-sm text-gray-600">
-              We&apos;ll email you when moccet health launches. You&apos;ll be among the first to experience
-              personal health AI with complete privacy.
+            <h2 className={styles.successTitle}>You&apos;re on the list!</h2>
+            <p className={styles.successMessage}>
+              We&apos;ll notify you as soon as moccet is ready for early access.
+              You&apos;ll be among the first to experience autonomous AI intelligence.
             </p>
           </div>
         )}

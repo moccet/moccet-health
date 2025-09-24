@@ -24,9 +24,10 @@ export default function Header({ onToggleSidebar, onContactSales, onLoginClick }
   const isSolutionsPage = pathname === '/solutions';
   const isCompanyPage = pathname === '/company';
   const isLegalPage = pathname === '/legal';
+  const isHealthPage = pathname === '/health';
 
-  // Landing page, Research page, Safety page, Business page, Developers page, Pricing page, Contact page, Solutions page, Company page, and Legal page header - using CSS modules styling
-  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage) {
+  // Landing page, Research page, Safety page, Business page, Developers page, Pricing page, Contact page, Solutions page, Company page, Legal page, and Health page header - using CSS modules styling
+  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage) {
     return (
       <header className="fixed top-0 left-0 right-0 h-[60px] bg-white z-[1000] flex items-center" style={{ padding: '0 32px' }}>
         <div className="w-full flex justify-between items-center">

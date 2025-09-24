@@ -82,6 +82,20 @@ const getNavItems = (pathname: string): NavItem[] => {
     ];
   }
 
+  // Health page navigation
+  if (pathname === '/health') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#overview', label: 'Health Overview' },
+      { href: '#wellness', label: 'The Wellness' },
+      { href: '#hospitals', label: 'For Hospitals' },
+      { href: '#research', label: 'Research' },
+      { href: '#safety', label: 'Safety & Privacy' },
+      { href: '#pricing', label: 'Pricing' },
+      { href: '#contact', label: 'Join Waitlist' },
+    ];
+  }
+
   // Legal page navigation
   if (pathname === '/legal') {
     return [
@@ -143,10 +157,11 @@ export default function Sidebar({ isActive = false, onNavigate }: SidebarProps) 
   const isSolutionsPage = pathname === '/solutions';
   const isCompanyPage = pathname === '/company';
   const isLegalPage = pathname === '/legal';
+  const isHealthPage = pathname === '/health';
 
   // Business page now uses the same sidebar as landing page (removed custom business sidebar)
 
-  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage) {
+  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage) {
     // Landing page style - styled navigation with vertical centering
     const baseClasses = "fixed top-0 left-0 h-full transition-transform duration-200 border-r-0 z-[999]";
     const activeClasses = isActive ? "translate-x-0" : "-translate-x-full";

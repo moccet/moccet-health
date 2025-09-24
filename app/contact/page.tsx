@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../landing.module.css';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +16,22 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [sidebarActive, setSidebarActive] = useState(false);
+
+  // Set sidebar to open on desktop by default
+  useEffect(() => {
+    if (window.innerWidth > 1024) {
+      setSidebarActive(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarActive(!sidebarActive);
+  };
+
+  const handleContactSales = () => {
+    console.log('Contact Sales clicked');
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -44,20 +62,14 @@ export default function ContactPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            moccet
-          </Link>
-          <Link href="/" className={styles.contactSalesBtn}>
-            Back to Home
-          </Link>
-        </div>
-      </header>
+      {/* Global Header */}
+      <Header onToggleSidebar={toggleSidebar} onContactSales={handleContactSales} />
+
+      {/* Global Sidebar */}
+      <Sidebar isActive={sidebarActive} />
 
       {/* Hero Section */}
-      <main className={styles.main}>
+      <main className={`${styles.main} ${sidebarActive ? styles.mainWithSidebar : ''}`}>
         <section className={styles.hero}>
           <h1>Contact Us</h1>
           <p className={styles.subtitle}>

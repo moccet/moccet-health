@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import styles from '../landing.module.css';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
+/*
 interface Solution {
   id: string;
   title: string;
@@ -13,10 +15,110 @@ interface Solution {
   benefits: string[];
   icon: string;
 }
+*/
 
 export default function SolutionsPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sidebarActive, setSidebarActive] = useState(false);
+  const [activePage, setActivePage] = useState('solutions');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    jobTitle: '',
+    phone: '',
+    message: ''
+  });
 
+  // Set sidebar to open on desktop by default
+  useEffect(() => {
+    if (window.innerWidth > 1024) {
+      setSidebarActive(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarActive(!sidebarActive);
+  };
+
+  const handleContactSales = () => {
+    setActivePage('contact');
+  };
+
+  const showPage = (page: string) => {
+    setActivePage(page);
+    // Reset form state when switching pages
+    if (page !== 'contact') {
+      setIsSubmitted(false);
+      setFormData({
+        name: '',
+        email: '',
+        company: '',
+        jobTitle: '',
+        phone: '',
+        message: ''
+      });
+    }
+    // Only close sidebar on mobile, keep it open on desktop
+    if (window.innerWidth <= 1024) {
+      setSidebarActive(false);
+    }
+    window.scrollTo(0, 0);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Send to Slack webhook
+      const slackMessage = {
+        text: `New Contact Form Submission from Solutions Page`,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*New Contact Form Submission (Solutions Page)*\n\n*Name:* ${formData.name}\n*Email:* ${formData.email}\n*Company:* ${formData.company || 'Not provided'}\n*Job Title:* ${formData.jobTitle || 'Not provided'}\n*Phone:* ${formData.phone || 'Not provided'}\n*Message:* ${formData.message || 'No message provided'}`
+            }
+          }
+        ]
+      };
+
+      // Replace with your actual Slack webhook URL
+      const webhookUrl = process.env.NEXT_PUBLIC_SLACK_WEBHOOK_URL || 'YOUR_SLACK_WEBHOOK_URL_HERE';
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(slackMessage),
+      });
+
+      if (response.ok) {
+        setIsSubmitted(true);
+      } else {
+        throw new Error('Failed to send message');
+      }
+    } catch (error) {
+      console.error('Error sending form:', error);
+      alert('There was an error sending your message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /*
   const solutions: Solution[] = [
     {
       id: 'clinical-insights',
@@ -163,336 +265,376 @@ export default function SolutionsPage() {
       icon: ''
     }
   ];
+  */
 
-  const categories = [
-    'all',
-    'Healthcare',
-    'Operations',
-    'Customer Experience',
-    'Risk & Compliance',
-    'Analytics',
-    'Human Resources',
-    'Research & Development',
-    'Finance'
-  ];
-
-  const filteredSolutions = selectedCategory === 'all'
-    ? solutions
-    : solutions.filter(solution => solution.category === selectedCategory);
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            moccet
-          </Link>
-          <Link href="/contact" className={styles.contactSalesBtn}>
-            Contact Sales
-          </Link>
-        </div>
-      </header>
+      {/* Global Header */}
+      <Header onToggleSidebar={toggleSidebar} onContactSales={handleContactSales} />
 
-      {/* Hero Section */}
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1>AI Solutions for Every Challenge</h1>
-          <p className={styles.subtitle}>
-            Pre-built, customizable solutions that deliver immediate value
-          </p>
-        </section>
+      {/* Global Sidebar */}
+      <Sidebar
+        isActive={sidebarActive}
+        onNavigate={(href) => {
+          if (href.startsWith('#')) {
+            const pageId = href.substring(1);
+            if (pageId === 'contact') {
+              showPage('contact');
+            } else if (pageId === '') {
+              showPage('solutions');
+            }
+          }
+        }}
+        activePage={activePage}
+      />
 
-        {/* Solution Categories */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Explore Our Solutions</h2>
-            <p>
-              Choose from our comprehensive suite of AI solutions designed to address
-              specific business challenges and deliver measurable results.
-            </p>
-
-            {/* Category Filter */}
-            <div className={styles.filterContainer}>
-              {categories.map(category => (
-                <button
-                  key={category}
-                  className={`${styles.filterBtn} ${selectedCategory === category ? styles.filterBtnActive : ''}`}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category === 'all' ? 'All Solutions' : category}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Solutions Grid */}
-        <section className={styles.contentSection}>
-          <div className={styles.solutionsGrid}>
-            {filteredSolutions.map(solution => (
-              <div key={solution.id} className={styles.solutionCard}>
-                <div className={styles.solutionHeader}>
-                  <span className={styles.solutionIcon}>{solution.icon}</span>
-                  <h3>{solution.title}</h3>
-                  <span className={styles.solutionCategory}>{solution.category}</span>
+      {/* Main content with global sidebar layout */}
+      <main className={`${styles.main} ${sidebarActive ? styles.mainWithSidebar : ''} pt-[60px]`}>
+        <div style={{ padding: '0 80px' }}>
+          {/* Solutions Page */}
+          {activePage === 'solutions' && (
+            <div>
+              {/* Hero Section */}
+              <section style={{ textAlign: 'center', padding: '80px 0 120px' }}>
+                <h1 style={{ fontSize: '56px', fontWeight: '400', lineHeight: '1.2', marginBottom: '24px', letterSpacing: '-1.5px', color: '#000' }}>
+                  Solutions built for<br />healthcare transformation
+                </h1>
+                <p style={{ fontSize: '20px', color: '#374151', marginBottom: '40px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  Omnisight delivers autonomous AI analysis across clinical operations without requiring prompts or manual oversight.
+                </p>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => showPage('contact')}
+                    style={{ background: '#000', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#333'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#000'}
+                  >
+                    Request early access
+                  </button>
+                  <button
+                    onClick={() => showPage('contact')}
+                    style={{ background: 'white', color: '#000', border: '1px solid #e5e7eb', padding: '12px 24px', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    Contact sales
+                  </button>
                 </div>
+              </section>
 
-                <p className={styles.solutionDescription}>
-                  {solution.description}
+              {/* Trusted by Healthcare Leaders */}
+              <section style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '60px 0', marginBottom: '100px', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mayo Clinic</div>
+                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Johns Hopkins</div>
+                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Cleveland Clinic</div>
+                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Kaiser Permanente</div>
+                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mount Sinai</div>
+              </section>
+
+              {/* Core Solutions */}
+              <section style={{ marginBottom: '120px' }}>
+                <h2 style={{ fontSize: '36px', fontWeight: '400', marginBottom: '16px', textAlign: 'center', color: '#000' }}>Core healthcare solutions</h2>
+                <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '60px', textAlign: 'center', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  Omnisight autonomously identifies patterns and insights across your clinical data, operations, and patient outcomes.
                 </p>
 
-                <div className={styles.solutionFeatures}>
-                  <h4>Key Features:</h4>
-                  <ul>
-                    {solution.features.map((feature, index) => (
-                      <li key={index}>{feature}</li>
-                    ))}
-                  </ul>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '32px' }}>
+                  <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '32px', background: 'white' }}>
+                    <h3 style={{ fontSize: '24px', fontWeight: '500', marginBottom: '12px', color: '#000' }}>Clinical Decision Support</h3>
+                    <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+                      Real-time analysis of patient data, treatment histories, and clinical guidelines to support diagnostic decisions.
+                    </p>
+                    <ul style={{ listStyle: 'none', padding: '0', marginBottom: '24px' }}>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Predictive risk scoring for patient outcomes</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Drug interaction and contraindication alerts</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Evidence-based treatment recommendations</li>
+                    </ul>
+                    <button
+                      onClick={() => showPage('contact')}
+                      style={{ color: '#000', textDecoration: 'none', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Learn more ↗
+                    </button>
+                  </div>
+
+                  <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '32px', background: 'white' }}>
+                    <h3 style={{ fontSize: '24px', fontWeight: '500', marginBottom: '12px', color: '#000' }}>Operational Intelligence</h3>
+                    <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+                      Autonomous optimization of hospital workflows, resource allocation, and operational efficiency.
+                    </p>
+                    <ul style={{ listStyle: 'none', padding: '0', marginBottom: '24px' }}>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Bed management and patient flow optimization</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Staffing predictions and scheduling</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Supply chain and inventory management</li>
+                    </ul>
+                    <button
+                      onClick={() => showPage('contact')}
+                      style={{ color: '#000', textDecoration: 'none', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Learn more ↗
+                    </button>
+                  </div>
+
+                  <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '32px', background: 'white' }}>
+                    <h3 style={{ fontSize: '24px', fontWeight: '500', marginBottom: '12px', color: '#000' }}>Population Health Analytics</h3>
+                    <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+                      Comprehensive analysis of patient populations to identify trends, risks, and intervention opportunities.
+                    </p>
+                    <ul style={{ listStyle: 'none', padding: '0', marginBottom: '24px' }}>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Disease outbreak detection and monitoring</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Chronic disease management insights</li>
+                      <li style={{ padding: '6px 0', color: '#374151', fontSize: '14px' }}>• Healthcare quality measure tracking</li>
+                    </ul>
+                    <button
+                      onClick={() => showPage('contact')}
+                      style={{ color: '#000', textDecoration: 'none', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Learn more ↗
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Why Autonomous */}
+              <section style={{ marginBottom: '120px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                  <h2 style={{ fontSize: '36px', fontWeight: '400', marginBottom: '16px', color: '#000' }}>
+                    Why autonomous analysis matters
+                  </h2>
+                  <p style={{ fontSize: '18px', color: '#6b7280', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+                    Unlike traditional systems that require constant prompting, Omnisight continuously monitors and analyzes your data to surface critical insights automatically.
+                  </p>
                 </div>
 
-                <div className={styles.solutionBenefits}>
-                  <h4>Expected Results:</h4>
-                  <ul>
-                    {solution.benefits.map((benefit, index) => (
-                      <li key={index}>{benefit}</li>
-                    ))}
-                  </ul>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: '28px', fontWeight: '500', marginBottom: '24px', color: '#000' }}>
+                      No prompts required
+                    </h3>
+                    <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
+                      Omnisight runs continuously in the background, analyzing data streams and identifying patterns without any manual intervention from your clinical staff.
+                    </p>
+                    <ul style={{ listStyle: 'none', padding: '0' }}>
+                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ 24/7 autonomous monitoring</li>
+                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Real-time insight generation</li>
+                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Proactive alert system</li>
+                    </ul>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '32px' }}>
+                    <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Real-time analysis example:</div>
+                    <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '14px', lineHeight: '1.5' }}>
+                      <div style={{ marginBottom: '8px' }}>🔍 Analyzing patient vitals...</div>
+                      <div style={{ marginBottom: '8px', color: '#dc2626' }}>⚠️ Early sepsis indicators detected</div>
+                      <div style={{ marginBottom: '8px', color: '#059669' }}>✅ Clinical team automatically notified</div>
+                      <div style={{ color: '#6b7280' }}>📋 Treatment protocol suggested</div>
+                    </div>
+                  </div>
                 </div>
+              </section>
 
-                <div className={styles.solutionActions}>
-                  <Link href="/contact" className={styles.learnMoreBtn}>
-                    Learn More
-                  </Link>
-                  <Link href="/contact" className={styles.requestDemoBtn}>
-                    Request Demo
-                  </Link>
+              {/* Implementation */}
+              <section style={{ textAlign: 'center', padding: '80px 0', background: '#f9fafb', borderRadius: '24px', margin: '0 -80px' }}>
+                <h2 style={{ fontSize: '48px', fontWeight: '400', lineHeight: '1.2', marginBottom: '24px', color: '#000' }}>
+                  Ready to transform<br />your healthcare operations?
+                </h2>
+                <p style={{ fontSize: '20px', color: '#6b7280', marginBottom: '40px', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  Join leading healthcare institutions already using Omnisight to improve patient outcomes and operational efficiency.
+                </p>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => showPage('contact')}
+                    style={{ background: '#000', color: 'white', border: 'none', padding: '16px 32px', borderRadius: '8px', fontSize: '16px', fontWeight: '500', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#333'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#000'}
+                  >
+                    Get early access →
+                  </button>
+                  <button
+                    onClick={() => showPage('contact')}
+                    style={{ background: 'white', color: '#000', border: '1px solid #e5e7eb', padding: '16px 32px', borderRadius: '8px', fontSize: '16px', fontWeight: '500', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    Schedule demo →
+                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              </section>
+            </div>
+          )}
 
-        {/* Custom Solutions */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Need a Custom Solution?</h2>
-            <p>
-              Our team of AI experts can design and build custom solutions tailored to
-              your unique business challenges and requirements.
-            </p>
-
-            <div className={styles.customSolutionFeatures}>
-              <div className={styles.customFeature}>
-                <h3>Tailored to Your Needs</h3>
-                <p>Solutions designed specifically for your use cases and workflows</p>
-              </div>
-              <div className={styles.customFeature}>
-                <h3>Full Integration</h3>
-                <p>Seamless integration with your existing systems and processes</p>
-              </div>
-              <div className={styles.customFeature}>
-                <h3>Scalable Architecture</h3>
-                <p>Built to grow with your business and handle enterprise scale</p>
-              </div>
-              <div className={styles.customFeature}>
-                <h3>Expert Support</h3>
-                <p>Dedicated team to ensure successful implementation and adoption</p>
+          {/* Contact Sales Page */}
+          {activePage === 'contact' && (
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              <div style={{ textAlign: 'center' }}>
+                {!isSubmitted ? (
+                  <>
+                    <h1 style={{ fontSize: '48px', fontWeight: '400', marginBottom: '24px' }}>Get in touch with our sales team</h1>
+                    <p style={{ fontSize: '18px', color: '#666', marginBottom: '48px' }}>
+                      Learn how moccet solutions can transform your organization with AI-powered insights.
+                    </p>
+                    <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px'
+                          }}
+                          required
+                        />
+                      </div>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px'
+                          }}
+                          required
+                        />
+                      </div>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Company</label>
+                        <input
+                          type="text"
+                          name="company"
+                          value={formData.company}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Job Title</label>
+                        <input
+                          type="text"
+                          name="jobTitle"
+                          value={formData.jobTitle}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Phone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>How can we help you?</label>
+                        <textarea
+                          name="message"
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          rows={4}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '16px',
+                            resize: 'vertical'
+                          }}
+                          placeholder="Tell us about your solution needs and goals..."
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          background: isSubmitting ? '#ccc' : '#000',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isSubmitting ? 'Sending...' : 'Send Message'}
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      background: '#10b981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 24px',
+                      fontSize: '36px'
+                    }}>
+                      ✓
+                    </div>
+                    <h2 style={{ fontSize: '32px', fontWeight: '400', marginBottom: '16px', color: '#000' }}>Message Sent!</h2>
+                    <p style={{ fontSize: '18px', color: '#666', marginBottom: '32px' }}>
+                      Thank you for your interest in moccet. Our sales team will get back to you within 24 hours.
+                    </p>
+                    <button
+                      onClick={() => showPage('solutions')}
+                      style={{
+                        padding: '12px 24px',
+                        background: '#000',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Back to Solutions
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-
-            <div className={styles.buttonRow}>
-              <Link href="/contact" className={styles.ctaBtn}>
-                Discuss Custom Solution
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Success Metrics */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Proven Success Across Industries</h2>
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <h3>500+</h3>
-                <p>Solutions Deployed</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>95%</h3>
-                <p>Customer Satisfaction</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>3.8x</h3>
-                <p>Average ROI</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>60 days</h3>
-                <p>Average Time to Value</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Integration Partners */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Integrates with Your Tech Stack</h2>
-            <p>
-              Our solutions work seamlessly with the tools and platforms you already use.
-            </p>
-            <div className={styles.integrationLogos}>
-              <p className={styles.logoPlaceholder}>
-                [Salesforce] [SAP] [Oracle] [Microsoft] [AWS] [Google Cloud] [Epic] [Cerner]
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Comparison Table */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Why Choose moccet Solutions?</h2>
-
-            <table className={styles.comparisonTable}>
-              <thead>
-                <tr>
-                  <th>Feature</th>
-                  <th>moccet</th>
-                  <th>Traditional Software</th>
-                  <th>Build In-House</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Time to Deploy</td>
-                  <td>30-60 days</td>
-                  <td>3-6 months</td>
-                  <td>12-18 months</td>
-                </tr>
-                <tr>
-                  <td>AI Capabilities</td>
-                  <td>Advanced, Pre-trained</td>
-                  <td>Basic or None</td>
-                  <td>Requires Development</td>
-                </tr>
-                <tr>
-                  <td>Customization</td>
-                  <td>Fully Customizable</td>
-                  <td>Limited</td>
-                  <td>Full Control</td>
-                </tr>
-                <tr>
-                  <td>Maintenance</td>
-                  <td>Managed by moccet</td>
-                  <td>Vendor Dependent</td>
-                  <td>Your Responsibility</td>
-                </tr>
-                <tr>
-                  <td>Total Cost</td>
-                  <td>Predictable</td>
-                  <td>Hidden Costs</td>
-                  <td>High & Variable</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Resources */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Solution Resources</h2>
-
-            <div className={styles.resourceGrid}>
-              <div className={styles.resourceCard}>
-                <h3>Solution Catalog</h3>
-                <p>Complete guide to all moccet solutions</p>
-                <button className={styles.downloadBtn}>Download PDF</button>
-              </div>
-              <div className={styles.resourceCard}>
-                <h3>Demo Library</h3>
-                <p>Watch our solutions in action</p>
-                <button className={styles.downloadBtn}>View Demos</button>
-              </div>
-              <div className={styles.resourceCard}>
-                <h3>ROI Calculator</h3>
-                <p>Calculate your potential savings</p>
-                <button className={styles.downloadBtn}>Calculate ROI</button>
-              </div>
-              <div className={styles.resourceCard}>
-                <h3>Implementation Guide</h3>
-                <p>Best practices for deployment</p>
-                <button className={styles.downloadBtn}>Access Guide</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className={styles.finalCta}>
-          <h2 className={styles.finalCtaTitle}>Find Your Perfect Solution</h2>
-          <p className={styles.finalCtaSubtitle}>
-            Let our experts help you identify the right solutions for your organization
-          </p>
-          <div className={styles.buttonRow}>
-            <Link href="/contact" className={styles.ctaBtn}>Get Solution Recommendation</Link>
-            <Link href="/business" className={styles.watchVideoBtn}>Learn About Enterprise</Link>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Solutions</h4>
-              <ul className={styles.footerLinks}>
-                <li><a href="#clinical-insights">Clinical Insights</a></li>
-                <li><a href="#operational-excellence">Operational Excellence</a></li>
-                <li><a href="#customer-intelligence">Customer Intelligence</a></li>
-                <li><a href="#risk-management">Risk Management</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Company</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-                <li><Link href="/brand">Brand</Link></li>
-                <li><Link href="/legal">Legal</Link></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Resources</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/research">Research</Link></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Reference</a></li>
-                <li><a href="#">Status</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Support</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/terms">Terms of Use</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
-                <li><Link href="/policies">Other Policies</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <p>&copy; 2024 moccet. All rights reserved.</p>
-            <div className={styles.footerBottomLinks}>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <a href="#">Cookie Settings</a>
-            </div>
-          </div>
+          )}
         </div>
-      </footer>
+      </main>
     </div>
   );
 }

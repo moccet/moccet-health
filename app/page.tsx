@@ -7,6 +7,10 @@ import ContactSalesPage from './components/ContactSalesPage';
 import VideoModal from './components/VideoModal';
 import WaitlistModal from './components/WaitlistModal';
 import ResearchModal from './components/ResearchModal';
+import LandingHero from './components/LandingHero';
+import BenefitsGrid from './components/BenefitsGrid';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 
 export default function Home() {
   const [sidebarActive, setSidebarActive] = useState(false);
@@ -21,6 +25,55 @@ export default function Home() {
     if (window.innerWidth > 768) {
       setSidebarActive(true);
     }
+  }, []);
+
+  // Force hero button styling as backup
+  useEffect(() => {
+    const heroBtn = document.querySelector('[data-button="hero-cta"]') as HTMLButtonElement;
+    if (heroBtn) {
+      heroBtn.style.cssText = `
+        padding: 6px 16px !important;
+        background: #000 !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 20px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        margin-right: 12px !important;
+        cursor: pointer !important;
+        transition: opacity 0.15s ease !important;
+        font-family: var(--font-inter) !important;
+      `;
+    }
+  }, []);
+
+  // Optional: Suite section visibility tracking
+  useEffect(() => {
+    const suiteSection = document.querySelector(`.${styles.suiteSection}`);
+
+    if (!suiteSection) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // Optional: Add any visibility-based logic here
+          // For now, this is just a placeholder for future enhancements
+          if (entry.isIntersecting) {
+            // Suite section is visible
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '-60px 0px 0px 0px' // Account for navbar
+      }
+    );
+
+    observer.observe(suiteSection);
+
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   const toggleSidebar = () => {
@@ -146,34 +199,15 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerLeft}>
-            <button className={styles.menuIcon} onClick={toggleSidebar}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M2.5 7.5H17.5M2.5 12.5H17.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <span className={styles.logo}>moccet</span>
-          </div>
-          <div className={styles.headerRight}>
-            <button className={styles.contactSalesBtn} onClick={handleContactSales}>Contact Sales</button>
-          </div>
-        </div>
-      </header>
+      {/* Global Header */}
+      <Header
+        onToggleSidebar={toggleSidebar}
+        onContactSales={handleContactSales}
+        sidebarActive={sidebarActive}
+      />
 
-      {/* Sidebar */}
-      <nav className={`${styles.sidebar} ${sidebarActive ? styles.sidebarActive : ''}`} id="sidebar">
-        <Link href="/research" className={styles.navItem}>Research</Link>
-        <Link href="/safety" className={styles.navItem}>Safety</Link>
-        <Link href="/business" className={styles.navItem}>For Business</Link>
-        <Link href="/developers" className={styles.navItem}>For Developers</Link>
-        <Link href="/api-platform" className={styles.navItem}>API Platform</Link>
-        <Link href="/solutions" className={styles.navItem}>Solutions</Link>
-        <Link href="/company" className={styles.navItem}>Company</Link>
-        <Link href="/news" className={styles.navItem}>News</Link>
-      </nav>
+      {/* Global Sidebar */}
+      <Sidebar isActive={sidebarActive} />
 
       {/* Main Content */}
       <main className={`${styles.main} ${sidebarActive ? styles.mainWithSidebar : ''}`}>
@@ -181,15 +215,13 @@ export default function Home() {
         {activeSection === 'dashboard' && (
           <div id="dashboard-view">
             {/* Hero */}
-            <section className={styles.hero}>
-              <h1>AI that discovers.<br />Experts who execute.</h1>
-              <p className={styles.subtitle}>Autonomous intelligence embeds in your infrastructure, discovers insights without prompting,<br />and deploys world-class operators to execute discoveries.</p>
+            <LandingHero
+              onEarlyAccess={handleEarlyAccess}
+              onWatchVideo={handleWatchVideo}
+            />
 
-              <div className={styles.buttonRow}>
-                <button className={styles.ctaBtn} onClick={handleEarlyAccess}>Get early access →</button>
-                <button className={styles.watchVideoBtn} onClick={handleWatchVideo}>Watch video ↗</button>
-              </div>
-            </section>
+            {/* Benefits Grid Section */}
+            <BenefitsGrid />
 
             {/* Moccet Suite Section */}
             <section className={styles.suiteSection}>
@@ -199,11 +231,12 @@ export default function Home() {
                   <div className={styles.suiteHero}>
                     <img
                       src="/images/big feature.jpg"
-                      alt="Abstract visualization"
+                      alt="Moccet AI platform visualization showcasing autonomous intelligence"
                       className={styles.suiteHeroImage}
+                      loading="eager"
                     />
                     <div className={styles.suiteHeroContent}>
-                      <h2 className={styles.suiteLogo}>moccet</h2>
+                      <h2 className={`${styles.suiteLogo} moccet-brand`}>moccet</h2>
                       <p className={styles.suiteTagline}>Our fastest, most intelligent suite yet.</p>
                     </div>
                   </div>
@@ -233,15 +266,141 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className={styles.suitePricing}>
-                    <h3>Simple Pricing</h3>
-                    <p>Pay as you go, cancel anytime</p>
-                    <button
-                      className={styles.pricingButton}
-                      onClick={() => window.location.href = '/health#pricing'}
-                    >
-                      View pricing →
-                    </button>
+                  <div className={styles.suiteCard} onClick={() => window.location.href = '/business'} style={{ cursor: 'pointer' }}>
+                    <div className={styles.cardImage} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}></div>
+                    <div className={styles.cardContent}>
+                      <h3>Enterprise solutions now available</h3>
+                      <div className={styles.cardMeta}>
+                        <span>New release</span>
+                        <span>6 min read</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+
+            {/* Philosophy Section */}
+            <section className={styles.philosophySection}>
+              <div className={styles.philosophyContainer}>
+                <h2 className={styles.philosophyTitle}>Philosophy</h2>
+                <button className={styles.showAllBtn}>Show all</button>
+
+                <div className={styles.philosophyGrid}>
+                  <div
+                    className={styles.philosophyCard}
+                    onClick={() => window.location.href = '/philosophy/machine-learning'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src="/images/gradient4.jpg"
+                      alt="Machine learning philosophy and approach visualization"
+                      className={styles.philosophyImage}
+                      loading="lazy"
+                    />
+                    <div className={styles.philosophyContent}>
+                      <h3>Machine Learning</h3>
+                      <div className={styles.philosophyMeta}>
+                        <span className={styles.philosophyTag}>Technical</span>
+                        <span className={styles.philosophyDate}>13 Sept 2025</span>
+                        <span className={styles.philosophyTime}>12 min read</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={styles.philosophyCard}
+                    onClick={() => window.location.href = '/philosophy/safety-compliance'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src="/images/painting2.jpg"
+                      alt="AI safety and compliance framework illustration"
+                      className={styles.philosophyImage}
+                      loading="lazy"
+                    />
+                    <div className={styles.philosophyContent}>
+                      <h3>Safety and Compliance</h3>
+                      <div className={styles.philosophyMeta}>
+                        <span className={styles.philosophyTag}>Safety</span>
+                        <span className={styles.philosophyDate}>13 Sept 2025</span>
+                        <span className={styles.philosophyTime}>8 min read</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={styles.philosophyCard}
+                    onClick={() => window.location.href = '/philosophy/brain-inspired'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src="/images/painting4.jpg"
+                      alt="Brain-inspired AI architecture and neural networks"
+                      className={styles.philosophyImage}
+                      loading="lazy"
+                    />
+                    <div className={styles.philosophyContent}>
+                      <h3>Inspired by the brain</h3>
+                      <div className={styles.philosophyMeta}>
+                        <span className={styles.philosophyTag}>Technical</span>
+                        <span className={styles.philosophyDate}>13 Sept 2025</span>
+                        <span className={styles.philosophyTime}>10 min read</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Research Section */}
+            <section className={styles.researchArticlesSection}>
+              <div className={styles.researchArticlesContainer}>
+                <h2 className={styles.researchArticlesTitle}>Research</h2>
+                <button className={styles.showAllBtn}>Show all</button>
+
+                <div className={styles.researchArticlesGrid}>
+                  <div
+                    className={styles.researchArticleCard}
+                    onClick={() => window.location.href = '/research/neural-connections'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src="/images/research-neural.jpg"
+                      alt="Neural network connections and AI research visualization"
+                      className={styles.researchArticleImage}
+                      loading="lazy"
+                    />
+                    <div className={styles.researchArticleContent}>
+                      <h3>Neural connections</h3>
+                      <div className={styles.researchArticleMeta}>
+                        <span className={styles.researchArticleTag}>Technical</span>
+                        <span className={styles.researchArticleDate}>15 Sept 2025</span>
+                        <span className={styles.researchArticleTime}>15 min read</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={styles.researchArticleCard}
+                    onClick={() => window.location.href = '/research/hierarchical-reasoning'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src="/images/research-hrm.jpg"
+                      alt="Hierarchical reasoning model research and development"
+                      className={styles.researchArticleImage}
+                      loading="lazy"
+                    />
+                    <div className={styles.researchArticleContent}>
+                      <h3>Hierarchical Reasoning</h3>
+                      <div className={styles.researchArticleMeta}>
+                        <span className={styles.researchArticleTag}>Technical</span>
+                        <span className={styles.researchArticleDate}>14 Sept 2025</span>
+                        <span className={styles.researchArticleTime}>10 min read</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -274,8 +433,9 @@ export default function Home() {
                   <div className={styles.pricingRight}>
                     <img
                       src="/images/pricing-pilot.jpg"
-                      alt="Pricing pilot"
+                      alt="Moccet pilot program pricing visualization"
                       className={styles.pricingImage}
+                      loading="lazy"
                     />
                   </div>
                 </div>
@@ -288,8 +448,9 @@ export default function Home() {
                 <div className={styles.enterpriseLeft}>
                   <img
                     src="/images/pricing-custom.jpg"
-                    alt="Enterprise custom"
+                    alt="Enterprise custom solutions for AI implementation"
                     className={styles.enterpriseImage}
+                    loading="lazy"
                   />
                 </div>
 
@@ -338,129 +499,10 @@ export default function Home() {
                 <div className={styles.researchRight}>
                   <img
                     src="/images/pricing-research.jpg"
-                    alt="Research campus"
+                    alt="Academic research campus for AI development"
                     className={styles.researchImage}
+                    loading="lazy"
                   />
-                </div>
-              </div>
-            </section>
-
-            {/* Philosophy Section */}
-            <section className={styles.philosophySection}>
-              <div className={styles.philosophyContainer}>
-                <h2 className={styles.philosophyTitle}>Philosophy</h2>
-                <button className={styles.showAllBtn}>Show all</button>
-
-                <div className={styles.philosophyGrid}>
-                  <div
-                    className={styles.philosophyCard}
-                    onClick={() => window.location.href = '/philosophy/machine-learning'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src="/images/gradient4.jpg"
-                      alt="Machine Learning"
-                      className={styles.philosophyImage}
-                    />
-                    <div className={styles.philosophyContent}>
-                      <h3>Machine Learning</h3>
-                      <div className={styles.philosophyMeta}>
-                        <span className={styles.philosophyTag}>Technical</span>
-                        <span className={styles.philosophyDate}>13 Sept 2025</span>
-                        <span className={styles.philosophyTime}>12 min read</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={styles.philosophyCard}
-                    onClick={() => window.location.href = '/philosophy/safety-compliance'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src="/images/painting2.jpg"
-                      alt="Safety and Compliance"
-                      className={styles.philosophyImage}
-                    />
-                    <div className={styles.philosophyContent}>
-                      <h3>Safety and Compliance</h3>
-                      <div className={styles.philosophyMeta}>
-                        <span className={styles.philosophyTag}>Safety</span>
-                        <span className={styles.philosophyDate}>13 Sept 2025</span>
-                        <span className={styles.philosophyTime}>8 min read</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={styles.philosophyCard}
-                    onClick={() => window.location.href = '/philosophy/brain-inspired'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src="/images/painting4.jpg"
-                      alt="Inspired by the brain"
-                      className={styles.philosophyImage}
-                    />
-                    <div className={styles.philosophyContent}>
-                      <h3>Inspired by the brain</h3>
-                      <div className={styles.philosophyMeta}>
-                        <span className={styles.philosophyTag}>Technical</span>
-                        <span className={styles.philosophyDate}>13 Sept 2025</span>
-                        <span className={styles.philosophyTime}>10 min read</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Research Section */}
-            <section className={styles.researchArticlesSection}>
-              <div className={styles.researchArticlesContainer}>
-                <h2 className={styles.researchArticlesTitle}>Research</h2>
-                <button className={styles.showAllBtn}>Show all</button>
-
-                <div className={styles.researchArticlesGrid}>
-                  <div
-                    className={styles.researchArticleCard}
-                    onClick={() => window.location.href = '/research/neural-connections'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src="/images/research-neural.jpg"
-                      alt="Neural connections"
-                      className={styles.researchArticleImage}
-                    />
-                    <div className={styles.researchArticleContent}>
-                      <h3>Neural connections</h3>
-                      <div className={styles.researchArticleMeta}>
-                        <span className={styles.researchArticleTag}>Technical</span>
-                        <span className={styles.researchArticleDate}>15 Sept 2025</span>
-                        <span className={styles.researchArticleTime}>15 min read</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={styles.researchArticleCard}
-                    onClick={() => window.location.href = '/research/hierarchical-reasoning'}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src="/images/research-hrm.jpg"
-                      alt="Hierarchical Reasoning"
-                      className={styles.researchArticleImage}
-                    />
-                    <div className={styles.researchArticleContent}>
-                      <h3>Hierarchical Reasoning</h3>
-                      <div className={styles.researchArticleMeta}>
-                        <span className={styles.researchArticleTag}>Technical</span>
-                        <span className={styles.researchArticleDate}>14 Sept 2025</span>
-                        <span className={styles.researchArticleTime}>10 min read</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
@@ -568,7 +610,7 @@ export default function Home() {
 
             <div className={styles.footerBottom}>
               <div className={styles.footerBrand}>
-                <h3 className={styles.footerLogo}>moccet</h3>
+                <h3 className={`${styles.footerLogo} moccet-brand`}>moccet</h3>
                 <p className={styles.footerTagline}>
                   Autonomous intelligence imbeds in your infrastructure,<br />
                   discovers insights without prompting, and deploys world-<br />
@@ -577,6 +619,28 @@ export default function Home() {
                 <a href="tel:+17074005566" className={styles.footerPhone}>
                   📞 +1 (707) 400-5566
                 </a>
+                <div className={styles.footerSocial}>
+                  <a href="https://x.com/moccet/" target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </a>
+                  <a href="https://www.linkedin.com/company/105261965/" target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </a>
+                  <a href="https://instagram.com/moccetai" target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                  </a>
+                  <a href="https://www.tiktok.com/@moccet" target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                    </svg>
+                  </a>
+                </div>
               </div>
               <div className={styles.footerCopyright}>
                 <p>© 2025 moccet Inc. All rights reserved.</p>

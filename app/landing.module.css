@@ -149,9 +149,10 @@
   width: 240px;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
-  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  box-shadow: none;
+  border: none;
   padding: 0;
-  padding-left: 60px;
+  padding-left: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -166,9 +167,9 @@
 .navItem {
   display: block;
   padding: 16px 0;
-  color: #999;
+  color: #000;
   text-decoration: none;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 500;
   transition: color 0.15s;
   cursor: pointer;
@@ -203,7 +204,7 @@
   text-align: center;
   max-width: 1600px;
   margin: 0 auto;
-  min-height: 70vh;
+  min-height: 60vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -211,15 +212,15 @@
 }
 
 .hero h1 {
-  font-size: 96px;
+  font-size: 72px;
   font-weight: 600;
   line-height: 1.05;
   margin-bottom: 36px;
-  letter-spacing: -3px;
+  letter-spacing: -2px;
 }
 
 .subtitle {
-  font-size: 24px;
+  font-size: 20px;
   color: #666;
   margin-bottom: 56px;
   line-height: 1.5;
@@ -280,12 +281,12 @@
 }
 
 .ctaBtn {
-  padding: 16px 32px;
+  padding: 8px 16px;
   background: #000;
   color: #fff;
   border: none;
-  border-radius: 24px;
-  font-size: 17px;
+  border-radius: 25px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -305,7 +306,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.15s;
-  text-decoration: underline;
+  text-decoration: none !important;
 }
 
 .watchVideoBtn:hover {
@@ -1012,6 +1013,79 @@
   max-width: 250px;
 }
 
+/* Benefits Grid Section */
+.benefitsSection {
+  margin-top: 120px;
+  padding: 60px 40px;
+  background: #fff;
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.benefitCard {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+}
+
+.benefitCard h3 {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0;
+  color: #333;
+  padding-right: 16px;
+}
+
+.arrowIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 12px;
+  color: #666;
+  opacity: 0.7;
+}
+
+
+@media (max-width: 1200px) {
+  .benefitsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .benefitsSection {
+    padding: 40px 20px;
+  }
+
+  .benefitsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .benefitCard {
+    padding: 20px;
+  }
+
+  .benefitCard h3 {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .benefitsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Moccet Suite Section */
 .suiteSection {
   margin-top: 120px;
@@ -1030,6 +1104,7 @@
   padding: 0 40px;
   background: #fafafa;
   border-radius: 0;
+  align-items: start;
 }
 
 /* Suite Sidebar */
@@ -1067,12 +1142,18 @@
   background: #fff;
   border-radius: 16px;
   overflow: hidden;
+  height: 500px;
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  will-change: transform;
+  contain: layout style;
 }
 
 .suiteHero {
   position: relative;
   height: 100%;
-  min-height: 500px;
+  max-height: 500px;
 }
 
 .suiteHeroImage {
@@ -1106,6 +1187,8 @@
   gap: 20px;
   padding: 40px;
   background: #fafafa;
+  min-height: 100vh;
+  contain: layout style;
 }
 
 .suiteCard {
@@ -1113,13 +1196,8 @@
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s;
 }
 
-.suiteCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
 
 .cardImage {
   height: 140px;
@@ -1751,28 +1829,28 @@
 }
 
 .finalCtaPrimary {
-  padding: 14px 32px;
+  padding: 10px 16px;
   background: #000;
   color: #fff;
   border: none;
-  border-radius: 50px;
-  font-size: 16px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: opacity 0.15s;
 }
 
 .finalCtaPrimary:hover {
-  background: #333;
+  opacity: 0.9;
 }
 
 .finalCtaSecondary {
-  padding: 14px 32px;
+  padding: 10px 16px;
   background: transparent;
   color: #000;
   border: 2px solid #000;
-  border-radius: 50px;
-  font-size: 16px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -1804,6 +1882,23 @@
   }
 }
 
+
+.heroCtaButton {
+  padding: 6px 16px !important;
+  background: #000 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: opacity 0.15s !important;
+  margin-right: 12px !important;
+}
+
+.heroCtaButton:hover {
+  opacity: 0.9 !important;
+}
 
 /* Footer */
 .footer {
@@ -1894,6 +1989,36 @@
   opacity: 0.7;
 }
 
+.footerSocial {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.socialLink:hover {
+  color: #000;
+  background: #e5e5e5;
+  transform: translateY(-2px);
+}
+
+.socialLink svg {
+  width: 20px;
+  height: 20px;
+}
+
 .footerCopyright {
   margin-top: 20px;
 }
@@ -1977,6 +2102,17 @@
   }
 }
 
+/* Tablet-specific adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .suiteMain {
+    height: 400px;
+  }
+
+  .suiteCards {
+    min-height: 80vh;
+  }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   /* Header */
@@ -2000,7 +2136,8 @@
   /* Sidebar */
   .sidebar {
     left: -240px;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    box-shadow: none;
+    border: none;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
   }
@@ -2029,7 +2166,7 @@
   /* Hero */
   .hero {
     padding: 100px 20px 60px;
-    min-height: 70vh;
+    min-height: 60vh;
   }
 
   .hero h1 {
@@ -2053,7 +2190,7 @@
   .ctaBtn,
   .watchVideoBtn {
     width: 100%;
-    padding: 14px 24px;
+    padding: 8px 24px;
     font-size: 15px;
     margin: 0;
     margin-bottom: 12px;
@@ -2073,6 +2210,13 @@
 
   .suiteMain {
     border-radius: 0;
+    position: relative !important;
+    top: auto !important;
+    height: 300px;
+  }
+
+  .suiteCards {
+    min-height: auto;
   }
 
   .suiteHero {
@@ -2595,6 +2739,21 @@
     font-size: 14px;
   }
 
+  .footerSocial {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .socialLink {
+    width: 36px;
+    height: 36px;
+  }
+
+  .socialLink svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .footerCopyright p {
     font-size: 12px;
   }
@@ -2620,7 +2779,7 @@
   .ctaBtn,
   .watchVideoBtn {
     font-size: 14px;
-    padding: 12px 20px;
+    padding: 8px 20px;
   }
 
   /* Suite Section */

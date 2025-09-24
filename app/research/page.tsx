@@ -1,512 +1,173 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import styles from '../landing.module.css';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
-interface ResearchPaper {
+interface ResearchItem {
   id: string;
   title: string;
-  category: string;
+  type: 'Publication' | 'Release' | 'Conclusion' | 'Milestone';
   date: string;
-  authors: string[];
-  abstract: string;
-  citations: number;
-  tags: string[];
+  description: string;
 }
 
 export default function ResearchPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState('All');
+  const [sidebarActive, setSidebarActive] = useState(false);
 
-  const researchPapers: ResearchPaper[] = [
+  // Set sidebar to open on desktop by default
+  useEffect(() => {
+    if (window.innerWidth > 1024) {
+      setSidebarActive(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarActive(!sidebarActive);
+  };
+
+  const handleContactSales = () => {
+    // Handle contact sales action
+    console.log('Contact Sales clicked');
+  };
+
+  const researchItems: ResearchItem[] = [
     {
-      id: '1',
-      title: 'Transformer-Based Clinical Decision Support: A Novel Approach to Healthcare AI',
-      category: 'Machine Learning',
-      date: 'December 2024',
-      authors: ['Dr. Sarah Chen', 'Dr. Michael Roberts', 'Dr. Emily Zhang'],
-      abstract: 'We present a novel transformer-based architecture specifically designed for clinical decision support, achieving 94% accuracy in diagnostic predictions while maintaining interpretability for healthcare practitioners.',
-      citations: 145,
-      tags: ['Transformers', 'Healthcare AI', 'Clinical Decision Support']
+      id: 'detecting-preventing-disease-progression',
+      title: 'Detecting and preventing disease progression in early access pilots',
+      type: 'Publication',
+      date: 'Sep 17, 2025',
+      description: 'moccet Research and select healthcare partners in our private pilot program developed evaluation frameworks for early disease detection ("pre-symptomatic identification") and found behaviors consistent with predictive modeling in controlled tests across frontier models. The team demonstrates how autonomous monitoring in pilot deployments can identify health risks months before traditional screening methods.'
     },
     {
-      id: '2',
-      title: 'Predictive Analytics in Population Health: Large-Scale Implementation Study',
-      category: 'Healthcare',
-      date: 'November 2024',
-      authors: ['Dr. James Wilson', 'Dr. Maria Garcia', 'Dr. David Lee'],
-      abstract: 'This study examines the implementation of predictive analytics across 500 healthcare facilities, demonstrating a 32% reduction in hospital readmissions through early intervention strategies.',
-      citations: 89,
-      tags: ['Population Health', 'Predictive Analytics', 'Healthcare Outcomes']
+      id: 'nexus-enterprise-upgrades',
+      title: 'Introducing upgrades to Nexus for enterprise pilot partners',
+      type: 'Release',
+      date: 'Sep 15, 2025',
+      description: 'Nexus just got faster, more reliable, and better at real-time business intelligence for our select enterprise pilot partners—whether via the terminal, IDE, web, or even your phone. Currently available exclusively to waitlist-approved organizations.'
     },
     {
-      id: '3',
-      title: 'Federated Learning for Privacy-Preserving Healthcare AI',
-      category: 'Privacy & Security',
-      date: 'October 2024',
-      authors: ['Dr. Alex Kumar', 'Dr. Jennifer Park', 'Dr. Thomas Brown'],
-      abstract: 'We introduce a federated learning framework that enables collaborative AI model training across healthcare institutions while maintaining HIPAA compliance and patient privacy.',
-      citations: 112,
-      tags: ['Federated Learning', 'Privacy', 'HIPAA Compliance']
+      id: 'healthhub-early-access-partners',
+      title: 'How early access partners are using HealthHub',
+      type: 'Publication',
+      date: 'Sep 15, 2025',
+      description: 'New research from our private pilot program shows how select healthcare organizations create clinical value through both diagnostic assistance and operational efficiency. Adoption is expanding within our waitlist-approved institutions, revolutionizing patient care in controlled deployments.'
     },
     {
-      id: '4',
-      title: 'Real-Time Anomaly Detection in Medical Imaging Using Deep Learning',
-      category: 'Computer Vision',
-      date: 'September 2024',
-      authors: ['Dr. Lisa Anderson', 'Dr. Robert Taylor', 'Dr. Michelle Wong'],
-      abstract: 'Our deep learning model achieves 97% sensitivity in detecting anomalies in medical imaging, with real-time processing capabilities suitable for clinical deployment.',
-      citations: 203,
-      tags: ['Medical Imaging', 'Deep Learning', 'Anomaly Detection']
+      id: 'moccet-h5-codex-addendum',
+      title: 'Addendum to moccet-h5 system card: moccet-h5-Codex for pilot partners',
+      type: 'Publication',
+      date: 'Sep 15, 2025',
+      description: 'This addendum to the moccet-h5 system card on the further optimized variant moccet-h5-Codex, a version of moccet-h5 further optimized for clinical diagnostic tasks, reflects its enhanced medical reasoning capabilities. Currently in testing with select pilot institutions.'
     },
     {
-      id: '5',
-      title: 'Natural Language Processing for Clinical Documentation: Reducing Physician Burnout',
-      category: 'NLP',
-      date: 'August 2024',
-      authors: ['Dr. Kevin Martinez', 'Dr. Rachel Green', 'Dr. Steven Kim'],
-      abstract: 'Implementation of our NLP system reduced clinical documentation time by 45%, directly addressing physician burnout while maintaining documentation quality and compliance.',
-      citations: 167,
-      tags: ['NLP', 'Clinical Documentation', 'Physician Burnout']
+      id: 'introducing-moccet-h5',
+      title: 'Introducing moccet-h5 to select pilot partners',
+      type: 'Release',
+      date: 'Aug 7, 2025',
+      description: 'We are introducing moccet-h5 to our waitlist-approved partners, our best AI system yet. moccet-h5 is a significant leap in intelligence over all our previous models, featuring state-of-the-art performance across healthcare, finance, and operations. Currently in private pilot phase with select organizations.'
     },
     {
-      id: '6',
-      title: 'Reinforcement Learning for Treatment Optimization in Chronic Disease Management',
-      category: 'Machine Learning',
-      date: 'July 2024',
-      authors: ['Dr. Patricia Davis', 'Dr. Christopher Lee', 'Dr. Amanda Johnson'],
-      abstract: 'Using reinforcement learning to optimize treatment plans for chronic disease patients, we achieved 28% better outcomes compared to standard care protocols.',
-      citations: 134,
-      tags: ['Reinforcement Learning', 'Chronic Disease', 'Treatment Optimization']
+      id: 'pilot-value-creation-milestone',
+      title: '$500M in value created during private pilot phase',
+      type: 'Milestone',
+      date: 'Jul 28, 2025',
+      description: 'A landmark achievement: our pilot partners have collectively generated over $500 million in value through cost savings, efficiency gains, and improved patient outcomes during the private pilot phase. This validates our approach as we prepare for broader waitlist access.'
+    },
+    {
+      id: 'financial-fraud-detection-pilots',
+      title: 'Financial fraud detection in pilot deployments',
+      type: 'Publication',
+      date: 'Jul 15, 2025',
+      description: 'Research from our private pilot program shows how moccet AI prevents financial fraud with 94% accuracy while reducing false positives by 67% compared to traditional methods. Currently being tested with select financial institution partners.'
+    },
+    {
+      id: 'autonomous-supply-chain-optimization',
+      title: 'Autonomous supply chain optimization: Results from early pilots',
+      type: 'Publication',
+      date: 'Jun 25, 2025',
+      description: 'Discover how our specialized AI model, moccet-4b logistics, helped pilot manufacturing partners reduce costs by 34% and improve delivery times through predictive routing. Full deployment pending waitlist approval.'
     }
   ];
 
-  const categories = [
-    'all',
-    'Machine Learning',
-    'Healthcare',
-    'Privacy & Security',
-    'Computer Vision',
-    'NLP',
-    'Ethics & Safety'
-  ];
+  const tabs = ['All', 'Publication', 'Conclusion', 'Milestone', 'Release'];
 
-  const filteredPapers = researchPapers.filter(paper => {
-    const matchesCategory = selectedCategory === 'all' || paper.category === selectedCategory;
-    const matchesSearch = paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          paper.abstract.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
+  const filteredItems = selectedTab === 'All'
+    ? researchItems
+    : researchItems.filter(item => item.type === selectedTab);
 
   return (
-    <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            moccet
-          </Link>
-          <Link href="/contact" className={styles.contactSalesBtn}>
-            Contact Us
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white">
+      {/* Global Header */}
+      <Header onToggleSidebar={toggleSidebar} onContactSales={handleContactSales} />
 
-      {/* Hero Section */}
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1>moccet Research</h1>
-          <p className={styles.subtitle}>
-            Advancing the frontiers of AI in healthcare and beyond
-          </p>
-        </section>
+      {/* Global Sidebar */}
+      <Sidebar isActive={sidebarActive} />
 
-        {/* Research Overview */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Our Research Mission</h2>
-            <p>
-              At moccet Research, we&apos;re dedicated to pushing the boundaries of artificial
-              intelligence to solve humanity&apos;s most pressing challenges. Our interdisciplinary
-              team of researchers, engineers, and domain experts work together to develop
-              breakthrough technologies that are safe, beneficial, and accessible.
-            </p>
-            <p>
-              We believe in open collaboration and regularly publish our findings to advance
-              the field and benefit the global research community. Our work spans fundamental
-              AI research, applied healthcare solutions, and the critical areas of AI safety
-              and ethics.
-            </p>
-          </div>
-        </section>
+      {/* Main content with global sidebar layout */}
+      <main className={`transition-all duration-200 ${sidebarActive ? 'ml-[240px]' : 'ml-0'} pt-[60px]`}>
+        <div className="px-8">
+          {/* Main content */}
+          <div className="py-10">
+            <h1 className="text-6xl font-light mb-10 tracking-tight">Research</h1>
 
-        {/* Research Areas */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Research Areas</h2>
-
-            <div className={styles.researchAreasGrid}>
-              <div className={styles.researchAreaCard}>
-                <h3>Machine Learning & AI</h3>
-                <p>
-                  Developing next-generation architectures for deep learning, including
-                  transformer models, reinforcement learning, and neural architecture search.
-                </p>
-              </div>
-              <div className={styles.researchAreaCard}>
-                <h3>Healthcare AI</h3>
-                <p>
-                  Creating AI systems that enhance clinical decision-making, improve patient
-                  outcomes, and make healthcare more accessible and efficient.
-                </p>
-              </div>
-              <div className={styles.researchAreaCard}>
-                <h3>Privacy & Security</h3>
-                <p>
-                  Pioneering privacy-preserving AI techniques including federated learning,
-                  differential privacy, and secure multi-party computation.
-                </p>
-              </div>
-              <div className={styles.researchAreaCard}>
-                <h3>Computer Vision</h3>
-                <p>
-                  Advancing medical imaging analysis, diagnostic assistance, and real-time
-                  visual understanding for healthcare applications.
-                </p>
-              </div>
-              <div className={styles.researchAreaCard}>
-                <h3>Natural Language Processing</h3>
-                <p>
-                  Building language models that understand medical terminology, clinical
-                  context, and can assist with documentation and communication.
-                </p>
-              </div>
-              <div className={styles.researchAreaCard}>
-                <h3>AI Ethics & Safety</h3>
-                <p>
-                  Ensuring AI systems are fair, transparent, interpretable, and aligned
-                  with human values and medical ethics.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Recent Publications */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Recent Publications</h2>
-
-            {/* Search and Filter */}
-            <div className={styles.researchControls}>
-              <input
-                type="text"
-                placeholder="Search papers..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.researchSearch}
-              />
-              <div className={styles.filterContainer}>
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    className={`${styles.filterBtn} ${selectedCategory === category ? styles.filterBtnActive : ''}`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category === 'all' ? 'All Papers' : category}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Papers List */}
-            <div className={styles.papersList}>
-              {filteredPapers.map(paper => (
-                <div key={paper.id} className={styles.paperCard}>
-                  <div className={styles.paperHeader}>
-                    <h3>{paper.title}</h3>
-                    <span className={styles.paperCategory}>{paper.category}</span>
-                  </div>
-                  <div className={styles.paperAuthors}>
-                    {paper.authors.join(', ')}
-                  </div>
-                  <p className={styles.paperAbstract}>{paper.abstract}</p>
-                  <div className={styles.paperTags}>
-                    {paper.tags.map(tag => (
-                      <span key={tag} className={styles.paperTag}>{tag}</span>
-                    ))}
-                  </div>
-                  <div className={styles.paperFooter}>
-                    <span className={styles.paperDate}>{paper.date}</span>
-                    <span className={styles.paperCitations}>{paper.citations} citations</span>
-                    <div className={styles.paperActions}>
-                      <button className={styles.readPaperBtn}>Read Paper</button>
-                      <button className={styles.citePaperBtn}>Cite</button>
-                    </div>
-                  </div>
+            {/* Filter section */}
+            <div className="mb-8">
+              <div className="flex justify-between items-start pb-3 border-b border-gray-200 relative">
+                <div className="flex gap-8">
+                  {tabs.map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setSelectedTab(tab)}
+                      className={`text-base pb-3 relative ${
+                        selectedTab === tab
+                          ? 'text-black'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
                 </div>
+
+                <div className="flex gap-3 items-center">
+                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1">
+                    Filter ⚙
+                  </button>
+                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1">
+                    Sort ↓
+                  </button>
+                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50">
+                    ☰
+                  </button>
+                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50">
+                    ⋮
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Research items */}
+            <div className="flex flex-col">
+              {filteredItems.map(item => (
+                <Link key={item.id} href={`/research/${item.id}`} className="py-6 border-b border-gray-200 cursor-pointer hover:opacity-70">
+                  <div className="flex gap-4 mb-3 text-xs text-gray-400">
+                    <span className="text-gray-600">{item.type}</span>
+                  </div>
+                  <div className="flex gap-4 mb-3 text-xs text-gray-400">
+                    <span>{item.date}</span>
+                  </div>
+                  <h2 className="text-xl font-medium mb-2 leading-tight text-black">{item.title}</h2>
+                  <p className="text-gray-600 leading-relaxed text-sm">{item.description}</p>
+                </Link>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* Research Impact */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Research Impact</h2>
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <h3>150+</h3>
-                <p>Published Papers</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>50+</h3>
-                <p>Research Partners</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>10,000+</h3>
-                <p>Citations</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>25</h3>
-                <p>Patents Filed</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Collaborations */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Research Collaborations</h2>
-            <p>
-              We collaborate with leading academic institutions, research labs, and healthcare
-              organizations worldwide to advance the state of AI research.
-            </p>
-            <div className={styles.collaborationLogos}>
-              <p className={styles.logoPlaceholder}>
-                [Stanford] [MIT] [Harvard Medical] [Johns Hopkins] [Oxford] [Mayo Clinic] [NIH] [DeepMind]
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Open Source */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Open Source Contributions</h2>
-            <p>
-              We believe in giving back to the community. Many of our research projects
-              are open source, allowing researchers worldwide to build upon our work.
-            </p>
-
-            <div className={styles.openSourceGrid}>
-              <div className={styles.openSourceCard}>
-                <h3>moccet-transformer</h3>
-                <p>State-of-the-art transformer models for healthcare applications</p>
-                <div className={styles.openSourceStats}>
-                  <span>3.2k stars</span>
-                  <span>450 forks</span>
-                </div>
-                <button className={styles.viewRepoBtn}>View on GitHub</button>
-              </div>
-              <div className={styles.openSourceCard}>
-                <h3>clinical-ml-toolkit</h3>
-                <p>Comprehensive toolkit for machine learning in clinical settings</p>
-                <div className={styles.openSourceStats}>
-                  <span>2.8k stars</span>
-                  <span>380 forks</span>
-                </div>
-                <button className={styles.viewRepoBtn}>View on GitHub</button>
-              </div>
-              <div className={styles.openSourceCard}>
-                <h3>federated-health</h3>
-                <p>Framework for federated learning in healthcare</p>
-                <div className={styles.openSourceStats}>
-                  <span>1.9k stars</span>
-                  <span>220 forks</span>
-                </div>
-                <button className={styles.viewRepoBtn}>View on GitHub</button>
-              </div>
-              <div className={styles.openSourceCard}>
-                <h3>medical-nlp</h3>
-                <p>NLP models trained on medical literature and clinical notes</p>
-                <div className={styles.openSourceStats}>
-                  <span>4.1k stars</span>
-                  <span>560 forks</span>
-                </div>
-                <button className={styles.viewRepoBtn}>View on GitHub</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Research Team */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Research Team</h2>
-            <p>
-              Our research team includes world-class scientists and engineers from diverse
-              backgrounds, united by a passion for using AI to improve lives.
-            </p>
-
-            <div className={styles.teamHighlights}>
-              <div className={styles.teamHighlight}>
-                <h3>Dr. Sarah Chen</h3>
-                <p className={styles.teamRole}>Chief Research Officer</p>
-                <p className={styles.teamBio}>
-                  Former Stanford AI Lab director with 20+ years in machine learning research
-                </p>
-              </div>
-              <div className={styles.teamHighlight}>
-                <h3>Dr. Michael Roberts</h3>
-                <p className={styles.teamRole}>Head of Healthcare AI</p>
-                <p className={styles.teamBio}>
-                  Previously led clinical AI research at Johns Hopkins Medicine
-                </p>
-              </div>
-              <div className={styles.teamHighlight}>
-                <h3>Dr. Emily Zhang</h3>
-                <p className={styles.teamRole}>Director of AI Safety</p>
-                <p className={styles.teamBio}>
-                  Pioneer in AI alignment and safety research, formerly at DeepMind
-                </p>
-              </div>
-            </div>
-
-            <button className={styles.viewAllTeamBtn}>View Full Team</button>
-          </div>
-        </section>
-
-        {/* Join Our Research */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Join Our Research</h2>
-
-            <div className={styles.researchOpportunities}>
-              <div className={styles.opportunityCard}>
-                <h3>Research Internships</h3>
-                <p>
-                  3-6 month programs for graduate students to work on cutting-edge
-                  AI research projects alongside our team.
-                </p>
-                <button className={styles.applyBtn}>Apply Now</button>
-              </div>
-              <div className={styles.opportunityCard}>
-                <h3>Research Scientist Positions</h3>
-                <p>
-                  Full-time positions for PhD-level researchers to lead groundbreaking
-                  research initiatives.
-                </p>
-                <button className={styles.applyBtn}>View Openings</button>
-              </div>
-              <div className={styles.opportunityCard}>
-                <h3>Academic Collaborations</h3>
-                <p>
-                  Partner with us on research projects, share resources, and co-author
-                  publications.
-                </p>
-                <button className={styles.applyBtn}>Get in Touch</button>
-              </div>
-              <div className={styles.opportunityCard}>
-                <h3>Research Grants</h3>
-                <p>
-                  We provide funding for external research that aligns with our mission
-                  to advance AI for good.
-                </p>
-                <button className={styles.applyBtn}>Learn More</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Newsletter */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Stay Updated</h2>
-            <p>
-              Subscribe to our research newsletter for the latest publications, breakthrough
-              announcements, and research opportunities.
-            </p>
-            <form className={styles.newsletterForm}>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className={styles.newsletterInput}
-              />
-              <button type="submit" className={styles.newsletterBtn}>
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className={styles.finalCta}>
-          <h2 className={styles.finalCtaTitle}>Explore Our Research</h2>
-          <p className={styles.finalCtaSubtitle}>
-            Dive deeper into our publications and research initiatives
-          </p>
-          <div className={styles.buttonRow}>
-            <button className={styles.ctaBtn}>View All Publications</button>
-            <Link href="/contact" className={styles.watchVideoBtn}>Contact Research Team</Link>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Research</h4>
-              <ul className={styles.footerLinks}>
-                <li><a href="#publications">Publications</a></li>
-                <li><a href="#areas">Research Areas</a></li>
-                <li><a href="#team">Research Team</a></li>
-                <li><a href="#opensource">Open Source</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Company</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-                <li><Link href="/brand">Brand</Link></li>
-                <li><Link href="/legal">Legal</Link></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Resources</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/business">Business</Link></li>
-                <li><Link href="/solutions">Solutions</Link></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Reference</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Support</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/terms">Terms of Use</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
-                <li><Link href="/policies">Other Policies</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <p>&copy; 2024 moccet. All rights reserved.</p>
-            <div className={styles.footerBottomLinks}>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <a href="#">Cookie Settings</a>
-            </div>
           </div>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }

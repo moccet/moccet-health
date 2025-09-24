@@ -5,7 +5,6 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import MobileMenu from '../components/MobileMenu';
 import HeroSection from '../components/HeroSection';
-import PromptSection from '../components/PromptSection';
 import NewsCards from '../components/NewsCards';
 import ResearchSection from '../components/ResearchSection';
 import BusinessSection from '../components/BusinessSection';
@@ -102,7 +101,6 @@ export default function HealthPage() {
 
         <div className="lg:ml-[280px] flex-1 w-full lg:w-[calc(100%-280px)] pt-[57px] lg:pt-0">
           <HeroSection onWaitlistClick={handleShowWaitlist} />
-          <PromptSection />
           <NewsCards />
           <ResearchSection />
           <BusinessSection />

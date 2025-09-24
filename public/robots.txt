@@ -1,0 +1,32 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://moccet.com/sitemap.xml
+
+# Block access to admin and private areas
+Disallow: /api/
+Disallow: /_next/
+Disallow: /dashboard/admin
+
+# Allow access to all public pages
+Allow: /research
+Allow: /safety
+Allow: /business
+Allow: /developers
+Allow: /health
+Allow: /company
+Allow: /news
+Allow: /about
+Allow: /contact
+Allow: /careers
+Allow: /philosophy
+Allow: /policies
+Allow: /privacy
+Allow: /terms
+Allow: /trust
+Allow: /security
+Allow: /solutions
+Allow: /legal
+Allow: /brand
+Allow: /api-platform

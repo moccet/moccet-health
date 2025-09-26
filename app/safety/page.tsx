@@ -218,31 +218,18 @@ export default function SafetyPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
-                  <div>
-                    <h3 style={{ fontSize: '28px', fontWeight: '500', marginBottom: '24px', color: '#000' }}>
-                      Autonomous safety monitoring
-                    </h3>
-                    <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
-                      Our systems continuously monitor their own performance and automatically engage safety protocols when detecting anomalies or operating outside validated parameters.
-                    </p>
-                    <ul style={{ listStyle: 'none', padding: '0' }}>
-                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Real-time performance monitoring</li>
-                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Automatic anomaly detection</li>
-                      <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Safe-state fallback mechanisms</li>
-                    </ul>
-                  </div>
-
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '32px' }}>
-                    <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Safety protocol example:</div>
-                    <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '14px', lineHeight: '1.5' }}>
-                      <div style={{ marginBottom: '8px', color: '#059669' }}>✅ Input validation: Normal range</div>
-                      <div style={{ marginBottom: '8px', color: '#059669' }}>✅ Model confidence: 94%</div>
-                      <div style={{ marginBottom: '8px', color: '#dc2626' }}>⚠️ Demographic coverage: Low</div>
-                      <div style={{ marginBottom: '8px', color: '#dc2626' }}>🚫 Recommendation: Defer to clinician</div>
-                      <div style={{ color: '#6b7280' }}>📋 Safety protocol: SP-2.1 activated</div>
-                    </div>
-                  </div>
+                <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+                  <h3 style={{ fontSize: '28px', fontWeight: '500', marginBottom: '24px', color: '#000' }}>
+                    Autonomous safety monitoring
+                  </h3>
+                  <p style={{ fontSize: '16px', color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
+                    Our systems continuously monitor their own performance and automatically engage safety protocols when detecting anomalies or operating outside validated parameters.
+                  </p>
+                  <ul style={{ listStyle: 'none', padding: '0', display: 'inline-block', textAlign: 'left' }}>
+                    <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Real-time performance monitoring</li>
+                    <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Automatic anomaly detection</li>
+                    <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Safe-state fallback mechanisms</li>
+                  </ul>
                 </div>
               </section>
 

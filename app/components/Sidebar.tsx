@@ -69,7 +69,6 @@ const getNavItems = (pathname: string): NavItem[] => {
       { href: '#about', label: 'About Us' },
       { href: '#charter', label: 'Our Charter' },
       { href: '#careers', label: 'Careers' },
-      { href: '#brand', label: 'Brand Guidelines' },
     ];
   }
 
@@ -89,8 +88,6 @@ const getNavItems = (pathname: string): NavItem[] => {
       { href: '#overview', label: 'Health Overview' },
       { href: '#wellness', label: 'The Wellness' },
       { href: '#hospitals', label: 'For Hospitals' },
-      { href: '#research', label: 'Research' },
-      { href: '#safety', label: 'Safety & Privacy' },
       { href: '#pricing', label: 'Pricing' },
       { href: '#contact', label: 'Join Waitlist' },
     ];
@@ -104,6 +101,15 @@ const getNavItems = (pathname: string): NavItem[] => {
     ];
   }
 
+  // Careers page navigation
+  if (pathname === '/careers') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#', label: 'Careers' },
+      { href: '#contact', label: 'Contact Us' },
+    ];
+  }
+
   // Default navigation for landing page and other pages
   return [
     { href: '/research', label: 'Research' },
@@ -114,7 +120,6 @@ const getNavItems = (pathname: string): NavItem[] => {
     { href: '/pricing', label: 'Pricing' },
     { href: '/solutions', label: 'Solutions' },
     { href: '/company', label: 'Company' },
-    { href: '/news', label: 'News' },
   ];
 };
 

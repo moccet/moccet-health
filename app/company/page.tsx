@@ -228,7 +228,7 @@ export default function CompanyPage() {
                 >
                   <div style={{ width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px' }}>
                     <img
-                      src="/images/painting2.jpg"
+                      src="/images/founders.png"
                       alt="Founders Omar & Sofian"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

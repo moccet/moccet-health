@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { researchShowcaseArticles } from '@/lib/research-showcase-articles';
+import CategorySVG from '@/app/components/CategorySVG';
 import styles from './article.module.css';
 
 export default function ResearchArticle() {
@@ -42,7 +43,11 @@ export default function ResearchArticle() {
         </div>
 
         <div className={styles.heroImage}>
-          <img src={article.image} alt={article.title} />
+          <CategorySVG
+            category={article.category}
+            className={styles.heroImageSvg}
+            index={0}
+          />
         </div>
 
         <div className={styles.content}>
@@ -50,8 +55,14 @@ export default function ResearchArticle() {
             if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
               return (
                 <p key={index} className={styles.highlight}>
-                  {paragraph.replace(/\*\*/g, '')}
+                  <strong>{paragraph.replace(/\*\*/g, '')}</strong>
                 </p>
+              );
+            }
+            if (paragraph.includes('**')) {
+              const boldText = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+              return (
+                <p key={index} dangerouslySetInnerHTML={{ __html: boldText }} />
               );
             }
             return <p key={index}>{paragraph}</p>;

@@ -19,7 +19,7 @@ export default function ResearchPage() {
 
   // Set sidebar to open on desktop by default
   useEffect(() => {
-    if (window.innerWidth > 1024) {
+    if (window.innerWidth > 768) {
       setSidebarActive(true);
     }
   }, []);
@@ -99,7 +99,24 @@ export default function ResearchPage() {
     : researchItems.filter(item => item.type === selectedTab);
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <style jsx global>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Mobile viewport adjustments */
+        @media (max-width: 768px) {
+          html {
+            -webkit-text-size-adjust: 100%;
+          }
+        }
+      `}</style>
+      <div className="min-h-screen bg-white">
       {/* Global Header */}
       <Header onToggleSidebar={toggleSidebar} onContactSales={handleContactSales} />
 
@@ -107,21 +124,22 @@ export default function ResearchPage() {
       <Sidebar isActive={sidebarActive} />
 
       {/* Main content with global sidebar layout */}
-      <main className={`transition-all duration-200 ${sidebarActive ? 'ml-[240px]' : 'ml-0'} pt-[60px]`}>
-        <div className="px-8">
+      <main className={`transition-all duration-200 ${sidebarActive ? 'lg:ml-[240px]' : 'ml-0'} pt-[60px]`}>
+        <div className="px-4 md:px-8">
           {/* Main content */}
-          <div className="py-10">
-            <h1 className="text-6xl font-light mb-10 tracking-tight">Research</h1>
+          <div className="py-6 md:py-10">
+            <h1 className="text-4xl md:text-6xl font-light mb-6 md:mb-10 tracking-tight">Research</h1>
 
             {/* Filter section */}
-            <div className="mb-8">
-              <div className="flex justify-between items-start pb-3 border-b border-gray-200 relative">
-                <div className="flex gap-8">
+            <div className="mb-6 md:mb-8">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start pb-3 border-b border-gray-200 relative">
+                {/* Tabs - scrollable on mobile */}
+                <div className="flex gap-4 md:gap-8 overflow-x-auto pb-2 md:pb-0 mb-3 md:mb-0 scrollbar-hide">
                   {tabs.map(tab => (
                     <button
                       key={tab}
                       onClick={() => setSelectedTab(tab)}
-                      className={`text-base pb-3 relative ${
+                      className={`text-sm md:text-base pb-2 md:pb-3 relative whitespace-nowrap flex-shrink-0 ${
                         selectedTab === tab
                           ? 'text-black'
                           : 'text-gray-400 hover:text-gray-600'
@@ -132,17 +150,18 @@ export default function ResearchPage() {
                   ))}
                 </div>
 
-                <div className="flex gap-3 items-center">
-                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1">
-                    Filter ⚙
+                {/* Controls - condensed on mobile */}
+                <div className="flex gap-2 md:gap-3 items-center">
+                  <button className="bg-white border border-gray-300 px-3 md:px-2.5 py-2 md:py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1 min-h-[44px] md:min-h-0">
+                    <span className="hidden md:inline">Filter</span> ⚙
                   </button>
-                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1">
-                    Sort ↓
+                  <button className="bg-white border border-gray-300 px-3 md:px-2.5 py-2 md:py-1 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-1 min-h-[44px] md:min-h-0">
+                    <span className="hidden md:inline">Sort</span> ↓
                   </button>
-                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50">
+                  <button className="bg-white border border-gray-300 px-3 md:px-2.5 py-2 md:py-1 rounded text-xs text-gray-600 hover:bg-gray-50 min-h-[44px] md:min-h-0">
                     ☰
                   </button>
-                  <button className="bg-white border border-gray-300 px-2.5 py-1 rounded text-xs text-gray-600 hover:bg-gray-50">
+                  <button className="bg-white border border-gray-300 px-3 md:px-2.5 py-2 md:py-1 rounded text-xs text-gray-600 hover:bg-gray-50 min-h-[44px] md:min-h-0">
                     ⋮
                   </button>
                 </div>
@@ -152,15 +171,13 @@ export default function ResearchPage() {
             {/* Research items */}
             <div className="flex flex-col">
               {filteredItems.map(item => (
-                <Link key={item.id} href={`/research/${item.id}`} className="py-6 border-b border-gray-200 cursor-pointer hover:opacity-70">
-                  <div className="flex gap-4 mb-3 text-xs text-gray-400">
-                    <span className="text-gray-600">{item.type}</span>
+                <Link key={item.id} href={`/research/${item.id}`} className="py-4 md:py-6 border-b border-gray-200 cursor-pointer hover:opacity-70 active:opacity-50 transition-opacity">
+                  <div className="flex flex-col sm:flex-row sm:gap-4 mb-2 md:mb-3 text-xs text-gray-400">
+                    <span className="text-gray-600 font-medium mb-1 sm:mb-0">{item.type}</span>
+                    <span className="sm:ml-auto">{item.date}</span>
                   </div>
-                  <div className="flex gap-4 mb-3 text-xs text-gray-400">
-                    <span>{item.date}</span>
-                  </div>
-                  <h2 className="text-xl font-medium mb-2 leading-tight text-black">{item.title}</h2>
-                  <p className="text-gray-600 leading-relaxed text-sm">{item.description}</p>
+                  <h2 className="text-lg md:text-xl font-medium mb-2 md:mb-3 leading-tight text-black pr-4">{item.title}</h2>
+                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">{item.description}</p>
                 </Link>
               ))}
             </div>
@@ -168,6 +185,7 @@ export default function ResearchPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

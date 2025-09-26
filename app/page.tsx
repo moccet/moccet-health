@@ -19,12 +19,71 @@ export default function Home() {
   const [showVideo, setShowVideo] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [showResearch, setShowResearch] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Set sidebar to open on desktop by default on initial load only
     if (window.innerWidth > 768) {
       setSidebarActive(true);
     }
+
+    // Detect mobile and apply CSS custom properties
+    const isMobileCheck = window.innerWidth <= 768;
+    console.log('Mobile detection:', isMobileCheck, 'Window width:', window.innerWidth);
+    setIsMobile(isMobileCheck);
+
+    // Apply CSS variables to force mobile layout
+    const root = document.documentElement;
+    if (isMobileCheck) {
+      root.style.setProperty('--philosophy-display', 'flex');
+      root.style.setProperty('--philosophy-overflow-x', 'auto');
+      root.style.setProperty('--philosophy-gap', '16px');
+      root.style.setProperty('--card-min-width', '280px');
+      root.style.setProperty('--card-max-width', '280px');
+      root.style.setProperty('--card-flex-shrink', '0');
+      root.style.setProperty('--card-display', 'flex');
+      root.style.setProperty('--card-flex-direction', 'column');
+    } else {
+      root.style.removeProperty('--philosophy-display');
+      root.style.removeProperty('--philosophy-overflow-x');
+      root.style.removeProperty('--philosophy-gap');
+      root.style.removeProperty('--card-min-width');
+      root.style.removeProperty('--card-max-width');
+      root.style.removeProperty('--card-flex-shrink');
+      root.style.removeProperty('--card-display');
+      root.style.removeProperty('--card-flex-direction');
+    }
+
+    // Handle resize
+    const handleResize = () => {
+      const newIsMobile = window.innerWidth <= 768;
+      console.log('Resize - Mobile detection:', newIsMobile, 'Window width:', window.innerWidth);
+      setIsMobile(newIsMobile);
+
+      // Update CSS variables on resize
+      if (newIsMobile) {
+        root.style.setProperty('--philosophy-display', 'flex');
+        root.style.setProperty('--philosophy-overflow-x', 'auto');
+        root.style.setProperty('--philosophy-gap', '16px');
+        root.style.setProperty('--card-min-width', '280px');
+        root.style.setProperty('--card-max-width', '280px');
+        root.style.setProperty('--card-flex-shrink', '0');
+        root.style.setProperty('--card-display', 'flex');
+        root.style.setProperty('--card-flex-direction', 'column');
+      } else {
+        root.style.removeProperty('--philosophy-display');
+        root.style.removeProperty('--philosophy-overflow-x');
+        root.style.removeProperty('--philosophy-gap');
+        root.style.removeProperty('--card-min-width');
+        root.style.removeProperty('--card-max-width');
+        root.style.removeProperty('--card-flex-shrink');
+        root.style.removeProperty('--card-display');
+        root.style.removeProperty('--card-flex-direction');
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Force hero button styling as backup
@@ -235,11 +294,11 @@ export default function Home() {
                       className={styles.suiteHeroImage}
                       loading="eager"
                     />
-                    <div className={styles.suiteHeroContent}>
-                      <h2 className={`${styles.suiteLogo} moccet-brand`}>moccet</h2>
+                  </div>
+                      <div className={styles.suiteHeroContent}>
+                      <h1 className={styles.footerLogo}>moccet</h1>
                       <p className={styles.suiteTagline}>Our fastest, most intelligent suite yet.</p>
                     </div>
-                  </div>
                 </div>
 
                 {/* Right Cards */}
@@ -287,19 +346,53 @@ export default function Home() {
                 <h2 className={styles.philosophyTitle}>Philosophy</h2>
                 <button className={styles.showAllBtn}>Show all</button>
 
-                <div className={styles.philosophyGrid}>
+                <div
+                  className={styles.philosophyGrid}
+                  style={isMobile ? {
+                    display: 'flex',
+                    overflowX: 'auto',
+                    gap: '16px',
+                    paddingBottom: '16px',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollSnapType: 'x mandatory',
+                    backgroundColor: '#ffebee',  // Debug: Light red background
+                    border: '2px solid red'       // Debug: Red border
+                  } : undefined}
+                >
                   <div
                     className={styles.philosophyCard}
                     onClick={() => window.location.href = '/philosophy/machine-learning'}
-                    style={{ cursor: 'pointer' }}
+                    style={isMobile ? {
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: '280px',
+                      maxWidth: '280px',
+                      flexShrink: 0,
+                      gap: '0',
+                      padding: '0',
+                      scrollSnapAlign: 'start',
+                      gridColumn: 'unset'
+                    } : { cursor: 'pointer' }}
                   >
                     <img
                       src="/images/gradient4.jpg"
                       alt="Machine learning philosophy and approach visualization"
                       className={styles.philosophyImage}
                       loading="lazy"
+                      style={isMobile ? {
+                        width: '100%',
+                        height: '180px',
+                        borderRadius: '8px 8px 0 0'
+                      } : undefined}
                     />
-                    <div className={styles.philosophyContent}>
+                    <div
+                      className={styles.philosophyContent}
+                      style={isMobile ? {
+                        padding: '16px',
+                        textAlign: 'left'
+                      } : undefined}
+                    >
                       <h3>Machine Learning</h3>
                       <div className={styles.philosophyMeta}>
                         <span className={styles.philosophyTag}>Technical</span>
@@ -312,15 +405,37 @@ export default function Home() {
                   <div
                     className={styles.philosophyCard}
                     onClick={() => window.location.href = '/philosophy/safety-compliance'}
-                    style={{ cursor: 'pointer' }}
+                    style={isMobile ? {
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: '280px',
+                      maxWidth: '280px',
+                      flexShrink: 0,
+                      gap: '0',
+                      padding: '0',
+                      scrollSnapAlign: 'start',
+                      gridColumn: 'unset'
+                    } : { cursor: 'pointer' }}
                   >
                     <img
                       src="/images/painting2.jpg"
                       alt="AI safety and compliance framework illustration"
                       className={styles.philosophyImage}
                       loading="lazy"
+                      style={isMobile ? {
+                        width: '100%',
+                        height: '180px',
+                        borderRadius: '8px 8px 0 0'
+                      } : undefined}
                     />
-                    <div className={styles.philosophyContent}>
+                    <div
+                      className={styles.philosophyContent}
+                      style={isMobile ? {
+                        padding: '16px',
+                        textAlign: 'left'
+                      } : undefined}
+                    >
                       <h3>Safety and Compliance</h3>
                       <div className={styles.philosophyMeta}>
                         <span className={styles.philosophyTag}>Safety</span>
@@ -333,15 +448,37 @@ export default function Home() {
                   <div
                     className={styles.philosophyCard}
                     onClick={() => window.location.href = '/philosophy/brain-inspired'}
-                    style={{ cursor: 'pointer' }}
+                    style={isMobile ? {
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: '280px',
+                      maxWidth: '280px',
+                      flexShrink: 0,
+                      gap: '0',
+                      padding: '0',
+                      scrollSnapAlign: 'start',
+                      gridColumn: 'unset'
+                    } : { cursor: 'pointer' }}
                   >
                     <img
                       src="/images/painting4.jpg"
                       alt="Brain-inspired AI architecture and neural networks"
                       className={styles.philosophyImage}
                       loading="lazy"
+                      style={isMobile ? {
+                        width: '100%',
+                        height: '180px',
+                        borderRadius: '8px 8px 0 0'
+                      } : undefined}
                     />
-                    <div className={styles.philosophyContent}>
+                    <div
+                      className={styles.philosophyContent}
+                      style={isMobile ? {
+                        padding: '16px',
+                        textAlign: 'left'
+                      } : undefined}
+                    >
                       <h3>Inspired by the brain</h3>
                       <div className={styles.philosophyMeta}>
                         <span className={styles.philosophyTag}>Technical</span>
@@ -360,19 +497,53 @@ export default function Home() {
                 <h2 className={styles.researchArticlesTitle}>Research</h2>
                 <button className={styles.showAllBtn}>Show all</button>
 
-                <div className={styles.researchArticlesGrid}>
+                <div
+                  className={styles.researchArticlesGrid}
+                  style={isMobile ? {
+                    display: 'flex',
+                    overflowX: 'auto',
+                    gap: '16px',
+                    paddingBottom: '16px',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollSnapType: 'x mandatory',
+                    backgroundColor: '#e3f2fd',  // Debug: Light blue background
+                    border: '2px solid blue'     // Debug: Blue border
+                  } : undefined}
+                >
                   <div
                     className={styles.researchArticleCard}
                     onClick={() => window.location.href = '/research/neural-connections'}
-                    style={{ cursor: 'pointer' }}
+                    style={isMobile ? {
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: '280px',
+                      maxWidth: '280px',
+                      flexShrink: 0,
+                      gap: '0',
+                      padding: '0',
+                      scrollSnapAlign: 'start',
+                      gridColumn: 'unset'
+                    } : { cursor: 'pointer' }}
                   >
                     <img
                       src="/images/research-neural.jpg"
                       alt="Neural network connections and AI research visualization"
                       className={styles.researchArticleImage}
                       loading="lazy"
+                      style={isMobile ? {
+                        width: '100%',
+                        height: '180px',
+                        borderRadius: '8px 8px 0 0'
+                      } : undefined}
                     />
-                    <div className={styles.researchArticleContent}>
+                    <div
+                      className={styles.researchArticleContent}
+                      style={isMobile ? {
+                        padding: '16px',
+                        textAlign: 'left'
+                      } : undefined}
+                    >
                       <h3>Neural connections</h3>
                       <div className={styles.researchArticleMeta}>
                         <span className={styles.researchArticleTag}>Technical</span>
@@ -385,15 +556,37 @@ export default function Home() {
                   <div
                     className={styles.researchArticleCard}
                     onClick={() => window.location.href = '/research/hierarchical-reasoning'}
-                    style={{ cursor: 'pointer' }}
+                    style={isMobile ? {
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: '280px',
+                      maxWidth: '280px',
+                      flexShrink: 0,
+                      gap: '0',
+                      padding: '0',
+                      scrollSnapAlign: 'start',
+                      gridColumn: 'unset'
+                    } : { cursor: 'pointer' }}
                   >
                     <img
                       src="/images/research-hrm.jpg"
                       alt="Hierarchical reasoning model research and development"
                       className={styles.researchArticleImage}
                       loading="lazy"
+                      style={isMobile ? {
+                        width: '100%',
+                        height: '180px',
+                        borderRadius: '8px 8px 0 0'
+                      } : undefined}
                     />
-                    <div className={styles.researchArticleContent}>
+                    <div
+                      className={styles.researchArticleContent}
+                      style={isMobile ? {
+                        padding: '16px',
+                        textAlign: 'left'
+                      } : undefined}
+                    >
                       <h3>Hierarchical Reasoning</h3>
                       <div className={styles.researchArticleMeta}>
                         <span className={styles.researchArticleTag}>Technical</span>
@@ -600,7 +793,7 @@ export default function Home() {
               <div className={styles.footerColumn}>
                 <h4 className={styles.footerColumnTitle}>Company</h4>
                 <ul className={styles.footerLinks}>
-                  <li><Link href="/about">About Us</Link></li>
+                  <li><Link href="/company">About Us</Link></li>
                   <li><Link href="/careers">Careers</Link></li>
                   <li><Link href="/brand">Brand</Link></li>
                   <li><Link href="/legal">Legal</Link></li>
@@ -610,7 +803,7 @@ export default function Home() {
 
             <div className={styles.footerBottom}>
               <div className={styles.footerBrand}>
-                <h3 className={`${styles.footerLogo} moccet-brand`}>moccet</h3>
+                <h3 className={styles.footerLogo}>moccet</h3>
                 <p className={styles.footerTagline}>
                   Autonomous intelligence imbeds in your infrastructure,<br />
                   discovers insights without prompting, and deploys world-<br />

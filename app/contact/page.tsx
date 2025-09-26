@@ -86,7 +86,7 @@ export default function ContactPage() {
               <a href="mailto:sales@moccet.com" className={styles.contactLink}>
                 sales@moccet.com
               </a>
-              <p className={styles.contactPhone}>1-800-MOCCET-1</p>
+              <p className={styles.contactPhone}>+1 (707) 400-5566</p>
             </div>
 
             <div className={styles.contactCard}>
@@ -276,7 +276,7 @@ export default function ContactPage() {
             <div className={styles.faqItem}>
               <h3>What is the best way to reach moccet?</h3>
               <p>
-                For sales inquiries, email sales@moccet.com or call 1-800-MOCCET-1. For
+                For sales inquiries, email sales@moccet.com or call +1 (707) 400-5566. For
                 technical support, existing customers can use the in-app support or email
                 support@moccet.com.
               </p>
@@ -332,58 +332,6 @@ export default function ContactPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Product</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/health">moccet-health</Link></li>
-                <li><a href="#">Features</a></li>
-                <li><a href="#">Pricing</a></li>
-                <li><a href="#">Security</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Company</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/philosophy">Our Philosophy</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-                <li><Link href="/brand">Brand</Link></li>
-                <li><Link href="/legal">Legal</Link></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Resources</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/research">Research</Link></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Reference</a></li>
-                <li><a href="#">Status</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Support</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/terms">Terms of Use</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
-                <li><Link href="/policies">Other Policies</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <p>&copy; 2024 moccet. All rights reserved.</p>
-            <div className={styles.footerBottomLinks}>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <a href="#">Cookie Settings</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -707,16 +707,6 @@ export default function HealthPage() {
               </div>
             </div>
 
-            {/* Logos Section */}
-            <div className="logos-section">
-              <div className="logos-grid">
-                <div className="logo-item">Mayo Clinic</div>
-                <div className="logo-item">Cleveland Clinic</div>
-                <div className="logo-item">Johns Hopkins</div>
-                <div className="logo-item">Stanford Health</div>
-                <div className="logo-item">Mass General</div>
-              </div>
-            </div>
 
             <h2 style={{fontSize: '36px', textAlign: 'center', marginBottom: '40px'}}>The future of medicine is predictive, not reactive</h2>
 
@@ -1099,16 +1089,6 @@ export default function HealthPage() {
               </div>
             </div>
 
-            {/* Logos Section */}
-            <div className="logos-section">
-              <div className="logos-grid">
-                <div className="logo-item">Cleveland Clinic</div>
-                <div className="logo-item">Mayo Clinic</div>
-                <div className="logo-item">Johns Hopkins</div>
-                <div className="logo-item">Stanford Health</div>
-                <div className="logo-item">Mass General</div>
-              </div>
-            </div>
 
             <h2 style={{fontSize: '36px', textAlign: 'center', marginBottom: '40px'}}>The AI platform powering leading health systems</h2>
 
@@ -1485,7 +1465,7 @@ export default function HealthPage() {
                     <li>24/7 AI medical consultation</li>
                   </ul>
 
-                  <a href="#" className="product-link">Explore AI Doctor &rarr;</a>
+                  <a href="https://thewellnesslondon.com/ai-doctor" className="product-link">Explore AI Doctor &rarr;</a>
                 </div>
 
                 <div className="product-card">

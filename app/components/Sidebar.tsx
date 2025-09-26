@@ -105,8 +105,8 @@ const getNavItems = (pathname: string): NavItem[] => {
   if (pathname === '/careers') {
     return [
       { href: '/', label: '← Home' },
-      { href: '#', label: 'Careers' },
-      { href: '#contact', label: 'Contact Us' },
+      { href: '#careers', label: 'Careers' },
+      { href: '#contact', label: 'Apply' },
     ];
   }
 
@@ -117,6 +117,7 @@ const getNavItems = (pathname: string): NavItem[] => {
     { href: '/business', label: 'For Business' },
     { href: '/developers', label: 'For Developers' },
     { href: '/health', label: 'Health' },
+    { href: '/careers', label: 'Careers' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/solutions', label: 'Solutions' },
     { href: '/company', label: 'Company' },
@@ -163,10 +164,11 @@ export default function Sidebar({ isActive = false, onNavigate }: SidebarProps) 
   const isCompanyPage = pathname === '/company';
   const isLegalPage = pathname === '/legal';
   const isHealthPage = pathname === '/health';
+  const isCareersPage = pathname === '/careers';
 
   // Business page now uses the same sidebar as landing page (removed custom business sidebar)
 
-  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage) {
+  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage || isCareersPage) {
     // Landing page style - styled navigation with vertical centering
     const baseClasses = "fixed top-0 left-0 h-full transition-transform duration-200 border-r-0 z-[999]";
     const activeClasses = isActive ? "translate-x-0" : "-translate-x-full";

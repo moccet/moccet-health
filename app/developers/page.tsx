@@ -155,14 +155,6 @@ export default function DevelopersPage() {
             </div>
           </section>
 
-          {/* Logos Section */}
-          <section style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '60px 0', marginBottom: '100px', borderBottom: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mayo Clinic</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Johns Hopkins</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Cleveland Clinic</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Kaiser</div>
-            <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mount Sinai</div>
-          </section>
 
           {/* Models Section */}
           <section>

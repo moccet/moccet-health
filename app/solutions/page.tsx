@@ -324,13 +324,6 @@ export default function SolutionsPage() {
               </section>
 
               {/* Trusted by Healthcare Leaders */}
-              <section style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '60px 0', marginBottom: '100px', borderBottom: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mayo Clinic</div>
-                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Johns Hopkins</div>
-                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Cleveland Clinic</div>
-                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Kaiser Permanente</div>
-                <div style={{ fontSize: '24px', fontWeight: '500', color: '#374151', opacity: '0.8' }}>Mount Sinai</div>
-              </section>
 
               {/* Core Solutions */}
               <section style={{ marginBottom: '120px' }}>
@@ -407,8 +400,8 @@ export default function SolutionsPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ textAlign: 'center', maxWidth: '600px' }}>
                     <h3 style={{ fontSize: '28px', fontWeight: '500', marginBottom: '24px', color: '#000' }}>
                       No prompts required
                     </h3>
@@ -420,16 +413,6 @@ export default function SolutionsPage() {
                       <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Real-time insight generation</li>
                       <li style={{ padding: '8px 0', color: '#374151', fontSize: '16px' }}>✓ Proactive alert system</li>
                     </ul>
-                  </div>
-
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '32px' }}>
-                    <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Real-time analysis example:</div>
-                    <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '14px', lineHeight: '1.5' }}>
-                      <div style={{ marginBottom: '8px' }}>🔍 Analyzing patient vitals...</div>
-                      <div style={{ marginBottom: '8px', color: '#dc2626' }}>⚠️ Early sepsis indicators detected</div>
-                      <div style={{ marginBottom: '8px', color: '#059669' }}>✅ Clinical team automatically notified</div>
-                      <div style={{ color: '#6b7280' }}>📋 Treatment protocol suggested</div>
-                    </div>
                   </div>
                 </div>
               </section>

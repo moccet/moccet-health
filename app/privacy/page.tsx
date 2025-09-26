@@ -258,7 +258,7 @@ export default function PrivacyPage() {
               <strong>Data Protection Officer</strong><br />
               moccet, Inc.<br />
               Email: <a href="mailto:privacy@moccet.com">privacy@moccet.com</a><br />
-              Phone: 1-800-MOCCET-1<br />
+              Phone: +1 (707) 400-5566<br />
               Address: 555 California Street, San Francisco, CA 94104<br />
             </p>
             <p>

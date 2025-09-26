@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "moccet - AI that Discovers, Experts who Execute",
-  description: "Autonomous intelligence that embeds in your infrastructure, discovers insights without prompting, and deploys world-class operators to execute discoveries.",
+  title: "moccet",
+  description: "",
   keywords: "autonomous AI, business intelligence, AI discovery, expert execution, artificial intelligence, enterprise AI, automated insights",
   authors: [{ name: "moccet" }],
   viewport: "width=device-width, initial-scale=1",
@@ -41,16 +41,25 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: "moccet - AI that Discovers, Experts who Execute",
-    description: "Autonomous intelligence that embeds in your infrastructure, discovers insights without prompting, and deploys world-class operators to execute discoveries.",
+    title: "moccet",
+    description: "",
     type: "website",
     siteName: "moccet",
     locale: "en_US",
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'moccet',
+      }
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "moccet - AI that Discovers, Experts who Execute",
-    description: "Autonomous intelligence that embeds in your infrastructure, discovers insights without prompting, and deploys world-class operators to execute discoveries.",
+    title: "moccet",
+    description: "",
+    images: ['/og-image.png'],
   },
 };
 

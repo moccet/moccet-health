@@ -1,28 +1,97 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../landing.module.css';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
 export default function PrivacyPage() {
-  return (
-    <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            moccet
-          </Link>
-          <Link href="/" className={styles.contactSalesBtn}>
-            Back to Home
-          </Link>
-        </div>
-      </header>
+  const [sidebarActive, setSidebarActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
-      {/* Hero Section */}
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1>Privacy Policy</h1>
-          <p className={styles.subtitle}>
+  // Set responsive breakpoints and sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      setIsTablet(width > 768 && width <= 1024);
+
+      if (width > 1024) {
+        setSidebarActive(true);
+      } else {
+        setSidebarActive(false);
+      }
+    };
+
+    handleResize(); // Set initial state
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarActive(!sidebarActive);
+  };
+
+  const handleNavigate = (targetId: string) => {
+    if (targetId.startsWith('#')) {
+      // Scroll to top when navigating
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Close sidebar on mobile
+      if (window.innerWidth <= 768) {
+        setSidebarActive(false);
+      }
+    }
+  };
+
+  const handleContactSales = () => {
+    console.log('Contact Sales clicked');
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+      <Header
+        onToggleSidebar={toggleSidebar}
+        onContactSales={handleContactSales}
+        sidebarActive={sidebarActive}
+      />
+
+      <Sidebar
+        isActive={sidebarActive}
+        onNavigate={handleNavigate}
+      />
+
+      <main
+        style={{
+          marginLeft: isMobile || isTablet ? '0' : (sidebarActive ? '240px' : '0'),
+          transition: 'margin-left 0.3s ease',
+          padding: isMobile ? '0 20px 120px 20px' : isTablet ? '0 40px' : '0 80px',
+          paddingTop: '60px',
+          minHeight: '100vh'
+        }}
+      >
+        <section style={{ textAlign: 'center', padding: isMobile ? '80px 0 60px' : isTablet ? '100px 0 80px' : '120px 0 120px' }}>
+          <h1 style={{
+            fontSize: isMobile ? '32px' : isTablet ? '44px' : '56px',
+            fontWeight: '400',
+            lineHeight: '1.2',
+            marginBottom: '24px',
+            letterSpacing: isMobile ? '-0.5px' : '-1.5px',
+            color: '#000'
+          }}>
+            Privacy Policy
+          </h1>
+          <p style={{
+            fontSize: isMobile ? '16px' : isTablet ? '18px' : '20px',
+            color: '#374151',
+            marginBottom: '40px',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
             How we collect, use, and protect your information
           </p>
         </section>
@@ -30,8 +99,8 @@ export default function PrivacyPage() {
         {/* Privacy Content */}
         <section className={styles.contentSection}>
           <div className={styles.articleContent}>
-            <p className={styles.legalDate}>Effective Date: January 1, 2024</p>
-            <p className={styles.legalDate}>Last Updated: January 1, 2024</p>
+            <p className={styles.legalDate}>Effective Date: September 26, 2025</p>
+            <p className={styles.legalDate}>Last Updated: September 26, 2025</p>
 
             <h2>Introduction</h2>
             <p>
@@ -270,70 +339,81 @@ export default function PrivacyPage() {
         </section>
 
         {/* Final CTA */}
-        <section className={styles.finalCta}>
-          <h2 className={styles.finalCtaTitle}>Privacy Questions?</h2>
-          <p className={styles.finalCtaSubtitle}>
+        <section style={{
+          textAlign: 'center',
+          padding: '80px 20px',
+          background: '#f9fafb',
+          borderRadius: '12px',
+          margin: '40px 0 0 0'
+        }}>
+          <h2 style={{
+            fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+            fontWeight: '400',
+            lineHeight: '1.2',
+            marginBottom: '16px',
+            color: '#000'
+          }}>
+            Privacy Questions?
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#6b7280',
+            marginBottom: '32px',
+            maxWidth: isMobile ? '100%' : '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
             Our privacy team is here to help with any concerns
           </p>
-          <div className={styles.buttonRow}>
-            <a href="mailto:privacy@moccet.com" className={styles.ctaBtn}>Contact Privacy Team</a>
-            <Link href="/terms" className={styles.watchVideoBtn}>Terms of Use</Link>
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            justifyContent: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center'
+          }}>
+            <a href="mailto:privacy@moccet.com" style={{
+              display: 'inline-block',
+              padding: isMobile ? '14px 28px' : '12px 24px',
+              backgroundColor: '#000',
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              minHeight: isMobile ? '48px' : '44px',
+              lineHeight: isMobile ? '20px' : 'normal',
+              touchAction: 'manipulation'
+            }}>
+              Contact Privacy Team
+            </a>
+            <Link href="/terms" style={{
+              display: 'inline-block',
+              padding: isMobile ? '14px 28px' : '12px 24px',
+              backgroundColor: 'transparent',
+              color: '#374151',
+              textDecoration: 'none',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              minHeight: isMobile ? '48px' : '44px',
+              lineHeight: isMobile ? '20px' : 'normal',
+              touchAction: 'manipulation'
+            }}>
+              Terms of Use
+            </Link>
           </div>
         </section>
+
+        {/* Mobile Bottom Spacer */}
+        <div style={{
+          height: '150px',
+          width: '100%'
+        }}></div>
       </main>
 
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Product</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/health">moccet-health</Link></li>
-                <li><a href="#">Features</a></li>
-                <li><a href="#">Pricing</a></li>
-                <li><a href="#">Security</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Company</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/philosophy">Our Philosophy</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-                <li><Link href="/brand">Brand</Link></li>
-                <li><Link href="/legal">Legal</Link></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Resources</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/research">Research</Link></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Reference</a></li>
-                <li><a href="#">Status</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Support</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/terms">Terms of Use</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
-                <li><Link href="/policies">Other Policies</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <p>&copy; 2024 moccet. All rights reserved.</p>
-            <div className={styles.footerBottomLinks}>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <a href="#">Cookie Settings</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

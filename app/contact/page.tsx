@@ -17,16 +17,42 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
-  // Set sidebar to open on desktop by default
+  // Set responsive breakpoints and sidebar behavior
   useEffect(() => {
-    if (window.innerWidth > 1024) {
-      setSidebarActive(true);
-    }
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      setIsTablet(width > 768 && width <= 1024);
+
+      if (width > 1024) {
+        setSidebarActive(true);
+      } else {
+        setSidebarActive(false);
+      }
+    };
+
+    handleResize(); // Set initial state
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => {
     setSidebarActive(!sidebarActive);
+  };
+
+  const handleNavigate = (targetId: string) => {
+    if (targetId.startsWith('#')) {
+      // Scroll to top when navigating
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Close sidebar on mobile
+      if (window.innerWidth <= 768) {
+        setSidebarActive(false);
+      }
+    }
   };
 
   const handleContactSales = () => {
@@ -61,275 +87,484 @@ export default function ContactPage() {
   };
 
   return (
-    <div className={styles.container}>
-      {/* Global Header */}
-      <Header onToggleSidebar={toggleSidebar} onContactSales={handleContactSales} />
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+      <Header
+        onToggleSidebar={toggleSidebar}
+        onContactSales={handleContactSales}
+        sidebarActive={sidebarActive}
+      />
 
-      {/* Global Sidebar */}
-      <Sidebar isActive={sidebarActive} />
+      <Sidebar
+        isActive={sidebarActive}
+        onNavigate={handleNavigate}
+      />
 
-      {/* Hero Section */}
-      <main className={`${styles.main} ${sidebarActive ? styles.mainWithSidebar : ''}`}>
-        <section className={styles.hero}>
-          <h1>Contact Us</h1>
-          <p className={styles.subtitle}>
-            We&apos;re here to help with any questions about moccet
+      <main
+        style={{
+          marginLeft: isMobile || isTablet ? '0' : (sidebarActive ? '240px' : '0'),
+          transition: 'margin-left 0.3s ease',
+          padding: isMobile ? '0 20px 150px 20px' : isTablet ? '0 40px' : '0 80px',
+          paddingTop: '60px',
+          minHeight: '100vh'
+        }}
+      >
+        <section style={{ textAlign: 'center', padding: isMobile ? '40px 0 60px' : isTablet ? '60px 0 80px' : '80px 0 120px' }}>
+          <h1 style={{
+            fontSize: isMobile ? '32px' : isTablet ? '44px' : '56px',
+            fontWeight: '400',
+            lineHeight: '1.2',
+            marginBottom: '24px',
+            letterSpacing: isMobile ? '-0.5px' : '-1.5px',
+            color: '#000'
+          }}>
+            Contact Us
+          </h1>
+          <p style={{
+            fontSize: isMobile ? '16px' : isTablet ? '18px' : '20px',
+            color: '#374151',
+            marginBottom: '40px',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
+            We&apos;re here to help with any questions about moccet and how we can transform your healthcare organization.
           </p>
         </section>
 
         {/* Contact Options */}
-        <section className={styles.contentSection}>
-          <div className={styles.contactGrid}>
-            <div className={styles.contactCard}>
-              <h3>Sales Inquiries</h3>
-              <p>Ready to transform your healthcare organization?</p>
-              <a href="mailto:sales@moccet.com" className={styles.contactLink}>
+        <section style={{ marginBottom: isMobile ? '60px' : '100px' }}>
+          <h2 style={{
+            fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+            fontWeight: '400',
+            marginBottom: '16px',
+            color: '#000',
+            textAlign: 'center'
+          }}>
+            How can we help?
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#6b7280',
+            marginBottom: isMobile ? '40px' : '60px',
+            textAlign: 'center',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
+            Choose the best way to reach us based on your inquiry.
+          </p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: isMobile ? '20px' : '32px',
+            marginBottom: isMobile ? '60px' : '100px'
+          }}>
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                Sales Inquiries
+              </h3>
+              <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>Ready to transform your healthcare organization?</p>
+              <a href="mailto:sales@moccet.com" style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'block',
+                marginBottom: '8px',
+                padding: isMobile ? '8px 0' : '4px 0',
+                minHeight: isMobile ? '44px' : 'auto',
+                lineHeight: isMobile ? '28px' : 'normal'
+              }}>
                 sales@moccet.com
               </a>
-              <p className={styles.contactPhone}>+1 (707) 400-5566</p>
+              <p style={{ color: '#6b7280', fontSize: '14px' }}>+1 (707) 400-5566</p>
             </div>
 
-            <div className={styles.contactCard}>
-              <h3>Technical Support</h3>
-              <p>Need help with our products or services?</p>
-              <a href="mailto:support@moccet.com" className={styles.contactLink}>
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                Technical Support
+              </h3>
+              <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>Need help with our products or services?</p>
+              <a href="mailto:support@moccet.com" style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'block',
+                marginBottom: '8px',
+                padding: isMobile ? '8px 0' : '4px 0',
+                minHeight: isMobile ? '44px' : 'auto',
+                lineHeight: isMobile ? '28px' : 'normal'
+              }}>
                 support@moccet.com
               </a>
-              <p className={styles.contactAvailability}>24/7 support for enterprise customers</p>
+              <p style={{ color: '#6b7280', fontSize: '14px' }}>24/7 support for enterprise customers</p>
             </div>
 
-            <div className={styles.contactCard}>
-              <h3>Media & Press</h3>
-              <p>For media inquiries and press resources</p>
-              <a href="mailto:press@moccet.com" className={styles.contactLink}>
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                Media & Press
+              </h3>
+              <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>For media inquiries and press resources</p>
+              <a href="mailto:press@moccet.com" style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'block',
+                marginBottom: '8px',
+                padding: isMobile ? '8px 0' : '4px 0',
+                minHeight: isMobile ? '44px' : 'auto',
+                lineHeight: isMobile ? '28px' : 'normal'
+              }}>
                 press@moccet.com
               </a>
-              <Link href="/brand" className={styles.contactSecondaryLink}>
+              <Link href="/brand" style={{ color: '#000', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
                 Brand Resources →
               </Link>
             </div>
 
-            <div className={styles.contactCard}>
-              <h3>Partnerships</h3>
-              <p>Interested in partnering with moccet?</p>
-              <a href="mailto:partnerships@moccet.com" className={styles.contactLink}>
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                Partnerships
+              </h3>
+              <p style={{ color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>Interested in partnering with moccet?</p>
+              <a href="mailto:partnerships@moccet.com" style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500',
+                display: 'block',
+                marginBottom: '8px',
+                padding: isMobile ? '8px 0' : '4px 0',
+                minHeight: isMobile ? '44px' : 'auto',
+                lineHeight: isMobile ? '28px' : 'normal'
+              }}>
                 partnerships@moccet.com
               </a>
-              <p className={styles.contactNote}>Integration and reseller opportunities</p>
+              <p style={{ color: '#6b7280', fontSize: '14px' }}>Integration and reseller opportunities</p>
             </div>
           </div>
         </section>
 
         {/* Contact Form */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Send Us a Message</h2>
-            <p>
+        <section style={{
+          background: '#f9fafb',
+          borderRadius: isMobile ? '16px' : '24px',
+          padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px',
+          margin: isMobile ? '0 -20px' : isTablet ? '0 -40px' : '0 -80px',
+          marginBottom: isMobile ? '60px' : '100px'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? '40px' : '60px' }}>
+            <h2 style={{
+              fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+              fontWeight: '400',
+              marginBottom: '16px',
+              color: '#000'
+            }}>
+              Send Us a Message
+            </h2>
+            <p style={{
+              fontSize: isMobile ? '16px' : '18px',
+              color: '#6b7280',
+              maxWidth: isMobile ? '100%' : '600px',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              lineHeight: '1.6'
+            }}>
               Fill out the form below and we&apos;ll get back to you within 24 business hours.
             </p>
-
-            {showSuccess && (
-              <div className={styles.successMessage}>
-                <h3>Message Sent Successfully!</h3>
-                <p>Thank you for contacting us. We&apos;ll respond within 24 hours.</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className={styles.contactForm}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="name">Full Name *</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="email">Email Address *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className={styles.formInput}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="organization">Organization</label>
-                  <input
-                    type="text"
-                    id="organization"
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleChange}
-                    className={styles.formInput}
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="subject">Subject *</label>
-                  <select
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    className={styles.formSelect}
-                  >
-                    <option value="">Select a subject</option>
-                    <option value="sales">Sales Inquiry</option>
-                    <option value="support">Technical Support</option>
-                    <option value="partnership">Partnership Opportunity</option>
-                    <option value="media">Media/Press</option>
-                    <option value="careers">Careers</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="message">Message *</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                  rows={6}
-                  className={styles.formTextarea}
-                  placeholder="Tell us how we can help..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={styles.submitButton}
-              >
-                {isSubmitting ? 'Sending...' : 'Send Message'}
-              </button>
-            </form>
           </div>
+
+          {showSuccess && (
+            <div style={{ textAlign: 'center', maxWidth: '500px', margin: '0 auto 40px auto', padding: '20px', background: '#10b981', color: 'white', borderRadius: '8px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '500', marginBottom: '8px' }}>Message Sent Successfully!</h3>
+              <p style={{ fontSize: '16px', margin: '0' }}>Thank you for contacting us. We&apos;ll respond within 24 hours.</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{
+            maxWidth: isMobile ? '100%' : '600px',
+            margin: '0 auto'
+          }}>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Full Name *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Organization
+              </label>
+              <input
+                type="text"
+                id="organization"
+                name="organization"
+                value={formData.organization}
+                onChange={handleChange}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Subject *
+              </label>
+              <select
+                id="subject"
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  backgroundColor: 'white'
+                }}
+              >
+                <option value="">Select a subject</option>
+                <option value="sales">Sales Inquiry</option>
+                <option value="support">Technical Support</option>
+                <option value="partnership">Partnership Opportunity</option>
+                <option value="media">Media/Press</option>
+                <option value="careers">Careers</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                Message *
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                required
+                rows={6}
+                placeholder="Tell us how we can help..."
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: isMobile ? '16px 24px' : '12px 24px',
+                backgroundColor: '#000',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.6 : 1,
+                minHeight: isMobile ? '48px' : '44px',
+                touchAction: 'manipulation'
+              }}
+            >
+              {isSubmitting ? 'Sending...' : 'Send Message'}
+            </button>
+          </form>
         </section>
 
         {/* Office Locations */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Our Offices</h2>
-
-            <div className={styles.officesGrid}>
-              <div className={styles.officeCard}>
-                <h3>San Francisco (HQ)</h3>
-                <p>
-                  555 California Street<br />
-                  San Francisco, CA 94104<br />
-                  United States
-                </p>
-              </div>
-
-              <div className={styles.officeCard}>
-                <h3>New York</h3>
-                <p>
-                  350 Fifth Avenue<br />
-                  New York, NY 10118<br />
-                  United States
-                </p>
-              </div>
-
-              <div className={styles.officeCard}>
-                <h3>London</h3>
-                <p>
-                  1 Canada Square<br />
-                  London E14 5AB<br />
-                  United Kingdom
-                </p>
-              </div>
-
-              <div className={styles.officeCard}>
-                <h3>Singapore</h3>
-                <p>
-                  1 Marina Boulevard<br />
-                  Singapore 018989<br />
-                  Singapore
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className={styles.contentSection}>
-          <div className={styles.articleContent}>
-            <h2>Frequently Asked Questions</h2>
-
-            <div className={styles.faqItem}>
-              <h3>What is the best way to reach moccet?</h3>
-              <p>
-                For sales inquiries, email sales@moccet.com or call +1 (707) 400-5566. For
-                technical support, existing customers can use the in-app support or email
-                support@moccet.com.
-              </p>
-            </div>
-
-            <div className={styles.faqItem}>
-              <h3>What are your support hours?</h3>
-              <p>
-                Enterprise customers receive 24/7 support. Standard support is available
-                Monday-Friday, 9 AM - 6 PM PST. Emergency support is always available for
-                critical issues.
-              </p>
-            </div>
-
-            <div className={styles.faqItem}>
-              <h3>How quickly can I expect a response?</h3>
-              <p>
-                We aim to respond to all inquiries within 24 business hours. Critical support
-                issues for enterprise customers receive immediate attention.
-              </p>
-            </div>
-
-            <div className={styles.faqItem}>
-              <h3>Do you offer product demos?</h3>
-              <p>
-                Yes! Contact our sales team at sales@moccet.com to schedule a personalized
-                demo of our platform tailored to your organization&apos;s needs.
-              </p>
-            </div>
-
-            <div className={styles.faqItem}>
-              <h3>How can I report a security issue?</h3>
-              <p>
-                Security issues should be reported immediately to security@moccet.com. Please
-                refer to our Vulnerability Disclosure Policy for responsible disclosure guidelines.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className={styles.finalCta}>
-          <h2 className={styles.finalCtaTitle}>Ready to Get Started?</h2>
-          <p className={styles.finalCtaSubtitle}>
-            Transform your healthcare organization with moccet
+        <section style={{ marginBottom: isMobile ? '60px' : '100px' }}>
+          <h2 style={{
+            fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+            fontWeight: '400',
+            marginBottom: '16px',
+            color: '#000',
+            textAlign: 'center'
+          }}>
+            Our Global Offices
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#6b7280',
+            marginBottom: isMobile ? '40px' : '60px',
+            textAlign: 'center',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
+            Connect with our teams around the world.
           </p>
-          <div className={styles.buttonRow}>
-            <button className={styles.ctaBtn} onClick={() => window.location.href='mailto:sales@moccet.com'}>
-              Contact Sales
-            </button>
-            <Link href="/" className={styles.watchVideoBtn}>Learn More</Link>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: isMobile ? '20px' : '32px'
+          }}>
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                Palo Alto (HQ)
+              </h3>
+              <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: '14px' }}>
+                3000 Sand Hill Road<br />
+                Palo Alto, CA 94304<br />
+                United States
+              </p>
+            </div>
+
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                New York
+              </h3>
+              <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: '14px' }}>
+                350 Fifth Avenue<br />
+                New York, NY 10118<br />
+                United States
+              </p>
+            </div>
+
+            <div style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: isMobile ? '24px' : '32px',
+              background: 'white',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '500',
+                marginBottom: '12px',
+                color: '#000'
+              }}>
+                London
+              </h3>
+              <p style={{ color: '#6b7280', lineHeight: '1.6', fontSize: '14px' }}>
+                25 Berkeley Square<br />
+                Mayfair, London W1J 6HN<br />
+                United Kingdom
+              </p>
+            </div>
+
           </div>
         </section>
+
       </main>
 
     </div>

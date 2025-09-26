@@ -1,0 +1,507 @@
+/* Privacy Page Specific Styles */
+.privacyContainer {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  background: #fff;
+  color: #000;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 120px 0 80px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.heroTitle {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.heroSubtitle {
+  font-size: clamp(16px, 2.5vw, 20px);
+  color: #64748b;
+  margin-bottom: 32px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heroMeta {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.metaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  font-size: 14px;
+  color: #475569;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.readingTime {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+/* Table of Contents */
+.tocContainer {
+  position: sticky;
+  top: 80px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tocTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tocList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tocItem {
+  margin-bottom: 8px;
+}
+
+.tocLink {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  color: #64748b;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tocLink:hover {
+  background: #f1f5f9;
+  color: #334155;
+  border-left-color: #3b82f6;
+}
+
+.tocLink:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.tocLinkActive {
+  background: #eff6ff;
+  color: #1e40af;
+  border-left-color: #3b82f6;
+  font-weight: 500;
+}
+
+/* Main Content */
+.mainContent {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* Content Sections */
+.section {
+  margin-bottom: 48px;
+  scroll-margin-top: 100px;
+}
+
+.sectionHeader {
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.sectionSubtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.subsectionTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 32px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subsectionTitle::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+.subheading {
+  font-size: 20px;
+  font-weight: 600;
+  color: #334155;
+  margin: 24px 0 12px;
+}
+
+/* Text Elements */
+.paragraph {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.list {
+  margin: 16px 0;
+  padding-left: 0;
+}
+
+.listItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #374151;
+  margin-bottom: 12px;
+  padding-left: 24px;
+  position: relative;
+}
+
+.listItem::before {
+  content: '•';
+  color: #3b82f6;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.strongText {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+/* Highlight Boxes */
+.highlightBox {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.highlightBox.warning {
+  background: #fefce8;
+  border-color: #fef08a;
+  border-left-color: #eab308;
+}
+
+.highlightBox.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  border-left-color: #22c55e;
+}
+
+.highlightTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+/* Trust Indicators */
+.trustSection {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 32px;
+  margin: 40px 0;
+  text-align: center;
+}
+
+.trustTitle {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #0f172a;
+}
+
+.trustBadges {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.trustBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Contact Section */
+.contactSection {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 48px;
+  margin: 48px 0;
+  text-align: center;
+}
+
+.contactTitle {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.contactSubtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 32px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.contactButtons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.contactButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.contactButtonPrimary {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.contactButtonPrimary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.contactButtonPrimary:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.contactButtonSecondary {
+  background: transparent;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+
+.contactButtonSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #64748b;
+}
+
+.contactButtonSecondary:focus {
+  outline: 2px solid #e2e8f0;
+  outline-offset: 2px;
+}
+
+/* Back to Top */
+.backToTop {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 48px;
+  height: 48px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.backToTop.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.backToTop:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+.backToTop:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .tocContainer {
+    position: static;
+    margin-bottom: 32px;
+  }
+
+  .subsectionTitle::before {
+    width: 3px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 80px 20px 60px;
+  }
+
+  .mainContent {
+    padding: 20px;
+  }
+
+  .contactSection {
+    padding: 32px 20px;
+    margin: 32px -20px;
+    border-radius: 0;
+  }
+
+  .contactButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .contactButton {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+  }
+
+  .trustBadges {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .trustBadge {
+    width: 100%;
+    max-width: 200px;
+    justify-content: center;
+  }
+
+  .backToTop {
+    bottom: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroMeta {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .section {
+    margin-bottom: 32px;
+  }
+
+  .sectionTitle {
+    font-size: 24px;
+  }
+
+  .subsectionTitle {
+    font-size: 20px;
+  }
+}

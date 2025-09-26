@@ -110,6 +110,38 @@ const getNavItems = (pathname: string): NavItem[] => {
     ];
   }
 
+  // Contact page navigation
+  if (pathname === '/contact') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#', label: 'Contact Us' },
+    ];
+  }
+
+  // Policies page navigation
+  if (pathname === '/policies') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#', label: 'Policies' },
+    ];
+  }
+
+  // Privacy page navigation
+  if (pathname === '/privacy') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#', label: 'Privacy Policy' },
+    ];
+  }
+
+  // Terms page navigation
+  if (pathname === '/terms') {
+    return [
+      { href: '/', label: '← Home' },
+      { href: '#', label: 'Terms of Use' },
+    ];
+  }
+
   // Default navigation for landing page and other pages
   return [
     { href: '/research', label: 'Research' },
@@ -165,10 +197,13 @@ export default function Sidebar({ isActive = false, onNavigate }: SidebarProps) 
   const isLegalPage = pathname === '/legal';
   const isHealthPage = pathname === '/health';
   const isCareersPage = pathname === '/careers';
+  const isPoliciesPage = pathname === '/policies';
+  const isPrivacyPage = pathname === '/privacy';
+  const isTermsPage = pathname === '/terms';
 
   // Business page now uses the same sidebar as landing page (removed custom business sidebar)
 
-  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage || isCareersPage) {
+  if (isLandingPage || isResearchPage || isSafetyPage || isBusinessPage || isDevelopersPage || isPricingPage || isContactPage || isSolutionsPage || isCompanyPage || isLegalPage || isHealthPage || isCareersPage || isPoliciesPage || isPrivacyPage || isTermsPage) {
     // Landing page style - styled navigation with vertical centering
     const baseClasses = "fixed top-0 left-0 h-full transition-transform duration-200 border-r-0 z-[999]";
     const activeClasses = isActive ? "translate-x-0" : "-translate-x-full";

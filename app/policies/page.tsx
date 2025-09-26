@@ -1,65 +1,222 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../landing.module.css';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 
 export default function PoliciesPage() {
   const [activePolicy, setActivePolicy] = useState('cookie');
+  const [sidebarActive, setSidebarActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Set responsive breakpoints and sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      setIsTablet(width > 768 && width <= 1024);
+
+      if (width > 1024) {
+        setSidebarActive(true);
+      } else {
+        setSidebarActive(false);
+      }
+    };
+
+    handleResize(); // Set initial state
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarActive(!sidebarActive);
+  };
+
+  const handleNavigate = (targetId: string) => {
+    if (targetId.startsWith('#')) {
+      // Scroll to top when navigating
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Close sidebar on mobile
+      if (window.innerWidth <= 768) {
+        setSidebarActive(false);
+      }
+    }
+  };
+
+  const handleContactSales = () => {
+    console.log('Contact Sales clicked');
+  };
 
   return (
-    <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            moccet
-          </Link>
-          <Link href="/" className={styles.contactSalesBtn}>
-            Back to Home
-          </Link>
-        </div>
-      </header>
+    <div style={{ minHeight: '100vh', background: '#ffffff' }}>
+      <Header
+        onToggleSidebar={toggleSidebar}
+        onContactSales={handleContactSales}
+        sidebarActive={sidebarActive}
+      />
 
-      {/* Hero Section */}
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <h1>Other Policies</h1>
-          <p className={styles.subtitle}>
+      <Sidebar
+        isActive={sidebarActive}
+        onNavigate={handleNavigate}
+      />
+
+      <main
+        style={{
+          marginLeft: isMobile || isTablet ? '0' : (sidebarActive ? '240px' : '0'),
+          transition: 'margin-left 0.3s ease',
+          padding: isMobile ? '0 20px' : isTablet ? '0 40px' : '0 80px',
+          paddingTop: '60px',
+          minHeight: '100vh'
+        }}
+      >
+        <section style={{ textAlign: 'center', padding: isMobile ? '80px 0 60px' : isTablet ? '100px 0 80px' : '120px 0 120px' }}>
+          <h1 style={{
+            fontSize: isMobile ? '32px' : isTablet ? '44px' : '56px',
+            fontWeight: '400',
+            lineHeight: '1.2',
+            marginBottom: '24px',
+            letterSpacing: isMobile ? '-0.5px' : '-1.5px',
+            color: '#000'
+          }}>
+            Other Policies
+          </h1>
+          <p style={{
+            fontSize: isMobile ? '16px' : isTablet ? '18px' : '20px',
+            color: '#374151',
+            marginBottom: '40px',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
             Additional policies and guidelines for using our services
           </p>
         </section>
 
         {/* Policy Navigation */}
-        <section className={styles.contentSection}>
-          <div className={styles.legalTabs}>
+        <section style={{ marginBottom: isMobile ? '60px' : '100px' }}>
+          <h2 style={{
+            fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+            fontWeight: '400',
+            marginBottom: '16px',
+            color: '#000',
+            textAlign: 'center'
+          }}>
+            Select a Policy
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#6b7280',
+            marginBottom: isMobile ? '40px' : '60px',
+            textAlign: 'center',
+            maxWidth: isMobile ? '100%' : '800px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
+            Choose a policy to view its details and guidelines.
+          </p>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '12px' : '16px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginBottom: isMobile ? '40px' : '60px',
+            flexWrap: 'wrap'
+          }}>
             <button
-              className={`${styles.legalTab} ${activePolicy === 'cookie' ? styles.legalTabActive : ''}`}
               onClick={() => setActivePolicy('cookie')}
+              style={{
+                padding: isMobile ? '12px 20px' : '10px 20px',
+                borderRadius: '8px',
+                border: activePolicy === 'cookie' ? '2px solid #000' : '1px solid #e5e7eb',
+                backgroundColor: activePolicy === 'cookie' ? '#000' : '#fff',
+                color: activePolicy === 'cookie' ? '#fff' : '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                minHeight: isMobile ? '44px' : 'auto',
+                touchAction: 'manipulation',
+                transition: 'all 0.2s ease'
+              }}
             >
               Cookie Policy
             </button>
             <button
-              className={`${styles.legalTab} ${activePolicy === 'acceptable' ? styles.legalTabActive : ''}`}
               onClick={() => setActivePolicy('acceptable')}
+              style={{
+                padding: isMobile ? '12px 20px' : '10px 20px',
+                borderRadius: '8px',
+                border: activePolicy === 'acceptable' ? '2px solid #000' : '1px solid #e5e7eb',
+                backgroundColor: activePolicy === 'acceptable' ? '#000' : '#fff',
+                color: activePolicy === 'acceptable' ? '#fff' : '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                minHeight: isMobile ? '44px' : 'auto',
+                touchAction: 'manipulation',
+                transition: 'all 0.2s ease'
+              }}
             >
               Acceptable Use
             </button>
             <button
-              className={`${styles.legalTab} ${activePolicy === 'data' ? styles.legalTabActive : ''}`}
               onClick={() => setActivePolicy('data')}
+              style={{
+                padding: isMobile ? '12px 20px' : '10px 20px',
+                borderRadius: '8px',
+                border: activePolicy === 'data' ? '2px solid #000' : '1px solid #e5e7eb',
+                backgroundColor: activePolicy === 'data' ? '#000' : '#fff',
+                color: activePolicy === 'data' ? '#fff' : '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                minHeight: isMobile ? '44px' : 'auto',
+                touchAction: 'manipulation',
+                transition: 'all 0.2s ease'
+              }}
             >
               Data Processing
             </button>
             <button
-              className={`${styles.legalTab} ${activePolicy === 'sla' ? styles.legalTabActive : ''}`}
               onClick={() => setActivePolicy('sla')}
+              style={{
+                padding: isMobile ? '12px 20px' : '10px 20px',
+                borderRadius: '8px',
+                border: activePolicy === 'sla' ? '2px solid #000' : '1px solid #e5e7eb',
+                backgroundColor: activePolicy === 'sla' ? '#000' : '#fff',
+                color: activePolicy === 'sla' ? '#fff' : '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                minHeight: isMobile ? '44px' : 'auto',
+                touchAction: 'manipulation',
+                transition: 'all 0.2s ease'
+              }}
             >
               Service Level Agreement
             </button>
             <button
-              className={`${styles.legalTab} ${activePolicy === 'vulnerability' ? styles.legalTabActive : ''}`}
               onClick={() => setActivePolicy('vulnerability')}
+              style={{
+                padding: isMobile ? '12px 20px' : '10px 20px',
+                borderRadius: '8px',
+                border: activePolicy === 'vulnerability' ? '2px solid #000' : '1px solid #e5e7eb',
+                backgroundColor: activePolicy === 'vulnerability' ? '#000' : '#fff',
+                color: activePolicy === 'vulnerability' ? '#fff' : '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                minHeight: isMobile ? '44px' : 'auto',
+                touchAction: 'manipulation',
+                transition: 'all 0.2s ease'
+              }}
             >
               Vulnerability Disclosure
             </button>
@@ -68,71 +225,208 @@ export default function PoliciesPage() {
 
         {/* Cookie Policy */}
         {activePolicy === 'cookie' && (
-          <section className={styles.contentSection}>
-            <div className={styles.articleContent}>
-              <h2>Cookie Policy</h2>
-              <p className={styles.legalDate}>Last Updated: January 1, 2024</p>
+          <section style={{
+            background: '#f9fafb',
+            borderRadius: isMobile ? '16px' : '24px',
+            padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px',
+            margin: isMobile ? '0 -20px' : isTablet ? '0 -40px' : '0 -80px',
+            marginBottom: isMobile ? '60px' : '100px'
+          }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h2 style={{
+                fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+                fontWeight: '400',
+                marginBottom: '8px',
+                color: '#000'
+              }}>
+                Cookie Policy
+              </h2>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '32px',
+                fontStyle: 'italic'
+              }}>
+                Last Updated: January 1, 2024
+              </p>
 
-              <h3>What Are Cookies?</h3>
-              <p>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                What Are Cookies?
+              </h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 Cookies are small text files that are placed on your device when you visit
                 our website. They help us provide you with a better experience by remembering
                 your preferences and understanding how you use our services.
               </p>
 
-              <h3>Types of Cookies We Use</h3>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Types of Cookies We Use
+              </h3>
 
-              <h4>Essential Cookies</h4>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Essential Cookies
+              </h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 These cookies are necessary for the website to function properly. They enable
                 basic functions like page navigation, secure access to services, and
                 remembering your cookie consent choices.
               </p>
 
-              <h4>Performance Cookies</h4>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Performance Cookies
+              </h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 These cookies help us understand how visitors interact with our website by
                 collecting and reporting anonymous information. This helps us improve how
                 our website works.
               </p>
 
-              <h4>Functionality Cookies</h4>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Functionality Cookies
+              </h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 These cookies allow the website to remember choices you make (such as your
                 username, language, or region) and provide enhanced, personalized features.
               </p>
 
-              <h4>Analytics Cookies</h4>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Analytics Cookies
+              </h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 We use analytics services like Google Analytics to help us understand how
                 users engage with our website. These cookies collect information in an
                 aggregated form.
               </p>
 
-              <h3>Third-Party Cookies</h3>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>Third-Party Cookies</h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 Some cookies are placed by third-party services that appear on our pages.
                 We do not control these cookies and encourage you to check the third-party
                 websites for more information about their cookies.
               </p>
 
-              <h3>Managing Your Cookie Preferences</h3>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>Managing Your Cookie Preferences</h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 You can control and/or delete cookies as you wish. You can delete all cookies
                 that are already on your computer and you can set most browsers to prevent
                 them from being placed. However, if you do this, you may have to manually
                 adjust some preferences every time you visit our site.
               </p>
 
-              <h3>Browser Settings</h3>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>Browser Settings</h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}> 
                 Most web browsers allow you to control cookies through their settings. To
                 find out more about cookies, including how to see what cookies have been set,
                 visit www.aboutcookies.org or www.allaboutcookies.org.
               </p>
 
-              <h3>Updates to This Policy</h3>
-              <p>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>Updates to This Policy</h4>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 We may update this Cookie Policy from time to time. Any changes will be
                 posted on this page with an updated revision date.
               </p>
@@ -142,70 +436,303 @@ export default function PoliciesPage() {
 
         {/* Acceptable Use Policy */}
         {activePolicy === 'acceptable' && (
-          <section className={styles.contentSection}>
-            <div className={styles.articleContent}>
-              <h2>Acceptable Use Policy</h2>
-              <p className={styles.legalDate}>Last Updated: January 1, 2024</p>
+          <section style={{
+            background: '#f9fafb',
+            borderRadius: isMobile ? '16px' : '24px',
+            padding: isMobile ? '40px 20px' : isTablet ? '60px 40px' : '80px',
+            margin: isMobile ? '0 -20px' : isTablet ? '0 -40px' : '0 -80px',
+            marginBottom: isMobile ? '60px' : '100px'
+          }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h2 style={{
+                fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+                fontWeight: '400',
+                marginBottom: '8px',
+                color: '#000'
+              }}>
+                Acceptable Use Policy
+              </h2>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '32px',
+                fontStyle: 'italic'
+              }}>
+                Last Updated: January 1, 2024
+              </p>
 
-              <h3>Purpose</h3>
-              <p>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Purpose
+              </h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 This Acceptable Use Policy sets forth the standards for appropriate use of
                 moccet&apos;s services. By using our services, you agree to comply with this policy.
               </p>
 
-              <h3>Prohibited Activities</h3>
-              <p>You may not use our services to:</p>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Prohibited Activities
+              </h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
+                You may not use our services to:
+              </p>
 
-              <h4>Illegal Activities</h4>
-              <ul>
-                <li>Violate any applicable laws or regulations</li>
-                <li>Engage in fraud or fraudulent activities</li>
-                <li>Violate the rights of others</li>
-                <li>Promote illegal activities</li>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Illegal Activities
+              </h4>
+              <ul style={{
+                marginBottom: '16px',
+                paddingLeft: '24px'
+              }}>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Violate any applicable laws or regulations</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Engage in fraud or fraudulent activities</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Violate the rights of others</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Promote illegal activities</li>
               </ul>
 
-              <h4>Security Violations</h4>
-              <ul>
-                <li>Access systems or data without authorization</li>
-                <li>Probe, scan, or test vulnerabilities without permission</li>
-                <li>Breach or circumvent authentication measures</li>
-                <li>Interfere with service to any user, host, or network</li>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Security Violations
+              </h4>
+              <ul style={{
+                marginBottom: '16px',
+                paddingLeft: '24px'
+              }}>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Access systems or data without authorization</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Probe, scan, or test vulnerabilities without permission</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Breach or circumvent authentication measures</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Interfere with service to any user, host, or network</li>
               </ul>
 
-              <h4>Network Abuse</h4>
-              <ul>
-                <li>Transmit viruses, worms, or malicious code</li>
-                <li>Engage in denial of service attacks</li>
-                <li>Intentionally distribute false or misleading information</li>
-                <li>Use automated systems to access services in a manner that degrades performance</li>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Network Abuse
+              </h4>
+              <ul style={{
+                marginBottom: '16px',
+                paddingLeft: '24px'
+              }}>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Transmit viruses, worms, or malicious code</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Engage in denial of service attacks</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Intentionally distribute false or misleading information</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Use automated systems to access services in a manner that degrades performance</li>
               </ul>
 
-              <h4>Inappropriate Content</h4>
-              <ul>
-                <li>Upload content that is unlawful, harmful, or offensive</li>
-                <li>Infringe on intellectual property rights</li>
-                <li>Violate privacy rights of others</li>
-                <li>Distribute unsolicited promotional materials</li>
+              <h4 style={{
+                fontSize: isMobile ? '18px' : '20px',
+                fontWeight: '600',
+                marginBottom: '12px',
+                marginTop: '24px',
+                color: '#111827'
+              }}>
+                Inappropriate Content
+              </h4>
+              <ul style={{
+                marginBottom: '16px',
+                paddingLeft: '24px'
+              }}>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Upload content that is unlawful, harmful, or offensive</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Infringe on intellectual property rights</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Violate privacy rights of others</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Distribute unsolicited promotional materials</li>
               </ul>
 
-              <h3>Healthcare-Specific Requirements</h3>
-              <ul>
-                <li>Maintain compliance with HIPAA and other healthcare regulations</li>
-                <li>Ensure proper authorization for accessing patient data</li>
-                <li>Use services only for legitimate healthcare purposes</li>
-                <li>Report any suspected breaches immediately</li>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Healthcare-Specific Requirements
+              </h3>
+              <ul style={{
+                marginBottom: '16px',
+                paddingLeft: '24px'
+              }}>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Maintain compliance with HIPAA and other healthcare regulations</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Ensure proper authorization for accessing patient data</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Use services only for legitimate healthcare purposes</li>
+                <li style={{
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}>Report any suspected breaches immediately</li>
               </ul>
 
-              <h3>Enforcement</h3>
-              <p>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Enforcement
+              </h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 Violations of this policy may result in suspension or termination of services,
                 and may be reported to law enforcement authorities when appropriate.
               </p>
 
-              <h3>Reporting Violations</h3>
-              <p>
+              <h3 style={{
+                fontSize: isMobile ? '20px' : '24px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                marginTop: '32px',
+                color: '#000'
+              }}>
+                Reporting Violations
+              </h3>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
                 If you become aware of any violations of this policy, please report them to
-                <a href="mailto:security@moccet.com"> security@moccet.com</a>.
+                <a href="mailto:security@moccet.com" style={{
+                  color: '#000',
+                  textDecoration: 'underline',
+                  fontWeight: '500'
+                }}> security@moccet.com</a>.
               </p>
             </div>
           </section>
@@ -481,70 +1008,75 @@ export default function PoliciesPage() {
         )}
 
         {/* Final CTA */}
-        <section className={styles.finalCta}>
-          <h2 className={styles.finalCtaTitle}>Questions About Our Policies?</h2>
-          <p className={styles.finalCtaSubtitle}>
+        <section style={{
+          textAlign: 'center',
+          padding: isMobile ? '60px 0' : '80px 0',
+          background: '#f9fafb',
+          borderRadius: isMobile ? '16px' : '24px',
+          margin: isMobile ? '0 -20px' : isTablet ? '0 -40px' : '0 -80px'
+        }}>
+          <h2 style={{
+            fontSize: isMobile ? '28px' : isTablet ? '32px' : '36px',
+            fontWeight: '400',
+            lineHeight: '1.2',
+            marginBottom: '16px',
+            color: '#000'
+          }}>
+            Questions About Our Policies?
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#6b7280',
+            marginBottom: '32px',
+            maxWidth: isMobile ? '100%' : '600px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: '1.6'
+          }}>
             We&apos;re here to help clarify any policy questions
           </p>
-          <div className={styles.buttonRow}>
-            <Link href="/contact" className={styles.ctaBtn}>Contact Us</Link>
-            <Link href="/legal" className={styles.watchVideoBtn}>Legal Center</Link>
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            justifyContent: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center'
+          }}>
+            <Link href="/contact" style={{
+              display: 'inline-block',
+              padding: isMobile ? '14px 28px' : '12px 24px',
+              backgroundColor: '#000',
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              minHeight: isMobile ? '48px' : '44px',
+              lineHeight: isMobile ? '20px' : 'normal',
+              touchAction: 'manipulation'
+            }}>
+              Contact Us
+            </Link>
+            <Link href="/legal" style={{
+              display: 'inline-block',
+              padding: isMobile ? '14px 28px' : '12px 24px',
+              backgroundColor: 'transparent',
+              color: '#374151',
+              textDecoration: 'none',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              minHeight: isMobile ? '48px' : '44px',
+              lineHeight: isMobile ? '20px' : 'normal',
+              touchAction: 'manipulation'
+            }}>
+              Legal Center
+            </Link>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Product</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/health">moccet-health</Link></li>
-                <li><a href="#">Features</a></li>
-                <li><a href="#">Pricing</a></li>
-                <li><a href="#">Security</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Company</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/philosophy">Our Philosophy</Link></li>
-                <li><Link href="/careers">Careers</Link></li>
-                <li><Link href="/brand">Brand</Link></li>
-                <li><Link href="/legal">Legal</Link></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Resources</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/research">Research</Link></li>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">API Reference</a></li>
-                <li><a href="#">Status</a></li>
-              </ul>
-            </div>
-            <div className={styles.footerColumn}>
-              <h4 className={styles.footerColumnTitle}>Support</h4>
-              <ul className={styles.footerLinks}>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/terms">Terms of Use</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
-                <li><Link href="/policies">Other Policies</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <p>&copy; 2024 moccet. All rights reserved.</p>
-            <div className={styles.footerBottomLinks}>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <a href="#">Cookie Settings</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

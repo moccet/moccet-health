@@ -59,15 +59,16 @@ export default function LandingPage() {
           position: fixed;
           top: 0;
           width: 100%;
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          background: transparent;
           z-index: 1000;
-          transition: padding 0.3s ease, transform 0.3s ease;
+          transition: padding 0.3s ease, transform 0.3s ease, background 0.3s ease;
         }
 
         header.scrolled {
           padding: 16px 40px;
+          background: rgba(241, 242, 240, 0.98);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
         }
 
         nav {

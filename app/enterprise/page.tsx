@@ -1,5 +1,5 @@
 import RedirectToHome from '../components/RedirectToHome';
 
-export default function HealthPage() {
+export default function EnterprisePage() {
   return <RedirectToHome />;
 }

@@ -39,20 +39,6 @@ export default function LandingPage() {
   return (
     <>
       <style jsx global>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          color: #333;
-          line-height: 1.6;
-          background: #f1f2f0;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
 
         header {
           padding: 24px 40px;
@@ -66,7 +52,7 @@ export default function LandingPage() {
 
         header.scrolled {
           padding: 16px 40px;
-          background: rgba(241, 242, 240, 0.98);
+          background: rgba(249, 249, 247, 0.98);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
         }
@@ -597,7 +583,7 @@ export default function LandingPage() {
       </div>
 
       <footer>
-        <p>moccet © 2025 · <a href="#">Terms of service</a> · <a href="#">Privacy notice</a></p>
+        <p>moccet © 2025</p>
       </footer>
     </>
   );

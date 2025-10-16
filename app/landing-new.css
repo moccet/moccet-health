@@ -1,0 +1,646 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.hero-section {
+    min-height: 100vh;
+    width: 100vw;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.15) 100%),
+                url('/images/landing.jpeg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 80px 24px 120px;
+}
+
+.top-logo {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 80px;
+    width: auto;
+    z-index: 10;
+}
+
+.hero-content {
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+}
+
+.logo {
+    font-size: clamp(64px, 12vw, 144px);
+    font-weight: 700;
+    color: white;
+    margin-bottom: 20px;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+}
+
+.tagline {
+    font-size: clamp(32px, 5vw, 48px);
+    color: white;
+    font-weight: 400;
+    margin-top: 150px;
+    margin-bottom: 40px;
+    letter-spacing: -0.02em;
+}
+
+.tagline em {
+    font-style: italic;
+    font-weight: 400;
+}
+
+.tagline.hidden {
+    display: none;
+}
+
+.waitlist-count {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+    margin-top: 20px;
+    letter-spacing: 0;
+}
+
+.waitlist-count.hidden {
+    display: none;
+}
+
+.signup-form {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+.signup-form.hidden {
+    display: none;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 900px;
+}
+
+.email-input {
+    width: 100%;
+    padding: 22px 280px 22px 32px;
+    font-size: 17px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 60px;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    font-family: inherit;
+    font-weight: 400;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.email-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.email-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.join-button {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 16px 40px;
+    font-size: 17px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.92);
+    color: #000;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.join-button:hover {
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Referral Section */
+.referral-section {
+    display: none;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.referral-section.visible {
+    display: block;
+}
+
+.success-message {
+    font-size: clamp(24px, 4vw, 28px);
+    color: white;
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+}
+
+.position-number {
+    font-size: clamp(52px, 10vw, 72px);
+    font-weight: 700;
+    color: white;
+    display: block;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+}
+
+.share-message {
+    font-size: clamp(16px, 3vw, 18px);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+    margin-bottom: 28px;
+    line-height: 1.6;
+}
+
+.email-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.friend-email-input {
+    padding: 14px 20px;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    color: #333;
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.friend-email-input:focus {
+    outline: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.friend-email-input::placeholder {
+    color: #999;
+}
+
+.button-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+}
+
+.add-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.add-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.send-btn {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    background: white;
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.send-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.section-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: 0.02em;
+}
+
+.share-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.share-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.share-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.share-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: white;
+}
+
+.link-display {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.link-input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 13px;
+    border: none;
+    border-radius: 10px;
+    background: white;
+    color: #333;
+    font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.copy-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    background: white;
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.copy-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.copy-btn.copied {
+    background: #4CAF50;
+    color: white;
+}
+
+/* Notification System */
+.notification-area {
+    position: fixed;
+    bottom: 100px;
+    right: 50px;
+    width: 400px;
+    z-index: 1000;
+}
+
+.notification-card {
+    background: rgba(255, 255, 255, 0.11);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    border-radius: 20px;
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    opacity: 0;
+}
+
+.notification-card.active {
+    opacity: 1;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.notification-left {
+    flex: 1;
+}
+
+.notification-brand {
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+}
+
+.notification-category {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.notification-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.notification-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.notification-close svg {
+    width: 11px;
+    height: 11px;
+    stroke: white;
+    stroke-width: 2.5;
+}
+
+.notification-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 9px;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+}
+
+.notification-body {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+}
+
+.notification-nav {
+    display: flex;
+    gap: 7px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+}
+
+.nav-dot.active {
+    background: white;
+    width: 18px;
+    border-radius: 3px;
+}
+
+.footer {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    color: white;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.footer a {
+    color: white;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    opacity: 0.7;
+}
+
+.social-icon {
+    width: 16px;
+    height: 16px;
+    fill: white;
+    cursor: pointer;
+}
+
+.social-icon:hover {
+    opacity: 0.7;
+}
+
+@media (max-width: 1200px) {
+    .notification-area {
+        right: 40px;
+        width: 360px;
+    }
+}
+
+@media (max-width: 900px) {
+    .notification-area {
+        display: none;
+    }
+}
+
+@media (max-width: 1024px) {
+    .signup-form {
+        padding: 0 30px;
+    }
+
+    .input-wrapper {
+        min-width: 700px;
+    }
+}
+
+@media (max-width: 768px) {
+    .signup-form {
+        padding: 0 20px;
+    }
+
+    .input-wrapper {
+        min-width: 0;
+    }
+
+    .email-input {
+        padding: 20px 240px 20px 28px;
+        font-size: 16px;
+    }
+
+    .join-button {
+        padding: 14px 32px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: 60px 20px 100px;
+    }
+
+    .top-logo {
+        top: 24px;
+        height: 60px;
+    }
+
+    .tagline {
+        font-size: 28px;
+        margin-top: 80px;
+        margin-bottom: 32px;
+    }
+
+    .signup-form {
+        padding: 0 12px;
+    }
+
+    .email-input {
+        padding: 16px 180px 16px 20px;
+        font-size: 15px;
+        border-radius: 50px;
+    }
+
+    .join-button {
+        padding: 11px 20px;
+        font-size: 14px;
+        right: 5px;
+    }
+
+    .waitlist-count {
+        font-size: 14px;
+        margin-top: 16px;
+    }
+
+    .hero-content {
+        max-width: 100%;
+    }
+
+    .referral-section {
+        max-width: 100%;
+    }
+
+    .button-row {
+        flex-direction: column;
+    }
+
+    .share-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .link-display {
+        flex-direction: column;
+    }
+
+    .copy-btn,
+    .link-input {
+        width: 100%;
+    }
+
+    .footer {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+        padding: 0 20px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .signup-form {
+        padding: 0 8px;
+    }
+
+    .email-input {
+        padding: 14px 150px 14px 18px;
+        font-size: 14px;
+    }
+
+    .join-button {
+        padding: 10px 16px;
+        font-size: 13px;
+        right: 4px;
+    }
+
+    .tagline {
+        font-size: 24px;
+        margin-top: 60px;
+    }
+}
+
+@media (max-width: 380px) {
+    .email-input {
+        padding: 14px 130px 14px 16px;
+        font-size: 13px;
+    }
+
+    .join-button {
+        padding: 9px 14px;
+        font-size: 12px;
+    }
+}

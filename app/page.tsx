@@ -1,252 +1,308 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import './landing.css';
+import './landing-new.css';
 
 export default function LandingPage() {
-  const [activePage, setActivePage] = useState('home');
-  const [headerScrolled, setHeaderScrolled] = useState(false);
-  const [lastScroll, setLastScroll] = useState(0);
-  const [headerTransform, setHeaderTransform] = useState('translateY(0)');
+  const [userPosition] = useState(2848);
+  const [userEmail, setUserEmail] = useState('');
+  const [showReferral, setShowReferral] = useState(false);
+  const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
+  const [notificationActive, setNotificationActive] = useState(false);
 
+  const notifications = [
+    {
+      category: 'CREATIVE PERFORMANCE',
+      time: 'now',
+      title: 'Your best ideas: 11:15 AM, post-coffee',
+      body: 'After 4-shot lattes at 10:30, you ship breakthroughs by noon. Schedule creative work then - worth $40K/month in output.'
+    },
+    {
+      category: 'SLEEP QUALITY',
+      time: '6:00 AM',
+      title: 'Late dinner killed your REM',
+      body: '9 PM meals cut REM by 35 min. When you eat by 7:30, you wake sharp. Dinner earlier = $15K more closed deals/quarter.'
+    },
+    {
+      category: 'WORKOUT TIMING',
+      time: 'now',
+      title: 'Your PRs happen Thursdays at 6 AM',
+      body: 'HRV peaks Wednesday nights. Hit the gym Thursday mornings - you lift 12% heavier and recover faster.'
+    },
+    {
+      category: 'FOCUS WINDOW',
+      time: '2:30 PM',
+      title: 'Deep work now: 90-min peak ahead',
+      body: 'Your cortisol and dopamine align at 3 PM daily. Block calendar for your hardest thinking - emails can wait.'
+    },
+    {
+      category: 'MEDICATION RESPONSE',
+      time: '5 days ago',
+      title: 'New dose working perfectly',
+      body: 'Blood pressure stable for 5 days, side effects down 60%. Your doctor can confirm this is the right level.'
+    },
+    {
+      category: 'INFLAMMATION TRIGGER',
+      time: 'now',
+      title: 'Gluten leads to joint pain in 36 hours',
+      body: 'CRP spikes every time. Last 3 incidents: pasta Tuesday, pain Thursday. Try eliminating for 2 weeks.'
+    },
+    {
+      category: 'DECISION FATIGUE',
+      time: 'now',
+      title: '38 decisions before 2 PM',
+      body: 'Glucose at 3.8 mmol/L. Move that contract call to tomorrow 10 AM when you are sharp - saves $50K mistakes.'
+    },
+    {
+      category: 'RECOVERY ALERT',
+      time: 'now',
+      title: 'Skip the run, do yoga instead',
+      body: 'HRV dropped 18%. Your body needs rest. Light movement today = crushing your 10K on Saturday.'
+    }
+  ];
+
+  // Start notification animation after mount
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScroll = window.pageYOffset;
+    const timer = setTimeout(() => {
+      setNotificationActive(true);
+    }, 1200);
 
-      if (currentScroll <= 0) {
-        setHeaderScrolled(false);
-        setHeaderTransform('translateY(0)');
-      } else if (currentScroll > lastScroll && currentScroll > 80) {
-        setHeaderTransform('translateY(-100%)');
-      } else if (currentScroll < lastScroll) {
-        setHeaderTransform('translateY(0)');
-        if (currentScroll > 50) {
-          setHeaderScrolled(true);
-        }
-      }
+    const interval = setInterval(() => {
+      setCurrentNotificationIndex((prev) => (prev + 1) % notifications.length);
+    }, 6000);
 
-      setLastScroll(currentScroll);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
     };
+  }, [notifications.length]);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScroll]);
-
-  const showPage = (page: string) => {
-    setActivePage(page);
-    window.scrollTo(0, 0);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Email submitted:', userEmail);
+    setShowReferral(true);
   };
+
+  const addMoreInputs = () => {
+    const container = document.getElementById('emailInputs');
+    if (container) {
+      const newInput = document.createElement('input');
+      newInput.type = 'email';
+      newInput.className = 'friend-email-input';
+      newInput.placeholder = "Friend's email";
+      container.appendChild(newInput);
+    }
+  };
+
+  const sendInvites = () => {
+    const inputs = document.querySelectorAll('.friend-email-input') as NodeListOf<HTMLInputElement>;
+    const emails: string[] = [];
+
+    inputs.forEach((input) => {
+      if (input.value && input.value.trim() !== '') {
+        emails.push(input.value.trim());
+        input.value = '';
+      }
+    });
+
+    if (emails.length === 0) {
+      alert('Please enter at least one email address');
+      return;
+    }
+
+    console.log('Sending invites to:', emails);
+    alert('Invites sent');
+  };
+
+  const copyLink = () => {
+    const linkInput = document.getElementById('shareLink') as HTMLInputElement;
+    const copyBtn = document.getElementById('copyBtn') as HTMLButtonElement;
+
+    if (linkInput && copyBtn) {
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999);
+
+      navigator.clipboard.writeText(linkInput.value).then(() => {
+        copyBtn.textContent = 'Copied';
+        copyBtn.classList.add('copied');
+
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+  };
+
+  const getShareMessage = () => {
+    return `Check out moccet - AI that learns your body and predicts what matters. Join the waitlist: moccet.com/r/user${userPosition}`;
+  };
+
+  const shareTwitter = () => {
+    const message = getShareMessage();
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareWhatsApp = () => {
+    const message = getShareMessage();
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareSMS = () => {
+    const message = getShareMessage();
+    const url = `sms:?&body=${encodeURIComponent(message)}`;
+    window.location.href = url;
+  };
+
+  const shareEmail = () => {
+    const link = `moccet.com/r/user${userPosition}`;
+    const subject = 'Check out moccet';
+    const body = `I thought you might be interested in moccet - AI that learns your body and predicts what matters.\n\nJoin the waitlist: ${link}`;
+    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  };
+
+  const nextNotification = () => {
+    setCurrentNotificationIndex((prev) => (prev + 1) % notifications.length);
+  };
+
+  const goToNotification = (index: number) => {
+    setCurrentNotificationIndex(index);
+  };
+
+  const currentNotification = notifications[currentNotificationIndex];
 
   return (
     <>
-
-      <header className={headerScrolled ? 'scrolled' : ''} style={{ transform: headerTransform }}>
-        <nav>
-          <div className="logo" onClick={() => showPage('home')}>moccet</div>
-          <div className="nav-links">
-            <a onClick={() => showPage('join')}>Join us</a>
-          </div>
-        </nav>
-      </header>
-
-      {/* Home Page */}
-      <div className={`page ${activePage === 'home' ? 'active' : ''}`}>
-        <div className="container fade-in">
-          <h1 className="hero-title">BUILDING</h1>
-          <h1 className="hero-subtitle">PERSONAL HEALTH AI</h1>
-
-          <p>
-            Every person generates thousands of health data points daily. These signals—from wearables, blood tests, and medical records—contain patterns that predict health events days or weeks before symptoms appear. But they&apos;re scattered across systems that don&apos;t communicate.
+      <section className="hero-section">
+        <img src="/images/logo.png" alt="moccet logo" className="top-logo" />
+        <div className="hero-content">
+          <h1 className="logo">moccet</h1>
+          <p className={`tagline ${showReferral ? 'hidden' : ''}`} id="tagline">
+            Your <em>personal</em> health AI.
           </p>
 
-          <p>
-            We&apos;re building a personal health AI that integrates all health data streams and learns what&apos;s actually happening in your body.
-          </p>
-
-          <h2>Health data is everywhere and nowhere</h2>
-
-          <p>
-            The average person&apos;s health information lives in 18 different systems. Your continuous glucose monitor tracks blood sugar patterns. Your smartwatch measures heart rate variability. Your lab portal holds blood test results. Your doctor&apos;s notes sit in an electronic health record you can barely access.
-          </p>
-
-          <p>
-            Each system is sophisticated on its own. Together, they could reveal the complete picture of your health. But right now, even the most engaged patients and physicians make decisions with less than 5% of available health information.
-          </p>
-
-          <p>
-            This fragmentation means we miss the signals. A slight rise in resting heart rate combined with changed sleep patterns and specific blood markers often predicts infection 72 hours before you feel sick. But when these signals live in different places, nobody catches the pattern.
-          </p>
-
-          <h2>How personal health AI works</h2>
-
-          <p>
-            Our platform connects to your existing health data sources—wearables, lab results, medical records, prescriptions, imaging. It doesn&apos;t require new devices or behavior changes. You keep using what you already use.
-          </p>
-
-          <p>
-            The AI learns your personal baseline across all biomarkers. Not population averages or normal ranges, but what&apos;s specifically normal for your body. It then continuously monitors for meaningful deviations across multiple signals simultaneously.
-          </p>
-
-          <p>
-            When the system detects patterns that matter—like the specific combination of markers that precede illness in your body—it provides actionable insights. Not another dashboard to check, but clear guidance when something needs attention.
-          </p>
-
-          <h2>What changes when AI understands your health</h2>
-
-          <p>
-            <em>Illness becomes predictable.</em> Your AI identifies the patterns that occur 72 hours before you get sick. You start treatment early, adjust your schedule, or simply rest more. What used to surprise you becomes manageable.
-          </p>
-
-          <p>
-            <em>Medications work better.</em> Everyone metabolizes drugs differently. Your AI tracks how you specifically respond to medications across all body systems, identifying in days whether a treatment is working. It can even help optimize dosing based on your real-time biomarkers.
-          </p>
-
-          <p>
-            <em>Your biology becomes clear.</em> You learn how specific foods affect your blood sugar and energy. Which activities improve your sleep. What triggers inflammation. Health stops being guesswork and becomes data-driven.
-          </p>
-
-          <h2>The technology</h2>
-
-          <p>
-            We use transformer architectures to process time-series health data. Graph neural networks map interactions between biological systems. Ensemble methods combine predictions from different data modalities into unified insights.
-          </p>
-
-          <p>
-            The platform runs locally when possible, using cloud computing only for complex predictions. All data is end-to-end encrypted. We&apos;re HIPAA compliant and undergo regular security audits.
-          </p>
-
-          <p>
-            We don&apos;t sell data to insurance companies or advertisers. Your health intelligence belongs to you.
-          </p>
-
-          <h2>Who should join</h2>
-
-          <p>
-            This platform is for people who already track some aspect of their health. If you wear a smartwatch, use a CGM, get regular blood work, or simply want to understand your body better, you&apos;re ready for personal health AI.
-          </p>
-
-          <p>
-            It&apos;s particularly valuable if you:
-          </p>
-          <p>
-            Manage chronic conditions<br/>
-            Take regular medications<br/>
-            Have family history of preventable diseases<br/>
-            Want to optimize your health and performance
-          </p>
-
-          <h2>Early access</h2>
-
-          <p>
-            We&apos;re opening access gradually to ensure quality and gather feedback. Early users will shape the platform&apos;s development and receive preferred pricing.
-          </p>
-
-          <p>
-            <a href="mailto:waitlist@moccet.com">Join the waitlist</a>
-          </p>
-
-          <p>
-            Questions? Contact <a href="mailto:waitlist@moccet.com">waitlist@moccet.com</a>
-          </p>
-        </div>
-      </div>
-
-      {/* Blog Page */}
-      <div className={`page ${activePage === 'blog' ? 'active' : ''}`}>
-        <div className="container page-content fade-in">
-          <h1 className="hero-title" style={{ fontSize: '48px', marginBottom: '40px' }}>BLOG</h1>
-
-          <div className="blog-posts">
-            <article className="blog-post">
-              <div className="blog-date">September 15, 2025</div>
-              <h3 className="blog-title"><a href="#">Predicting Respiratory Infections: A 72-Hour Window</a></h3>
-              <p className="blog-excerpt">Our latest research demonstrates how combining heart rate variability, sleep architecture, and inflammatory markers can predict respiratory infections three days before symptom onset with 85% accuracy.</p>
-            </article>
-
-            <article className="blog-post">
-              <div className="blog-date">September 1, 2025</div>
-              <h3 className="blog-title"><a href="#">The Architecture of Personal Health AI</a></h3>
-              <p className="blog-excerpt">A technical deep dive into how we process multimodal time-series health data using transformer architectures and graph neural networks to create personalized health predictions.</p>
-            </article>
-
-            <article className="blog-post">
-              <div className="blog-date">August 20, 2025</div>
-              <h3 className="blog-title"><a href="#">Why Your Health Data Needs AI</a></h3>
-              <p className="blog-excerpt">The average person generates 2GB of health data annually, yet 95% remains unused. We explore how AI can transform this dormant information into actionable health insights.</p>
-            </article>
-
-            <article className="blog-post">
-              <div className="blog-date">August 5, 2025</div>
-              <h3 className="blog-title"><a href="#">Building Privacy-First Health AI</a></h3>
-              <p className="blog-excerpt">How we&apos;re implementing end-to-end encryption, local processing, and HIPAA compliance to ensure your health data remains yours alone.</p>
-            </article>
-          </div>
-        </div>
-      </div>
-
-      {/* Join Page */}
-      <div className={`page ${activePage === 'join' ? 'active' : ''}`}>
-        <div className="container page-content fade-in">
-          <h1 className="hero-title" style={{ fontSize: '48px', marginBottom: '40px' }}>JOIN US</h1>
-
-          <p style={{ textAlign: 'center', color: '#666', marginBottom: '60px' }}>
-            We&apos;re building AI systems that push technical boundaries while delivering real value to millions. Join our team to help shape the future of personal health.
-          </p>
-
-          <div className="jobs-section">
-            <h2>Current openings</h2>
-
-            <div className="job-row">
-              <div className="job-title">Senior ML Engineer - Medical Imaging</div>
-              <div className="job-location">Palo Alto</div>
+          <form className={`signup-form ${showReferral ? 'hidden' : ''}`} id="signupForm" onSubmit={handleSubmit}>
+            <div className="input-wrapper">
+              <input
+                type="email"
+                className="email-input"
+                id="emailInput"
+                placeholder="Enter your email address"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                required
+              />
+              <button type="submit" className="join-button">Join the waitlist</button>
             </div>
+          </form>
 
-            <div className="job-row">
-              <div className="job-title">Clinical Research Scientist</div>
-              <div className="job-location">Cambridge</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Full-stack Engineer</div>
-              <div className="job-location">Palo Alto</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Senior Backend Engineer</div>
-              <div className="job-location">Palo Alto</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Head of Regulatory Affairs</div>
-              <div className="job-location">Palo Alto</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Product Designer</div>
-              <div className="job-location">Palo Alto</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Research Scientist - Biomarkers</div>
-              <div className="job-location">Cambridge</div>
-            </div>
-
-            <div className="job-row">
-              <div className="job-title">Infrastructure Engineer</div>
-              <div className="job-location">Palo Alto</div>
-            </div>
+          <div className={`waitlist-count ${showReferral ? 'hidden' : ''}`} id="waitlistCount">
+            2000+ people waiting for early access
           </div>
 
-          <p style={{ marginTop: '60px', textAlign: 'center' }}>
-            Don&apos;t see your role? We&apos;re always looking for exceptional talent.<br/>
-            Send your resume to <a href="mailto:careers@moccet.com">careers@moccet.com</a>
-          </p>
-        </div>
-      </div>
+          <div className={`referral-section ${showReferral ? 'visible' : ''}`} id="referralSection">
+            <div className="success-message">You&apos;re in</div>
+            <span className="position-number" id="positionNumber">#{userPosition}</span>
 
-      <footer>
-        <p>moccet © 2025</p>
-      </footer>
+            <div className="share-message">
+              Help your loved ones live better. Share moccet with friends and family who care about their health.
+            </div>
+
+            <div className="email-inputs" id="emailInputs">
+              <input type="email" className="friend-email-input" placeholder="Friend's email" />
+              <input type="email" className="friend-email-input" placeholder="Friend's email" />
+              <input type="email" className="friend-email-input" placeholder="Friend's email" />
+            </div>
+
+            <div className="button-row">
+              <button type="button" className="add-btn" onClick={addMoreInputs}>Add more</button>
+              <button type="button" className="send-btn" onClick={sendInvites}>Send invites</button>
+            </div>
+
+            <div className="section-label">Or share on</div>
+            <div className="share-buttons">
+              <button type="button" className="share-btn" onClick={shareTwitter}>
+                <svg viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                X
+              </button>
+              <button type="button" className="share-btn" onClick={shareWhatsApp}>
+                <svg viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
+              </button>
+              <button type="button" className="share-btn" onClick={shareSMS}>
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                </svg>
+                iMessage
+              </button>
+              <button type="button" className="share-btn" onClick={shareEmail}>
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+                Email
+              </button>
+            </div>
+
+            <div className="link-display">
+              <input type="text" className="link-input" id="shareLink" readOnly value={`moccet.com/r/user${userPosition}`} />
+              <button type="button" className="copy-btn" id="copyBtn" onClick={copyLink}>Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="notification-area">
+          <div className={`notification-card ${notificationActive ? 'active' : ''}`} id="notificationCard">
+            <div className="notification-header">
+              <div className="notification-left">
+                <div className="notification-brand">moccet</div>
+                <div className="notification-category">{currentNotification.category}</div>
+              </div>
+              <div className="notification-right">
+                <div className="notification-time">{currentNotification.time}</div>
+                <div className="notification-close" onClick={nextNotification}>
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="notification-title">{currentNotification.title}</div>
+            <div className="notification-body">{currentNotification.body}</div>
+            <div className="notification-nav">
+              {notifications.map((_, index) => (
+                <div
+                  key={index}
+                  className={`nav-dot ${index === currentNotificationIndex ? 'active' : ''}`}
+                  onClick={() => goToNotification(index)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="footer">
+          <a href="https://x.com/moccet" target="_blank" rel="noopener">
+            <svg className="social-icon" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          <a href="https://linkedin.com/company/moccet" target="_blank" rel="noopener">
+            <svg className="social-icon" viewBox="0 0 24 24">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+          </a>
+          <a href="#privacy">Privacy Policy</a>
+          <a href="#cookies">Cookie Policy</a>
+          <span>&copy; 2025 moccet</span>
+        </div>
+      </section>
     </>
   );
 }

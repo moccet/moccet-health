@@ -52,13 +52,12 @@ a {
 .landing-page-moccet .text-wrapper {
   position: absolute;
   top: calc(50.00% - 200px);
-  left: calc(50.00% - 240px);
-  font-family: "Inter", Helvetica;
-  font-weight: 900;
-  color: #ffffff;
-  font-size: 130px;
-  letter-spacing: -2.60px;
-  line-height: normal;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  height: auto;
+  max-width: 80vw;
+  object-fit: contain;
 }
 
 .landing-page-moccet .logo {
@@ -87,21 +86,13 @@ a {
 
 .landing-page-moccet .your-personal-health {
   position: relative;
-  align-self: stretch;
-  width: 100%;
-  font-family: "Inter", Helvetica;
-  font-weight: 400;
-  color: #ffffff;
-  font-size: 40px;
-  text-align: center;
-  letter-spacing: -0.8px;
-  line-height: 1;
-  margin: 0;
-}
-
-.landing-page-moccet .your-personal-health em {
-  font-style: italic;
-  font-weight: 400;
+  align-self: center;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
 .landing-page-moccet .enter-email {
@@ -357,8 +348,7 @@ a {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .landing-page-moccet .text-wrapper {
-    font-size: 80px;
-    left: calc(50% - 150px);
+    max-width: 70vw;
   }
 
   .landing-page-moccet .frame {
@@ -368,7 +358,7 @@ a {
   }
 
   .landing-page-moccet .your-personal-health {
-    font-size: 32px;
+    max-width: 90%;
   }
 
   .landing-page-moccet .social-links {
@@ -380,9 +370,8 @@ a {
 
 @media (max-width: 480px) {
   .landing-page-moccet .text-wrapper {
-    font-size: 60px;
-    left: calc(50% - 110px);
-    top: calc(50% - 60px);
+    max-width: 85vw;
+    top: calc(50% - 150px);
   }
 
   .landing-page-moccet .logo {
@@ -398,7 +387,7 @@ a {
   }
 
   .landing-page-moccet .your-personal-health {
-    font-size: 24px;
+    max-width: 95%;
   }
 
   .landing-page-moccet .div-wrapper {

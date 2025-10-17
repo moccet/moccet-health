@@ -20,6 +20,13 @@ a {
   text-decoration: none;
 }
 
+@font-face {
+  font-family: "SF Pro";
+  src: local("SF Pro Display"), local("SFProDisplay-Medium");
+  font-weight: 500;
+  font-stretch: expanded;
+}
+
 :root {
   --nnn-font-family: "Inter", Helvetica;
   --nnn-font-weight: 400;
@@ -49,7 +56,7 @@ a {
   align-self: stretch;
   width: 100%;
   padding: 20px;
-  background-image: url('/images/chandu-j-s-w-6dug28-5u-unsplash-1.png');
+  background-image: url('https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -70,12 +77,18 @@ a {
   z-index: 1;
 }
 
-.landing-page-moccet .moccet-title {
-  width: auto;
-  height: auto;
-  max-width: 50vw;
-  display: block;
-  object-fit: contain;
+.landing-page-moccet .forge-title {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #FFFFFF;
+  font-size: clamp(80px, 12vw, 190px);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
 }
 
 .landing-page-moccet .logo {
@@ -322,11 +335,6 @@ a {
   aspect-ratio: 1;
 }
 
-.landing-page-moccet .linkedin-icon {
-  width: 16px;
-  height: 16px;
-}
-
 .landing-page-moccet .social-links a {
   display: inline-block;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -344,16 +352,14 @@ a {
 }
 
 .landing-page-moccet .div-wrapper {
-  width: auto;
-  min-width: 73px;
+  width: 73px;
   position: relative;
   height: 24px;
 }
 
 .landing-page-moccet .text-wrapper-4 {
   position: absolute;
-  width: auto;
-  white-space: nowrap;
+  width: 100%;
   height: calc(100% - 11px);
   top: 5px;
   left: 0;
@@ -377,17 +383,15 @@ a {
 }
 
 .landing-page-moccet .social-link-2 {
-  width: auto;
-  min-width: 110px;
-  overflow: visible;
+  width: 83px;
+  overflow: hidden;
   position: relative;
   height: 24px;
 }
 
 .landing-page-moccet .text-wrapper-5 {
   position: absolute;
-  width: auto;
-  white-space: nowrap;
+  width: calc(100% + 21px);
   height: calc(100% - 11px);
   top: 5px;
   left: 0;
@@ -399,57 +403,41 @@ a {
   line-height: normal;
 }
 
-/* Referral Section */
-.landing-page-moccet .referral-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-}
-
-.landing-page-moccet .success-message {
-  font-family: "Inter", Helvetica;
-  font-weight: 500;
-  color: #ffffff;
-  font-size: 28px;
-  letter-spacing: -0.56px;
-  line-height: normal;
-  text-align: center;
-}
-
-.landing-page-moccet .position-number {
-  font-family: "Inter", Helvetica;
-  font-weight: 700;
-  color: #ffffff;
-  font-size: 72px;
-  letter-spacing: -2.16px;
-  line-height: 1;
-  text-align: center;
+.landing-page-moccet .second-page {
+  position: relative;
+  align-self: stretch;
+  width: 100%;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .landing-page-moccet .first-page {
     padding: 15px;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
   }
 
   .landing-page-moccet .title-centered {
     margin-top: -100px;
   }
 
-  .landing-page-moccet .moccet-title {
-    max-width: 60vw;
+  .landing-page-moccet .forge-title {
+    font-size: clamp(70px, 12vw, 120px);
   }
 
   .landing-page-moccet .content {
-    gap: 20px;
-    padding: 0 15px;
-    bottom: 40px;
+    gap: 24px;
+    padding: 0 20px;
+    bottom: 60px;
+    max-width: 100%;
   }
 
   .landing-page-moccet .your-personal {
-    max-width: 90%;
+    max-width: 85%;
   }
 
   .landing-page-moccet .enter-email {
@@ -461,29 +449,51 @@ a {
 
   .landing-page-moccet .email-input-field {
     text-align: center;
-    padding: 8px 0;
+    padding: 10px 0;
+    font-size: 16px; /* Prevents iOS zoom on focus */
   }
 
   .landing-page-moccet .button {
     width: 100%;
-    padding: 13px 20px;
+    padding: 15px 20px;
+  }
+
+  .landing-page-moccet .text-wrapper-3 {
+    font-size: 16px;
+  }
+
+  .landing-page-moccet .p {
+    font-size: 13px;
   }
 
   .landing-page-moccet .social-links {
     gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
+    height: auto;
   }
 
   .landing-page-moccet .div-wrapper,
   .landing-page-moccet .social-link-2 {
     width: auto;
   }
+
+  .landing-page-moccet .second-page {
+    width: 100%;
+    height: auto;
+  }
 }
 
 @media (max-width: 480px) {
-  .landing-page-moccet .moccet-title {
-    max-width: 70vw;
+  .landing-page-moccet .first-page {
+    padding: 12px;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .landing-page-moccet .forge-title {
+    font-size: clamp(48px, 16vw, 72px);
+    letter-spacing: -0.03em;
   }
 
   .landing-page-moccet .title-centered {
@@ -491,45 +501,143 @@ a {
   }
 
   .landing-page-moccet .logo {
-    width: 50px;
-    height: 43px;
-    top: 20px;
-    left: calc(50% - 25px);
+    width: 48px;
+    height: 40px;
+    top: 18px;
+    left: calc(50% - 24px);
   }
 
   .landing-page-moccet .logo .ellipse,
   .landing-page-moccet .logo .div,
   .landing-page-moccet .logo .ellipse-2,
   .landing-page-moccet .logo .ellipse-3,
-  .landing-page-moccet .logo .ellipse-4,
-  .landing-page-moccet .logo .ellipse-6 {
-    transform: scale(0.75);
+  .landing-page-moccet .logo .ellipse-4 {
+    transform: scale(0.7);
     transform-origin: center;
   }
 
   .landing-page-moccet .logo .ellipse-5 {
-    transform: scale(0.75) rotate(-45deg);
+    transform: scale(0.7) rotate(-45deg);
+    transform-origin: center;
+  }
+
+  .landing-page-moccet .logo .ellipse-6 {
+    transform: scale(0.7);
     transform-origin: center;
   }
 
   .landing-page-moccet .content {
-    gap: 15px;
+    gap: 18px;
+    bottom: 40px;
+    padding: 0 16px;
+  }
+
+  .landing-page-moccet .your-personal {
+    max-width: 90%;
+  }
+
+  .landing-page-moccet .enter-email {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .landing-page-moccet .email-input-field {
+    font-size: 16px; /* Prevents iOS zoom */
+    padding: 8px 0;
+  }
+
+  .landing-page-moccet .button {
+    padding: 14px 20px;
+  }
+
+  .landing-page-moccet .text-wrapper-3 {
+    font-size: 15px;
+  }
+
+  .landing-page-moccet .p {
+    font-size: 12px;
+  }
+
+  .landing-page-moccet .social-links {
+    gap: 16px;
+  }
+
+  .landing-page-moccet .text-wrapper-4,
+  .landing-page-moccet .text-wrapper-5 {
+    font-size: 10px;
+  }
+
+  .landing-page-moccet .social-link {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .landing-page-moccet .forge-title {
+    font-size: clamp(40px, 18vw, 60px);
+  }
+
+  .landing-page-moccet .content {
+    gap: 16px;
     bottom: 30px;
+    padding: 0 12px;
   }
 
   .landing-page-moccet .your-personal {
     max-width: 95%;
   }
 
+  .landing-page-moccet .enter-email {
+    padding: 10px;
+    gap: 8px;
+  }
+
   .landing-page-moccet .social-links {
+    gap: 12px;
+  }
+}
+
+/* Landscape mode optimization */
+@media (max-height: 600px) and (orientation: landscape) {
+  .landing-page-moccet .first-page {
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .landing-page-moccet .title-centered {
+    margin-top: -60px;
+  }
+
+  .landing-page-moccet .forge-title {
+    font-size: clamp(50px, 10vh, 80px);
+  }
+
+  .landing-page-moccet .content {
+    bottom: 30px;
     gap: 15px;
   }
 
-  .landing-page-moccet .success-message {
-    font-size: 24px;
+  .landing-page-moccet .logo {
+    top: 15px;
+    width: 40px;
+    height: 35px;
   }
 
-  .landing-page-moccet .position-number {
-    font-size: 56px;
+  .landing-page-moccet .logo .ellipse,
+  .landing-page-moccet .logo .div,
+  .landing-page-moccet .logo .ellipse-2,
+  .landing-page-moccet .logo .ellipse-3,
+  .landing-page-moccet .logo .ellipse-4 {
+    transform: scale(0.6);
+  }
+
+  .landing-page-moccet .logo .ellipse-5 {
+    transform: scale(0.6) rotate(-45deg);
+  }
+
+  .landing-page-moccet .logo .ellipse-6 {
+    transform: scale(0.6);
   }
 }

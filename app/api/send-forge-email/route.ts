@@ -17,7 +17,7 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
-                            <img src="https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg" alt="forge gradient" style="width: 100%; max-width: 100%; height: auto; display: block;" />
+                            <img src="https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg" alt="forge gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
                         </td>
                     </tr>
                 </table>

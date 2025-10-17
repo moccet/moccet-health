@@ -77,6 +77,7 @@ export default function SagePage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
+        <a href="/" className="product-link product-link-left">moccet</a>
         <div className="logo" role="img" aria-label="Sage logo">
           <div className="ellipse"></div>
           <div className="div"></div>
@@ -86,6 +87,7 @@ export default function SagePage() {
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
         </div>
+        <a href="/forge" className="product-link product-link-right">forge</a>
         <header className="title-centered">
           <h1 className="sage-title">sage</h1>
         </header>

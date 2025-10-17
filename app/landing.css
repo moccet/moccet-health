@@ -1,5 +1,12 @@
 @import url("https://fonts.googleapis.com/css?family=Inter:300,400");
 
+@font-face {
+  font-family: "SF Pro";
+  src: local("SF Pro Display"), local("SFProDisplay-Medium");
+  font-weight: 500;
+  font-stretch: expanded;
+}
+
 * {
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
@@ -73,9 +80,35 @@ a {
 .landing-page-moccet .moccet-title {
   width: auto;
   height: auto;
-  max-width: 50vw;
+  max-width: 30vw;
   display: block;
   object-fit: contain;
+}
+
+.landing-page-moccet .product-link {
+  position: absolute;
+  top: 50px;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.landing-page-moccet .product-link:hover {
+  opacity: 0.7;
+}
+
+.landing-page-moccet .product-link-left {
+  right: calc(50% + 80px);
+}
+
+.landing-page-moccet .product-link-right {
+  left: calc(50% + 80px);
 }
 
 .landing-page-moccet .logo {
@@ -434,12 +467,25 @@ a {
     padding: 15px;
   }
 
+  .landing-page-moccet .product-link {
+    font-size: 16px;
+    top: 45px;
+  }
+
+  .landing-page-moccet .product-link-left {
+    right: calc(50% + 60px);
+  }
+
+  .landing-page-moccet .product-link-right {
+    left: calc(50% + 60px);
+  }
+
   .landing-page-moccet .title-centered {
     margin-top: -100px;
   }
 
   .landing-page-moccet .moccet-title {
-    max-width: 60vw;
+    max-width: 40vw;
   }
 
   .landing-page-moccet .content {
@@ -482,8 +528,21 @@ a {
 }
 
 @media (max-width: 480px) {
+  .landing-page-moccet .product-link {
+    font-size: 14px;
+    top: 37px;
+  }
+
+  .landing-page-moccet .product-link-left {
+    right: calc(50% + 45px);
+  }
+
+  .landing-page-moccet .product-link-right {
+    left: calc(50% + 45px);
+  }
+
   .landing-page-moccet .moccet-title {
-    max-width: 70vw;
+    max-width: 50vw;
   }
 
   .landing-page-moccet .title-centered {

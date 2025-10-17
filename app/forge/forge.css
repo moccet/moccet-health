@@ -91,6 +91,32 @@ a {
   white-space: nowrap;
 }
 
+.landing-page-moccet .product-link {
+  position: absolute;
+  top: 50px;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.landing-page-moccet .product-link:hover {
+  opacity: 0.7;
+}
+
+.landing-page-moccet .product-link-left {
+  right: calc(50% + 80px);
+}
+
+.landing-page-moccet .product-link-right {
+  left: calc(50% + 80px);
+}
+
 .landing-page-moccet .logo {
   position: absolute;
   top: 35px;
@@ -418,6 +444,19 @@ a {
     margin-top: -100px;
   }
 
+  .landing-page-moccet .product-link {
+    font-size: 16px;
+    top: 45px;
+  }
+
+  .landing-page-moccet .product-link-left {
+    right: calc(50% + 60px);
+  }
+
+  .landing-page-moccet .product-link-right {
+    left: calc(50% + 60px);
+  }
+
   .landing-page-moccet .forge-title {
     font-size: clamp(70px, 12vw, 120px);
   }
@@ -483,6 +522,19 @@ a {
     padding: 12px;
     min-height: 100vh;
     min-height: 100dvh;
+  }
+
+  .landing-page-moccet .product-link {
+    font-size: 14px;
+    top: 37px;
+  }
+
+  .landing-page-moccet .product-link-left {
+    right: calc(50% + 45px);
+  }
+
+  .landing-page-moccet .product-link-right {
+    left: calc(50% + 45px);
   }
 
   .landing-page-moccet .forge-title {

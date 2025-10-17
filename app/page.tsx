@@ -51,6 +51,7 @@ export default function LandingPage() {
     return (
       <main className="landing-page-moccet">
         <section className="first-page">
+          <a href="/forge" className="product-link product-link-left">forge</a>
           <div className="logo" role="img" aria-label="Moccet logo">
             <div className="ellipse"></div>
             <div className="div"></div>
@@ -60,6 +61,7 @@ export default function LandingPage() {
             <div className="ellipse-5"></div>
             <div className="ellipse-6"></div>
           </div>
+          <a href="/sage" className="product-link product-link-right">sage</a>
           <header className="title-centered">
             <img className="moccet-title" src="/images/moccet.png" alt="moccet" />
           </header>
@@ -77,6 +79,7 @@ export default function LandingPage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
+        <a href="/forge" className="product-link product-link-left">forge</a>
         <div className="logo" role="img" aria-label="Moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
@@ -86,6 +89,7 @@ export default function LandingPage() {
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
         </div>
+        <a href="/sage" className="product-link product-link-right">sage</a>
         <header className="title-centered">
           <img className="moccet-title" src="/images/moccet.png" alt="moccet" />
         </header>

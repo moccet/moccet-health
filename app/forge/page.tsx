@@ -77,6 +77,7 @@ export default function ForgePage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
+        <a href="/" className="product-link product-link-left">moccet</a>
         <div className="logo" role="img" aria-label="Forge logo">
           <div className="ellipse"></div>
           <div className="div"></div>
@@ -86,6 +87,7 @@ export default function ForgePage() {
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
         </div>
+        <a href="/sage" className="product-link product-link-right">sage</a>
         <header className="title-centered">
           <h1 className="forge-title">forge</h1>
         </header>

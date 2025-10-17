@@ -5,7 +5,7 @@ import './onboarding.css';
 
 export default function SageOnboarding() {
   const [currentScreen, setCurrentScreen] = useState(1);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Record<string, string | string[]>>({});
   const [selectedOptions, setSelectedOptions] = useState<{ [key: number]: string[] }>({});
   const [expandedBoxes, setExpandedBoxes] = useState<Set<number>>(new Set());
   const [uploadedFiles, setUploadedFiles] = useState<{ [key: string]: File | null }>({});
@@ -216,7 +216,7 @@ export default function SageOnboarding() {
           </div>
           <input
             type="file"
-            ref={(el) => (fileInputRefs.current['bloodWork'] = el)}
+            ref={(el) => { fileInputRefs.current['bloodWork'] = el; }}
             accept=".pdf,.jpg,.jpeg,.png"
             style={{ display: 'none' }}
             onChange={(e) => handleFileUpload('bloodWork', e.target.files?.[0] || null)}
@@ -299,7 +299,7 @@ export default function SageOnboarding() {
           </div>
           <input
             type="file"
-            ref={(el) => (fileInputRefs.current['microbiome'] = el)}
+            ref={(el) => { fileInputRefs.current['microbiome'] = el; }}
             accept=".pdf"
             style={{ display: 'none' }}
             onChange={(e) => handleFileUpload('microbiome', e.target.files?.[0] || null)}
@@ -345,7 +345,7 @@ export default function SageOnboarding() {
           </div>
           <input
             type="file"
-            ref={(el) => (fileInputRefs.current['genome'] = el)}
+            ref={(el) => { fileInputRefs.current['genome'] = el; }}
             accept=".txt,.csv"
             style={{ display: 'none' }}
             onChange={(e) => handleFileUpload('genome', e.target.files?.[0] || null)}

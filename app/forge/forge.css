@@ -352,17 +352,13 @@ a {
 }
 
 .landing-page-moccet .div-wrapper {
-  width: 73px;
   position: relative;
   height: 24px;
+  display: flex;
+  align-items: center;
 }
 
 .landing-page-moccet .text-wrapper-4 {
-  position: absolute;
-  width: 100%;
-  height: calc(100% - 11px);
-  top: 5px;
-  left: 0;
   font-family: "Inter", Helvetica;
   font-weight: 300;
   color: #ffffff;
@@ -370,6 +366,7 @@ a {
   letter-spacing: -0.22px;
   line-height: normal;
   transition: opacity 0.2s ease;
+  white-space: nowrap;
 }
 
 .landing-page-moccet .div-wrapper .text-wrapper-4:hover {
@@ -383,26 +380,20 @@ a {
 }
 
 .landing-page-moccet .social-link-2 {
-  width: auto;
-  min-width: 120px;
-  overflow: visible;
   position: relative;
   height: 24px;
+  display: flex;
+  align-items: center;
 }
 
 .landing-page-moccet .text-wrapper-5 {
-  position: absolute;
-  width: auto;
-  white-space: nowrap;
-  height: calc(100% - 11px);
-  top: 5px;
-  left: 0;
   font-family: "Inter", Helvetica;
   font-weight: 300;
   color: #ffffff;
   font-size: 11px;
   letter-spacing: -0.22px;
   line-height: normal;
+  white-space: nowrap;
 }
 
 .landing-page-moccet .second-page {
@@ -469,15 +460,16 @@ a {
   }
 
   .landing-page-moccet .social-links {
-    gap: 20px;
+    gap: 20px 24px;
     flex-wrap: wrap;
     justify-content: center;
     height: auto;
+    row-gap: 16px;
   }
 
-  .landing-page-moccet .div-wrapper,
-  .landing-page-moccet .social-link-2 {
-    width: auto;
+  .landing-page-moccet .text-wrapper-4,
+  .landing-page-moccet .text-wrapper-5 {
+    font-size: 10px;
   }
 
   .landing-page-moccet .second-page {
@@ -561,17 +553,18 @@ a {
   }
 
   .landing-page-moccet .social-links {
-    gap: 16px;
+    gap: 16px 20px;
+    row-gap: 14px;
   }
 
   .landing-page-moccet .text-wrapper-4,
   .landing-page-moccet .text-wrapper-5 {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .landing-page-moccet .social-link {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 }
 
@@ -597,7 +590,18 @@ a {
   }
 
   .landing-page-moccet .social-links {
-    gap: 12px;
+    gap: 14px 18px;
+    row-gap: 12px;
+  }
+
+  .landing-page-moccet .social-link {
+    width: 12px;
+    height: 12px;
+  }
+
+  .landing-page-moccet .text-wrapper-4,
+  .landing-page-moccet .text-wrapper-5 {
+    font-size: 8px;
   }
 }
 

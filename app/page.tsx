@@ -4,12 +4,32 @@ import { useState } from 'react';
 import './landing.css';
 
 export default function LandingPage() {
-  const [userPosition] = useState(2848);
+  const [userPosition, setUserPosition] = useState(2848);
   const [showReferral, setShowReferral] = useState(false);
   const [email, setEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Get waitlist position
+    try {
+      const positionResponse = await fetch('/api/waitlist-position', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+        }),
+      });
+      const positionData = await positionResponse.json();
+      if (positionData.position) {
+        setUserPosition(positionData.position);
+      }
+    } catch (error) {
+      console.error('Error getting waitlist position:', error);
+      // Continue with default position
+    }
 
     // Send Slack notification
     try {

@@ -5,7 +5,8 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thank you for requesting access to forge</title>
+    <title>forge - Access Request Confirmation</title>
+    <meta name="description" content="You requested access to forge. We're building training programs that adapt to your biology." />
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a;">
 
@@ -37,19 +38,19 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                         <td style="padding: 0 20px;">
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                Thank you for requesting access to forge. We're glad you're here.
+                                You requested access to forge. We're glad you're here.
                             </p>
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We're building something different—training programs that adapt to your biology, not generic templates. forge learns from your biomarkers, wearable data, and daily patterns to create programs matched to your current metabolic state.
+                                Training programs that adapt to your biology, not generic templates. forge learns from your biomarkers, wearable data, and daily patterns to create programs matched to your current metabolic state.
                             </p>
 
                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We're bringing on users gradually to ensure everyone gets the best experience. We'll email you when you can start.
+                                We're bringing on users gradually to ensure everyone gets the best experience. We'll email you as soon as you can start.
                             </p>
 
                             <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                moccet
+                                <strong>moccet</strong>
                             </p>
 
                         </td>
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
         personalizations: [
           {
             to: [{ email }],
-            subject: 'Thank you for requesting access to forge',
+            subject: 'forge - Access Request Confirmation',
           },
         ],
         from: {

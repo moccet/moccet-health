@@ -5,7 +5,8 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thank you for requesting access to sage</title>
+    <title>sage - Access Request Confirmation</title>
+    <meta name="description" content="sage - Personalized nutrition plans based on your biology, metabolic data, and microbiome" />
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a;">
 
@@ -37,19 +38,19 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                         <td style="padding: 0 20px;">
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                Thank you for requesting access to sage. We're glad you're here.
+                                You requested access to sage. We're glad you're here.
                             </p>
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We're building something different—nutrition plans that work with your biology, not generic meal templates. sage learns from your metabolic data, microbiome, and daily patterns to create plans matched to your current state.
+                                Nutrition plans that work with your biology, not generic meal templates. sage learns from your metabolic data, microbiome, and daily patterns to create plans matched to your current state.
                             </p>
 
                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We're bringing on users gradually to ensure everyone gets the best experience. We'll email you when you can start.
+                                We're bringing on users gradually to ensure everyone gets the best experience. We'll email you as soon as you can start.
                             </p>
 
                             <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                moccet
+                                <strong>moccet</strong>
                             </p>
 
                         </td>
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
         personalizations: [
           {
             to: [{ email }],
-            subject: 'Thank you for requesting access to sage',
+            subject: 'sage - Access Request Confirmation',
           },
         ],
         from: {

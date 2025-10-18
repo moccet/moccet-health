@@ -6,8 +6,7 @@ import './sage.css';
 
 export default function SagePage() {
   const [email, setEmail] = useState('');
-  const [buttonText, setButtonText] = useState('Join the waitlist');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,10 +17,6 @@ export default function SagePage() {
       alert('Please enter a valid email address');
       return;
     }
-
-    // Disable button during submission
-    setIsSubmitting(true);
-    setButtonText('Sending...');
 
     try {
       // Send Slack notification
@@ -57,21 +52,12 @@ export default function SagePage() {
         // Continue even if email fails
       }
 
-      // Show success message
-      setButtonText('Sent!');
-      setEmail('');
-
-      // Reset button after 2 seconds
-      setTimeout(() => {
-        setButtonText('Join the waitlist');
-        setIsSubmitting(false);
-      }, 2000);
+      // Show welcome message
+      setIsSubmitted(true);
 
     } catch (error) {
       console.error('Error:', error);
       alert('There was an error. Please try again.');
-      setButtonText('Join the waitlist');
-      setIsSubmitting(false);
     }
   };
 
@@ -103,23 +89,26 @@ export default function SagePage() {
             src="https://c.animaapp.com/ArhZSyxG/img/your-personal-nutrition-plan-@4x.png"
             alt="Your personal nutrition plan"
           />
-          <form className="enter-email" onSubmit={handleSubmit} noValidate>
-            <input
-              type="email"
-              id="email-input"
-              name="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              aria-required="true"
-              className="email-input-field"
-              disabled={isSubmitting}
-            />
-            <button type="submit" className="button" disabled={isSubmitting}>
-              <span className="text-wrapper-3">{buttonText}</span>
-            </button>
-          </form>
+          {!isSubmitted ? (
+            <form className="enter-email" onSubmit={handleSubmit} noValidate>
+              <input
+                type="email"
+                id="email-input"
+                name="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-required="true"
+                className="email-input-field"
+              />
+              <button type="submit" className="button">
+                <span className="text-wrapper-3">Join the waitlist</span>
+              </button>
+            </form>
+          ) : (
+            <div className="success-message">Welcome to sage</div>
+          )}
           <p className="p">1000+ people on the list for early access</p>
           <nav className="social-links" aria-label="Social media links and footer navigation">
             <a

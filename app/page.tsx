@@ -4,9 +4,8 @@ import { useState } from 'react';
 import './landing.css';
 
 export default function LandingPage() {
-  const [userPosition, setUserPosition] = useState(2848);
-  const [showReferral, setShowReferral] = useState(false);
   const [email, setEmail] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,13 +21,8 @@ export default function LandingPage() {
           email,
         }),
       });
-      const positionData = await positionResponse.json();
-      if (positionData.position) {
-        setUserPosition(positionData.position);
-      }
     } catch (error) {
       console.error('Error getting waitlist position:', error);
-      // Continue with default position
     }
 
     // Send Slack notification
@@ -64,37 +58,9 @@ export default function LandingPage() {
       // Continue even if email fails
     }
 
-    setShowReferral(true);
+    // Show welcome message
+    setIsSubmitted(true);
   };
-
-  if (showReferral) {
-    return (
-      <main className="landing-page-moccet">
-        <section className="first-page">
-          <a href="/forge" className="product-link product-link-left">forge</a>
-          <div className="logo" role="img" aria-label="Moccet logo">
-            <div className="ellipse"></div>
-            <div className="div"></div>
-            <div className="ellipse-2"></div>
-            <div className="ellipse-3"></div>
-            <div className="ellipse-4"></div>
-            <div className="ellipse-5"></div>
-            <div className="ellipse-6"></div>
-          </div>
-          <a href="/sage" className="product-link product-link-right">sage</a>
-          <header className="title-centered">
-            <img className="moccet-title" src="/images/moccet.png" alt="moccet" />
-          </header>
-          <div className="content">
-            <div className="referral-content">
-              <div className="success-message">You&apos;re in</div>
-              <span className="position-number">#{userPosition}</span>
-            </div>
-          </div>
-        </section>
-      </main>
-    );
-  }
 
   return (
     <main className="landing-page-moccet">
@@ -119,22 +85,26 @@ export default function LandingPage() {
             src="/images/your-personal-health-ai.png"
             alt="Your personal health AI"
           />
-          <form className="enter-email" onSubmit={handleSubmit} noValidate>
-            <input
-              type="email"
-              id="email-input"
-              name="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              aria-required="true"
-              className="email-input-field"
-            />
-            <button type="submit" className="button">
-              <span className="text-wrapper-3">Join the waitlist</span>
-            </button>
-          </form>
+          {!isSubmitted ? (
+            <form className="enter-email" onSubmit={handleSubmit} noValidate>
+              <input
+                type="email"
+                id="email-input"
+                name="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-required="true"
+                className="email-input-field"
+              />
+              <button type="submit" className="button">
+                <span className="text-wrapper-3">Join the waitlist</span>
+              </button>
+            </form>
+          ) : (
+            <div className="success-message">Welcome to moccet</div>
+          )}
           <p className="p">2000+ people waiting for early access</p>
           <nav className="social-links" aria-label="Social media links and footer navigation">
             <a

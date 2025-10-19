@@ -303,7 +303,7 @@ export default function ForgePage() {
             <h2 className="section-title">Using <strong>forge</strong></h2>
             <p className="section-text">Go to <a href="https://moccet.ai/forge" target="_blank" rel="noopener noreferrer">moccet.ai/forge</a>. Upload labs, connect wearables through Apple Health, Garmin, Whoop, Oura, or Fitbit. Connect calendar, email, productivity tools if you want <strong>forge</strong> to account for life stress. Answer questions about training history and goals.</p>
             <p className="section-text">You get your program immediately. Request a new plan if you want it to be updated. If HRV trends down for a week, <strong>forge</strong> flags it and suggests modifications. If your calendar shows a heavy travel period coming up, training adjusts before you leave.</p>
-            <p className="section-text"><strong>forge</strong> is free for early users. If it&apos;s useful, share with your friends to use it too and join the waitlist at <a href="https://moccet.ai" target="_blank" rel="noopener noreferrer">moccet.com</a> for the full platform that delivers daily insights across all aspects of health, not just training.</p>
+            <p className="section-text"><strong>forge</strong> is free for early users. If you find it useful, feel free to share with your friends. Visit <a href="https://moccet.ai" target="_blank" rel="noopener noreferrer">moccet.ai</a> for the full platform that delivers daily insights across all aspects of health, not just training.</p>
           </div>
         </div>
 

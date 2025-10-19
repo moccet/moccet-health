@@ -103,7 +103,7 @@ export default function SagePage() {
                 className="email-input-field"
               />
               <button type="submit" className="button">
-                <span className="text-wrapper-3">Join the waitlist</span>
+                <span className="text-wrapper-3">Get started</span>
               </button>
             </form>
           ) : (

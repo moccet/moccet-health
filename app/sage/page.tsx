@@ -332,7 +332,7 @@ export default function SagePage() {
             <h2 className="section-title">Using <strong>sage</strong></h2>
             <p className="section-text">Go to <a href="https://moccet.ai/sage" target="_blank" rel="noopener noreferrer">moccet.ai/sage</a>. Upload labs, connect wearables and health apps like Apple Health and CGM apps. Upload microbiome test results if you have them. Connect calendar and productivity tools if you want <strong>sage</strong> to account for your real schedule. Answer questions about dietary preferences, cooking ability, time constraints, food access.</p>
             <p className="section-text">You get meal plans immediately. Plans can be updated as patterns emerge from your tracking data. If your glucose starts trending up, <strong>sage</strong> flags it and adjusts composition or timing. If your calendar shows a busy week ahead, meals get simpler without losing nutritional targets.</p>
-            <p className="section-text"><strong>sage</strong> is free for the first users. If you find useful, feel free to share with your friends. Join the waitlist at <a href="https://moccet.com" target="_blank" rel="noopener noreferrer">moccet.com</a> for the full platform that delivers daily insights across all aspects of health, not just nutrition.</p>
+            <p className="section-text"><strong>sage</strong> is free for the first users. If you find useful, feel free to share with your friends. Join the waitlist at <a href="https://moccet.ai" target="_blank" rel="noopener noreferrer">moccet.com</a> for the full platform that delivers daily insights across all aspects of health, not just nutrition.</p>
           </div>
 
         </div>

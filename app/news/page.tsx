@@ -107,7 +107,7 @@ export default function NewsPage() {
             <div className="empty-state">
               <h3>Coming Soon</h3>
               <p>
-                We're getting ready to share insights on health data, metabolic science, and product development.
+                We&apos;re getting ready to share insights on health data, metabolic science, and product development.
                 Follow us on <a href="https://substack.com/@moccetai" target="_blank" rel="noopener noreferrer">Substack</a> to be notified when we publish our first post.
               </p>
             </div>

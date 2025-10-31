@@ -19,7 +19,8 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                         <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
                             <img src="https://c.animaapp.com/uupO8NOC/img/3d-render-7snii6tu-68-unsplash.jpg" alt="moccet gradient" style="width: 100%; max-width: 100%; height: auto; max-height: 280px; object-fit: cover; display: block;" />
                         </td>
-                    </tr>
+                  
+                        </tr>
                 </table>
 
                 <!-- Content Container -->

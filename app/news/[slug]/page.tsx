@@ -4,13 +4,14 @@ import { getBlogPostBySlug } from './lib';
 import './blog-detail.css';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const post = await getBlogPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     return {
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const baseUrl = 'https://moccet.com'; // Update with your actual domain
-  const url = `${baseUrl}/news/${params.slug}`;
+  const url = `${baseUrl}/news/${slug}`;
 
   return {
     title: post.title,
@@ -56,7 +57,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function BlogDetailPage({ params }: PageProps) {
-  const post = await getBlogPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = await getBlogPostBySlug(slug);
 
   function formatDate(dateString: string): string {
     if (!dateString) return '';
@@ -95,7 +97,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://moccet.com/news/${params.slug}`
+      '@id': `https://moccet.com/news/${slug}`
     }
   } : null;
 
@@ -120,7 +122,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
   }
 
   // Get current URL for sharing buttons (client-side)
-  const shareUrl = `https://moccet.com/news/${params.slug}`;
+  const shareUrl = `https://moccet.com/news/${slug}`;
 
   return (
     <main className="blog-detail-page">

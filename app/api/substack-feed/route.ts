@@ -52,6 +52,11 @@ function parseRSSFeed(xmlText: string): BlogPost[] {
     const imageMatch = content.match(/<img[^>]+src="([^">]+)"/);
     const image = imageMatch ? imageMatch[1] : undefined;
 
+    // Remove the first image from content to avoid duplication
+    const contentWithoutFirstImage = image
+      ? content.replace(/<img[^>]*src="[^"]*"[^>]*>/, '')
+      : content;
+
     // Filter out placeholder/profile posts
     const cleanTitle = stripHTML(title);
     const cleanDesc = stripHTML(description);
@@ -69,7 +74,7 @@ function parseRSSFeed(xmlText: string): BlogPost[] {
         link: cleanHTML(link),
         pubDate: pubDate || '',
         description: stripHTML(description).substring(0, 200) + '...',
-        content: cleanHTML(content),
+        content: cleanHTML(contentWithoutFirstImage),
         image
       });
     }

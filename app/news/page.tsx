@@ -62,82 +62,81 @@ export default function NewsPage() {
       .replace(/(^-|-$)/g, '');
   }
 
+  const featuredPost = posts[0];
+  const remainingPosts = posts.slice(1);
+
   return (
-    <main className="landing-page-moccet">
-      <section
-        className="first-page"
-        style={{
-          backgroundImage: "url('https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg')"
-        }}
-      >
-        <Link href="/" className="product-link product-link-left">moccet</Link>
-        <div className="logo" role="img" aria-label="News logo">
-          <div className="ellipse"></div>
-          <div className="div"></div>
-          <div className="ellipse-2"></div>
-          <div className="ellipse-3"></div>
-          <div className="ellipse-4"></div>
-          <div className="ellipse-5"></div>
-          <div className="ellipse-6"></div>
-        </div>
-        <Link href="/sage" className="product-link product-link-right">sage</Link>
-        <header className="title-centered">
-          <h1 className="news-title">news</h1>
-        </header>
-      </section>
-
-      {/* Blog Section */}
-      <section className="blog-section">
-        <div className="blog-container">
-          <div className="blog-header">
-            <h2>Latest Updates</h2>
-            <p>Stay informed with insights from moccet on health data, metabolic science, and building better products.</p>
+    <main className="news-page">
+      <div className="news-container">
+        {loading ? (
+          <div className="loading-state">
+            <p>Loading posts...</p>
           </div>
-
-          {loading ? (
-            <div className="loading-state">
-              <p>Loading posts...</p>
-            </div>
-          ) : error ? (
-            <div className="empty-state">
-              <h3>Unable to load posts</h3>
-              <p>{error}</p>
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="empty-state">
-              <h3>Coming Soon</h3>
-              <p>
-                We&apos;re getting ready to share insights on health data, metabolic science, and product development.
-                Follow us on <a href="https://substack.com/@moccetai" target="_blank" rel="noopener noreferrer">Substack</a> to be notified when we publish our first post.
-              </p>
-            </div>
-          ) : (
-            <div className="blog-grid">
-              {posts.map((post, index) => (
-                <Link
-                  key={index}
-                  href={`/news/${generateSlug(post.title)}`}
-                  className="blog-card"
-                >
-                  {post.image && (
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="blog-card-image"
-                    />
+        ) : error ? (
+          <div className="empty-state">
+            <h3>Unable to load posts</h3>
+            <p>{error}</p>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="empty-state">
+            <h3>Coming Soon</h3>
+            <p>
+              We&apos;re getting ready to share insights on health data, metabolic science, and product development.
+              Follow us on <a href="https://substack.com/@moccetai" target="_blank" rel="noopener noreferrer">Substack</a> to be notified when we publish our first post.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Featured Post */}
+            {featuredPost && (
+              <section className="featured-post">
+                <Link href={`/news/${generateSlug(featuredPost.title)}`} className="featured-post-link">
+                  {featuredPost.image && (
+                    <div className="featured-post-image-wrapper">
+                      <img
+                        src={featuredPost.image}
+                        alt={featuredPost.title}
+                        className="featured-post-image"
+                      />
+                    </div>
                   )}
-                  <div className="blog-card-content">
-                    <div className="blog-card-date">{formatDate(post.pubDate)}</div>
-                    <h3 className="blog-card-title">{post.title}</h3>
-                    <p className="blog-card-description">{post.description}</p>
-                    <span className="blog-card-link">Read more →</span>
+                  <div className="featured-post-content">
+                    <h2 className="featured-post-title">{featuredPost.title}</h2>
+                    <p className="featured-post-description">{featuredPost.description}</p>
+                    <button className="featured-post-button">READ MORE →</button>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+              </section>
+            )}
+
+            {/* Blog Grid */}
+            {remainingPosts.length > 0 && (
+              <section className="blog-grid-section">
+                <div className="blog-grid">
+                  {remainingPosts.map((post, index) => (
+                    <Link
+                      key={index}
+                      href={`/news/${generateSlug(post.title)}`}
+                      className="blog-card"
+                    >
+                      {post.image && (
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="blog-card-image"
+                        />
+                      )}
+                      <div className="blog-card-content">
+                        <h3 className="blog-card-title">{post.title}</h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }

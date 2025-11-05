@@ -10,12 +10,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "moccet",
-  description: "",
-  keywords: "autonomous AI, business intelligence, AI discovery, expert execution, artificial intelligence, enterprise AI, automated insights",
+  title: {
+    default: "moccet",
+    template: "%s | moccet"
+  },
+  description: "Autonomous AI for business intelligence. Expert discovery meets automated execution.",
+  keywords: "autonomous AI, business intelligence, AI discovery, expert execution, artificial intelligence, enterprise AI, automated insights, health data, metabolic science",
   authors: [{ name: "moccet" }],
   viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
+  alternates: {
+    canonical: "https://moccet.com"
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -42,23 +48,24 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
   openGraph: {
     title: "moccet",
-    description: "",
+    description: "Autonomous AI for business intelligence. Expert discovery meets automated execution.",
     type: "website",
     siteName: "moccet",
     locale: "en_US",
+    url: "https://moccet.com",
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'moccet',
+        alt: 'moccet - Autonomous AI for business intelligence',
       }
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "moccet",
-    description: "",
+    description: "Autonomous AI for business intelligence. Expert discovery meets automated execution.",
     images: ['/og-image.png'],
   },
 };

@@ -80,11 +80,11 @@ export default function PrivacyPage() {
             <h2>1. Introduction</h2>
             <p>
               Welcome to moccet. We are committed to protecting your privacy and ensuring the security of your personal information.
-              This Privacy Policy explains how moccet Inc. ("moccet," "we," "us," or "our") collects, uses, and protects your data
+              This Privacy Policy explains how moccet Inc. (&ldquo;moccet,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) collects, uses, and protects your data
               when you use our health AI services, including Sage (nutrition planning) and Forge (training programs).
             </p>
             <p>
-              By using moccet's services, you agree to the collection and use of information in accordance with this policy.
+              By using moccet&apos;s services, you agree to the collection and use of information in accordance with this policy.
             </p>
           </div>
 
@@ -224,9 +224,9 @@ export default function PrivacyPage() {
           </div>
 
           <div className="section">
-            <h2>10. Children's Privacy</h2>
+            <h2>10. Children&apos;s Privacy</h2>
             <p>
-              moccet's services are not intended for individuals under the age of 18. We do not knowingly
+              moccet&apos;s services are not intended for individuals under the age of 18. We do not knowingly
               collect personal information from children. If you believe we have inadvertently collected
               information from a child, please contact us immediately at <a href="mailto:privacy@moccet.com">privacy@moccet.com</a>.
             </p>
@@ -263,12 +263,12 @@ export default function PrivacyPage() {
               requirements. We will notify you of material changes by:
             </p>
             <ul>
-              <li>Posting the updated policy with a new "Last Updated" date</li>
+              <li>Posting the updated policy with a new &ldquo;Last Updated&rdquo; date</li>
               <li>Sending an email notification to your registered email address</li>
               <li>Displaying a prominent notice on our website or app</li>
             </ul>
             <p>
-              Your continued use of moccet's services after such updates constitutes acceptance of the revised policy.
+              Your continued use of moccet&apos;s services after such updates constitutes acceptance of the revised policy.
             </p>
           </div>
 

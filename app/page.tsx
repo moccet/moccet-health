@@ -7,8 +7,20 @@ export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return email.trim() && emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
 
     // Get waitlist position
     try {
@@ -98,7 +110,7 @@ export default function LandingPage() {
                 aria-required="true"
                 className="email-input-field"
               />
-              <button type="submit" className="button">
+              <button type="submit" className="button" disabled={!isValidEmail(email)}>
                 <span className="text-wrapper-3">Join the waitlist</span>
               </button>
             </form>

@@ -8,6 +8,11 @@ export default function ForgePage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return email.trim() && emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -102,7 +107,7 @@ export default function ForgePage() {
                 aria-required="true"
                 className="email-input-field"
               />
-              <button type="submit" className="button">
+              <button type="submit" className="button" disabled={!isValidEmail(email)}>
                 <span className="text-wrapper-3">Get started</span>
               </button>
             </form>

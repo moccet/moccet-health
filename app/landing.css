@@ -56,7 +56,7 @@ a {
   align-self: stretch;
   width: 100%;
   padding: 20px;
-  background-image: url('/images/chandu-j-s-w-6dug28-5u-unsplash-1.png');
+  background-image: url('/images/desert.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -72,57 +72,154 @@ a {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  margin-top: -120px;
-  pointer-events: none;
+  margin-top: -20px;
+  pointer-events: all;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
-.landing-page-moccet .moccet-title {
+.landing-page-moccet .moccet-title-img {
   width: auto;
   height: auto;
-  max-width: 30vw;
+  max-width: 250px;
   display: block;
   object-fit: contain;
+  filter: drop-shadow(0 2px 20px rgba(0, 0, 0, 0.3));
 }
 
-.landing-page-moccet .product-link {
-  position: absolute;
-  top: 50px;
+.landing-page-moccet .watch-now-button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
-  font-stretch: expanded;
+  font-size: 14px;
   color: #ffffff;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-.landing-page-moccet .product-link:hover {
+.landing-page-moccet .watch-now-button:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.landing-page-moccet .play-icon {
+  width: 14px;
+  height: 14px;
+  fill: #ffffff;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Video Modal */
+.landing-page-moccet .video-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.landing-page-moccet .modal-close {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1001;
+}
+
+.landing-page-moccet .modal-close:hover {
   opacity: 0.7;
+  transform: scale(1.1);
 }
 
-.landing-page-moccet .product-link-left {
-  right: calc(50% + 80px);
+.landing-page-moccet .modal-close svg {
+  width: 100%;
+  height: 100%;
 }
 
-.landing-page-moccet .product-link-right {
-  left: calc(50% + 80px);
+.landing-page-moccet .video-modal-content {
+  width: 100%;
+  max-width: 1200px;
+  position: relative;
 }
+
+.landing-page-moccet .modal-video {
+  width: 100%;
+  height: auto;
+  max-height: 80vh;
+  display: block;
+  border-radius: 8px;
+}
+
 
 .landing-page-moccet .logo {
   position: absolute;
   top: 35px;
-  left: calc(50.00% - 35px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 69px;
   height: 60px;
   aspect-ratio: 1.15;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.landing-page-moccet .logo:hover {
+  opacity: 0.8;
+}
+
+.landing-page-moccet .nav-menu {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  z-index: 10;
+}
+
+.landing-page-moccet .nav-link {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.landing-page-moccet .nav-link:hover {
+  opacity: 0.7;
 }
 
 .landing-page-moccet .ellipse {
   top: 0;
-  left: calc(50.00% - 30px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 60px;
   height: 60px;
   border-radius: 30px;
@@ -133,7 +230,8 @@ a {
 
 .landing-page-moccet .div {
   top: 1px;
-  left: calc(50.00% - 28px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 57px;
   height: 57px;
   border-radius: 28.5px;
@@ -144,7 +242,8 @@ a {
 
 .landing-page-moccet .ellipse-2 {
   top: 4px;
-  left: calc(50.00% - 26px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 52px;
   height: 52px;
   border-radius: 26.25px;
@@ -156,7 +255,8 @@ a {
 
 .landing-page-moccet .ellipse-3 {
   top: 11px;
-  left: calc(50.00% - 19px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 37px;
   height: 38px;
   border-radius: 18.75px;
@@ -168,7 +268,8 @@ a {
 
 .landing-page-moccet .ellipse-4 {
   top: 19px;
-  left: calc(50.00% - 11px);
+  left: 50%;
+  transform: translateX(-50%);
   width: 22px;
   height: 22px;
   border-radius: 11.25px;
@@ -181,24 +282,25 @@ a {
 .landing-page-moccet .ellipse-5 {
   position: absolute;
   top: 23px;
-  left: calc(50.00% - 36px);
+  left: 50%;
   width: 69px;
   height: 15px;
   border-radius: 34.58px / 7.5px;
   border: 0.75px solid;
   border-color: #ffffff;
-  transform: rotate(-45deg);
+  transform: translateX(-50%) rotate(-45deg);
 }
 
 .landing-page-moccet .ellipse-6 {
   position: absolute;
   top: 22px;
-  left: calc(50.00% - 35px);
+  left: 50%;
   width: 69px;
   height: 15px;
   border-radius: 34.58px / 7.5px;
   border: 0.75px solid;
   border-color: #ffffff;
+  transform: translateX(-50%);
 }
 
 .landing-page-moccet .content {
@@ -463,21 +565,40 @@ a {
     padding: 15px;
   }
 
-  .landing-page-moccet .product-link {
-    font-size: 16px;
-    top: 45px;
+  .landing-page-moccet .logo {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 25px;
+    width: 50px;
+    height: 43px;
   }
 
-  .landing-page-moccet .product-link-left {
-    right: calc(50% + 60px);
+  .landing-page-moccet .nav-menu {
+    top: 35px;
+    right: 20px;
+    gap: 20px;
+    font-size: 14px;
   }
 
-  .landing-page-moccet .product-link-right {
-    left: calc(50% + 60px);
+  .landing-page-moccet .nav-link {
+    font-size: 14px;
+  }
+
+  .landing-page-moccet .moccet-title-img {
+    max-width: 180px;
+  }
+
+  .landing-page-moccet .watch-now-button {
+    font-size: 12px;
+  }
+
+  .landing-page-moccet .play-icon {
+    width: 12px;
+    height: 12px;
   }
 
   .landing-page-moccet .title-centered {
-    margin-top: -100px;
+    margin-top: -15px;
   }
 
   .landing-page-moccet .moccet-title {
@@ -492,6 +613,21 @@ a {
 
   .landing-page-moccet .your-personal {
     max-width: 90%;
+  }
+
+  .landing-page-moccet .modal-close {
+    top: 20px;
+    right: 20px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .landing-page-moccet .video-modal {
+    padding: 15px;
+  }
+
+  .landing-page-moccet .modal-video {
+    max-height: 70vh;
   }
 
   .landing-page-moccet .enter-email {
@@ -524,32 +660,39 @@ a {
 }
 
 @media (max-width: 480px) {
-  .landing-page-moccet .product-link {
-    font-size: 14px;
-    top: 37px;
+  .landing-page-moccet .logo {
+    width: 45px;
+    height: 38px;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
-  .landing-page-moccet .product-link-left {
-    right: calc(50% + 45px);
+  .landing-page-moccet .nav-menu {
+    top: 30px;
+    right: 15px;
+    gap: 15px;
   }
 
-  .landing-page-moccet .product-link-right {
-    left: calc(50% + 45px);
+  .landing-page-moccet .nav-link {
+    font-size: 12px;
   }
 
-  .landing-page-moccet .moccet-title {
-    max-width: 50vw;
+  .landing-page-moccet .moccet-title-img {
+    max-width: 140px;
+  }
+
+  .landing-page-moccet .watch-now-button {
+    font-size: 11px;
+  }
+
+  .landing-page-moccet .play-icon {
+    width: 10px;
+    height: 10px;
   }
 
   .landing-page-moccet .title-centered {
-    margin-top: -80px;
-  }
-
-  .landing-page-moccet .logo {
-    width: 50px;
-    height: 43px;
-    top: 20px;
-    left: calc(50% - 25px);
+    margin-top: -10px;
   }
 
   .landing-page-moccet .logo .ellipse,
@@ -574,6 +717,22 @@ a {
 
   .landing-page-moccet .your-personal {
     max-width: 95%;
+  }
+
+  .landing-page-moccet .modal-close {
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .landing-page-moccet .video-modal {
+    padding: 10px;
+  }
+
+  .landing-page-moccet .modal-video {
+    max-height: 60vh;
+    border-radius: 4px;
   }
 
   .landing-page-moccet .social-links {

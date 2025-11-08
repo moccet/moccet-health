@@ -1,15 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './landing.css';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return email.trim() && emailRegex.test(email);
+  };
+
+  const openVideoModal = () => {
+    setShowVideoModal(true);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play();
+      }
+    }, 100);
+  };
+
+  const closeVideoModal = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+    setShowVideoModal(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,8 +96,7 @@ export default function LandingPage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
-        <a href="/forge" className="product-link product-link-left">forge</a>
-        <div className="logo" role="img" aria-label="Moccet logo">
+        <a href="/" className="logo" role="img" aria-label="Moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -86,12 +104,23 @@ export default function LandingPage() {
           <div className="ellipse-4"></div>
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
-        </div>
-        <a href="/sage" className="product-link product-link-right">sage</a>
+        </a>
+        <nav className="nav-menu">
+          <a href="/sage" className="nav-link">Sage</a>
+          <a href="/forge" className="nav-link">Forge</a>
+          <a href="/news" className="nav-link">Stories</a>
+          <a href="#waitlist" className="nav-link">Join the waitlist</a>
+        </nav>
         <header className="title-centered">
-          <img className="moccet-title" src="/images/moccet.png" alt="moccet" />
+          <img className="moccet-title-img" src="/images/moccet.png" alt="moccet" />
+          <button className="watch-now-button" onClick={openVideoModal}>
+            <span>WATCH NOW</span>
+            <svg className="play-icon" viewBox="0 0 12 12" fill="none">
+              <path d="M3 2L9 6L3 10V2Z" fill="white"/>
+            </svg>
+          </button>
         </header>
-        <div className="content">
+        <div className="content" id="waitlist">
           <img
             className="your-personal"
             src="/images/your-personal-health-ai.png"
@@ -161,6 +190,27 @@ export default function LandingPage() {
           </nav>
         </div>
       </section>
+
+      {/* Video Modal */}
+      {showVideoModal && (
+        <div className="video-modal" onClick={closeVideoModal}>
+          <button className="modal-close" onClick={closeVideoModal} aria-label="Close video">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="video-modal-content" onClick={(e) => e.stopPropagation()}>
+            <video
+              ref={videoRef}
+              className="modal-video"
+              src="/videos/moccet.mp4"
+              controls
+              autoPlay
+              playsInline
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }

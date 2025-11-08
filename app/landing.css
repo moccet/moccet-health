@@ -178,12 +178,12 @@ a {
   position: absolute;
   top: 35px;
   left: 50%;
-  transform: translateX(-50%);
   width: 69px;
   height: 60px;
-  aspect-ratio: 1.15;
   cursor: pointer;
   transition: opacity 0.2s ease;
+  text-decoration: none;
+  margin-left: -34.5px;
 }
 
 .landing-page-moccet .logo:hover {
@@ -213,6 +213,71 @@ a {
 }
 
 .landing-page-moccet .nav-link:hover {
+  opacity: 0.7;
+}
+
+/* Mobile Menu Button */
+.landing-page-moccet .mobile-menu-button {
+  display: none;
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  z-index: 1001;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.landing-page-moccet .mobile-menu-button:hover {
+  opacity: 0.7;
+}
+
+.landing-page-moccet .mobile-menu-button svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Mobile Menu Overlay */
+.landing-page-moccet .mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.landing-page-moccet .mobile-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 40px;
+  align-items: center;
+}
+
+.landing-page-moccet .mobile-menu-link {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.landing-page-moccet .mobile-menu-link:hover {
   opacity: 0.7;
 }
 
@@ -567,10 +632,10 @@ a {
 
   .landing-page-moccet .logo {
     left: 50%;
-    transform: translateX(-50%);
     top: 25px;
     width: 50px;
     height: 43px;
+    margin-left: -25px;
   }
 
   .landing-page-moccet .nav-menu {
@@ -578,6 +643,18 @@ a {
     right: 20px;
     gap: 20px;
     font-size: 14px;
+  }
+
+  .landing-page-moccet .nav-menu {
+    display: none;
+  }
+
+  .landing-page-moccet .mobile-menu-button {
+    display: block;
+    top: 35px;
+    right: 20px;
+    width: 35px;
+    height: 35px;
   }
 
   .landing-page-moccet .nav-link {
@@ -665,17 +742,27 @@ a {
     height: 38px;
     top: 20px;
     left: 50%;
-    transform: translateX(-50%);
+    margin-left: -22.5px;
   }
 
   .landing-page-moccet .nav-menu {
+    display: none;
+  }
+
+  .landing-page-moccet .mobile-menu-button {
+    display: block;
     top: 30px;
     right: 15px;
-    gap: 15px;
+    width: 30px;
+    height: 30px;
   }
 
   .landing-page-moccet .nav-link {
     font-size: 12px;
+  }
+
+  .landing-page-moccet .mobile-menu-link {
+    font-size: 20px;
   }
 
   .landing-page-moccet .moccet-title-img {
@@ -693,21 +780,6 @@ a {
 
   .landing-page-moccet .title-centered {
     margin-top: -10px;
-  }
-
-  .landing-page-moccet .logo .ellipse,
-  .landing-page-moccet .logo .div,
-  .landing-page-moccet .logo .ellipse-2,
-  .landing-page-moccet .logo .ellipse-3,
-  .landing-page-moccet .logo .ellipse-4,
-  .landing-page-moccet .logo .ellipse-6 {
-    transform: scale(0.75);
-    transform-origin: center;
-  }
-
-  .landing-page-moccet .logo .ellipse-5 {
-    transform: scale(0.75) rotate(-45deg);
-    transform-origin: center;
   }
 
   .landing-page-moccet .content {

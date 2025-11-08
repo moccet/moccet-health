@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Link from 'next/link';
 import './landing.css';
 
 export default function LandingPage() {
@@ -43,7 +44,7 @@ export default function LandingPage() {
 
     // Get waitlist position
     try {
-      const positionResponse = await fetch('/api/waitlist-position', {
+      await fetch('/api/waitlist-position', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function LandingPage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
-        <a href="/" className="logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="logo" role="img" aria-label="Moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -104,11 +105,11 @@ export default function LandingPage() {
           <div className="ellipse-4"></div>
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
-        </a>
+        </Link>
         <nav className="nav-menu">
-          <a href="/sage" className="nav-link">Sage</a>
-          <a href="/forge" className="nav-link">Forge</a>
-          <a href="/news" className="nav-link">Stories</a>
+          <Link href="/sage" className="nav-link">Sage</Link>
+          <Link href="/forge" className="nav-link">Forge</Link>
+          <Link href="/news" className="nav-link">Stories</Link>
           <a href="#waitlist" className="nav-link">Join the waitlist</a>
         </nav>
         <header className="title-centered">

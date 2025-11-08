@@ -40,21 +40,6 @@ export default function NewsPage() {
     fetchPosts();
   }, []);
 
-  function formatDate(dateString: string): string {
-    if (!dateString) return '';
-
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return dateString;
-    }
-  }
-
   function generateSlug(text: string): string {
     return text
       .toLowerCase()
@@ -69,7 +54,7 @@ export default function NewsPage() {
     <main className="news-page">
       {/* Navigation */}
       <nav className="news-nav">
-        <a href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -77,12 +62,12 @@ export default function NewsPage() {
           <div className="ellipse-4"></div>
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
-        </a>
+        </Link>
         <div className="nav-menu">
-          <a href="/sage" className="nav-link">Sage</a>
-          <a href="/forge" className="nav-link">Forge</a>
-          <a href="/news" className="nav-link">Stories</a>
-          <a href="/#waitlist" className="nav-link">Join the waitlist</a>
+          <Link href="/sage" className="nav-link">Sage</Link>
+          <Link href="/forge" className="nav-link">Forge</Link>
+          <Link href="/news" className="nav-link">Stories</Link>
+          <Link href="/#waitlist" className="nav-link">Join the waitlist</Link>
         </div>
       </nav>
 

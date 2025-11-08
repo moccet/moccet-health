@@ -95,28 +95,41 @@ a {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 5px;
 }
 
 .landing-page-moccet .watch-now-button:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.landing-page-moccet .play-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .landing-page-moccet .play-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   fill: #ffffff;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  margin-left: 2px;
 }
 
 /* Video Modal */
@@ -374,9 +387,9 @@ a {
   width: 100%;
   max-width: 913px;
   align-items: center;
-  gap: 40px;
+  gap: 20px;
   position: absolute;
-  bottom: 80px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   padding: 0 20px;
@@ -533,6 +546,10 @@ a {
   transform: scale(1.1);
 }
 
+.landing-page-moccet .div-wrapper a:hover {
+  transform: none;
+}
+
 .landing-page-moccet .social-links a:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
@@ -667,11 +684,17 @@ a {
 
   .landing-page-moccet .watch-now-button {
     font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .landing-page-moccet .play-icon-wrapper {
+    width: 28px;
+    height: 28px;
   }
 
   .landing-page-moccet .play-icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
   .landing-page-moccet .title-centered {
@@ -683,9 +706,9 @@ a {
   }
 
   .landing-page-moccet .content {
-    gap: 20px;
+    gap: 15px;
     padding: 0 15px;
-    bottom: 40px;
+    bottom: 20px;
   }
 
   .landing-page-moccet .your-personal {
@@ -771,11 +794,17 @@ a {
 
   .landing-page-moccet .watch-now-button {
     font-size: 11px;
+    padding: 5px 8px;
+  }
+
+  .landing-page-moccet .play-icon-wrapper {
+    width: 24px;
+    height: 24px;
   }
 
   .landing-page-moccet .play-icon {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
   }
 
   .landing-page-moccet .title-centered {
@@ -783,8 +812,8 @@ a {
   }
 
   .landing-page-moccet .content {
-    gap: 15px;
-    bottom: 30px;
+    gap: 10px;
+    bottom: 15px;
   }
 
   .landing-page-moccet .your-personal {

@@ -152,9 +152,11 @@ export default function LandingPage() {
           <img className="moccet-title-img" src="/images/moccet.png" alt="moccet" />
           <button className="watch-now-button" onClick={openVideoModal}>
             <span>WATCH NOW</span>
-            <svg className="play-icon" viewBox="0 0 12 12" fill="none">
-              <path d="M3 2L9 6L3 10V2Z" fill="white"/>
-            </svg>
+            <div className="play-icon-wrapper">
+              <svg className="play-icon" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3.5 2.5L8.5 6L3.5 9.5V2.5Z" fill="currentColor"/>
+              </svg>
+            </div>
           </button>
         </header>
         <div className="content" id="waitlist">
@@ -219,7 +221,7 @@ export default function LandingPage() {
               </svg>
             </a>
             <div className="div-wrapper">
-              <a href="#privacy-policy" className="text-wrapper-4">Privacy Policy</a>
+              <Link href="/privacy-policy" className="text-wrapper-4">Privacy Policy</Link>
             </div>
             <div className="social-link-2">
               <span className="text-wrapper-5">moccet Inc © 2025</span>

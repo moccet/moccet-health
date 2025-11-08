@@ -74,8 +74,7 @@ export default function ForgePage() {
           backgroundImage: "url('https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg')"
         }}
       >
-        <Link href="/" className="product-link product-link-left">moccet</Link>
-        <div className="logo" role="img" aria-label="Forge logo">
+        <Link href="/" className="logo" role="img" aria-label="Moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -83,8 +82,13 @@ export default function ForgePage() {
           <div className="ellipse-4"></div>
           <div className="ellipse-5"></div>
           <div className="ellipse-6"></div>
-        </div>
-        <Link href="/sage" className="product-link product-link-right">sage</Link>
+        </Link>
+        <nav className="nav-menu">
+          <Link href="/sage" className="nav-link">Sage</Link>
+          <Link href="/forge" className="nav-link">Forge</Link>
+          <Link href="/news" className="nav-link">Stories</Link>
+          <a href="/#waitlist" className="nav-link">Join the waitlist</a>
+        </nav>
         <header className="title-centered">
           <h1 className="forge-title">forge</h1>
         </header>
@@ -141,7 +145,7 @@ export default function ForgePage() {
               />
             </a>
             <div className="div-wrapper">
-              <a href="#privacy-policy" className="text-wrapper-4">Privacy Policy</a>
+              <Link href="/privacy-policy" className="text-wrapper-4">Privacy Policy</Link>
             </div>
             <div className="social-link-2">
               <span className="text-wrapper-5">moccet Inc © 2025</span>

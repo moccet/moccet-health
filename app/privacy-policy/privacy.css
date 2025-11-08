@@ -1,0 +1,494 @@
+/* Privacy Page - Dark Theme */
+.privacy-page {
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Navigation (matching /news) */
+.privacy-nav {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 35px 50px 0 50px;
+}
+
+.nav-logo {
+  position: relative;
+  width: 69px;
+  height: 60px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  text-decoration: none;
+  margin: 0 auto;
+}
+
+.nav-logo:hover {
+  opacity: 0.8;
+}
+
+.nav-logo .ellipse {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  position: absolute;
+  border: 0.75px solid;
+  border-color: #ffffff;
+}
+
+.nav-logo .div {
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 57px;
+  height: 57px;
+  border-radius: 28.5px;
+  position: absolute;
+  border: 0.75px solid;
+  border-color: #ffffff;
+}
+
+.nav-logo .ellipse-2 {
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 26.25px;
+  position: absolute;
+  border: 0.75px solid;
+  border-color: #ffffff;
+}
+
+.nav-logo .ellipse-3 {
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 37px;
+  height: 38px;
+  border-radius: 18.75px;
+  position: absolute;
+  border: 0.75px solid;
+  border-color: #ffffff;
+}
+
+.nav-logo .ellipse-4 {
+  top: 19px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 11.25px;
+  position: absolute;
+  border: 0.75px solid;
+  border-color: #ffffff;
+}
+
+.nav-logo .ellipse-5 {
+  position: absolute;
+  top: 23px;
+  left: 50%;
+  width: 69px;
+  height: 15px;
+  border-radius: 34.58px / 7.5px;
+  border: 0.75px solid;
+  border-color: #ffffff;
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.nav-logo .ellipse-6 {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 69px;
+  height: 15px;
+  border-radius: 34.58px / 7.5px;
+  border: 0.75px solid;
+  border-color: #ffffff;
+  transform: translateX(-50%);
+}
+
+.nav-menu {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  z-index: 10;
+}
+
+.nav-link {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  opacity: 0.7;
+}
+
+/* Mobile Menu Button */
+.mobile-menu-button {
+  display: none;
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  z-index: 1001;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mobile-menu-button:hover {
+  opacity: 0.7;
+}
+
+.mobile-menu-button svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.mobile-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 40px;
+  align-items: center;
+}
+
+.mobile-menu-link {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.mobile-menu-link:hover {
+  opacity: 0.7;
+}
+
+/* Privacy Container */
+.privacy-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 60px 40px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Privacy Header */
+.privacy-header {
+  text-align: center;
+  margin-bottom: 60px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.privacy-title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.privacy-subtitle {
+  font-size: clamp(18px, 2.5vw, 24px);
+  color: #cccccc;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.privacy-date {
+  font-size: 14px;
+  color: #888888;
+  margin: 0;
+}
+
+/* Privacy Content */
+.privacy-content {
+  line-height: 1.7;
+}
+
+.section {
+  margin-bottom: 48px;
+}
+
+.section h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 20px;
+  margin-top: 0;
+  letter-spacing: -0.01em;
+}
+
+.section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #eeeeee;
+  margin: 24px 0 12px 0;
+}
+
+.section p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #cccccc;
+  margin-bottom: 16px;
+}
+
+.section ul {
+  margin: 16px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.section li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #cccccc;
+  margin-bottom: 12px;
+  padding-left: 24px;
+  position: relative;
+}
+
+.section li::before {
+  content: '•';
+  color: #ffffff;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.section strong {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.section a {
+  color: #4a9eff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.section a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.contact-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.contact-info p {
+  margin: 8px 0;
+}
+
+/* Privacy Footer */
+.privacy-footer {
+  margin-top: 80px;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.privacy-footer > p {
+  font-size: 16px;
+  color: #cccccc;
+  margin-bottom: 24px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.footer-links a:hover {
+  opacity: 0.7;
+}
+
+.copyright {
+  font-size: 14px;
+  color: #888888;
+  margin: 0;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+  .privacy-nav {
+    padding: 25px 30px 0 30px;
+  }
+
+  .nav-logo {
+    width: 60px;
+    height: 52px;
+  }
+
+  .nav-menu {
+    top: 40px;
+    right: 30px;
+    gap: 30px;
+  }
+
+  .nav-link {
+    font-size: 15px;
+  }
+
+  .privacy-container {
+    padding: 40px 30px 60px;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .privacy-nav {
+    padding: 20px 20px 0 20px;
+  }
+
+  .nav-logo {
+    width: 50px;
+    height: 43px;
+  }
+
+  .nav-menu {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: block;
+    top: 35px;
+    right: 20px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .privacy-container {
+    padding: 30px 20px 50px;
+  }
+
+  .privacy-header {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+  }
+
+  .section {
+    margin-bottom: 36px;
+  }
+
+  .section h2 {
+    font-size: 24px;
+  }
+
+  .section h3 {
+    font-size: 18px;
+  }
+
+  .footer-links {
+    gap: 20px;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .privacy-nav {
+    padding: 15px 15px 0 15px;
+  }
+
+  .nav-logo {
+    width: 45px;
+    height: 38px;
+  }
+
+  .mobile-menu-button {
+    display: block;
+    top: 30px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobile-menu-link {
+    font-size: 20px;
+  }
+
+  .privacy-container {
+    padding: 24px 16px 40px;
+  }
+
+  .section h2 {
+    font-size: 22px;
+  }
+
+  .section h3 {
+    font-size: 17px;
+  }
+
+  .section p,
+  .section li {
+    font-size: 15px;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

@@ -5,6 +5,7 @@ import './demo.css';
 
 export default function DemoPage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [showPlayButton, setShowPlayButton] = useState(false);
   const [currentTime, setCurrentTime] = useState('9:41');
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -138,10 +139,8 @@ export default function DemoPage() {
           video.addEventListener('ended', handleVideoEnd);
         } catch (error) {
           console.error('Video playback failed:', error);
-          // Fallback: skip loading screen after a short delay if video fails
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 500);
+          // Show play button for user interaction on mobile
+          setShowPlayButton(true);
         }
       }
     };
@@ -158,6 +157,24 @@ export default function DemoPage() {
       }
     };
   }, []);
+
+  // Handle manual video play
+  const handlePlayClick = async () => {
+    const video = document.getElementById('loading-video') as HTMLVideoElement;
+    if (video) {
+      try {
+        setShowPlayButton(false);
+        await video.play();
+        video.addEventListener('ended', () => {
+          setIsLoading(false);
+        });
+      } catch (error) {
+        console.error('Manual video play failed:', error);
+        // If still fails, just skip the video
+        setIsLoading(false);
+      }
+    }
+  };
 
   // Update time
   useEffect(() => {
@@ -263,7 +280,7 @@ export default function DemoPage() {
     <>
       {/* Loading Screen */}
       {isLoading && (
-        <div className="loading-screen">
+        <div className="loading-screen" onClick={showPlayButton ? handlePlayClick : undefined}>
           <video
             id="loading-video"
             className="loading-video"
@@ -274,6 +291,17 @@ export default function DemoPage() {
             preload="auto"
             webkit-playsinline="true"
           />
+          {showPlayButton && (
+            <div className="play-button-overlay">
+              <div className="play-button">
+                <svg width="60" height="60" viewBox="0 0 60 60" fill="white">
+                  <circle cx="30" cy="30" r="28" fill="rgba(255, 255, 255, 0.2)" />
+                  <polygon points="24,18 24,42 42,30" fill="white" />
+                </svg>
+                <p className="tap-to-play">Tap to start</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

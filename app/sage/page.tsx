@@ -67,7 +67,7 @@ export default function SagePage() {
   };
 
   return (
-    <main className="landing-page-moccet">
+    <main className="sage-page-moccet">
       <section
         className="first-page"
         style={{

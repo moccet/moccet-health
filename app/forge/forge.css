@@ -36,7 +36,7 @@ a {
   --nnn-font-style: normal;
 }
 
-.landing-page-moccet {
+.forge-page-moccet {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -45,7 +45,7 @@ a {
   background-color: #ffffff;
 }
 
-.landing-page-moccet .first-page {
+.forge-page-moccet .first-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -61,12 +61,12 @@ a {
   background-repeat: no-repeat;
 }
 
-.landing-page-moccet .first-page::-webkit-scrollbar {
+.forge-page-moccet .first-page::-webkit-scrollbar {
   width: 0;
   display: none;
 }
 
-.landing-page-moccet .title-centered {
+.forge-page-moccet .title-centered {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -76,7 +76,7 @@ a {
   z-index: 1;
 }
 
-.landing-page-moccet .forge-title {
+.forge-page-moccet .forge-title {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-stretch: expanded;
@@ -90,7 +90,7 @@ a {
   white-space: nowrap;
 }
 
-.landing-page-moccet .product-link {
+.forge-page-moccet .product-link {
   position: absolute;
   top: 50px;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -104,19 +104,19 @@ a {
   z-index: 10;
 }
 
-.landing-page-moccet .product-link:hover {
+.forge-page-moccet .product-link:hover {
   opacity: 0.7;
 }
 
-.landing-page-moccet .product-link-left {
+.forge-page-moccet .product-link-left {
   right: calc(50% + 80px);
 }
 
-.landing-page-moccet .product-link-right {
+.forge-page-moccet .product-link-right {
   left: calc(50% + 80px);
 }
 
-.landing-page-moccet .logo {
+.forge-page-moccet .logo {
   position: absolute;
   top: 35px;
   left: 50%;
@@ -128,11 +128,44 @@ a {
   margin-left: -34.5px;
 }
 
-.landing-page-moccet .logo:hover {
+.forge-page-moccet .logo:hover {
   opacity: 0.8;
 }
 
-.landing-page-moccet .ellipse {
+.forge-page-moccet .nav-menu {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  z-index: 10;
+}
+
+.forge-page-moccet .nav-link {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.forge-page-moccet .nav-link:hover {
+  opacity: 0.7;
+}
+
+.forge-page-moccet .nav-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+  color: #ffffff;
+}
+
+.forge-page-moccet .ellipse {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
@@ -144,7 +177,7 @@ a {
   border-color: #ffffff;
 }
 
-.landing-page-moccet .div {
+.forge-page-moccet .div {
   top: 1px;
   left: 50%;
   transform: translateX(-50%);
@@ -156,7 +189,7 @@ a {
   border-color: #ffffff;
 }
 
-.landing-page-moccet .ellipse-2 {
+.forge-page-moccet .ellipse-2 {
   top: 4px;
   left: 50%;
   transform: translateX(-50%);
@@ -169,7 +202,7 @@ a {
   border-color: #ffffff;
 }
 
-.landing-page-moccet .ellipse-3 {
+.forge-page-moccet .ellipse-3 {
   top: 11px;
   left: 50%;
   transform: translateX(-50%);
@@ -182,7 +215,7 @@ a {
   border-color: #ffffff;
 }
 
-.landing-page-moccet .ellipse-4 {
+.forge-page-moccet .ellipse-4 {
   top: 19px;
   left: 50%;
   transform: translateX(-50%);
@@ -195,7 +228,7 @@ a {
   border-color: #ffffff;
 }
 
-.landing-page-moccet .ellipse-5 {
+.forge-page-moccet .ellipse-5 {
   position: absolute;
   top: 23px;
   left: 50%;
@@ -207,7 +240,7 @@ a {
   transform: translateX(-50%) rotate(-45deg);
 }
 
-.landing-page-moccet .ellipse-6 {
+.forge-page-moccet .ellipse-6 {
   position: absolute;
   top: 22px;
   left: 50%;
@@ -219,7 +252,7 @@ a {
   transform: translateX(-50%);
 }
 
-.landing-page-moccet .content {
+.forge-page-moccet .content {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -233,7 +266,7 @@ a {
   padding: 0 20px;
 }
 
-.landing-page-moccet .your-personal {
+.forge-page-moccet .your-personal {
   position: relative;
   align-self: center;
   width: auto;
@@ -244,7 +277,7 @@ a {
   margin: 0 auto;
 }
 
-.landing-page-moccet .enter-email {
+.forge-page-moccet .enter-email {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -268,7 +301,7 @@ a {
   -webkit-backdrop-filter: blur(10px) saturate(100%);
 }
 
-.landing-page-moccet .email-input-field {
+.forge-page-moccet .email-input-field {
   all: unset;
   box-sizing: border-box;
   position: relative;
@@ -284,15 +317,15 @@ a {
   outline: none;
 }
 
-.landing-page-moccet .email-input-field::placeholder {
+.forge-page-moccet .email-input-field::placeholder {
   color: #ffffffe6;
 }
 
-.landing-page-moccet .email-input-field:focus {
+.forge-page-moccet .email-input-field:focus {
   outline: none;
 }
 
-.landing-page-moccet .button {
+.forge-page-moccet .button {
   all: unset;
   box-sizing: border-box;
   display: inline-flex;
@@ -310,25 +343,25 @@ a {
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.landing-page-moccet .button:hover {
+.forge-page-moccet .button:hover {
   background-color: #ffffffa6;
 }
 
-.landing-page-moccet .button:active {
+.forge-page-moccet .button:active {
   transform: scale(0.98);
 }
 
-.landing-page-moccet .button:focus-visible {
+.forge-page-moccet .button:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
 
-.landing-page-moccet .button:disabled {
+.forge-page-moccet .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.landing-page-moccet .text-wrapper-3 {
+.forge-page-moccet .text-wrapper-3 {
   position: relative;
   width: fit-content;
   margin-top: -0.50px;
@@ -341,7 +374,7 @@ a {
   white-space: nowrap;
 }
 
-.landing-page-moccet .p {
+.forge-page-moccet .p {
   position: relative;
   align-self: stretch;
   font-family: "Inter", Helvetica;
@@ -353,7 +386,7 @@ a {
   line-height: normal;
 }
 
-.landing-page-moccet .social-links {
+.forge-page-moccet .social-links {
   display: inline-flex;
   height: 24px;
   align-items: center;
@@ -362,37 +395,41 @@ a {
   flex-wrap: nowrap;
 }
 
-.landing-page-moccet .social-link {
+.forge-page-moccet .social-link {
   position: relative;
   width: 16px;
   height: 16px;
   aspect-ratio: 1;
 }
 
-.landing-page-moccet .social-links a {
+.forge-page-moccet .social-links a {
   display: inline-block;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.landing-page-moccet .social-links a:hover {
+.forge-page-moccet .social-links a:hover {
   opacity: 0.8;
   transform: scale(1.1);
 }
 
-.landing-page-moccet .social-links a:focus-visible {
+.forge-page-moccet .div-wrapper a:hover {
+  transform: none;
+}
+
+.forge-page-moccet .social-links a:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-.landing-page-moccet .div-wrapper {
+.forge-page-moccet .div-wrapper {
   position: relative;
   height: 24px;
   display: flex;
   align-items: center;
 }
 
-.landing-page-moccet .text-wrapper-4 {
+.forge-page-moccet .text-wrapper-4 {
   font-family: "Inter", Helvetica;
   font-weight: 300;
   color: #ffffff;
@@ -403,24 +440,24 @@ a {
   white-space: nowrap;
 }
 
-.landing-page-moccet .div-wrapper .text-wrapper-4:hover {
+.forge-page-moccet .div-wrapper .text-wrapper-4:hover {
   opacity: 0.8;
   text-decoration: underline;
 }
 
-.landing-page-moccet .div-wrapper .text-wrapper-4:focus-visible {
+.forge-page-moccet .div-wrapper .text-wrapper-4:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
 
-.landing-page-moccet .social-link-2 {
+.forge-page-moccet .social-link-2 {
   position: relative;
   height: 24px;
   display: flex;
   align-items: center;
 }
 
-.landing-page-moccet .text-wrapper-5 {
+.forge-page-moccet .text-wrapper-5 {
   font-family: "Inter", Helvetica;
   font-weight: 300;
   color: #ffffff;
@@ -430,7 +467,7 @@ a {
   white-space: nowrap;
 }
 
-.landing-page-moccet .second-page {
+.forge-page-moccet .second-page {
   position: relative;
   align-self: stretch;
   width: 100%;
@@ -441,7 +478,7 @@ a {
 }
 
 /* Content Section Styles */
-.landing-page-moccet .content-section {
+.forge-page-moccet .content-section {
   position: relative;
   align-self: stretch;
   width: 100%;
@@ -449,7 +486,7 @@ a {
   padding: 100px 20px;
 }
 
-.landing-page-moccet .content-container {
+.forge-page-moccet .content-container {
   max-width: 900px;
   margin: 0 auto;
   display: flex;
@@ -457,21 +494,21 @@ a {
   gap: 60px;
 }
 
-.landing-page-moccet .content-block:has(.subsection-title) {
+.forge-page-moccet .content-block:has(.subsection-title) {
   margin-top: -20px;
 }
 
-.landing-page-moccet .content-block {
+.forge-page-moccet .content-block {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.landing-page-moccet .content-block.data-section {
+.forge-page-moccet .content-block.data-section {
   gap: 12px;
 }
 
-.landing-page-moccet .section-title {
+.forge-page-moccet .section-title {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 600;
   color: #ffffff;
@@ -481,7 +518,7 @@ a {
   margin: 0;
 }
 
-.landing-page-moccet .subsection-title {
+.forge-page-moccet .subsection-title {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
   color: #ffffff;
@@ -491,7 +528,7 @@ a {
   margin: 0;
 }
 
-.landing-page-moccet .section-text {
+.forge-page-moccet .section-text {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 300;
   color: #ffffff;
@@ -501,40 +538,40 @@ a {
   margin: 0;
 }
 
-.landing-page-moccet .data-section .section-text {
+.forge-page-moccet .data-section .section-text {
   font-size: 16px;
   line-height: 1.5;
   color: #ffffff;
 }
 
-.landing-page-moccet .data-list {
+.forge-page-moccet .data-list {
   margin: 0;
   padding-left: 20px;
   list-style-type: disc;
 }
 
-.landing-page-moccet .data-list li {
+.forge-page-moccet .data-list li {
   margin-bottom: 8px;
 }
 
-.landing-page-moccet .data-list li:last-child {
+.forge-page-moccet .data-list li:last-child {
   margin-bottom: 0;
 }
 
-.landing-page-moccet .content-section strong {
+.forge-page-moccet .content-section strong {
   font-weight: 800;
 }
 
-.landing-page-moccet .content-section a {
+.forge-page-moccet .content-section a {
   color: #ffffff;
   text-decoration: underline;
 }
 
-.landing-page-moccet .content-section a:hover {
+.forge-page-moccet .content-section a:hover {
   opacity: 0.7;
 }
 
-.landing-page-moccet .image-container {
+.forge-page-moccet .image-container {
   width: 90vw;
   max-width: 1400px;
   margin: 0 auto;
@@ -544,11 +581,11 @@ a {
   align-items: center;
 }
 
-.landing-page-moccet .image-container:first-child {
+.forge-page-moccet .image-container:first-child {
   padding-top: 0;
 }
 
-.landing-page-moccet .image-container img {
+.forge-page-moccet .image-container img {
   width: 100%;
   height: auto;
   display: block;
@@ -556,71 +593,71 @@ a {
 
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
-  .landing-page-moccet .first-page {
+  .forge-page-moccet .first-page {
     padding: 15px;
     min-height: 100vh;
     min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
   }
 
-  .landing-page-moccet .title-centered {
+  .forge-page-moccet .title-centered {
     margin-top: -100px;
   }
 
-  .landing-page-moccet .product-link {
+  .forge-page-moccet .product-link {
     font-size: 16px;
     top: 45px;
   }
 
-  .landing-page-moccet .product-link-left {
+  .forge-page-moccet .product-link-left {
     right: calc(50% + 60px);
   }
 
-  .landing-page-moccet .product-link-right {
+  .forge-page-moccet .product-link-right {
     left: calc(50% + 60px);
   }
 
-  .landing-page-moccet .forge-title {
+  .forge-page-moccet .forge-title {
     font-size: clamp(70px, 12vw, 120px);
   }
 
-  .landing-page-moccet .content {
+  .forge-page-moccet .content {
     gap: 24px;
     padding: 0 20px;
     bottom: 60px;
     max-width: 100%;
   }
 
-  .landing-page-moccet .your-personal {
+  .forge-page-moccet .your-personal {
     max-width: 85%;
   }
 
-  .landing-page-moccet .enter-email {
+  .forge-page-moccet .enter-email {
     flex-direction: column;
     padding: 15px;
     gap: 12px;
     align-items: stretch;
   }
 
-  .landing-page-moccet .email-input-field {
+  .forge-page-moccet .email-input-field {
     text-align: center;
     padding: 10px 0;
     font-size: 16px; /* Prevents iOS zoom on focus */
   }
 
-  .landing-page-moccet .button {
+  .forge-page-moccet .button {
     width: 100%;
     padding: 15px 20px;
   }
 
-  .landing-page-moccet .text-wrapper-3 {
+  .forge-page-moccet .text-wrapper-3 {
     font-size: 16px;
   }
 
-  .landing-page-moccet .p {
+  .forge-page-moccet .p {
     font-size: 13px;
   }
 
-  .landing-page-moccet .social-links {
+  .forge-page-moccet .social-links {
     gap: 20px 24px;
     flex-wrap: wrap;
     justify-content: center;
@@ -628,71 +665,71 @@ a {
     row-gap: 16px;
   }
 
-  .landing-page-moccet .text-wrapper-4,
-  .landing-page-moccet .text-wrapper-5 {
+  .forge-page-moccet .text-wrapper-4,
+  .forge-page-moccet .text-wrapper-5 {
     font-size: 10px;
   }
 
-  .landing-page-moccet .second-page {
+  .forge-page-moccet .second-page {
     width: 100%;
     height: auto;
   }
 
-  .landing-page-moccet .content-section {
+  .forge-page-moccet .content-section {
     padding: 60px 20px;
   }
 
-  .landing-page-moccet .content-container {
+  .forge-page-moccet .content-container {
     gap: 40px;
   }
 
-  .landing-page-moccet .section-title {
+  .forge-page-moccet .section-title {
     font-size: 28px;
   }
 
-  .landing-page-moccet .subsection-title {
+  .forge-page-moccet .subsection-title {
     font-size: 20px;
   }
 
-  .landing-page-moccet .section-text {
+  .forge-page-moccet .section-text {
     font-size: 16px;
   }
 
-  .landing-page-moccet .data-section .section-text {
+  .forge-page-moccet .data-section .section-text {
     font-size: 15px;
   }
 }
 
 @media (max-width: 480px) {
-  .landing-page-moccet .first-page {
+  .forge-page-moccet .first-page {
     padding: 12px;
     min-height: 100vh;
     min-height: 100dvh;
   }
 
-  .landing-page-moccet .product-link {
+  .forge-page-moccet .product-link {
     font-size: 14px;
     top: 37px;
   }
 
-  .landing-page-moccet .product-link-left {
+  .forge-page-moccet .product-link-left {
     right: calc(50% + 45px);
   }
 
-  .landing-page-moccet .product-link-right {
+  .forge-page-moccet .product-link-right {
     left: calc(50% + 45px);
   }
 
-  .landing-page-moccet .forge-title {
+  .forge-page-moccet .forge-title {
     font-size: clamp(48px, 16vw, 72px);
     letter-spacing: -0.03em;
   }
 
-  .landing-page-moccet .title-centered {
+  .forge-page-moccet .title-centered {
     margin-top: -80px;
   }
 
-  .landing-page-moccet .logo {
+  .forge-page-moccet .logo {
     left: 50%;
     top: 25px;
     width: 50px;
@@ -700,136 +737,136 @@ a {
     margin-left: -25px;
   }
 
-  .landing-page-moccet .content {
+  .forge-page-moccet .content {
     gap: 18px;
     bottom: 40px;
     padding: 0 16px;
   }
 
-  .landing-page-moccet .your-personal {
+  .forge-page-moccet .your-personal {
     max-width: 90%;
   }
 
-  .landing-page-moccet .enter-email {
+  .forge-page-moccet .enter-email {
     padding: 12px;
     gap: 10px;
   }
 
-  .landing-page-moccet .email-input-field {
+  .forge-page-moccet .email-input-field {
     font-size: 16px; /* Prevents iOS zoom */
     padding: 8px 0;
   }
 
-  .landing-page-moccet .button {
+  .forge-page-moccet .button {
     padding: 14px 20px;
   }
 
-  .landing-page-moccet .text-wrapper-3 {
+  .forge-page-moccet .text-wrapper-3 {
     font-size: 15px;
   }
 
-  .landing-page-moccet .p {
+  .forge-page-moccet .p {
     font-size: 12px;
   }
 
-  .landing-page-moccet .social-links {
+  .forge-page-moccet .social-links {
     gap: 16px 20px;
     row-gap: 14px;
   }
 
-  .landing-page-moccet .text-wrapper-4,
-  .landing-page-moccet .text-wrapper-5 {
+  .forge-page-moccet .text-wrapper-4,
+  .forge-page-moccet .text-wrapper-5 {
     font-size: 9px;
   }
 
-  .landing-page-moccet .social-link {
+  .forge-page-moccet .social-link {
     width: 13px;
     height: 13px;
   }
 
-  .landing-page-moccet .content-section {
+  .forge-page-moccet .content-section {
     padding: 40px 16px;
   }
 
-  .landing-page-moccet .content-container {
+  .forge-page-moccet .content-container {
     gap: 32px;
   }
 
-  .landing-page-moccet .section-title {
+  .forge-page-moccet .section-title {
     font-size: 24px;
   }
 
-  .landing-page-moccet .subsection-title {
+  .forge-page-moccet .subsection-title {
     font-size: 18px;
   }
 
-  .landing-page-moccet .section-text {
+  .forge-page-moccet .section-text {
     font-size: 15px;
   }
 
-  .landing-page-moccet .data-section .section-text {
+  .forge-page-moccet .data-section .section-text {
     font-size: 14px;
   }
 }
 
 /* Extra small devices */
 @media (max-width: 360px) {
-  .landing-page-moccet .forge-title {
+  .forge-page-moccet .forge-title {
     font-size: clamp(40px, 18vw, 60px);
   }
 
-  .landing-page-moccet .content {
+  .forge-page-moccet .content {
     gap: 16px;
     bottom: 30px;
     padding: 0 12px;
   }
 
-  .landing-page-moccet .your-personal {
+  .forge-page-moccet .your-personal {
     max-width: 95%;
   }
 
-  .landing-page-moccet .enter-email {
+  .forge-page-moccet .enter-email {
     padding: 10px;
     gap: 8px;
   }
 
-  .landing-page-moccet .social-links {
+  .forge-page-moccet .social-links {
     gap: 14px 18px;
     row-gap: 12px;
   }
 
-  .landing-page-moccet .social-link {
+  .forge-page-moccet .social-link {
     width: 12px;
     height: 12px;
   }
 
-  .landing-page-moccet .text-wrapper-4,
-  .landing-page-moccet .text-wrapper-5 {
+  .forge-page-moccet .text-wrapper-4,
+  .forge-page-moccet .text-wrapper-5 {
     font-size: 8px;
   }
 }
 
 /* Landscape mode optimization */
 @media (max-height: 600px) and (orientation: landscape) {
-  .landing-page-moccet .first-page {
+  .forge-page-moccet .first-page {
     min-height: auto;
     padding: 10px;
   }
 
-  .landing-page-moccet .title-centered {
+  .forge-page-moccet .title-centered {
     margin-top: -60px;
   }
 
-  .landing-page-moccet .forge-title {
+  .forge-page-moccet .forge-title {
     font-size: clamp(50px, 10vh, 80px);
   }
 
-  .landing-page-moccet .content {
+  .forge-page-moccet .content {
     bottom: 30px;
     gap: 15px;
   }
 
-  .landing-page-moccet .logo {
+  .forge-page-moccet .logo {
     width: 45px;
     height: 38px;
     top: 20px;

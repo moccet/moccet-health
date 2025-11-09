@@ -67,7 +67,7 @@ export default function ForgePage() {
   };
 
   return (
-    <main className="landing-page-moccet">
+    <main className="forge-page-moccet">
       <section
         className="first-page"
         style={{

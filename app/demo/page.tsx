@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './demo.css';
 
 export default function DemoPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [showPlayButton, setShowPlayButton] = useState(false);
   const [currentTime, setCurrentTime] = useState('9:41');
   const [activeTab, setActiveTab] = useState('profile');
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Ensure full viewport height on mount
   useEffect(() => {
@@ -124,57 +124,21 @@ export default function DemoPage() {
 
   // Loading screen effect
   useEffect(() => {
-    const video = document.getElementById('loading-video') as HTMLVideoElement;
+    const video = videoRef.current;
+
+    if (!video) return;
 
     const handleVideoEnd = () => {
       setIsLoading(false);
     };
 
-    const playVideo = async () => {
-      if (video) {
-        try {
-          // Ensure video is ready before playing
-          await video.load();
-          await video.play();
-          video.addEventListener('ended', handleVideoEnd);
-        } catch (error) {
-          console.error('Video playback failed:', error);
-          // Show play button for user interaction on mobile
-          setShowPlayButton(true);
-        }
-      }
-    };
-
-    // Small delay to ensure DOM is fully ready
-    const timer = setTimeout(() => {
-      playVideo();
-    }, 100);
+    // Just listen for the ended event - autoPlay attribute handles playback
+    video.addEventListener('ended', handleVideoEnd);
 
     return () => {
-      clearTimeout(timer);
-      if (video) {
-        video.removeEventListener('ended', handleVideoEnd);
-      }
+      video.removeEventListener('ended', handleVideoEnd);
     };
   }, []);
-
-  // Handle manual video play
-  const handlePlayClick = async () => {
-    const video = document.getElementById('loading-video') as HTMLVideoElement;
-    if (video) {
-      try {
-        setShowPlayButton(false);
-        await video.play();
-        video.addEventListener('ended', () => {
-          setIsLoading(false);
-        });
-      } catch (error) {
-        console.error('Manual video play failed:', error);
-        // If still fails, just skip the video
-        setIsLoading(false);
-      }
-    }
-  };
 
   // Update time
   useEffect(() => {
@@ -205,13 +169,15 @@ export default function DemoPage() {
     setActiveTab(tab);
     if (tab === 'agent' && !agentStarted) {
       setAgentStarted(true);
-      startExecution();
+      // Initial execution will be triggered by useEffect
     }
   };
 
-  // Agent execution logic
-  const startExecution = () => {
+  // Agent execution logic - triggered by useEffect when currentSequence changes
+  useEffect(() => {
+    if (!agentStarted) return;
     if (isExecuting) return;
+
     setIsExecuting(true);
 
     const sequence = taskSequences[currentSequence % taskSequences.length];
@@ -234,7 +200,8 @@ export default function DemoPage() {
     setTimeout(() => {
       checkTasks(sequence.tasks.length);
     }, sequence.tasks.length * 500 + 1000);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentStarted, currentSequence]);
 
   const checkTasks = (totalTasks: number) => {
     let currentIndex = 0;
@@ -266,9 +233,11 @@ export default function DemoPage() {
         setTimeout(checkNext, 1000);
       } else {
         setTimeout(() => {
-          setCurrentSequence(prev => (prev + 1) % taskSequences.length);
           setIsExecuting(false);
-          setTimeout(startExecution, 3000);
+          // Wait 3 seconds then move to next sequence
+          setTimeout(() => {
+            setCurrentSequence(prev => (prev + 1) % taskSequences.length);
+          }, 3000);
         }, 2000);
       }
     };
@@ -280,28 +249,16 @@ export default function DemoPage() {
     <>
       {/* Loading Screen */}
       {isLoading && (
-        <div className="loading-screen" onClick={showPlayButton ? handlePlayClick : undefined}>
+        <div className="loading-screen">
           <video
-            id="loading-video"
+            ref={videoRef}
             className="loading-video"
             src="/videos/moccet.mp4"
             playsInline
             muted
             autoPlay
             preload="auto"
-            webkit-playsinline="true"
           />
-          {showPlayButton && (
-            <div className="play-button-overlay">
-              <div className="play-button">
-                <svg width="60" height="60" viewBox="0 0 60 60" fill="white">
-                  <circle cx="30" cy="30" r="28" fill="rgba(255, 255, 255, 0.2)" />
-                  <polygon points="24,18 24,42 42,30" fill="white" />
-                </svg>
-                <p className="tap-to-play">Tap to start</p>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

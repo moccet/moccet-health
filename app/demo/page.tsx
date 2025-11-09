@@ -129,12 +129,30 @@ export default function DemoPage() {
       setIsLoading(false);
     };
 
-    if (video) {
-      video.play();
-      video.addEventListener('ended', handleVideoEnd);
-    }
+    const playVideo = async () => {
+      if (video) {
+        try {
+          // Ensure video is ready before playing
+          await video.load();
+          await video.play();
+          video.addEventListener('ended', handleVideoEnd);
+        } catch (error) {
+          console.error('Video playback failed:', error);
+          // Fallback: skip loading screen after a short delay if video fails
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 500);
+        }
+      }
+    };
+
+    // Small delay to ensure DOM is fully ready
+    const timer = setTimeout(() => {
+      playVideo();
+    }, 100);
 
     return () => {
+      clearTimeout(timer);
       if (video) {
         video.removeEventListener('ended', handleVideoEnd);
       }
@@ -252,7 +270,9 @@ export default function DemoPage() {
             src="/videos/moccet.mp4"
             playsInline
             muted
+            autoPlay
             preload="auto"
+            webkit-playsinline="true"
           />
         </div>
       )}

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { StructuredData, organizationSchema } from "./components/SEOHead";
 
@@ -9,7 +9,19 @@ const inter = Inter({
   variable: "--font-inter"
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-playfair"
+});
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
     default: "moccet",
     template: "%s | moccet"
@@ -17,7 +29,6 @@ export const metadata: Metadata = {
   description: "Autonomous AI for business intelligence. Expert discovery meets automated execution.",
   keywords: "autonomous AI, business intelligence, AI discovery, expert execution, artificial intelligence, enterprise AI, automated insights, health data, metabolic science",
   authors: [{ name: "moccet" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   alternates: {
     canonical: "https://moccet.com"
@@ -80,7 +91,7 @@ export default function RootLayout({
       <head>
         <StructuredData data={organizationSchema} />
       </head>
-      <body className={inter.variable}>
+      <body className={`${inter.variable} ${playfair.variable}`}>
         {children}
       </body>
     </html>

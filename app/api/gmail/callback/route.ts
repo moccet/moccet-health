@@ -41,9 +41,39 @@ export async function GET(request: NextRequest) {
     const userInfo = await oauth2.userinfo.get();
     const userEmail = userInfo.data.email || '';
 
-    // Store tokens in cookie or session (for demo, we'll use a simple approach)
-    // In production, you'd want to encrypt these and store in a database
-    const response = NextResponse.redirect(new URL('/sage-testing', origin));
+    // Return HTML that closes the popup window
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Gmail Connected</title>
+        </head>
+        <body>
+          <script>
+            // Signal to parent window that connection was successful
+            if (window.opener) {
+              window.opener.postMessage({ type: 'gmail-connected', email: '${userEmail}' }, '*');
+            }
+            // Close the popup after a short delay
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+          </script>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
+            <h1 style="color: #4CAF50;">✓ Connected</h1>
+            <p>Gmail has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
 
     // Set cookies with tokens (note: in production, encrypt these!)
     response.cookies.set('gmail_access_token', tokens.access_token || '', {

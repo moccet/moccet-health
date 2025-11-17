@@ -67,11 +67,41 @@ export async function GET(request: NextRequest) {
     // Get team info
     const teamName = tokenData.team?.name || 'Slack Workspace';
 
-    // Store tokens in cookies
-    const redirectUrl = new URL('/sage-testing', origin);
-    console.log('[SLACK CALLBACK] Redirecting to:', redirectUrl.toString());
+    console.log('[SLACK CALLBACK] Connection successful, team:', teamName);
 
-    const response = NextResponse.redirect(redirectUrl);
+    // Return HTML that closes the popup window
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Slack Connected</title>
+        </head>
+        <body>
+          <script>
+            // Signal to parent window that connection was successful
+            if (window.opener) {
+              window.opener.postMessage({ type: 'slack-connected', team: '${teamName}' }, '*');
+            }
+            // Close the popup after a short delay
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+          </script>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
+            <h1 style="color: #4CAF50;">✓ Connected</h1>
+            <p>Slack has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
 
     response.cookies.set('slack_access_token', tokenData.access_token, {
       httpOnly: true,
@@ -96,7 +126,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log('[SLACK CALLBACK] Cookies set successfully, team:', teamName);
+    console.log('[SLACK CALLBACK] Cookies set successfully');
 
     return response;
   } catch (error) {

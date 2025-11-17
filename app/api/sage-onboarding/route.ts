@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
         age: data.age,
         gender: data.gender,
         weight: data.weight,
+        weightUnit: data.weightUnit,
         height: data.height,
         email: data.email,
         mainPriority: data.mainPriority,

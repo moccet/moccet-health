@@ -16,7 +16,8 @@
     "next": "15.5.3",
     "openai": "^6.8.1",
     "papaparse": "^5.5.3",
-    "pdfjs-dist": "^4.0.379",
+    "pdf-parse": "^2.2.2",
+    "pdfjs-dist": "^3.11.174",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import Papa from 'papaparse';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker
-if (typeof window === 'undefined') {
-  // Server-side only
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-}
 
 // Lazy initialization of OpenAI client
 function getOpenAIClient() {
@@ -16,34 +9,7 @@ function getOpenAIClient() {
   });
 }
 
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    // Load the PDF document
-    const loadingTask = pdfjsLib.getDocument({
-      data: new Uint8Array(buffer),
-      useSystemFonts: true,
-    });
-
-    const pdfDocument = await loadingTask.promise;
-    const numPages = pdfDocument.numPages;
-    let fullText = '';
-
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item) => ('str' in item ? item.str : ''))
-        .join(' ');
-      fullText += pageText + '\n';
-    }
-
-    return fullText;
-  } catch (error) {
-    console.error('PDF parsing error:', error);
-    return '';
-  }
-}
+// PDF extraction removed - use /api/analyze-blood-results instead
 
 function parseCSV(text: string): Record<string, string>[] {
   try {
@@ -110,12 +76,11 @@ export async function POST(request: NextRequest) {
       slack: ''
     };
 
-    // Process Blood Test PDF
+    // Process Blood Test PDF - Skip extraction, just note it was provided
     if (bloodTestFile) {
-      console.log('[BIOMARKER] Extracting blood biomarkers from PDF...');
-      const buffer = Buffer.from(await bloodTestFile.arrayBuffer());
-      extractedData.bloodTest = await extractTextFromPDF(buffer);
-      console.log('   [OK] Extracted biomarker data\n');
+      console.log('[BIOMARKER] Blood test PDF provided (skipping extraction)');
+      extractedData.bloodTest = 'Blood test PDF uploaded - use /api/analyze-blood-results for analysis';
+      console.log('   [OK] Blood test noted\n');
     }
 
     // Process CGM Data (CSV/JSON)

@@ -9,22 +9,86 @@ type Screen =
   | 'baseline-intro' | 'allergies' | 'medications' | 'supplements' | 'medical-conditions'
   | 'form-intro' | 'workout-time' | 'workout-days' | 'gym-equipment'
   | 'fuel-intro' | 'eating-style' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes'
-  | 'meals-cooked' | 'alcohol-consumption' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion' | 'gmail-connect' | 'slack-connect';
+  | 'meals-cooked' | 'alcohol-consumption' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
 
 export default function SageOnboarding() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('intro');
+  // Skip intro video in development mode
+  const [currentScreen, setCurrentScreen] = useState<Screen>(
+    process.env.NODE_ENV === 'development' ? 'welcome' : 'intro'
+  );
   const [labFileUploading, setLabFileUploading] = useState(false);
   const [labFileError, setLabFileError] = useState('');
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailEmail, setGmailEmail] = useState('');
   const [slackConnected, setSlackConnected] = useState(false);
   const [slackTeam, setSlackTeam] = useState('');
+  const [appleHealthConnected, setAppleHealthConnected] = useState(false);
+  const [appleCalendarConnected, setAppleCalendarConnected] = useState(false);
+  const [outlookConnected, setOutlookConnected] = useState(false);
+  const [outlookEmail, setOutlookEmail] = useState('');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  // Dev mode: Skip to plan with mock data
+  const handleDevSkipToPlan = async () => {
+    const mockData = {
+      fullName: 'Rhouda Test',
+      age: '32',
+      gender: 'female',
+      weight: '145',
+      weightUnit: 'lbs',
+      height: '5\'6"',
+      email: 'dev-test@sage.local',
+      mainPriority: 'longevity',
+      drivingGoal: 'health',
+      allergies: ['none'],
+      otherAllergy: '',
+      medications: 'None',
+      supplements: 'Vitamin D, Magnesium',
+      medicalConditions: ['none'],
+      otherCondition: '',
+      workoutTime: '45-min',
+      workoutDays: '4',
+      gymEquipment: ['dumbbells', 'resistance-bands'],
+      otherEquipment: '',
+      eatingStyle: 'intermittent-fasting',
+      firstMeal: '9-11am',
+      energyCrash: 'snack',
+      proteinSources: ['poultry', 'fish-seafood', 'eggs'],
+      otherProtein: '',
+      foodDislikes: 'Brussels sprouts',
+      mealsCooked: '10-12',
+      alcoholConsumption: '1-2 drinks per week',
+      integrations: ['apple-health'],
+      timestamp: new Date().toISOString(),
+      completed: true,
+    };
+
+    try {
+      // Submit mock data to onboarding API
+      await fetch('/api/sage-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mockData),
+      });
+
+      // Redirect to plan page
+      window.location.href = `/sage/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
+    } catch (error) {
+      console.error('Error in dev skip:', error);
+      alert('Dev skip failed - check console');
+    }
+  };
 
   const [formData, setFormData] = useState({
     fullName: '',
     age: '',
     gender: '',
     weight: '',
+    weightUnit: 'lbs' as 'lbs' | 'kg',
     height: '',
     email: '',
     mainPriority: '',
@@ -52,22 +116,42 @@ export default function SageOnboarding() {
   });
 
 
-  // Auto-transition from intro to welcome after 5 seconds
+  // Auto-transition from intro to welcome when video ends
   useEffect(() => {
     if (currentScreen === 'intro') {
-      const timer = setTimeout(() => {
-        setCurrentScreen('welcome');
-      }, 5000);
+      const video = document.querySelector('.intro-video') as HTMLVideoElement;
 
-      return () => clearTimeout(timer);
+      const handleVideoEnd = () => {
+        setCurrentScreen('welcome');
+      };
+
+      if (video) {
+        // Try to play with sound
+        const playPromise = video.play();
+
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log('Autoplay with sound failed, trying muted:', error);
+            // If autoplay with sound fails, play muted
+            video.muted = true;
+            video.play().catch(e => console.error('Muted autoplay also failed:', e));
+          });
+        }
+
+        video.addEventListener('ended', handleVideoEnd);
+        return () => video.removeEventListener('ended', handleVideoEnd);
+      }
     }
   }, [currentScreen]);
 
-  // Check if Gmail and Slack are already connected on mount
+  // Check if integrations are already connected on mount
   useEffect(() => {
     const cookies = document.cookie.split(';');
     const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
     const slackTeamCookie = cookies.find(c => c.trim().startsWith('slack_team='));
+    const appleHealthCookie = cookies.find(c => c.trim().startsWith('apple_health_connected='));
+    const appleCalendarCookie = cookies.find(c => c.trim().startsWith('apple_calendar_connected='));
+    const outlookEmailCookie = cookies.find(c => c.trim().startsWith('outlook_email='));
 
     if (gmailEmailCookie) {
       const email = gmailEmailCookie.split('=')[1];
@@ -80,6 +164,20 @@ export default function SageOnboarding() {
       setSlackConnected(true);
       setSlackTeam(decodeURIComponent(team));
     }
+
+    if (appleHealthCookie) {
+      setAppleHealthConnected(true);
+    }
+
+    if (appleCalendarCookie) {
+      setAppleCalendarConnected(true);
+    }
+
+    if (outlookEmailCookie) {
+      const email = outlookEmailCookie.split('=')[1];
+      setOutlookConnected(true);
+      setOutlookEmail(decodeURIComponent(email));
+    }
   }, []);
 
   const handleConnectGmail = async () => {
@@ -88,7 +186,40 @@ export default function SageOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        window.location.href = data.authUrl;
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'gmail-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
+
+          if (gmailEmailCookie) {
+            const email = gmailEmailCookie.split('=')[1];
+            setGmailConnected(true);
+            setGmailEmail(decodeURIComponent(email));
+            // Add google-calendar to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('google-calendar')
+                ? prev.integrations
+                : [...prev.integrations, 'google-calendar']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
       }
     } catch (err) {
       console.error('Error connecting Gmail:', err);
@@ -101,7 +232,11 @@ export default function SageOnboarding() {
       await fetch('/api/gmail/disconnect', { method: 'POST' });
       setGmailConnected(false);
       setGmailEmail('');
-      window.location.reload();
+      // Remove google-calendar from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'google-calendar')
+      }));
     } catch (err) {
       console.error('Error disconnecting Gmail:', err);
     }
@@ -113,7 +248,40 @@ export default function SageOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        window.location.href = data.authUrl;
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'slack-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const slackTeamCookie = cookies.find(c => c.trim().startsWith('slack_team='));
+
+          if (slackTeamCookie) {
+            const team = slackTeamCookie.split('=')[1];
+            setSlackConnected(true);
+            setSlackTeam(decodeURIComponent(team));
+            // Add slack to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('slack')
+                ? prev.integrations
+                : [...prev.integrations, 'slack']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
       }
     } catch (err) {
       console.error('Error connecting Slack:', err);
@@ -126,9 +294,256 @@ export default function SageOnboarding() {
       await fetch('/api/slack/disconnect', { method: 'POST' });
       setSlackConnected(false);
       setSlackTeam('');
-      window.location.reload();
+      // Remove slack from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'slack')
+      }));
     } catch (err) {
       console.error('Error disconnecting Slack:', err);
+    }
+  };
+
+  const handleConnectAppleHealth = async () => {
+    try {
+      // For Apple Health, we'll use a simple popup/modal approach
+      // In a real implementation, this would use Apple's HealthKit OAuth
+      const response = await fetch('/api/apple-health/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'apple-health-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const appleHealthCookie = cookies.find(c => c.trim().startsWith('apple_health_connected='));
+
+          if (appleHealthCookie) {
+            setAppleHealthConnected(true);
+            // Add apple-health to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('apple-health')
+                ? prev.integrations
+                : [...prev.integrations, 'apple-health']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Apple Health:', err);
+      alert('Failed to connect Apple Health');
+    }
+  };
+
+  const handleDisconnectAppleHealth = async () => {
+    try {
+      await fetch('/api/apple-health/disconnect', { method: 'POST' });
+      setAppleHealthConnected(false);
+      // Remove apple-health from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'apple-health')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Apple Health:', err);
+    }
+  };
+
+  const handleConnectAppleCalendar = async () => {
+    try {
+      const response = await fetch('/api/apple-calendar/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'apple-calendar-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const appleCalendarCookie = cookies.find(c => c.trim().startsWith('apple_calendar_connected='));
+
+          if (appleCalendarCookie) {
+            setAppleCalendarConnected(true);
+            // Add apple-calendar to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('apple-calendar')
+                ? prev.integrations
+                : [...prev.integrations, 'apple-calendar']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Apple Calendar:', err);
+      alert('Failed to connect Apple Calendar');
+    }
+  };
+
+  const handleDisconnectAppleCalendar = async () => {
+    try {
+      await fetch('/api/apple-calendar/disconnect', { method: 'POST' });
+      setAppleCalendarConnected(false);
+      // Remove apple-calendar from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'apple-calendar')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Apple Calendar:', err);
+    }
+  };
+
+  const handleConnectOutlook = async () => {
+    try {
+      const response = await fetch('/api/outlook/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'outlook-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const outlookEmailCookie = cookies.find(c => c.trim().startsWith('outlook_email='));
+
+          if (outlookEmailCookie) {
+            const email = outlookEmailCookie.split('=')[1];
+            setOutlookConnected(true);
+            setOutlookEmail(decodeURIComponent(email));
+            // Add outlook to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('outlook')
+                ? prev.integrations
+                : [...prev.integrations, 'outlook']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Outlook:', err);
+      alert('Failed to connect Outlook');
+    }
+  };
+
+  const handleDisconnectOutlook = async () => {
+    try {
+      await fetch('/api/outlook/disconnect', { method: 'POST' });
+      setOutlookConnected(false);
+      setOutlookEmail('');
+      // Remove outlook from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'outlook')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Outlook:', err);
+    }
+  };
+
+  const handleOpenUploadModal = (type: 'oura-ring' | 'whoop' | 'cgm') => {
+    setUploadModalType(type);
+    setUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    setUploadModalOpen(false);
+    setUploadModalType(null);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!uploadModalType) return;
+
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', uploadModalType);
+
+      const response = await fetch('/api/health-data/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Add to integrations
+        setFormData(prev => ({
+          ...prev,
+          integrations: prev.integrations.includes(uploadModalType)
+            ? prev.integrations
+            : [...prev.integrations, uploadModalType]
+        }));
+
+        // Show analysis results
+        if (result.analysis) {
+          const insights = result.analysis.insights?.join('\n• ') || 'Data analyzed successfully';
+          const metrics = result.analysis.metrics ?
+            Object.entries(result.analysis.metrics)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n') : '';
+
+          alert(`Upload successful!\n\nAnalysis:\n${metrics}\n\nInsights:\n• ${insights}`);
+        } else {
+          alert('Data uploaded and analyzed successfully!');
+        }
+
+        handleCloseUploadModal();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -145,23 +560,9 @@ export default function SageOnboarding() {
     setLabFileError('');
 
     try {
-      const formDataPayload = new FormData();
-      formDataPayload.append('bloodTest', file);
-
-      const response = await fetch('/api/analyze-health-data', {
-        method: 'POST',
-        body: formDataPayload,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Store the analysis results
-        handleInputChange('labFile', file);
-        console.log('Lab analysis complete:', data.insights);
-      } else {
-        setLabFileError(data.error || 'Failed to analyze lab data');
-      }
+      // Just store the file - analysis will happen in the personalized plan page
+      handleInputChange('labFile', file);
+      console.log('Lab file uploaded:', file.name);
     } catch (err) {
       setLabFileError('Error uploading lab file');
       console.error(err);
@@ -216,7 +617,7 @@ export default function SageOnboarding() {
       'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
       'form-intro', 'workout-time', 'workout-days', 'gym-equipment',
       'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion', 'gmail-connect', 'slack-connect'
+      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex > 1) {
@@ -231,7 +632,23 @@ export default function SageOnboarding() {
       completed: true
     };
 
+    // Show loading screen
+    setIsLoading(true);
+    setLoadingProgress(0);
+
+    // Animate progress bar
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 200);
+
     try {
+      // Submit onboarding data
       const response = await fetch('/api/sage-onboarding', {
         method: 'POST',
         headers: {
@@ -240,14 +657,42 @@ export default function SageOnboarding() {
         body: JSON.stringify(onboardingData),
       });
 
-      if (response.ok) {
-        console.log('Onboarding data submitted successfully');
-        window.location.href = '/sage';
-      } else {
+      if (!response.ok) {
         console.error('Failed to submit onboarding data');
+        clearInterval(progressInterval);
+        setIsLoading(false);
+        return;
       }
+
+      console.log('Onboarding data submitted successfully');
+
+      // If user uploaded a lab file, analyze it with AI
+      if (formData.labFile) {
+        console.log('Uploading and analyzing lab file with AI...');
+        const labFormData = new FormData();
+        labFormData.append('bloodTest', formData.labFile);
+        labFormData.append('email', formData.email);
+
+        try {
+          await fetch('/api/analyze-blood-results', {
+            method: 'POST',
+            body: labFormData,
+          });
+          console.log('Lab file AI analysis initiated');
+        } catch (err) {
+          console.error('Error analyzing lab file:', err);
+          // Don't block the flow if analysis fails
+        }
+      }
+
+      setLoadingProgress(100);
+      setTimeout(() => {
+        window.location.href = `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
+      }, 500);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
+      clearInterval(progressInterval);
+      setIsLoading(false);
     }
   };
 
@@ -255,6 +700,13 @@ export default function SageOnboarding() {
     <div className="onboarding-container">
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
+        <video
+          playsInline
+          className="intro-video"
+          preload="auto"
+        >
+          <source src="/videos/sage.mp4" type="video/mp4" />
+        </video>
       </div>
 
       {/* Welcome Screen */}
@@ -271,6 +723,31 @@ export default function SageOnboarding() {
               <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
+
+          {/* Dev Mode Button */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              className="dev-skip-button"
+              onClick={handleDevSkipToPlan}
+              style={{
+                marginTop: '20px',
+                padding: '10px 24px',
+                background: '#ff6b6b',
+                color: '#fff',
+                border: '2px solid #ff5252',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#ff5252'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#ff6b6b'}
+            >
+              🚀 DEV: Skip to Plan
+            </button>
+          )}
+
           <div className="welcome-brand">sage</div>
         </div>
       </div>
@@ -288,8 +765,17 @@ export default function SageOnboarding() {
               <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
+          {formData.fullName.trim() && formData.fullName.trim().split(/\s+/).length < 2 && (
+            <p className="validation-error">Please enter your full name (first and last name)</p>
+          )}
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('age')} disabled={!formData.fullName.trim()}>Continue</button>
+            <button
+              className="typeform-button"
+              onClick={() => handleContinue('age')}
+              disabled={!formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2}
+            >
+              Continue
+            </button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">sage</div>
@@ -345,13 +831,30 @@ export default function SageOnboarding() {
         <div className="typeform-content">
           <h1 className="typeform-title">What is your current weight?</h1>
           <p className="typeform-subtitle">Please enter your weight, this helps us calculate your nutritional needs.</p>
-          <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.weight} onChange={(e) => handleInputChange('weight', e.target.value)} autoFocus />
-            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div className="input-with-unit-container">
+            <div className="input-container">
+              <input
+                type="number"
+                className="typeform-input"
+                placeholder="Type your answer here"
+                value={formData.weight}
+                onChange={(e) => handleInputChange('weight', e.target.value)}
+                autoFocus
+              />
+              <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <select
+              className="unit-dropdown"
+              value={formData.weightUnit}
+              onChange={(e) => handleInputChange('weightUnit', e.target.value as 'lbs' | 'kg')}
+            >
+              <option value="lbs">lbs</option>
+              <option value="kg">kg</option>
+            </select>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('height')} disabled={!formData.weight.trim()}>Continue</button>
@@ -365,14 +868,24 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'height' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="typeform-title">What is your height?</h1>
-          <p className="typeform-subtitle">Please enter your height, this helps us create your personalized plan.</p>
-          <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.height} onChange={(e) => handleInputChange('height', e.target.value)} autoFocus />
-            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <p className="typeform-subtitle">Please enter your height in centimeters, this helps us create your personalized plan.</p>
+          <div className="input-with-unit-container">
+            <div className="input-container">
+              <input
+                type="number"
+                className="typeform-input"
+                placeholder="Type your answer here"
+                value={formData.height}
+                onChange={(e) => handleInputChange('height', e.target.value)}
+                autoFocus
+              />
+              <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="unit-label">cm</div>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('email')} disabled={!formData.height.trim()}>Continue</button>
@@ -391,7 +904,7 @@ export default function SageOnboarding() {
             <input type="email" className="typeform-input" placeholder="name@example.com" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} autoFocus />
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('ikigai-intro')} disabled={!formData.email.trim()}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('ikigai-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">sage</div>
@@ -842,13 +1355,13 @@ export default function SageOnboarding() {
 
       {/* Completion Screen */}
       <div className={`typeform-screen ${currentScreen === 'completion' ? 'active' : 'hidden'}`} style={{justifyContent: 'center', alignItems: 'center'}}>
-        <div className="typeform-content">
-          <h1 className="typeform-title" style={{fontSize: '64px', marginBottom: '30px'}}>You&apos;re all set.</h1>
-          <p className="typeform-subtitle" style={{fontSize: '20px', marginBottom: '60px', maxWidth: '700px'}}>
+        <div className="typeform-content" style={{textAlign: 'center'}}>
+          <h1 className="typeform-title" style={{fontSize: '64px', marginBottom: '30px', textAlign: 'center'}}>You&apos;re all set.</h1>
+          <p className="typeform-subtitle" style={{fontSize: '20px', marginBottom: '60px', maxWidth: '700px', textAlign: 'center', marginLeft: 'auto', marginRight: 'auto'}}>
             Thank you. Your sage profile is ready.<br />
             The final step is to connect your health data.
           </p>
-          <div className="button-container">
+          <div className="button-container" style={{justifyContent: 'center', paddingLeft: '0'}}>
             <button className="typeform-button" onClick={() => handleContinue('final-step-intro')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
@@ -874,20 +1387,121 @@ export default function SageOnboarding() {
           <p className="section-label">5 The Final Step</p>
           <h1 className="typeform-title">Integrate sage into your ecosystem.</h1>
           <p className="typeform-subtitle">Activity, sleep, and metabolic data help optimize meal content, calendar helps optimize timing.</p>
-          <div className="options-container">
-            {['oura-ring', 'whoop', 'cgm', 'apple-health', 'apple-calendar', 'google-calendar', 'outlook', 'slack'].map((integration) => (
-              <button key={integration} className={`option-button checkbox ${formData.integrations.includes(integration) ? 'selected' : ''}`} onClick={() => toggleArrayValue('integrations', integration)}>
-                {integration === 'oura-ring' && 'Oura Ring'}
-                {integration === 'whoop' && 'WHOOP'}
-                {integration === 'cgm' && 'Continuous Glucose Monitor'}
-                {integration === 'apple-health' && 'Apple Health'}
-                {integration === 'apple-calendar' && 'Apple Calendar'}
-                {integration === 'google-calendar' && 'Google Calendar'}
-                {integration === 'outlook' && 'Outlook'}
-                {integration === 'slack' && 'Slack'}
+
+          <div className="integrations-grid">
+            {/* Google Calendar */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Google Calendar</h3>
+                <p className="integration-description">Sync your schedule for meal timing optimization</p>
+              </div>
+              <button
+                className={`connect-button ${gmailConnected ? 'connected' : ''}`}
+                onClick={gmailConnected ? handleDisconnectGmail : handleConnectGmail}
+              >
+                {gmailConnected ? '✓ Connected' : 'Connect'}
               </button>
-            ))}
+            </div>
+
+            {/* Apple Health */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Apple Health</h3>
+                <p className="integration-description">Track activity, sleep, and health metrics</p>
+              </div>
+              <button
+                className={`connect-button ${appleHealthConnected ? 'connected' : ''}`}
+                onClick={appleHealthConnected ? handleDisconnectAppleHealth : handleConnectAppleHealth}
+              >
+                {appleHealthConnected ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* Apple Calendar */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Apple Calendar</h3>
+                <p className="integration-description">Optimize meal timing based on your schedule</p>
+              </div>
+              <button
+                className={`connect-button ${appleCalendarConnected ? 'connected' : ''}`}
+                onClick={appleCalendarConnected ? handleDisconnectAppleCalendar : handleConnectAppleCalendar}
+              >
+                {appleCalendarConnected ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* Outlook */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Outlook</h3>
+                <p className="integration-description">Sync your Outlook calendar for meal timing</p>
+              </div>
+              <button
+                className={`connect-button ${outlookConnected ? 'connected' : ''}`}
+                onClick={outlookConnected ? handleDisconnectOutlook : handleConnectOutlook}
+              >
+                {outlookConnected ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* Slack */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Slack</h3>
+                <p className="integration-description">Receive daily meal plans and reminders</p>
+              </div>
+              <button
+                className={`connect-button ${slackConnected ? 'connected' : ''}`}
+                onClick={slackConnected ? handleDisconnectSlack : handleConnectSlack}
+              >
+                {slackConnected ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* Oura Ring - CSV Upload */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Oura Ring</h3>
+                <p className="integration-description">Upload your sleep and activity data</p>
+              </div>
+              <button
+                className={`connect-button ${formData.integrations.includes('oura-ring') ? 'connected' : ''}`}
+                onClick={() => handleOpenUploadModal('oura-ring')}
+              >
+                {formData.integrations.includes('oura-ring') ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* WHOOP - CSV Upload */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">WHOOP</h3>
+                <p className="integration-description">Upload your recovery and strain data</p>
+              </div>
+              <button
+                className={`connect-button ${formData.integrations.includes('whoop') ? 'connected' : ''}`}
+                onClick={() => handleOpenUploadModal('whoop')}
+              >
+                {formData.integrations.includes('whoop') ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
+
+            {/* CGM - CSV Upload */}
+            <div className="integration-item">
+              <div className="integration-info">
+                <h3 className="integration-name">Continuous Glucose Monitor</h3>
+                <p className="integration-description">Upload your glucose readings</p>
+              </div>
+              <button
+                className={`connect-button ${formData.integrations.includes('cgm') ? 'connected' : ''}`}
+                onClick={() => handleOpenUploadModal('cgm')}
+              >
+                {formData.integrations.includes('cgm') ? '✓ Connected' : 'Connect'}
+              </button>
+            </div>
           </div>
+
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -948,9 +1562,9 @@ export default function SageOnboarding() {
               </div>
             )}
           </div>
-          <p className="typeform-subtitle" style={{marginTop: '40px', fontSize: '15px'}}>
+          {/* <p className="typeform-subtitle" style={{marginTop: '40px', fontSize: '15px'}}>
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.
-          </p>
+          </p> */}
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('final-completion')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -970,179 +1584,126 @@ export default function SageOnboarding() {
             Your nutrition plan is ready. Your best self is waiting for you.
           </p>
           <div className="button-container">
-            <button className="typeform-button" style={{fontSize: '18px', padding: '18px 32px'}} onClick={() => handleContinue('gmail-connect')}>
-              Continue →
+            <button className="typeform-button" style={{fontSize: '18px', padding: '18px 32px'}} onClick={handleSubmit}>
+              View My Plan →
             </button>
           </div>
           <div className="typeform-brand">sage</div>
         </div>
       </div>
 
-      {/* Gmail Connect Screen */}
-      <div className={`typeform-screen ${currentScreen === 'gmail-connect' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <h1 className="typeform-title">Connect your Gmail</h1>
-          <p className="typeform-subtitle">Connect Gmail to enable automated meal planning and grocery ordering based on your schedule and preferences.</p>
+      {/* Health Data Upload Modal */}
+      {uploadModalOpen && uploadModalType && (
+        <div className="upload-modal-overlay" onClick={handleCloseUploadModal}>
+          <div className="upload-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={handleCloseUploadModal}>×</button>
 
-          {gmailConnected ? (
-            <div style={{marginBottom: '40px'}}>
-              <div style={{
-                padding: '20px',
-                background: '#e8f5e9',
-                borderRadius: '8px',
-                border: '2px solid #66bb6a',
-                marginBottom: '20px'
-              }}>
-                <div style={{fontSize: '16px', color: '#2e7d32', marginBottom: '8px', fontWeight: 500}}>
-                  ✓ Connected to Gmail
-                </div>
-                <div style={{fontSize: '15px', color: '#388e3c'}}>
-                  {gmailEmail}
-                </div>
-              </div>
-              <button
-                onClick={handleDisconnectGmail}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '15px',
-                  background: '#ffebee',
-                  color: '#c62828',
-                  border: '1px solid #ef5350',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Disconnect Gmail
-              </button>
-            </div>
-          ) : (
-            <div style={{marginBottom: '40px'}}>
-              <div style={{
-                padding: '40px',
-                background: '#e8ede6',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                textAlign: 'center'
-              }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom: '16px'}}>
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M22 6l-10 7L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <button
-                  onClick={handleConnectGmail}
-                  style={{
-                    padding: '12px 32px',
-                    fontSize: '16px',
-                    background: '#4285f4',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  Connect Gmail
-                </button>
-              </div>
-              <p style={{fontSize: '14px', color: '#666', textAlign: 'center'}}>
-                Your data is secure and will only be used for meal planning
-              </p>
-            </div>
-          )}
+            <h2 className="modal-title">
+              Upload {uploadModalType === 'oura-ring' ? 'Oura Ring' : uploadModalType === 'whoop' ? 'WHOOP' : 'CGM'} Data
+            </h2>
 
-          <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('slack-connect')}>
-              Continue
-            </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <div className="modal-instructions">
+              <h3>How to export your data:</h3>
+              {uploadModalType === 'oura-ring' && (
+                <ol>
+                  <li>Open the Oura app on your phone</li>
+                  <li>Go to Settings → Account → Export Data</li>
+                  <li>Select date range and export as CSV</li>
+                  <li>Transfer the file to this device and upload below</li>
+                </ol>
+              )}
+              {uploadModalType === 'whoop' && (
+                <ol>
+                  <li>Log in to your WHOOP account on web</li>
+                  <li>Navigate to Profile → Settings</li>
+                  <li>Click &quot;Export Data&quot; and request CSV export</li>
+                  <li>Check your email for the download link</li>
+                  <li>Download and upload the CSV file below</li>
+                </ol>
+              )}
+              {uploadModalType === 'cgm' && (
+                <ol>
+                  <li>Open your CGM app (Dexcom, Libre, etc.)</li>
+                  <li>Go to Settings or Data Management</li>
+                  <li>Export your glucose readings as CSV</li>
+                  <li>Select last 14-30 days for best results</li>
+                  <li>Upload the exported file below</li>
+                </ol>
+              )}
+            </div>
+
+            <div
+              className="upload-drop-zone"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.endsWith('.csv')) {
+                  handleFileUpload(file);
+                } else {
+                  alert('Please upload a CSV file');
+                }
+              }}
+              onClick={() => document.getElementById('modal-file-input')?.click()}
+            >
+              {uploadingFile ? (
+                <div className="uploading-state">
+                  <div className="spinner"></div>
+                  <p>Uploading...</p>
+                </div>
+              ) : (
+                <>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15V3M12 3L8 7M12 3L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 17L2 19C2 20.1046 2.89543 21 4 21L20 21C21.1046 21 22 20.1046 22 19L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p>Click to upload or drag and drop</p>
+                  <span>CSV files only</span>
+                </>
+              )}
+            </div>
+
+            <input
+              id="modal-file-input"
+              type="file"
+              accept=".csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleFileUpload(file);
+                }
+              }}
+            />
           </div>
-          <div className="typeform-brand">sage</div>
         </div>
-      </div>
+      )}
 
-      {/* Slack Connect Screen */}
-      <div className={`typeform-screen ${currentScreen === 'slack-connect' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <h1 className="typeform-title">Connect your Slack</h1>
-          <p className="typeform-subtitle">Connect Slack to receive daily meal plans, reminders, and updates directly in your workspace.</p>
-
-          {slackConnected ? (
-            <div style={{marginBottom: '40px'}}>
-              <div style={{
-                padding: '20px',
-                background: '#e8f5e9',
-                borderRadius: '8px',
-                border: '2px solid #66bb6a',
-                marginBottom: '20px'
-              }}>
-                <div style={{fontSize: '16px', color: '#2e7d32', marginBottom: '8px', fontWeight: 500}}>
-                  ✓ Connected to Slack
-                </div>
-                <div style={{fontSize: '15px', color: '#388e3c'}}>
-                  {slackTeam}
-                </div>
+      {/* Loading Screen */}
+      {isLoading && (
+        <div className="loading-screen">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="loading-video"
+          >
+            <source src="/videos/sage.mp4" type="video/mp4" />
+          </video>
+          <div className="loading-overlay">
+            <div className="loading-content">
+              <div className="loading-text">loading sage plan</div>
+              <div className="loading-bar-container">
+                <div
+                  className="loading-bar-fill"
+                  style={{ width: `${loadingProgress}%` }}
+                />
               </div>
-              <button
-                onClick={handleDisconnectSlack}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '15px',
-                  background: '#ffebee',
-                  color: '#c62828',
-                  border: '1px solid #ef5350',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Disconnect Slack
-              </button>
             </div>
-          ) : (
-            <div style={{marginBottom: '40px'}}>
-              <div style={{
-                padding: '40px',
-                background: '#e8ede6',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                textAlign: 'center'
-              }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom: '16px'}}>
-                  <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z" fill="currentColor"/>
-                  <path d="M20.5 8H16V3.5C16 2.67 16.67 2 17.5 2S19 2.67 19 3.5V6h1.5c.83 0 1.5.67 1.5 1.5S21.33 9 20.5 9z" fill="currentColor"/>
-                  <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z" fill="currentColor"/>
-                  <path d="M3.5 16H8v4.5c0 .83-.67 1.5-1.5 1.5S5 21.33 5 20.5V18H3.5c-.83 0-1.5-.67-1.5-1.5S2.67 15 3.5 15z" fill="currentColor"/>
-                </svg>
-                <button
-                  onClick={handleConnectSlack}
-                  style={{
-                    padding: '12px 32px',
-                    fontSize: '16px',
-                    background: '#611f69',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  Connect Slack
-                </button>
-              </div>
-              <p style={{fontSize: '14px', color: '#666', textAlign: 'center'}}>
-                Your data is secure and will only be used for notifications
-              </p>
-            </div>
-          )}
-
-          <div className="button-container">
-            <button className="typeform-button" onClick={handleSubmit}>
-              {slackConnected ? 'Complete Setup' : 'Skip for now'}
-            </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,1803 @@
+/* Plan Container */
+.plan-container {
+  min-height: 100vh;
+  background: #f8f8f8;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+}
+
+/* Hero Image */
+.hero-image-container {
+  width: 100%;
+  margin-bottom: 60px;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.hero-image {
+  width: 100%;
+  height: auto;
+  max-height: 90vh;
+  display: block;
+  object-fit: cover;
+  object-position: bottom;
+}
+
+/* Header */
+.plan-header {
+  text-align: left;
+  margin-bottom: 60px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 40px;
+}
+
+.plan-main-title {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 72px;
+  font-weight: 400;
+  color: #1a1a1a;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+
+.plan-subtitle {
+  font-size: 24px;
+  font-weight: 400;
+  color: #4a4a4a;
+  margin: 0;
+}
+
+/* Sections */
+.plan-section {
+  max-width: 1200px;
+  margin: 0 40px 60px;
+  margin-left: auto;
+  margin-right: auto;
+  background: transparent;
+  padding: 40px;
+}
+
+.greeting-section {
+  background: transparent;
+  text-align: left;
+  margin-bottom: 0px;
+}
+
+.section-heading {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 48px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.section-subheading {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  font-style: italic;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  line-height: 1.3;
+}
+
+.intro-text {
+  font-size: 16px;
+  color: #1a1a1a;
+  line-height: 1.7;
+  max-width: 900px;
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 42px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+/* Insights Section */
+.insights-section {
+  margin-bottom: 80px;
+}
+
+.insights-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.insights-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-spinner-small {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e5e5;
+  border-top-color: #2d3a2d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.insights-loading p {
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.insights-list {
+  margin-top: 32px;
+}
+
+.insight-item {
+  margin-bottom: 48px;
+}
+
+.insight-number {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.insight-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.insight-text {
+  font-size: 15px;
+  color: #4a4a4a;
+  line-height: 1.7;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* Executive Summary */
+.executive-summary-container {
+  margin-top: 80px;
+}
+
+.executive-summary p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+/* Nutrition Overview */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  margin-top: 40px;
+}
+
+.overview-column h3 {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 32px;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.overview-heading {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.goals-list li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  padding-left: 0;
+  position: relative;
+}
+
+.goals-list li::before {
+  content: '';
+}
+
+.nutrition-structure p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.nutrition-structure p strong {
+  font-weight: 500;
+}
+
+/* Nutrition Divider Image */
+.nutrition-divider {
+  width: 100%;
+  max-height: 300px;
+  overflow: hidden;
+  margin-bottom: 60px;
+}
+
+.divider-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Daily Recommendations Divider Image */
+.daily-recs-divider {
+  width: 100%;
+  margin-bottom: 60px;
+}
+
+.divider-image-auto {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Daily Recommendations */
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  border: 1px solid #1a1a1a;
+  background: #ffffff;
+}
+
+.recommendation-card {
+  background: #ffffff;
+  padding: 32px;
+  border-right: 1px solid #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+  min-height: 280px;
+}
+
+/* Remove right border from last column */
+.recommendation-card:nth-child(3),
+.recommendation-card:nth-child(6) {
+  border-right: none;
+}
+
+/* Remove bottom border from last row */
+.recommendation-card:nth-child(4),
+.recommendation-card:nth-child(5),
+.recommendation-card:nth-child(6) {
+  border-bottom: none;
+}
+
+.recommendation-card h3 {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+.recommendation-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-card li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.recommendation-card li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #1a1a1a;
+  font-size: 16px;
+}
+
+/* Table */
+.table-container {
+  overflow-x: auto;
+  margin-top: 24px;
+}
+
+.micronutrient-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.micronutrient-table thead {
+  background: #f5f5f5;
+}
+
+.micronutrient-table th {
+  text-align: left;
+  padding: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.micronutrient-table td {
+  padding: 16px;
+  color: #2d2d2d;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.micronutrient-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Side Image Layout */
+.with-side-image-layout {
+  display: flex;
+  max-width: 1280px;
+  margin: 0 auto 60px;
+  gap: 0;
+}
+
+.side-image-container {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.side-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.side-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-content .plan-section {
+  margin: 0;
+  padding: 40px 40px 40px 60px;
+}
+
+/* Meal Plan */
+.meal-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 32px;
+}
+
+/* First 3 days in first row, remaining 4 days in second row */
+.meal-plan-grid .day-column:nth-child(n+4) {
+  grid-column: span 1;
+}
+
+.day-column {
+  background: #fafafa;
+  padding: 24px;
+  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+}
+
+.day-title {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.meals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.meal-card {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.meal-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.time-dot {
+  width: 8px;
+  height: 8px;
+  background: #2d3a2d;
+  border-radius: 50%;
+}
+
+.meal-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.meal-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a4a4a;
+  margin-bottom: 8px;
+}
+
+.meal-macros {
+  font-size: 11px;
+  color: #999;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.meal-meta {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.meal-details {
+  margin-top: 12px;
+  border-top: 1px solid #e5e5e5;
+  padding-top: 12px;
+}
+
+.meal-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d3a2d;
+  user-select: none;
+  list-style: none;
+}
+
+.meal-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.meal-details summary::before {
+  content: '▶ ';
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.meal-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.recipe-content {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.recipe-content h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 12px 0 8px;
+  color: #1a1a1a;
+}
+
+.ingredients-list,
+.instructions-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #4a4a4a;
+  line-height: 1.6;
+}
+
+.ingredients-list li,
+.instructions-list li {
+  margin-bottom: 6px;
+}
+
+.meal-plan-loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Lifestyle Integration */
+.lifestyle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.lifestyle-item h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.lifestyle-item p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #2d2d2d;
+}
+
+/* Features List */
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features-list li {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #2d2d2d;
+  margin-bottom: 16px;
+  padding-left: 28px;
+  position: relative;
+}
+
+.features-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #2d3a2d;
+  font-size: 20px;
+}
+
+/* Waitlist Section */
+.waitlist-section {
+  text-align: center;
+  background: transparent;
+}
+
+.waitlist-title {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.waitlist-subtitle {
+  font-size: 18px;
+  color: #4a4a4a;
+  margin-bottom: 40px;
+}
+
+.qr-code-placeholder {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.qr-box {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Footer */
+.plan-footer {
+  max-width: 1200px;
+  margin: 60px 40px 40px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 40px 60px;
+  background: transparent;
+  text-align: center;
+}
+
+.plan-footer p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.footer-brand {
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Loading State */
+.plan-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.plan-loading-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plan-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 60px;
+}
+
+.plan-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 0 20px;
+}
+
+.plan-loading-text {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #999;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.plan-loading-bar-container {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.plan-loading-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: #c9d5c0;
+  border-radius: 1px;
+  animation: indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .plan-loading-overlay {
+    padding-bottom: 50px;
+  }
+
+  .plan-loading-text {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-loading-overlay {
+    padding-bottom: 40px;
+  }
+
+  .plan-loading-text {
+    font-size: 14px;
+  }
+}
+
+/* Error State */
+.plan-error {
+  min-height: 100vh;
+  background: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.plan-error h1 {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.plan-error p {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.plan-error button {
+  padding: 12px 32px;
+  background: #2d3a2d;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.plan-error button:hover {
+  background: #1a2318;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .recommendations-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+
+  /* Adjust borders for 2-column layout */
+  .recommendation-card:nth-child(2),
+  .recommendation-card:nth-child(4),
+  .recommendation-card:nth-child(6) {
+    border-right: none;
+  }
+
+  .recommendation-card:nth-child(3) {
+    border-right: 1px solid #1a1a1a;
+  }
+
+  .recommendation-card:nth-child(5),
+  .recommendation-card:nth-child(6) {
+    border-bottom: none;
+  }
+
+  .recommendation-card:nth-child(4) {
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .meal-plan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .plan-main-title {
+    font-size: 48px;
+  }
+
+  .plan-subtitle {
+    font-size: 18px;
+  }
+
+  .plan-section {
+    padding: 40px 24px;
+    margin: 0 20px 60px;
+  }
+
+  .plan-header {
+    padding: 0 20px;
+  }
+
+  .section-heading {
+    font-size: 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+  }
+
+
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  /* Reset all borders for single column */
+  .recommendation-card {
+    border-right: none;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .recommendation-card:last-child {
+    border-bottom: none;
+  }
+
+  .loading-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .waitlist-title {
+    font-size: 28px;
+  }
+
+  .plan-footer {
+    margin: 60px 20px 20px;
+  }
+
+  /* Side Image Layout - Stack on mobile */
+  .with-side-image-layout {
+    flex-direction: column;
+    margin: 0 20px 60px;
+  }
+
+  .side-image-container {
+    width: 100%;
+    height: 200px;
+  }
+
+  .side-content .plan-section {
+    padding: 40px 24px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-main-title {
+    font-size: 36px;
+  }
+
+  .plan-subtitle {
+    font-size: 16px;
+  }
+
+  .section-heading {
+    font-size: 26px;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
+
+  .plan-section {
+    padding: 32px 20px;
+  }
+}
+
+/* Blood Analysis Section */
+.blood-analysis-section {
+  background: transparent;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.blood-analysis-content {
+  margin-top: 32px;
+}
+
+.blood-summary {
+  margin-bottom: 40px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border-left: 4px solid #2563eb;
+}
+
+.subsection-title {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.summary-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #4a4a4a;
+}
+
+/* Biomarkers Grid */
+.biomarkers-section {
+  margin-bottom: 40px;
+}
+
+.biomarkers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.biomarker-card {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.biomarker-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.biomarker-card.status-optimal {
+  border-left: 4px solid #10b981;
+}
+
+.biomarker-card.status-normal {
+  border-left: 4px solid #3b82f6;
+}
+
+.biomarker-card.status-borderline {
+  border-left: 4px solid #f59e0b;
+}
+
+.biomarker-card.status-high,
+.biomarker-card.status-low {
+  border-left: 4px solid #ef4444;
+}
+
+.biomarker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.biomarker-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.optimal {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.normal {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.borderline {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.high,
+.status-badge.low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.biomarker-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.biomarker-value .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.biomarker-value .reference-range {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.biomarker-significance,
+.biomarker-implications {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4a4a4a;
+  margin: 8px 0;
+}
+
+/* Findings Grid */
+.findings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.findings-card {
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.concerns-card {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+}
+
+.positives-card {
+  background: #f0fdf4;
+  border-left: 4px solid #10b981;
+}
+
+.findings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.findings-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.findings-list li:last-child {
+  border-bottom: none;
+}
+
+.findings-list li::before {
+  content: "•";
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.concerns-card .findings-list li::before {
+  color: #ef4444;
+}
+
+.positives-card .findings-list li::before {
+  color: #10b981;
+}
+
+/* Recommendations Section */
+.recommendations-section {
+  background: #f8f9fa;
+  padding: 32px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+}
+
+.recommendation-group {
+  margin-bottom: 24px;
+}
+
+.recommendation-group:last-child {
+  margin-bottom: 0;
+}
+
+.recommendation-group h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.recommendation-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-group ul li {
+  padding: 10px 0 10px 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4a4a4a;
+  position: relative;
+}
+
+.recommendation-group ul li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.retest-timing {
+  margin-top: 20px;
+  padding: 16px;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+/* Personalized Notes */
+.personalized-notes {
+  background: #fffbeb;
+  padding: 24px;
+  border-radius: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.personalized-notes ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.personalized-notes ul li {
+  padding: 10px 0 10px 28px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #374151;
+  position: relative;
+}
+
+.personalized-notes ul li::before {
+  content: "★";
+  position: absolute;
+  left: 0;
+  color: #f59e0b;
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .biomarkers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .findings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendations-section {
+    padding: 20px;
+  }
+}
+
+/* Blood Metrics Section */
+.blood-metrics-section {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto 60px;
+}
+
+.blood-metrics-section .section-title {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+.blood-metrics-section .section-subtitle {
+  font-size: 16px;
+  color: #4a4a4a;
+  margin-bottom: 40px;
+  font-weight: 400;
+}
+
+.biomarkers-table-container {
+  overflow-x: auto;
+}
+
+.biomarkers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+  background: #fafafa;
+}
+
+.biomarkers-table thead {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.biomarkers-table th {
+  text-align: left;
+  padding: 12px 24px;
+  font-weight: 400;
+  color: #666;
+  font-size: 16px;
+  background: transparent;
+}
+
+.biomarkers-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.biomarkers-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.biomarkers-table td {
+  padding: 12px 24px;
+  color: #1a1a1a;
+  font-weight: 400;
+}
+
+.biomarker-name {
+  font-weight: 400;
+  color: #1a1a1a;
+}
+
+.biomarker-value {
+  font-weight: 400;
+}
+
+.biomarker-range {
+  color: #666;
+}
+
+.biomarker-status {
+  font-weight: 400;
+}
+
+.biomarker-status.status-optimal {
+  color: #10b981;
+}
+
+.biomarker-status.status-excellent {
+  color: #059669;
+}
+
+.biomarker-status.status-good {
+  color: #3b82f6;
+}
+
+.biomarker-status.status-normal {
+  color: #6b7280;
+}
+
+.biomarker-status.status-adequate {
+  color: #8b5cf6;
+}
+
+.biomarker-status.status-borderline {
+  color: #f59e0b;
+}
+
+.biomarker-status.status-high,
+.biomarker-status.status-low {
+  color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .biomarkers-table {
+    font-size: 14px;
+  }
+
+  .biomarkers-table th,
+  .biomarkers-table td {
+    padding: 12px;
+  }
+
+  .blood-metrics-section {
+    padding: 40px 20px;
+  }
+}
+
+/* Additional status colors */
+.biomarker-status.status-needs-optimization {
+  color: #f59e0b;
+}
+
+/* Profile Summary Card */
+.profile-summary-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.profile-summary-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.profile-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-summary-value {
+  font-size: 15px;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+.biomarker-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.biomarker-tag {
+  padding: 4px 12px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Biomarker Notes in Meals */
+.biomarker-notes {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 0;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1e40af;
+  display: flex;
+  gap: 8px;
+  align-items: start;
+}
+
+.biomarker-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Meal Tags */
+.meal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.meal-tag {
+  padding: 3px 8px;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+@media (max-width: 768px) {
+  .profile-summary-card {
+    padding: 16px;
+  }
+
+  .biomarker-tags {
+    gap: 6px;
+  }
+}
+
+/* Micronutrients Loading */
+.micronutrients-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 20px;
+}
+
+/* Micronutrients Intro */
+.micronutrients-intro {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+/* Micronutrient Table Enhancements */
+.nutrient-name {
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.nutrient-goal {
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.nutrient-sources {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.nutrient-purpose {
+  color: #059669;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .micronutrients-intro {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .nutrient-sources,
+  .nutrient-purpose {
+    font-size: 13px;
+  }
+}
+
+/* QR Code Image Styling */
+.qr-code-image {
+  width: 200px;
+  height: 200px;
+  display: block;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .qr-code-image {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+/* Lifestyle Integration Section */
+.lifestyle-section {
+  padding: 60px 24px;
+  background: #ffffff;
+}
+
+.lifestyle-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 20px;
+}
+
+.lifestyle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.lifestyle-card {
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.lifestyle-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.lifestyle-card-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lifestyle-intro {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.lifestyle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lifestyle-item {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.lifestyle-item strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.lifestyle-item p {
+  margin: 8px 0 0 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.lifestyle-item ul,
+.lifestyle-item ol {
+  margin: 8px 0 0 0;
+  padding-left: 24px;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.lifestyle-item li {
+  margin-bottom: 6px;
+}
+
+.lifestyle-why {
+  background: #eff6ff;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+  margin-top: 8px;
+}
+
+.lifestyle-why strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 8px;
+}
+
+.lifestyle-why p {
+  margin: 0;
+  color: #1e40af;
+  font-size: 13px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Workout Split */
+.workout-split {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.workout-day {
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.workout-duration {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Stress Practices */
+.stress-practices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.practice-item {
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.practice-item strong {
+  color: #059669;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.practice-item span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.practice-benefit {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+  color: #4b5563 !important;
+  font-style: italic;
+}
+
+/* Skincare Routine */
+.skincare-routine {
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
+.skincare-routine li {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.skincare-routine strong {
+  color: #ec4899;
+  font-size: 14px;
+}
+
+.step-purpose {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .lifestyle-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lifestyle-section {
+    padding: 40px 16px;
+  }
+
+  .lifestyle-card {
+    padding: 20px;
+  }
+
+  .lifestyle-card-title {
+    font-size: 20px;
+  }
+
+  .lifestyle-intro {
+    font-size: 14px;
+    padding: 12px;
+  }
+}
+
+/* Sidebar */
+.plan-sidebar {
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+}
+
+.sidebar-button {
+  background: #2d3a2d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-button:hover {
+  background: #1a241a;
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.download-button {
+  background: #2d3a2d;
+}
+
+.linkedin-button {
+  background: #0077b5;
+}
+
+.linkedin-button:hover {
+  background: #005582;
+}
+
+.twitter-button {
+  background: #000;
+}
+
+.twitter-button:hover {
+  background: #333;
+}
+
+/* Hide sidebar on mobile and tablet */
+@media (max-width: 1024px) {
+  .plan-sidebar {
+    display: none;
+  }
+}
+
+/* Print styles - hide sidebar when printing */
+@media print {
+  .plan-sidebar {
+    display: none !important;
+  }
+}

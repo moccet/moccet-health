@@ -245,10 +245,10 @@ async function generatePlanInBackground(email: string, uniqueCode: string, fullN
     }
 
     // Import the generation functions directly to call them
-    const generateSagePlan = (await import('./generate-sage-plan/route')).GET;
-    const generateMealPlan = (await import('./generate-meal-plan/route')).GET;
-    const generateMicronutrients = (await import('./generate-micronutrients/route')).GET;
-    const generateLifestyle = (await import('./generate-lifestyle-integration/route')).GET;
+    const generateSagePlan = (await import('../generate-sage-plan/route')).GET;
+    const generateMealPlan = (await import('../generate-meal-plan/route')).GET;
+    const generateMicronutrients = (await import('../generate-micronutrients/route')).GET;
+    const generateLifestyle = (await import('../generate-lifestyle-integration/route')).GET;
 
     console.log('[1/5] Generating main sage plan (with blood analysis data)...');
 

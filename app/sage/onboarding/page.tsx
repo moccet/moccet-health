@@ -681,37 +681,23 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // If user uploaded a lab file, analyze it with AI (AWAIT this - it needs to complete first)
-      if (formData.labFile) {
-        console.log('Uploading and analyzing lab file with AI...');
-        const labFormData = new FormData();
-        labFormData.append('bloodTest', formData.labFile);
-        labFormData.append('email', formData.email);
+      // Trigger background plan generation (it will handle blood analysis internally)
+      // Pass the lab file to the async endpoint so it can handle everything
+      console.log('Starting background plan generation...');
 
-        try {
-          await fetch('/api/analyze-blood-results', {
-            method: 'POST',
-            body: labFormData,
-          });
-          console.log('Lab file analysis initiated successfully');
-        } catch (err) {
-          console.error('Error analyzing lab file:', err);
-          // Continue even if analysis fails
-        }
+      const planFormData = new FormData();
+      planFormData.append('email', formData.email);
+      planFormData.append('uniqueCode', uniqueCode);
+      planFormData.append('fullName', userFirstName);
+
+      // Include lab file if uploaded - the server will handle analysis
+      if (formData.labFile) {
+        planFormData.append('labFile', formData.labFile);
       }
 
-      // Trigger background plan generation (this will wait for analysis to complete server-side)
-      console.log('Starting background plan generation...');
       fetch('/api/generate-plan-async', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          uniqueCode: uniqueCode,
-          fullName: userFirstName,
-        }),
+        body: planFormData,
         keepalive: true, // Ensures request continues even if user closes tab
       }).then(() => {
         console.log('✅ Background plan generation started');

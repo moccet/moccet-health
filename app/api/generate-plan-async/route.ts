@@ -1,4 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
+import { createClient } from '@/lib/supabase/server';
+
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
+  }
+  return new OpenAI({
+    apiKey,
+  });
+}
 
 const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
 <html lang="en">
@@ -32,11 +45,11 @@ const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
                             </h2>
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                Your personalized nutrition plan is ready! 🎉
+                                Your personalized sage nutrition plan is ready! 🎉
                             </p>
 
                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We've analyzed your profile, health data, and goals to create a plan tailored specifically for you.
+                                We've analyzed your profile, health data, and goals to create a comprehensive plan tailored specifically for you.
                             </p>
 
                             <!-- CTA Button -->
@@ -137,12 +150,168 @@ async function generatePlanInBackground(email: string, uniqueCode: string, fullN
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
   const planUrl = `${baseUrl}/sage/personalised-plan?code=${uniqueCode}`;
 
-  // Just send the email - the plan will be generated on-demand when the user visits the page
-  // This avoids the issue of the server trying to call itself via HTTP
-  console.log('📧 Sending plan ready email (plan will generate on first visit)...');
-  await sendPlanReadyEmail(email, fullName, planUrl);
+  try {
+    // Step 0: Wait for blood analysis to complete (if uploaded)
+    console.log('[0/5] Checking for health data analysis...');
 
-  console.log(`\n✅ Email sent to ${email} - plan will be generated when they visit the link`);
+    // Poll the database to check if blood analysis is complete
+    // Wait up to 5 minutes (10 checks with 30 second intervals)
+    let bloodAnalysisComplete = false;
+    let pollCount = 0;
+    const maxPolls = 10; // 10 polls * 30 seconds = 5 minutes max wait
+
+    while (!bloodAnalysisComplete && pollCount < maxPolls) {
+      // Check if blood analysis exists in the database
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let hasBloodAnalysis = false;
+
+      // Check dev storage first
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const devData = devOnboardingStorage.get(uniqueCode) as any;
+      if (devData?.blood_analysis) {
+        hasBloodAnalysis = true;
+        console.log('[OK] Blood analysis found in dev storage');
+      } else {
+        // Check Supabase
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('lab_file_analysis')
+              .contains('form_data', { uniqueCode: uniqueCode })
+              .single();
+
+            if (data?.lab_file_analysis) {
+              hasBloodAnalysis = true;
+              console.log('[OK] Blood analysis found in Supabase');
+            }
+          } catch (error) {
+            // No blood analysis yet or no Supabase
+          }
+        }
+      }
+
+      // Check if user even uploaded a lab file
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userData = devData || (async () => {
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .contains('form_data', { uniqueCode: uniqueCode })
+              .single();
+            return data;
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      })();
+
+      const hasLabFile = userData?.form_data?.hasLabFile || devData?.form_data?.hasLabFile;
+
+      if (!hasLabFile) {
+        // No lab file uploaded, no need to wait
+        console.log('[INFO] No lab file uploaded, skipping blood analysis wait');
+        bloodAnalysisComplete = true;
+        break;
+      }
+
+      if (hasBloodAnalysis) {
+        bloodAnalysisComplete = true;
+        break;
+      }
+
+      // Wait 30 seconds before checking again
+      pollCount++;
+      if (pollCount < maxPolls) {
+        console.log(`[INFO] Blood analysis not ready yet, waiting 30 seconds... (attempt ${pollCount}/${maxPolls})`);
+        await new Promise(resolve => setTimeout(resolve, 30000));
+      }
+    }
+
+    if (!bloodAnalysisComplete && pollCount >= maxPolls) {
+      console.log('[WARN] Blood analysis did not complete within 5 minutes, proceeding without it');
+    } else {
+      console.log('[OK] Ready to generate plan with all available data');
+    }
+
+    // Import the generation functions directly to call them
+    const generateSagePlan = (await import('./generate-sage-plan/route')).GET;
+    const generateMealPlan = (await import('./generate-meal-plan/route')).GET;
+    const generateMicronutrients = (await import('./generate-micronutrients/route')).GET;
+    const generateLifestyle = (await import('./generate-lifestyle-integration/route')).GET;
+
+    console.log('[1/5] Generating main sage plan (with blood analysis data)...');
+
+    // Create a mock request object for the API calls
+    const mockRequest = {
+      url: `${baseUrl}/api/generate-sage-plan?code=${uniqueCode}`,
+      nextUrl: new URL(`${baseUrl}/api/generate-sage-plan?code=${uniqueCode}`)
+    } as unknown as NextRequest;
+
+    const sagePlanResponse = await generateSagePlan(mockRequest);
+    if (sagePlanResponse.status !== 200) {
+      throw new Error('Failed to generate sage plan');
+    }
+    console.log('[OK] Main sage plan generated');
+
+    console.log('[2/5] Generating detailed meal plan...');
+    const mockMealRequest = {
+      url: `${baseUrl}/api/generate-meal-plan?code=${uniqueCode}`,
+      nextUrl: new URL(`${baseUrl}/api/generate-meal-plan?code=${uniqueCode}`)
+    } as unknown as NextRequest;
+
+    const mealPlanResponse = await generateMealPlan(mockMealRequest);
+    if (mealPlanResponse.status === 200) {
+      console.log('[OK] Meal plan generated');
+    } else {
+      console.log('[WARN] Meal plan generation failed, continuing...');
+    }
+
+    console.log('[3/5] Generating micronutrient recommendations...');
+    const mockMicroRequest = {
+      url: `${baseUrl}/api/generate-micronutrients?code=${uniqueCode}`,
+      nextUrl: new URL(`${baseUrl}/api/generate-micronutrients?code=${uniqueCode}`)
+    } as unknown as NextRequest;
+
+    const microResponse = await generateMicronutrients(mockMicroRequest);
+    if (microResponse.status === 200) {
+      console.log('[OK] Micronutrients generated');
+    } else {
+      console.log('[WARN] Micronutrients generation failed, continuing...');
+    }
+
+    console.log('[4/5] Generating lifestyle integration...');
+    const mockLifestyleRequest = {
+      url: `${baseUrl}/api/generate-lifestyle-integration?code=${uniqueCode}`,
+      nextUrl: new URL(`${baseUrl}/api/generate-lifestyle-integration?code=${uniqueCode}`)
+    } as unknown as NextRequest;
+
+    const lifestyleResponse = await generateLifestyle(mockLifestyleRequest);
+    if (lifestyleResponse.status === 200) {
+      console.log('[OK] Lifestyle integration generated');
+    } else {
+      console.log('[WARN] Lifestyle integration failed, continuing...');
+    }
+
+    // Send email notification NOW that all plans are ready
+    console.log('[5/5] Sending plan ready email...');
+    const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
+
+    if (emailSent) {
+      console.log(`\n✅ Complete plan generation finished and email sent to ${email}`);
+    } else {
+      console.log(`\n⚠️ Plan generated but email failed for ${email}`);
+    }
+  } catch (error) {
+    console.error(`❌ Background plan generation failed for ${email}:`, error);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -156,15 +325,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Trigger background plan generation (don't await)
-    // Note: In production, you'd want to use a proper job queue like Bull, Inngest, or trigger.dev
+    // Trigger background plan generation (don't await - let it run async)
     generatePlanInBackground(email, uniqueCode, fullName).catch(error => {
       console.error('Background plan generation error:', error);
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Plan generation started. You will receive an email when your plan is ready.',
+      message: 'Plan generation started in background. You will receive an email when ready.',
     });
   } catch (error) {
     console.error('Error starting plan generation:', error);

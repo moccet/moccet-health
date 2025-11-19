@@ -229,16 +229,25 @@ export async function GET(request: NextRequest) {
 
   // Try Supabase if configured
   const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (hasSupabase) {
+  if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
     try {
       const supabase = await createClient();
-      const { data, error } = await supabase
-        .from('sage_onboarding_data')
-        .select('*')
-        .eq('email', email)
-        .single();
+
+      // If searching by code, need to search in the form_data JSON field
+      let query = supabase.from('sage_onboarding_data').select('*');
+
+      if (code) {
+        // Search by uniqueCode in the form_data JSON field
+        query = query.contains('form_data', { uniqueCode: code });
+      } else if (email) {
+        // Search by email (primary key)
+        query = query.eq('email', email);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) {
+        console.log('Failed to fetch onboarding data from Supabase:', error.message);
         return NextResponse.json(
           { error: 'Data not found', message: error.message },
           { status: 404 }
@@ -251,6 +260,7 @@ export async function GET(request: NextRequest) {
         source: 'supabase',
       });
     } catch (error) {
+      console.error('Error fetching from Supabase:', error);
       return NextResponse.json(
         {
           error: 'Failed to retrieve data',

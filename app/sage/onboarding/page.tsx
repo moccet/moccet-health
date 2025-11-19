@@ -667,22 +667,26 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // If user uploaded a lab file, analyze it with AI (non-blocking)
+      // If user uploaded a lab file, analyze it with AI (AWAIT this - it needs to complete first)
       if (formData.labFile) {
         console.log('Uploading and analyzing lab file with AI...');
         const labFormData = new FormData();
         labFormData.append('bloodTest', formData.labFile);
         labFormData.append('email', formData.email);
 
-        fetch('/api/analyze-blood-results', {
-          method: 'POST',
-          body: labFormData,
-        }).catch(err => {
+        try {
+          await fetch('/api/analyze-blood-results', {
+            method: 'POST',
+            body: labFormData,
+          });
+          console.log('Lab file analysis initiated successfully');
+        } catch (err) {
           console.error('Error analyzing lab file:', err);
-        });
+          // Continue even if analysis fails
+        }
       }
 
-      // Trigger background plan generation
+      // Trigger background plan generation (this will wait for analysis to complete server-side)
       console.log('Starting background plan generation...');
       fetch('/api/generate-plan-async', {
         method: 'POST',
@@ -700,12 +704,17 @@ export default function SageOnboarding() {
 
       setLoadingProgress(100);
 
-      // Keep loading screen visible - user can close window
-      // Email will be sent with link to plan
+      // Redirect to plan page after a short delay
       setTimeout(() => {
         clearInterval(progressInterval);
-        // Keep isLoading true so screen stays visible
-      }, 1000);
+        setIsLoading(false);
+
+        const redirectUrl = uniqueCode
+          ? `/sage/personalised-plan?code=${uniqueCode}`
+          : `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
+
+        window.location.href = redirectUrl;
+      }, 2000);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
       clearInterval(progressInterval);

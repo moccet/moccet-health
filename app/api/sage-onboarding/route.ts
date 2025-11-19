@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { devOnboardingStorage } from '@/lib/dev-storage';
 
+// Generate a unique 8-character code
+function generateUniqueCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude similar looking chars
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
@@ -27,6 +37,10 @@ export async function POST(request: NextRequest) {
     const forceDevMode = process.env.FORCE_DEV_MODE === 'true';
     const hasSupabase = !forceDevMode && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+    // Generate unique code for this user's plan
+    const uniqueCode = generateUniqueCode();
+    console.log(`[UNIQUE CODE] Generated code for ${data.email}: ${uniqueCode}`);
+
     if (!hasSupabase || forceDevMode) {
       // Development mode: Use in-memory storage
       console.log('⚠️  Supabase not configured - using in-memory storage (dev mode)');
@@ -47,10 +61,6 @@ export async function POST(request: NextRequest) {
         supplements: data.supplements,
         medicalConditions: data.medicalConditions,
         otherCondition: data.otherCondition,
-        workoutTime: data.workoutTime,
-        workoutDays: data.workoutDays,
-        gymEquipment: data.gymEquipment,
-        otherEquipment: data.otherEquipment,
         eatingStyle: data.eatingStyle,
         firstMeal: data.firstMeal,
         energyCrash: data.energyCrash,
@@ -63,9 +73,11 @@ export async function POST(request: NextRequest) {
         timestamp: data.timestamp,
         completed: data.completed,
         hasLabFile: !!data.labFile,
+        uniqueCode: uniqueCode,
       };
 
       devOnboardingStorage.set(data.email, { form_data: formData });
+      devOnboardingStorage.set(uniqueCode, { form_data: formData }); // Also store by code
 
       console.log('✅ Data stored in dev memory');
       console.log(`[DEBUG] Storage size after save: ${devOnboardingStorage.size}`);
@@ -76,16 +88,14 @@ export async function POST(request: NextRequest) {
         message: 'Onboarding data stored successfully (dev mode)',
         data: {
           email: data.email,
+          uniqueCode: uniqueCode,
           timestamp: new Date().toISOString(),
         },
       }, { status: 200 });
     }
 
-    // Production mode: Use Supabase
-    console.log('✅ Supabase configured - using database storage');
-
-    // Initialize Supabase client
-    const supabase = await createClient();
+    // Production mode: Try to use Supabase, fall back to dev mode if it fails
+    console.log('✅ Supabase configured - attempting to use database storage');
 
     // Prepare the form data (exclude file objects as they can't be stored in JSON)
     const formData = {
@@ -93,6 +103,7 @@ export async function POST(request: NextRequest) {
       age: data.age,
       gender: data.gender,
       weight: data.weight,
+      weightUnit: data.weightUnit,
       height: data.height,
       email: data.email,
       mainPriority: data.mainPriority,
@@ -103,10 +114,6 @@ export async function POST(request: NextRequest) {
       supplements: data.supplements,
       medicalConditions: data.medicalConditions,
       otherCondition: data.otherCondition,
-      workoutTime: data.workoutTime,
-      workoutDays: data.workoutDays,
-      gymEquipment: data.gymEquipment,
-      otherEquipment: data.otherEquipment,
       eatingStyle: data.eatingStyle,
       firstMeal: data.firstMeal,
       energyCrash: data.energyCrash,
@@ -119,46 +126,66 @@ export async function POST(request: NextRequest) {
       timestamp: data.timestamp,
       completed: data.completed,
       hasLabFile: !!data.labFile,
+      uniqueCode: uniqueCode,
     };
 
-    // Store onboarding data in Supabase
-    const { data: insertedData, error: insertError } = await supabase
-      .from('sage_onboarding_data')
-      .upsert({
-        email: data.email,
-        form_data: formData,
-        lab_file_analysis: null, // Will be populated if they uploaded a lab file
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'email',
-      })
-      .select();
+    try {
+      // Initialize Supabase client
+      const supabase = await createClient();
 
-    if (insertError) {
-      console.error('Supabase insert error:', insertError);
+      // Store onboarding data in Supabase
+      const { data: insertedData, error: insertError } = await supabase
+        .from('sage_onboarding_data')
+        .upsert({
+          email: data.email,
+          form_data: formData,
+          lab_file_analysis: null, // Will be populated if they uploaded a lab file
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'email',
+        })
+        .select();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      console.log('Onboarding data stored successfully in Supabase:', insertedData);
+
+      // Return success response
       return NextResponse.json(
         {
-          error: 'Failed to store onboarding data',
-          message: insertError.message,
+          success: true,
+          message: 'Onboarding data stored successfully',
+          data: {
+            email: data.email,
+            uniqueCode: uniqueCode,
+            timestamp: new Date().toISOString(),
+          },
         },
-        { status: 500 }
+        { status: 200 }
       );
-    }
+    } catch (supabaseError) {
+      // Supabase failed - fall back to dev mode
+      console.error('Supabase error, falling back to dev mode:', supabaseError);
+      console.log('⚠️  Using in-memory storage as fallback');
 
-    console.log('Onboarding data stored successfully:', insertedData);
+      devOnboardingStorage.set(data.email, { form_data: formData });
+      devOnboardingStorage.set(uniqueCode, { form_data: formData }); // Also store by code
 
-    // Return success response
-    return NextResponse.json(
-      {
+      console.log('✅ Data stored in dev memory (fallback)');
+      console.log(`[DEBUG] Storage size after save: ${devOnboardingStorage.size}`);
+
+      return NextResponse.json({
         success: true,
-        message: 'Onboarding data stored successfully',
+        message: 'Onboarding data stored successfully (dev mode fallback)',
         data: {
           email: data.email,
+          uniqueCode: uniqueCode,
           timestamp: new Date().toISOString(),
         },
-      },
-      { status: 200 }
-    );
+      }, { status: 200 });
+    }
   } catch (error) {
     console.error('Error processing sage onboarding:', error);
     return NextResponse.json(
@@ -175,20 +202,23 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email');
+  const code = searchParams.get('code');
 
-  if (!email) {
+  const identifier = code || email;
+
+  if (!identifier) {
     return NextResponse.json(
       {
         message: 'Sage onboarding API endpoint',
         methods: ['POST', 'GET'],
-        description: 'Submit sage onboarding data via POST request, retrieve via GET with ?email=',
+        description: 'Submit sage onboarding data via POST request, retrieve via GET with ?email= or ?code=',
       },
       { status: 200 }
     );
   }
 
   // Check dev storage first
-  const devData = devOnboardingStorage.get(email);
+  const devData = devOnboardingStorage.get(identifier);
   if (devData) {
     return NextResponse.json({
       success: true,

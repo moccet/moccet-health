@@ -1527,109 +1527,56 @@
   padding: 60px 20px;
 }
 
-.lifestyle-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
-  margin-top: 32px;
+/* Clean Lifestyle Layout */
+.lifestyle-clean {
+  max-width: 900px;
+  margin: 40px auto 0;
 }
 
-.lifestyle-card {
-  background: #f9fafb;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+.lifestyle-clean .lifestyle-section {
+  margin-bottom: 48px;
+  padding: 0;
+  background: transparent;
 }
 
-.lifestyle-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.lifestyle-card-title {
-  font-size: 24px;
+.lifestyle-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 32px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin-bottom: 12px;
+  line-height: 1.3;
 }
 
-.lifestyle-intro {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #4b5563;
-  margin-bottom: 24px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-  border-left: 3px solid #3b82f6;
-}
-
-.lifestyle-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.lifestyle-item {
-  background: #ffffff;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.lifestyle-item strong {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-}
-
-.lifestyle-item p {
-  margin: 8px 0 0 0;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.lifestyle-item ul,
-.lifestyle-item ol {
-  margin: 8px 0 0 0;
-  padding-left: 24px;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.lifestyle-item li {
-  margin-bottom: 6px;
-}
-
-.lifestyle-why {
-  background: #eff6ff;
-  padding: 16px;
-  border-radius: 8px;
-  border-left: 3px solid #3b82f6;
-  margin-top: 8px;
-}
-
-.lifestyle-why strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e40af;
-  margin-bottom: 8px;
-}
-
-.lifestyle-why p {
-  margin: 0;
-  color: #1e40af;
-  font-size: 13px;
-  line-height: 1.6;
+.lifestyle-subtitle {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
   font-style: italic;
+  color: #666;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.lifestyle-text {
+  margin-bottom: 20px;
+}
+
+.lifestyle-text p {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #2d3a2d;
+  margin-bottom: 12px;
+}
+
+.lifestyle-text p:last-child {
+  margin-bottom: 0;
+}
+
+.lifestyle-text strong {
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
 /* Workout Split */
@@ -1739,53 +1686,42 @@
 /* Sidebar */
 .plan-sidebar {
   position: fixed;
-  right: 40px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: 100px;
+  background: #fff;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
   z-index: 100;
+  border-left: 1px solid #f0f0f0;
 }
 
-.sidebar-button {
-  background: #2d3a2d;
-  color: #fff;
+.sidebar-icon-button {
+  background: transparent;
+  color: #1a1a1a;
   border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  width: 56px;
+  height: 56px;
 }
 
-.sidebar-button:hover {
-  background: #1a241a;
-  transform: translateX(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.sidebar-icon-button:hover {
+  background: #f5f5f5;
 }
 
-.download-button {
-  background: #2d3a2d;
-}
-
-.linkedin-button {
-  background: #0077b5;
-}
-
-.linkedin-button:hover {
-  background: #005582;
-}
-
-.twitter-button {
-  background: #000;
-}
-
-.twitter-button:hover {
-  background: #333;
+.sidebar-icon-button svg {
+  width: 28px;
+  height: 28px;
 }
 
 /* Hide sidebar on mobile and tablet */

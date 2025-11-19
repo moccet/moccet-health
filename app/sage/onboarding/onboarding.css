@@ -966,11 +966,12 @@
   color: #2d3a2d;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .options-container.image-cards {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 12px;
+    max-width: 100%;
   }
 
   .option-button.image-card {
@@ -989,24 +990,27 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .options-container.image-cards {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    padding: 0 20px;
   }
 
   .option-button.image-card {
     flex: 1;
     max-width: 100%;
+    width: 100%;
   }
 
   .image-placeholder {
-    height: 140px;
+    height: 120px;
   }
 
   .image-card-label {
-    font-size: 14px;
-    padding: 12px;
+    font-size: 15px;
+    padding: 14px;
+    font-weight: 500;
   }
 }
 
@@ -1143,17 +1147,44 @@
   }
 }
 
+/* Integration Section Headers */
+.integration-section-header {
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.integration-section-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 6px 0;
+}
+
+.integration-section-description {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Integration Grid Layout */
 .integrations-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  margin-top: 24px;
-  margin-bottom: 24px;
-  max-height: 400px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  max-height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 8px;
+}
+
+.integrations-grid.connected-grid {
+  margin-bottom: 0;
 }
 
 .integration-item {

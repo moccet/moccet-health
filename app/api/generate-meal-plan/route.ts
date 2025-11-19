@@ -155,11 +155,6 @@ Dietary Preferences & Restrictions:
 - Allergies/Intolerances: ${formData.allergies.join(', ')} ${formData.otherAllergy ? `+ ${formData.otherAllergy}` : ''}
 - Meals Cooked Per Week: ${formData.mealsCooked}
 
-Fitness Schedule:
-- Workout Days Per Week: ${formData.workoutDays}
-- Workout Time Available: ${formData.workoutTime}
-- Available Equipment: ${formData.gymEquipment.join(', ')}
-
 Current Supplements: ${formData.supplements || 'None'}
 Medical Conditions: ${formData.medicalConditions.join(', ')} ${formData.otherCondition ? `+ ${formData.otherCondition}` : ''}
 `;
@@ -180,8 +175,7 @@ Requirements:
 6. Time first meal around: ${formData.firstMeal}
 7. Each meal should be practical given they cook ${formData.mealsCooked} meals/week
 8. Include variety across the week to prevent boredom
-9. Optimize nutrition timing around their ${formData.workoutDays} workout days
-10. Each meal should include detailed ingredients with quantities and step-by-step cooking instructions
+9. Each meal should include detailed ingredients with quantities and step-by-step cooking instructions
 
 ${bloodAnalysis ? `
 BIOMARKER OPTIMIZATION (CRITICAL):
@@ -251,6 +245,11 @@ CRITICAL REMINDERS:
 - AVOID these foods: ${formData.foodDislikes || 'none'}
 - Make meals practical for someone who cooks ${formData.mealsCooked} meals/week
 - Ensure total daily calories align with: ${nutritionPlan.nutritionOverview.nutritionStructure.calories}
+
+FORMATTING:
+- DO NOT use colons (:) anywhere in the text
+- Use em dashes (—) or periods instead
+- Example: "Prep Time — 10 minutes" or "Prep Time. 10 minutes"
 
 Return ONLY valid JSON. Be specific, creative, and delicious!`;
 

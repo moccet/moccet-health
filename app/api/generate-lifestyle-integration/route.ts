@@ -37,8 +37,7 @@ export async function GET(req: NextRequest) {
 
     console.log('[OK] Onboarding data retrieved');
     console.log(`    Main Priority: ${onboardingData.mainPriority}`);
-    console.log(`    Driving Goal: ${onboardingData.drivingGoal}`);
-    console.log(`    Workout Days: ${onboardingData.workoutDays}/week\n`);
+    console.log(`    Driving Goal: ${onboardingData.drivingGoal}\n`);
 
     // Fetch blood analysis
     console.log(`[2/4] Fetching blood analysis for personalized recommendations...`);
@@ -91,9 +90,6 @@ Main Priority: ${onboardingData.mainPriority}
 Driving Goal: ${onboardingData.drivingGoal}
 
 LIFESTYLE FACTORS:
-Workout Days: ${onboardingData.workoutDays}/week
-Workout Time: ${onboardingData.workoutTime}
-Gym Equipment: ${onboardingData.gymEquipment?.join(', ') || 'none'}
 Eating Style: ${onboardingData.eatingStyle}
 First Meal Time: ${onboardingData.firstMeal}
 Energy Crash Times: ${onboardingData.energyCrash || 'none reported'}
@@ -117,21 +113,18 @@ Create a comprehensive lifestyle integration plan with these 4 pillars:
 
 1. SLEEP OPTIMIZATION
    - Reference their energy crash times (${onboardingData.energyCrash})
-   - Consider their workout schedule (${onboardingData.workoutDays}/week at ${onboardingData.workoutTime})
    - Factor in their eating pattern (${onboardingData.eatingStyle}, first meal at ${onboardingData.firstMeal})
    - Address any biomarkers affecting sleep (cortisol, blood sugar, etc.)
    - Provide specific sleep timing, duration, and optimization protocols FOR THEM
 
 2. EXERCISE PROTOCOL
-   - Based on their ${onboardingData.workoutDays} workout days per week
-   - Use their available equipment: ${onboardingData.gymEquipment?.join(', ') || 'bodyweight'}
    - Align with their goal: ${onboardingData.mainPriority} (${onboardingData.drivingGoal})
    - Consider their biomarkers (if high cholesterol → cardio emphasis, if insulin issues → resistance training, etc.)
-   - Provide specific exercise types, timing, duration, and progression
+   - Provide specific exercise types, timing, duration, and progression based on their goals
 
 3. STRESS MANAGEMENT
    - Address their specific health concerns and biomarkers
-   - Consider their workout schedule and eating patterns
+   - Consider their eating patterns
    - Provide practical techniques that fit THEIR lifestyle
    - Link to their energy patterns and crash times
    - Include specific protocols (breathing exercises, timing, duration)
@@ -232,6 +225,11 @@ Generate a JSON response with this exact structure:
 
 REMEMBER: Every recommendation must feel like it was written specifically for this person, not generic advice.
 Reference specific numbers from their profile throughout.
+
+FORMATTING:
+- DO NOT use colons (:) anywhere in the text
+- Use em dashes (—) or periods instead
+- Example: "Sleep Window — 10:30 PM to 6:30 AM" or "Sleep Window. 10:30 PM to 6:30 AM"
 `;
 
     const completion = await openai.chat.completions.create({

@@ -114,11 +114,6 @@ Lifestyle & Behavior:
 - Meals Cooked Per Week: ${formData.mealsCooked}
 - Alcohol Consumption: ${formData.alcoholConsumption}
 
-Fitness Profile:
-- Workout Days Per Week: ${formData.workoutDays}
-- Workout Time Available: ${formData.workoutTime}
-- Available Equipment: ${formData.gymEquipment.join(', ')}
-
 Health Baseline:
 - Current Supplements: ${formData.supplements || 'None'}
 - Current Medications: ${formData.medications || 'None'}
@@ -142,7 +137,7 @@ Requirements for each insight:
 - Focus on: metabolic optimization, circadian rhythm, recovery, hormonal balance, longevity markers, performance optimization
 - Insights should be sophisticated and actionable - not generic advice
 - Tailor recommendations to their specific goals: ${formData.mainPriority}
-- Consider their eating style (${formData.eatingStyle}), workout schedule (${formData.workoutDays} days/week), and lifestyle patterns
+- Consider their eating style (${formData.eatingStyle}) and lifestyle patterns
 
 ${hasLabFile ? 'IMPORTANT: They have uploaded lab results - generate insights that reference typical biomarker patterns for someone with their profile (age, gender, fitness level, eating style).' : ''}
 
@@ -156,7 +151,6 @@ Format your response as a JSON object with an "insights" key containing an array
 
 - "dataObservation": Specific, quantitative observation based on their profile and data sources. Examples:
   * "Based on your ${formData.eatingStyle} eating pattern and ${formData.firstMeal} first meal timing, you likely experience a ${formData.age > 40 ? '3-4 hour' : '2-3 hour'} cortisol window post-wake, with peak metabolic flexibility occurring between ${formData.firstMeal === 'Before 8am' ? '10am-2pm' : '12pm-4pm'}."
-  * "With ${formData.workoutDays} workout days and ${formData.workoutTime} available, your weekly training volume suggests ${formData.workoutDays >= 5 ? 'potential overreaching' : 'room for optimization'} in recovery protocols."
   * "Your supplement stack of ${formData.supplements} ${formData.supplements ? 'may benefit from timing optimization' : 'is missing key longevity biomarkers'}."
 
 - "title": Specific, actionable title tailored to their goals (e.g., "Optimize Post-Workout Nutrient Timing for ${formData.mainPriority}")
@@ -167,7 +161,12 @@ Format your response as a JSON object with an "insights" key containing an array
 
 - "evidence": Recent research or mechanistic explanation
 
-CRITICAL: Make insights feel personalized to THIS specific individual - reference their age (${formData.age}), gender (${formData.gender}), eating style (${formData.eatingStyle}), workout schedule (${formData.workoutDays} days/week), and main priority (${formData.mainPriority}).
+CRITICAL: Make insights feel personalized to THIS specific individual - reference their age (${formData.age}), gender (${formData.gender}), eating style (${formData.eatingStyle}), and main priority (${formData.mainPriority}).
+
+FORMATTING:
+- DO NOT use colons (:) anywhere in the text
+- Use em dashes (—) or periods instead
+- Example: "Impact — Could improve recovery by 15-20%" or "Impact. Could improve recovery by 15-20%"
 
 Return ONLY valid JSON.`;
 

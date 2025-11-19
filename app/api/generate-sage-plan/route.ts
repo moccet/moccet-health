@@ -124,11 +124,6 @@ Health Baseline:
 - Current Supplements: ${formData.supplements || 'None'}
 - Medical Conditions: ${formData.medicalConditions.join(', ')} ${formData.otherCondition ? `+ ${formData.otherCondition}` : ''}
 
-Fitness Profile (The Form):
-- Workout Time Available: ${formData.workoutTime}
-- Workout Days Per Week: ${formData.workoutDays}
-- Available Equipment: ${formData.gymEquipment.join(', ')} ${formData.otherEquipment ? `+ ${formData.otherEquipment}` : ''}
-
 Nutrition Profile (The Fuel):
 - Eating Style: ${formData.eatingStyle}
 - First Meal Timing: ${formData.firstMeal}
@@ -221,7 +216,11 @@ IMPORTANT:
 - Align with their eating style (${formData.eatingStyle})
 - Time meals around their first meal preference (${formData.firstMeal})
 - Address their main health priority: ${formData.mainPriority}
-- Create ${formData.workoutDays} workout days nutrition protocol
+
+FORMATTING:
+- DO NOT use colons (:) anywhere in the text
+- Use em dashes (—) or periods instead of colons
+- Example: Instead of "Breakfast: Oatmeal" write "Breakfast — Oatmeal" or "Breakfast. Oatmeal"
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 

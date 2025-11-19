@@ -91,7 +91,6 @@ Eating Style: ${onboardingData.eatingStyle}
 Protein Sources: ${onboardingData.proteinSources?.join(', ') || 'varied'}
 Allergies: ${onboardingData.allergies?.join(', ') || 'none'}
 Medical Conditions: ${onboardingData.medicalConditions?.join(', ') || 'none'}
-Workout Days: ${onboardingData.workoutDays}/week
 ${biomarkerContext}
 ${nutritionContext}
 `;
@@ -137,6 +136,11 @@ Generate a JSON response with this exact structure:
 
 The personalizedIntro should sound like it's written specifically for this person, not generic advice.
 Example: "Based on your ${onboardingData.mainPriority} goals and your recent blood work showing [specific findings], these micronutrients are essential for optimizing your health..."
+
+FORMATTING:
+- DO NOT use colons (:) anywhere in the text
+- Use em dashes (—) or periods instead
+- Example: "Vitamin D — 2000 IU" or "Vitamin D. 2000 IU"
 `;
 
     const completion = await openai.chat.completions.create({

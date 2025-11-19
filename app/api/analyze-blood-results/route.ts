@@ -215,13 +215,22 @@ IMPORTANT:
     }
     responseText = responseText.trim();
 
+    // Remove any non-JSON text before the first {
+    const jsonStart = responseText.indexOf('{');
+    const jsonEnd = responseText.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      responseText = responseText.substring(jsonStart, jsonEnd + 1);
+    }
+
     let analysis;
     try {
       analysis = JSON.parse(responseText);
     } catch (e) {
       console.error('Failed to parse JSON:', e);
+      console.error('Response text (first 500 chars):', responseText.substring(0, 500));
+      console.error('Response text (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)));
       return NextResponse.json(
-        { error: 'Failed to generate valid analysis' },
+        { error: 'Failed to generate valid analysis. AI returned invalid JSON.' },
         { status: 500 }
       );
     }

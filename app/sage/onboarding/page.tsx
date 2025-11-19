@@ -7,7 +7,6 @@ type Screen =
   | 'intro' | 'welcome' | 'name' | 'age' | 'gender' | 'weight' | 'height'
   | 'email' | 'ikigai-intro' | 'main-priority' | 'driving-goal'
   | 'baseline-intro' | 'allergies' | 'medications' | 'supplements' | 'medical-conditions'
-  | 'form-intro' | 'workout-time' | 'workout-days' | 'gym-equipment'
   | 'fuel-intro' | 'eating-style' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes'
   | 'meals-cooked' | 'alcohol-consumption' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
 
@@ -50,10 +49,6 @@ export default function SageOnboarding() {
       supplements: 'Vitamin D, Magnesium',
       medicalConditions: ['none'],
       otherCondition: '',
-      workoutTime: '45-min',
-      workoutDays: '4',
-      gymEquipment: ['dumbbells', 'resistance-bands'],
-      otherEquipment: '',
       eatingStyle: 'intermittent-fasting',
       firstMeal: '9-11am',
       energyCrash: 'snack',
@@ -99,10 +94,6 @@ export default function SageOnboarding() {
     supplements: '',
     medicalConditions: [] as string[],
     otherCondition: '',
-    workoutTime: '',
-    workoutDays: '',
-    gymEquipment: [] as string[],
-    otherEquipment: '',
     eatingStyle: '',
     firstMeal: '',
     energyCrash: '',
@@ -595,11 +586,11 @@ export default function SageOnboarding() {
     }
   };
 
-  const toggleArrayValue = (field: 'allergies' | 'medicalConditions' | 'gymEquipment' | 'proteinSources' | 'integrations', value: string) => {
+  const toggleArrayValue = (field: 'allergies' | 'medicalConditions' | 'proteinSources' | 'integrations', value: string) => {
     setFormData(prev => {
       const currentArray = prev[field];
       if (currentArray.includes(value)) {
-        return { ...prev, [field]: currentArray.filter(v => v !== value) };
+        return { ...prev, [field]: currentArray.filter((v: string) => v !== value) };
       } else {
         return { ...prev, [field]: [...currentArray, value] };
       }
@@ -615,7 +606,6 @@ export default function SageOnboarding() {
       'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
       'email', 'ikigai-intro', 'main-priority', 'driving-goal',
       'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
-      'form-intro', 'workout-time', 'workout-days', 'gym-equipment',
       'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
       'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
@@ -686,8 +676,15 @@ export default function SageOnboarding() {
       }
 
       setLoadingProgress(100);
+
+      // Use unique code if available, otherwise fall back to email
+      const uniqueCode = result.data?.uniqueCode;
+      const redirectUrl = uniqueCode
+        ? `/sage/personalised-plan?code=${uniqueCode}`
+        : `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
+
       setTimeout(() => {
-        window.location.href = `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
+        window.location.href = redirectUrl;
       }, 500);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
@@ -1087,87 +1084,6 @@ export default function SageOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('form-intro')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
-          </div>
-          <div className="typeform-brand">sage</div>
-        </div>
-      </div>
-
-      {/* Section 3: The Form - Intro */}
-      <div className={`typeform-screen section-screen ${currentScreen === 'form-intro' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <h1 className="section-title">3 The Form</h1>
-          <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('workout-time')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
-          </div>
-          <div className="typeform-brand">sage</div>
-        </div>
-      </div>
-
-      {/* Workout Time Screen */}
-      <div className={`typeform-screen ${currentScreen === 'workout-time' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <p className="section-label">3 The Form</p>
-          <h1 className="typeform-title">How much time can you commit to working out?</h1>
-          <div className="options-container">
-            <button className={`option-button ${formData.workoutTime === '15-min' ? 'selected' : ''}`} onClick={() => handleInputChange('workoutTime', '15-min')}>15 Minutes</button>
-            <button className={`option-button ${formData.workoutTime === '30-min' ? 'selected' : ''}`} onClick={() => handleInputChange('workoutTime', '30-min')}>30 Minutes</button>
-            <button className={`option-button ${formData.workoutTime === '45-min' ? 'selected' : ''}`} onClick={() => handleInputChange('workoutTime', '45-min')}>45 Minutes</button>
-            <button className={`option-button ${formData.workoutTime === '1-hour' ? 'selected' : ''}`} onClick={() => handleInputChange('workoutTime', '1-hour')}>1 Hour</button>
-            <button className={`option-button ${formData.workoutTime === 'more-than-1-hour' ? 'selected' : ''}`} onClick={() => handleInputChange('workoutTime', 'more-than-1-hour')}>More than 1 hour</button>
-          </div>
-          <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('workout-days')} disabled={!formData.workoutTime}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
-          </div>
-          <div className="typeform-brand">sage</div>
-        </div>
-      </div>
-
-      {/* Workout Days Screen */}
-      <div className={`typeform-screen ${currentScreen === 'workout-days' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <p className="section-label">3 The Form</p>
-          <h1 className="typeform-title">How many days per week can you work out?</h1>
-          <div className="options-container">
-            {['1', '2', '3', '4', '5', '6', '7'].map((day) => (
-              <button key={day} className={`option-button ${formData.workoutDays === day ? 'selected' : ''}`} onClick={() => handleInputChange('workoutDays', day)}>{day}</button>
-            ))}
-          </div>
-          <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('gym-equipment')} disabled={!formData.workoutDays}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
-          </div>
-          <div className="typeform-brand">sage</div>
-        </div>
-      </div>
-
-      {/* Gym Equipment Screen */}
-      <div className={`typeform-screen ${currentScreen === 'gym-equipment' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <p className="section-label">3 The Form</p>
-          <h1 className="typeform-title">Do you have any gym equipment? If so, what kind?</h1>
-          <div className="options-container">
-            {['dumbbells', 'barbell', 'kettlebells', 'resistance-bands', 'pull-up-bar', 'bench', 'full-gym', 'none'].map((equipment) => (
-              <button key={equipment} className={`option-button checkbox ${formData.gymEquipment.includes(equipment) ? 'selected' : ''}`} onClick={() => toggleArrayValue('gymEquipment', equipment)}>
-                {equipment === 'dumbbells' && 'Dumbbells'}
-                {equipment === 'barbell' && 'Barbell'}
-                {equipment === 'kettlebells' && 'Kettlebells'}
-                {equipment === 'resistance-bands' && 'Resistance Bands'}
-                {equipment === 'pull-up-bar' && 'Pull-up Bar'}
-                {equipment === 'bench' && 'Bench'}
-                {equipment === 'full-gym' && 'Full Gym Access'}
-                {equipment === 'none' && 'None'}
-              </button>
-            ))}
-            <div className="option-button-other">
-              <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherEquipment} onChange={(e) => handleInputChange('otherEquipment', e.target.value)} />
-            </div>
-          </div>
-          <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('fuel-intro')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
@@ -1175,10 +1091,10 @@ export default function SageOnboarding() {
         </div>
       </div>
 
-      {/* Section 4: The Fuel - Intro */}
+      {/* Section 3: The Fuel - Intro */}
       <div className={`typeform-screen section-screen ${currentScreen === 'fuel-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="section-title">4 The Fuel</h1>
+          <h1 className="section-title">3 The Fuel</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('eating-style')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -1190,7 +1106,7 @@ export default function SageOnboarding() {
       {/* Eating Style Screen */}
       <div className={`typeform-screen ${currentScreen === 'eating-style' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">Which best describes your typical eating style?</h1>
           <div className="options-container image-cards">
             <button className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', '3-meals')}>
@@ -1221,7 +1137,7 @@ export default function SageOnboarding() {
       {/* First Meal Screen */}
       <div className={`typeform-screen ${currentScreen === 'first-meal' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">When do you typically eat your first meal?</h1>
           <div className="options-container">
             <button className={`option-button ${formData.firstMeal === 'before-7am' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', 'before-7am')}>before 7 am</button>
@@ -1241,7 +1157,7 @@ export default function SageOnboarding() {
       {/* Energy Crash Screen */}
       <div className={`typeform-screen ${currentScreen === 'energy-crash' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">When you feel an energy crash, what&apos;s your go-to?</h1>
           <div className="options-container">
             <button className={`option-button ${formData.energyCrash === 'caffeine' ? 'selected' : ''}`} onClick={() => handleInputChange('energyCrash', 'caffeine')}>Caffeine (coffee, tea, energy drink)</button>
@@ -1260,7 +1176,7 @@ export default function SageOnboarding() {
       {/* Protein Sources Screen */}
       <div className={`typeform-screen ${currentScreen === 'protein-sources' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">What are your preferred protein sources?</h1>
           <div className="options-container">
             {['poultry', 'red-meat', 'fish-seafood', 'eggs', 'dairy', 'plant-based', 'protein-powder'].map((protein) => (
@@ -1290,7 +1206,7 @@ export default function SageOnboarding() {
       {/* Food Dislikes Screen */}
       <div className={`typeform-screen ${currentScreen === 'food-dislikes' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">Any foods you strongly dislike?</h1>
           <p className="typeform-subtitle">This helps us avoid recommending things you don&apos;t enjoy.</p>
           <div className="input-container">
@@ -1312,7 +1228,7 @@ export default function SageOnboarding() {
       {/* Meals Cooked Screen */}
       <div className={`typeform-screen ${currentScreen === 'meals-cooked' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">How many meals per week do you cook at home?</h1>
           <p className="typeform-subtitle">Your perfect plan is the plan that fits in your schedule.</p>
           <div className="input-container">
@@ -1334,7 +1250,7 @@ export default function SageOnboarding() {
       {/* Alcohol Consumption Screen */}
       <div className={`typeform-screen ${currentScreen === 'alcohol-consumption' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Fuel</p>
+          <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">How much alcohol do you consumer per week?</h1>
           <p className="typeform-subtitle">Your perfect plan is the plan that works around your habits.</p>
           <div className="input-container">
@@ -1372,7 +1288,7 @@ export default function SageOnboarding() {
       {/* Section 5: The Final Step - Intro */}
       <div className={`typeform-screen section-screen ${currentScreen === 'final-step-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="section-title">5 The Final Step</h1>
+          <h1 className="section-title">4 The Final Step</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ecosystem-integration')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -1384,122 +1300,218 @@ export default function SageOnboarding() {
       {/* Ecosystem Integration Screen */}
       <div className={`typeform-screen ${currentScreen === 'ecosystem-integration' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">5 The Final Step</p>
+          <p className="section-label">4 The Final Step</p>
           <h1 className="typeform-title">Integrate sage into your ecosystem.</h1>
           <p className="typeform-subtitle">Activity, sleep, and metabolic data help optimize meal content, calendar helps optimize timing.</p>
 
+          {/* Connected Integrations Section */}
+          {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) && (
+            <>
+              <div className="integration-section-header">
+                <h2 className="integration-section-title">Connected</h2>
+                <p className="integration-section-description">These integrations are active and providing data</p>
+              </div>
+              <div className="integrations-grid connected-grid">
+                {gmailConnected && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Google Calendar</h3>
+                      <p className="integration-description">Sync your schedule for meal timing optimization</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectGmail}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {appleHealthConnected && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Apple Health</h3>
+                      <p className="integration-description">Track activity, sleep, and health metrics</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectAppleHealth}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {appleCalendarConnected && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Apple Calendar</h3>
+                      <p className="integration-description">Optimize meal timing based on your schedule</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectAppleCalendar}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {outlookConnected && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Outlook</h3>
+                      <p className="integration-description">Sync your Outlook calendar for meal timing</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectOutlook}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {slackConnected && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Slack</h3>
+                      <p className="integration-description">Receive daily meal plans and reminders</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectSlack}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {formData.integrations.includes('oura-ring') && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Oura Ring</h3>
+                      <p className="integration-description">Upload your sleep and activity data</p>
+                    </div>
+                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('oura-ring')}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {formData.integrations.includes('whoop') && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">WHOOP</h3>
+                      <p className="integration-description">Upload your recovery and strain data</p>
+                    </div>
+                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('whoop')}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {formData.integrations.includes('cgm') && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Continuous Glucose Monitor</h3>
+                      <p className="integration-description">Upload your glucose readings</p>
+                    </div>
+                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('cgm')}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Available Integrations Section */}
+          <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
+            <h2 className="integration-section-title">Available</h2>
+            <p className="integration-section-description">Connect your tools to provide Sage with richer data</p>
+          </div>
           <div className="integrations-grid">
-            {/* Google Calendar */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Google Calendar</h3>
-                <p className="integration-description">Sync your schedule for meal timing optimization</p>
+            {!gmailConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Google Calendar</h3>
+                  <p className="integration-description">Sync your schedule for meal timing optimization</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectGmail}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${gmailConnected ? 'connected' : ''}`}
-                onClick={gmailConnected ? handleDisconnectGmail : handleConnectGmail}
-              >
-                {gmailConnected ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* Apple Health */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Apple Health</h3>
-                <p className="integration-description">Track activity, sleep, and health metrics</p>
+            {!appleHealthConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Apple Health</h3>
+                  <p className="integration-description">Track activity, sleep, and health metrics</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectAppleHealth}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${appleHealthConnected ? 'connected' : ''}`}
-                onClick={appleHealthConnected ? handleDisconnectAppleHealth : handleConnectAppleHealth}
-              >
-                {appleHealthConnected ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* Apple Calendar */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Apple Calendar</h3>
-                <p className="integration-description">Optimize meal timing based on your schedule</p>
+            {!appleCalendarConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Apple Calendar</h3>
+                  <p className="integration-description">Optimize meal timing based on your schedule</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectAppleCalendar}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${appleCalendarConnected ? 'connected' : ''}`}
-                onClick={appleCalendarConnected ? handleDisconnectAppleCalendar : handleConnectAppleCalendar}
-              >
-                {appleCalendarConnected ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* Outlook */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Outlook</h3>
-                <p className="integration-description">Sync your Outlook calendar for meal timing</p>
+            {!outlookConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Outlook</h3>
+                  <p className="integration-description">Sync your Outlook calendar for meal timing</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectOutlook}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${outlookConnected ? 'connected' : ''}`}
-                onClick={outlookConnected ? handleDisconnectOutlook : handleConnectOutlook}
-              >
-                {outlookConnected ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* Slack */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Slack</h3>
-                <p className="integration-description">Receive daily meal plans and reminders</p>
+            {!slackConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Slack</h3>
+                  <p className="integration-description">Receive daily meal plans and reminders</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectSlack}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${slackConnected ? 'connected' : ''}`}
-                onClick={slackConnected ? handleDisconnectSlack : handleConnectSlack}
-              >
-                {slackConnected ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* Oura Ring - CSV Upload */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Oura Ring</h3>
-                <p className="integration-description">Upload your sleep and activity data</p>
+            {!formData.integrations.includes('oura-ring') && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Oura Ring</h3>
+                  <p className="integration-description">Upload your sleep and activity data</p>
+                </div>
+                <button className="connect-button" onClick={() => handleOpenUploadModal('oura-ring')}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${formData.integrations.includes('oura-ring') ? 'connected' : ''}`}
-                onClick={() => handleOpenUploadModal('oura-ring')}
-              >
-                {formData.integrations.includes('oura-ring') ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* WHOOP - CSV Upload */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">WHOOP</h3>
-                <p className="integration-description">Upload your recovery and strain data</p>
+            {!formData.integrations.includes('whoop') && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">WHOOP</h3>
+                  <p className="integration-description">Upload your recovery and strain data</p>
+                </div>
+                <button className="connect-button" onClick={() => handleOpenUploadModal('whoop')}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${formData.integrations.includes('whoop') ? 'connected' : ''}`}
-                onClick={() => handleOpenUploadModal('whoop')}
-              >
-                {formData.integrations.includes('whoop') ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
 
-            {/* CGM - CSV Upload */}
-            <div className="integration-item">
-              <div className="integration-info">
-                <h3 className="integration-name">Continuous Glucose Monitor</h3>
-                <p className="integration-description">Upload your glucose readings</p>
+            {!formData.integrations.includes('cgm') && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Continuous Glucose Monitor</h3>
+                  <p className="integration-description">Upload your glucose readings</p>
+                </div>
+                <button className="connect-button" onClick={() => handleOpenUploadModal('cgm')}>
+                  Connect
+                </button>
               </div>
-              <button
-                className={`connect-button ${formData.integrations.includes('cgm') ? 'connected' : ''}`}
-                onClick={() => handleOpenUploadModal('cgm')}
-              >
-                {formData.integrations.includes('cgm') ? '✓ Connected' : 'Connect'}
-              </button>
-            </div>
+            )}
           </div>
 
           <div className="button-container">
@@ -1513,7 +1525,7 @@ export default function SageOnboarding() {
       {/* Lab Upload Screen */}
       <div className={`typeform-screen ${currentScreen === 'lab-upload' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">5 The Final Step</p>
+          <p className="section-label">4 The Final Step</p>
           <h1 className="typeform-title">Upload your labs and bloodwork.</h1>
           <p className="typeform-subtitle">Please upload your most recent blood test results to unlock your personalized plan.</p>
           <div className="upload-container">

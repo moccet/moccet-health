@@ -94,15 +94,22 @@ export default function PersonalisedPlanPage() {
   const [lifestyleIntegration, setLifestyleIntegration] = useState<any>(null);
 
   useEffect(() => {
-    // Get email from URL params
+    // Get code or email from URL params
     const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
     const email = params.get('email');
 
-    if (!email) {
-      setError('No email provided');
+    // Use code parameter if available, otherwise use email parameter
+    const identifier = code || email;
+
+    if (!identifier) {
+      setError('No plan identifier provided');
       setLoading(false);
       return;
     }
+
+    // Store the identifier type for API calls
+    const paramName = code ? 'code' : 'email';
 
     // Fetch all data - blood analysis first, then meal plan (to optimize for biomarkers)
     const fetchAllData = async () => {
@@ -111,8 +118,8 @@ export default function PersonalisedPlanPage() {
 
         // Step 1: Fetch plan and blood analysis in parallel
         const [planResponse, bloodAnalysisResponse] = await Promise.allSettled([
-          fetch(`/api/generate-sage-plan?email=${encodeURIComponent(email)}`),
-          fetch(`/api/analyze-blood-results?email=${encodeURIComponent(email)}`)
+          fetch(`/api/generate-sage-plan?${paramName}=${encodeURIComponent(identifier)}`),
+          fetch(`/api/analyze-blood-results?${paramName}=${encodeURIComponent(identifier)}`)
         ]);
 
         // Handle plan response (required)
@@ -144,7 +151,7 @@ export default function PersonalisedPlanPage() {
         setLoadingMealPlan(true);
         console.log('[Meal Plan] Fetching biomarker-optimized meal plan...');
 
-        const mealPlanResponse = await fetch(`/api/generate-meal-plan?email=${encodeURIComponent(email)}`);
+        const mealPlanResponse = await fetch(`/api/generate-meal-plan?${paramName}=${encodeURIComponent(identifier)}`);
         if (mealPlanResponse.ok) {
           const mealPlanData = await mealPlanResponse.json();
           if (mealPlanData.success) {
@@ -163,7 +170,7 @@ export default function PersonalisedPlanPage() {
         setLoadingMicronutrients(true);
         console.log('[Micronutrients] Fetching personalized micronutrient recommendations...');
 
-        const micronutrientsResponse = await fetch(`/api/generate-micronutrients?email=${encodeURIComponent(email)}`);
+        const micronutrientsResponse = await fetch(`/api/generate-micronutrients?${paramName}=${encodeURIComponent(identifier)}`);
         if (micronutrientsResponse.ok) {
           const micronutrientsData = await micronutrientsResponse.json();
           if (micronutrientsData.success) {
@@ -177,7 +184,7 @@ export default function PersonalisedPlanPage() {
         setLoadingLifestyle(true);
         console.log('[Lifestyle] Fetching personalized lifestyle integration plan...');
 
-        const lifestyleResponse = await fetch(`/api/generate-lifestyle-integration?email=${encodeURIComponent(email)}`);
+        const lifestyleResponse = await fetch(`/api/generate-lifestyle-integration?${paramName}=${encodeURIComponent(identifier)}`);
         if (lifestyleResponse.ok) {
           const lifestyleData = await lifestyleResponse.json();
           if (lifestyleData.success) {
@@ -245,14 +252,20 @@ export default function PersonalisedPlanPage() {
       {/* Sidebar */}
       <div className="plan-sidebar">
         <button
-          className="sidebar-button download-button"
-          onClick={() => window.print()}
-          title="Download as PDF"
+          className="sidebar-icon-button"
+          onClick={() => {
+            const subject = encodeURIComponent("My Personalized Nutrition Plan from Sage");
+            const body = encodeURIComponent(`Check out my personalized nutrition plan: ${window.location.href}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+          }}
+          title="Email my plan"
         >
-          Download PDF
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
         <button
-          className="sidebar-button linkedin-button"
+          className="sidebar-icon-button"
           onClick={() => {
             const url = window.location.href;
             const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
@@ -260,10 +273,12 @@ export default function PersonalisedPlanPage() {
           }}
           title="Share on LinkedIn"
         >
-          Share on LinkedIn
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
         </button>
         <button
-          className="sidebar-button twitter-button"
+          className="sidebar-icon-button"
           onClick={() => {
             const text = "Check out my personalized nutrition plan from Sage!";
             const url = window.location.href;
@@ -272,7 +287,9 @@ export default function PersonalisedPlanPage() {
           }}
           title="Share on X"
         >
-          Share on X
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
         </button>
       </div>
 
@@ -507,198 +524,6 @@ export default function PersonalisedPlanPage() {
         )}
       </section>
 
-      {/* Lifestyle Integration */}
-      <section className="plan-section lifestyle-section">
-        <h2 className="section-title">Lifestyle Integration</h2>
-
-        {loadingLifestyle && (
-          <div className="lifestyle-loading">
-            <div className="loading-spinner-small"></div>
-            <p>Generating personalized lifestyle integration plan...</p>
-          </div>
-        )}
-
-        {lifestyleIntegration && (
-          <div className="lifestyle-grid">
-            {/* Sleep Optimization */}
-            {lifestyleIntegration.sleepOptimization && (
-              <div className="lifestyle-card">
-                <h3 className="lifestyle-card-title">💤 Sleep Optimization</h3>
-                {lifestyleIntegration.sleepOptimization.personalizedIntro && (
-                  <p className="lifestyle-intro">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
-                )}
-
-                <div className="lifestyle-content">
-                  {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
-                    <div className="lifestyle-item">
-                      <strong>Optimal Sleep Window:</strong>
-                      <p>{lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Pre-Bed Routine:</strong>
-                      <ul>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Morning Protocol:</strong>
-                      <ul>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.sleepOptimization.whyThisMatters && (
-                    <div className="lifestyle-why">
-                      <strong>Why This Matters:</strong>
-                      <p>{lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Exercise Protocol */}
-            {lifestyleIntegration.exerciseProtocol && (
-              <div className="lifestyle-card">
-                <h3 className="lifestyle-card-title">💪 Exercise Protocol</h3>
-                {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
-                  <p className="lifestyle-intro">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
-                )}
-
-                <div className="lifestyle-content">
-                  {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
-                    <div className="lifestyle-item">
-                      <strong>Weekly Structure:</strong>
-                      <p>{lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Workout Split:</strong>
-                      <div className="workout-split">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
-                          <div key={idx} className="workout-day">
-                            <strong>{workout.day}:</strong> {workout.focus}
-                            {workout.duration && <span className="workout-duration"> • {workout.duration}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
-                    <div className="lifestyle-why">
-                      <strong>Why This Matters:</strong>
-                      <p>{lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Stress Management */}
-            {lifestyleIntegration.stressManagement && (
-              <div className="lifestyle-card">
-                <h3 className="lifestyle-card-title">🧘 Stress Management</h3>
-                {lifestyleIntegration.stressManagement.personalizedIntro && (
-                  <p className="lifestyle-intro">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
-                )}
-
-                <div className="lifestyle-content">
-                  {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Daily Practices:</strong>
-                      <div className="stress-practices">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
-                          <div key={idx} className="practice-item">
-                            <strong>{practice.practice}</strong>
-                            {practice.timing && <span> • {practice.timing}</span>}
-                            {practice.duration && <span> • {practice.duration}</span>}
-                            {practice.benefit && <p className="practice-benefit">{practice.benefit}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.stressManagement.whyThisMatters && (
-                    <div className="lifestyle-why">
-                      <strong>Why This Matters:</strong>
-                      <p>{lifestyleIntegration.stressManagement.whyThisMatters}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Skin Improvement */}
-            {lifestyleIntegration.skinImprovement && (
-              <div className="lifestyle-card">
-                <h3 className="lifestyle-card-title">✨ Skin Improvement</h3>
-                {lifestyleIntegration.skinImprovement.personalizedIntro && (
-                  <p className="lifestyle-intro">{lifestyleIntegration.skinImprovement.personalizedIntro}</p>
-                )}
-
-                <div className="lifestyle-content">
-                  {lifestyleIntegration.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Morning Routine:</strong>
-                      <ol className="skincare-routine">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
-                          <li key={idx}>
-                            <strong>{step.product}</strong>
-                            {step.purpose && <span className="step-purpose"> - {step.purpose}</span>}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
-                    <div className="lifestyle-item">
-                      <strong>Evening Routine:</strong>
-                      <ol className="skincare-routine">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
-                          <li key={idx}>
-                            <strong>{step.product}</strong>
-                            {step.purpose && <span className="step-purpose"> - {step.purpose}</span>}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-
-                  {lifestyleIntegration.skinImprovement.whyThisMatters && (
-                    <div className="lifestyle-why">
-                      <strong>Why This Matters:</strong>
-                      <p>{lifestyleIntegration.skinImprovement.whyThisMatters}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
       {/* Sample Meal Plan with Side Image Layout */}
       <div className="with-side-image-layout">
         <div className="side-image-container">
@@ -831,180 +656,154 @@ export default function PersonalisedPlanPage() {
             )}
 
             {lifestyleIntegration ? (
-              <div className="lifestyle-grid">
+              <div className="lifestyle-clean">
                 {/* Sleep Optimization */}
                 {lifestyleIntegration.sleepOptimization && (
-                  <div className="lifestyle-card">
-                    <h3 className="lifestyle-card-title">Sleep Optimization</h3>
+                  <div className="lifestyle-section">
+                    <h3 className="lifestyle-title">Sleep Optimization</h3>
                     {lifestyleIntegration.sleepOptimization.personalizedIntro && (
-                      <p className="lifestyle-intro">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
                     )}
 
-                    <div className="lifestyle-content">
-                      {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
-                        <div className="lifestyle-item">
-                          <strong>Optimal Sleep Window:</strong>
-                          <p>{lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
-                        </div>
-                      )}
+                    {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
+                      <div className="lifestyle-text">
+                        <p><strong>Optimal Sleep Window:</strong> {lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Pre-Bed Routine:</strong>
-                          <ul>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Pre-Bed Routine:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
+                          <p key={idx}>• {item}</p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Morning Protocol:</strong>
-                          <ul>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Morning Protocol:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
+                          <p key={idx}>• {item}</p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.sleepOptimization.whyThisMatters && (
-                        <div className="lifestyle-why">
-                          <strong>Why This Matters:</strong>
-                          <p>{lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
-                        </div>
-                      )}
-                    </div>
+                    {lifestyleIntegration.sleepOptimization.whyThisMatters && (
+                      <div className="lifestyle-text">
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Exercise Protocol */}
                 {lifestyleIntegration.exerciseProtocol && (
-                  <div className="lifestyle-card">
-                    <h3 className="lifestyle-card-title">Exercise Protocol</h3>
+                  <div className="lifestyle-section">
+                    <h3 className="lifestyle-title">Exercise Protocol</h3>
                     {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
-                      <p className="lifestyle-intro">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
                     )}
 
-                    <div className="lifestyle-content">
-                      {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
-                        <div className="lifestyle-item">
-                          <strong>Weekly Structure:</strong>
-                          <p>{lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
-                        </div>
-                      )}
+                    {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
+                      <div className="lifestyle-text">
+                        <p><strong>Weekly Structure:</strong> {lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Workout Split:</strong>
-                          <div className="workout-split">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
-                              <div key={idx} className="workout-day">
-                                <strong>{workout.day}:</strong> {workout.focus}
-                                {workout.duration && <span className="workout-duration"> • {workout.duration}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Workout Split:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
+                          <p key={idx}>
+                            <strong>{workout.day}:</strong> {workout.focus}
+                            {workout.duration && <> • {workout.duration}</>}
+                          </p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
-                        <div className="lifestyle-why">
-                          <strong>Why This Matters:</strong>
-                          <p>{lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
-                        </div>
-                      )}
-                    </div>
+                    {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
+                      <div className="lifestyle-text">
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Stress Management */}
                 {lifestyleIntegration.stressManagement && (
-                  <div className="lifestyle-card">
-                    <h3 className="lifestyle-card-title">Stress Management</h3>
+                  <div className="lifestyle-section">
+                    <h3 className="lifestyle-title">Stress Management</h3>
                     {lifestyleIntegration.stressManagement.personalizedIntro && (
-                      <p className="lifestyle-intro">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
                     )}
 
-                    <div className="lifestyle-content">
-                      {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Daily Practices:</strong>
-                          <div className="stress-practices">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
-                              <div key={idx} className="practice-item">
-                                <strong>{practice.practice}</strong>
-                                {practice.timing && <span> • {practice.timing}</span>}
-                                {practice.duration && <span> • {practice.duration}</span>}
-                                {practice.benefit && <p className="practice-benefit">{practice.benefit}</p>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Daily Practices:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
+                          <p key={idx}>
+                            <strong>{practice.practice}</strong>
+                            {practice.timing && <> • {practice.timing}</>}
+                            {practice.duration && <> • {practice.duration}</>}
+                            {practice.benefit && <><br />{practice.benefit}</>}
+                          </p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.stressManagement.whyThisMatters && (
-                        <div className="lifestyle-why">
-                          <strong>Why This Matters:</strong>
-                          <p>{lifestyleIntegration.stressManagement.whyThisMatters}</p>
-                        </div>
-                      )}
-                    </div>
+                    {lifestyleIntegration.stressManagement.whyThisMatters && (
+                      <div className="lifestyle-text">
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.stressManagement.whyThisMatters}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Skin Improvement */}
                 {lifestyleIntegration.skinImprovement && (
-                  <div className="lifestyle-card">
-                    <h3 className="lifestyle-card-title">Skin Improvement</h3>
+                  <div className="lifestyle-section">
+                    <h3 className="lifestyle-title">Skin Improvement</h3>
                     {lifestyleIntegration.skinImprovement.personalizedIntro && (
-                      <p className="lifestyle-intro">{lifestyleIntegration.skinImprovement.personalizedIntro}</p>
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.skinImprovement.personalizedIntro}</p>
                     )}
 
-                    <div className="lifestyle-content">
-                      {lifestyleIntegration.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Morning Routine:</strong>
-                          <ol className="skincare-routine">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
-                              <li key={idx}>
-                                <strong>{step.product}</strong>
-                                {step.purpose && <span className="step-purpose"> - {step.purpose}</span>}
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
+                    {lifestyleIntegration.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Morning Routine:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
+                          <p key={idx}>
+                            {idx + 1}. <strong>{step.product}</strong>
+                            {step.purpose && <> - {step.purpose}</>}
+                          </p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
-                        <div className="lifestyle-item">
-                          <strong>Evening Routine:</strong>
-                          <ol className="skincare-routine">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
-                              <li key={idx}>
-                                <strong>{step.product}</strong>
-                                {step.purpose && <span className="step-purpose"> - {step.purpose}</span>}
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
+                    {lifestyleIntegration.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Evening Routine:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
+                          <p key={idx}>
+                            {idx + 1}. <strong>{step.product}</strong>
+                            {step.purpose && <> - {step.purpose}</>}
+                          </p>
+                        ))}
+                      </div>
+                    )}
 
-                      {lifestyleIntegration.skinImprovement.whyThisMatters && (
-                        <div className="lifestyle-why">
-                          <strong>Why This Matters:</strong>
-                          <p>{lifestyleIntegration.skinImprovement.whyThisMatters}</p>
-                        </div>
-                      )}
-                    </div>
+                    {lifestyleIntegration.skinImprovement.whyThisMatters && (
+                      <div className="lifestyle-text">
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.skinImprovement.whyThisMatters}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

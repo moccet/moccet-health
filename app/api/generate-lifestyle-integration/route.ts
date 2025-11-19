@@ -17,9 +17,11 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get('email') || searchParams.get('code');
+    const code = searchParams.get('code');
+    const email = searchParams.get('email');
+    const identifier = code || email;
 
-    if (!email) {
+    if (!identifier) {
       return NextResponse.json({ error: 'Email or code is required' }, { status: 400 });
     }
 
@@ -28,9 +30,30 @@ export async function GET(req: NextRequest) {
     console.log('================================================================================\n');
 
     // Fetch onboarding data
-    console.log(`[1/4] Fetching onboarding data for: ${email}`);
+    console.log(`[1/4] Fetching onboarding data for: ${identifier}`);
+
+    let lookupEmail = email;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onboardingData = devOnboardingStorage.get(email) as any;
+    let onboardingData: any = null;
+
+    // If we have a code, find the email first
+    if (code) {
+      // Search dev storage for the code
+      for (const [key, value] of devOnboardingStorage.entries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = value as any;
+        if (data?.form_data?.uniqueCode === code) {
+          lookupEmail = data.form_data.email || key;
+          onboardingData = data;
+          break;
+        }
+      }
+    } else if (email) {
+      // Direct email lookup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onboardingData = devOnboardingStorage.get(email) as any;
+      lookupEmail = email;
+    }
 
     if (!onboardingData) {
       return NextResponse.json(
@@ -40,8 +63,9 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('[OK] Onboarding data retrieved');
-    console.log(`    Main Priority: ${onboardingData.mainPriority}`);
-    console.log(`    Driving Goal: ${onboardingData.drivingGoal}\n`);
+    const formData = onboardingData.form_data || onboardingData;
+    console.log(`    Main Priority: ${formData.mainPriority}`);
+    console.log(`    Driving Goal: ${formData.drivingGoal}\n`);
 
     // Fetch blood analysis
     console.log(`[2/4] Fetching blood analysis for personalized recommendations...`);
@@ -74,7 +98,7 @@ export async function GET(req: NextRequest) {
       const plan = onboardingData.nutrition_plan;
       nutritionContext = `\nNUTRITION CONTEXT:\n`;
       nutritionContext += `Daily Calories: ${plan.nutritionOverview?.nutritionStructure?.calories || 'N/A'}\n`;
-      nutritionContext += `Eating Style: ${onboardingData.eatingStyle}\n`;
+      nutritionContext += `Eating Style: ${formData.eatingStyle}\n`;
       console.log('[OK] Nutrition context retrieved\n');
     }
 
@@ -84,25 +108,25 @@ export async function GET(req: NextRequest) {
 
     const userContext = `
 USER PROFILE:
-Name: ${onboardingData.fullName || 'User'}
-Age: ${onboardingData.age}, Gender: ${onboardingData.gender}
-Weight: ${onboardingData.weight} ${onboardingData.weightUnit || 'lbs'}
-Height: ${onboardingData.height}
+Name: ${formData.fullName || 'User'}
+Age: ${formData.age}, Gender: ${formData.gender}
+Weight: ${formData.weight} ${formData.weightUnit || 'lbs'}
+Height: ${formData.height}
 
 GOALS & PRIORITIES:
-Main Priority: ${onboardingData.mainPriority}
-Driving Goal: ${onboardingData.drivingGoal}
+Main Priority: ${formData.mainPriority}
+Driving Goal: ${formData.drivingGoal}
 
 LIFESTYLE FACTORS:
-Eating Style: ${onboardingData.eatingStyle}
-First Meal Time: ${onboardingData.firstMeal}
-Energy Crash Times: ${onboardingData.energyCrash || 'none reported'}
-Alcohol Consumption: ${onboardingData.alcoholConsumption || 'not specified'}
+Eating Style: ${formData.eatingStyle}
+First Meal Time: ${formData.firstMeal}
+Energy Crash Times: ${formData.energyCrash || 'none reported'}
+Alcohol Consumption: ${formData.alcoholConsumption || 'not specified'}
 
 HEALTH CONTEXT:
-Medical Conditions: ${onboardingData.medicalConditions?.join(', ') || 'none'}
-Medications: ${onboardingData.medications?.join(', ') || 'none'}
-Supplements: ${onboardingData.supplements?.join(', ') || 'none'}
+Medical Conditions: ${formData.medicalConditions?.join(', ') || 'none'}
+Medications: ${formData.medications?.join(', ') || 'none'}
+Supplements: ${formData.supplements?.join(', ') || 'none'}
 ${biomarkerContext}
 ${nutritionContext}
 `;
@@ -250,8 +274,10 @@ FORMATTING:
     // Store in cache
     console.log('[5/5] Storing lifestyle integration plan in cache...');
     onboardingData.lifestyle_integration = lifestyleData;
-    devOnboardingStorage.set(email, onboardingData);
-    console.log('[OK] Plan cached successfully\n');
+    if (lookupEmail) {
+      devOnboardingStorage.set(lookupEmail, onboardingData);
+      console.log('[OK] Plan cached successfully\n');
+    }
 
     console.log('================================================================================');
     console.log('[COMPLETE] LIFESTYLE INTEGRATION PLAN READY');

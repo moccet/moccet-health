@@ -47,6 +47,46 @@
   pointer-events: none;
 }
 
+.skip-intro-button {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  padding: 10px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: lowercase;
+}
+
+.skip-intro-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.skip-intro-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .skip-intro-button {
+    top: 20px;
+    right: 20px;
+    padding: 8px 18px;
+    font-size: 13px;
+  }
+}
+
 .intro-content {
   text-align: center;
   position: relative;

@@ -295,18 +295,70 @@ IMPORTANT:
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email') || searchParams.get('code');
+    const code = searchParams.get('code');
+    const email = searchParams.get('email');
+    const identifier = code || email;
 
-    if (!email) {
+    if (!identifier) {
       return NextResponse.json(
         { error: 'Email or code parameter is required' },
         { status: 400 }
       );
     }
 
-    // Check dev storage first
+    // If we have a code, we need to find the email first
+    let lookupEmail = email;
+
+    if (code) {
+      // Search dev storage for the code
+      for (const [key, value] of devOnboardingStorage.entries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = value as any;
+        if (data?.form_data?.uniqueCode === code) {
+          lookupEmail = data.form_data.email || key;
+          break;
+        }
+      }
+
+      // If not found in dev storage, try Supabase
+      if (!lookupEmail) {
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('email, lab_file_analysis')
+              .eq('form_data->>uniqueCode', code)
+              .single();
+
+            if (data) {
+              lookupEmail = data.email;
+              // Return the analysis directly if found
+              if (data.lab_file_analysis) {
+                return NextResponse.json({
+                  success: true,
+                  analysis: data.lab_file_analysis
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching from database:', error);
+          }
+        }
+      }
+    }
+
+    if (!lookupEmail) {
+      return NextResponse.json(
+        { error: 'No data found for this code' },
+        { status: 404 }
+      );
+    }
+
+    // Check dev storage with the email
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devData = devOnboardingStorage.get(email) as any;
+    const devData = devOnboardingStorage.get(lookupEmail) as any;
     if (devData?.blood_analysis) {
       return NextResponse.json({
         success: true,
@@ -314,7 +366,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Try Supabase
+    // Try Supabase with email
     const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
       try {
@@ -322,7 +374,7 @@ export async function GET(request: NextRequest) {
         const { data } = await supabase
           .from('sage_onboarding_data')
           .select('lab_file_analysis')
-          .eq('email', email)
+          .eq('email', lookupEmail)
           .single();
 
         if (data?.lab_file_analysis) {

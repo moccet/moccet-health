@@ -1,0 +1,19 @@
+{
+  "functions": {
+    "app/api/queue/generate-sage-plan/route.ts": {
+      "maxDuration": 900
+    },
+    "app/api/generate-micronutrients/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/generate-lifestyle-integration/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "queues": [
+    {
+      "name": "sage-plan-generation",
+      "consumer": "app/api/queue/generate-sage-plan/route.ts"
+    }
+  ]
+}

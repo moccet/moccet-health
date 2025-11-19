@@ -767,6 +767,13 @@ export default function SageOnboarding() {
         >
           <source src="/videos/sage.mp4" type="video/mp4" />
         </video>
+        <button
+          className="skip-intro-button"
+          onClick={() => setCurrentScreen('welcome')}
+          aria-label="Skip intro video"
+        >
+          Skip
+        </button>
       </div>
 
       {/* Welcome Screen */}

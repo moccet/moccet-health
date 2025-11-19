@@ -16,9 +16,11 @@ function getOpenAIClient() {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email') || searchParams.get('code');
+    const code = searchParams.get('code');
+    const email = searchParams.get('email');
+    const identifier = code || email;
 
-    if (!email) {
+    if (!identifier) {
       return NextResponse.json(
         { error: 'Email or code parameter is required' },
         { status: 400 }
@@ -30,53 +32,97 @@ export async function GET(request: NextRequest) {
     console.log('='.repeat(80) + '\n');
 
     // Fetch onboarding data (works with both dev mode and Supabase)
-    console.log(`[1/3] Fetching onboarding data for: ${email}`);
+    console.log(`[1/3] Fetching onboarding data for: ${identifier}`);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let formData: any;
+    let lookupEmail = email;
 
-    // Check dev storage first
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devData = devOnboardingStorage.get(email) as any;
-    if (devData) {
-      formData = devData.form_data;
-      console.log('[OK] Onboarding data retrieved from dev storage');
+    // If we have a code, find the email first
+    if (code) {
+      // Search dev storage for the code
+      for (const [key, value] of devOnboardingStorage.entries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = value as any;
+        if (data?.form_data?.uniqueCode === code) {
+          lookupEmail = data.form_data.email || key;
+          formData = data.form_data;
+          console.log('[OK] Onboarding data retrieved from dev storage');
+          break;
+        }
+      }
+
+      // If not found in dev storage, try Supabase
+      if (!lookupEmail) {
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('form_data->>uniqueCode', code)
+              .single();
+
+            if (data) {
+              lookupEmail = data.email;
+              formData = data.form_data;
+              console.log('[OK] Onboarding data retrieved from Supabase');
+            }
+          } catch (error) {
+            console.error('Error fetching from database:', error);
+          }
+        }
+      }
     } else {
-      // Try Supabase if configured
-      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-        try {
-          const supabase = await createClient();
-          const { data, error } = await supabase
-            .from('sage_onboarding_data')
-            .select('*')
-            .eq('email', email)
-            .single();
+      // Direct email lookup
+      // Check dev storage first
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const devData = devOnboardingStorage.get(email!) as any;
+      if (devData) {
+        formData = devData.form_data;
+        lookupEmail = email!;
+        console.log('[OK] Onboarding data retrieved from dev storage');
+      } else {
+        // Try Supabase if configured
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data, error } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('email', email)
+              .single();
 
-          if (error) {
-            console.error('Failed to fetch onboarding data from Supabase');
+            if (error) {
+              console.error('Failed to fetch onboarding data from Supabase');
+              return NextResponse.json(
+                { error: 'No onboarding data found for this email' },
+                { status: 404 }
+              );
+            }
+
+            formData = data.form_data;
+            lookupEmail = email!;
+            console.log('[OK] Onboarding data retrieved from Supabase');
+          } catch (error) {
+            console.error('Error fetching from Supabase:', error);
             return NextResponse.json(
-              { error: 'No onboarding data found for this email' },
-              { status: 404 }
+              { error: 'Failed to retrieve onboarding data' },
+              { status: 500 }
             );
           }
-
-          formData = data.form_data;
-          console.log('[OK] Onboarding data retrieved from Supabase');
-        } catch (error) {
-          console.error('Error fetching from Supabase:', error);
-          return NextResponse.json(
-            { error: 'Failed to retrieve onboarding data' },
-            { status: 500 }
-          );
         }
-      } else {
-        console.error('No onboarding data found');
-        return NextResponse.json(
-          { error: 'No onboarding data found for this email' },
-          { status: 404 }
-        );
       }
+    }
+
+    if (!formData || !lookupEmail) {
+      console.error('No onboarding data found');
+      return NextResponse.json(
+        { error: 'No onboarding data found for this identifier' },
+        { status: 404 }
+      );
     }
 
     console.log(`    Name: ${formData.fullName}`);
@@ -86,7 +132,7 @@ export async function GET(request: NextRequest) {
     // Get the nutrition plan context
     console.log(`[2/3] Fetching nutrition plan context...`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nutritionPlan = devPlanStorage.get(email) as any;
+    const nutritionPlan = devPlanStorage.get(lookupEmail) as any;
 
     if (!nutritionPlan) {
       console.error('No nutrition plan found - please generate the plan first');
@@ -103,9 +149,9 @@ export async function GET(request: NextRequest) {
     let bloodAnalysis = null;
     let biomarkerContext = '';
 
-    // Check dev storage for blood analysis
+    // Check dev storage for blood analysis using the lookupEmail
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const bloodData = devOnboardingStorage.get(email) as any;
+    const bloodData = devOnboardingStorage.get(lookupEmail) as any;
     if (bloodData?.blood_analysis) {
       bloodAnalysis = bloodData.blood_analysis;
       console.log('[OK] Blood analysis found - meals will be optimized for biomarkers\n');

@@ -19,75 +19,78 @@ const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sage - Your Personalized Plan is Ready</title>
+    <meta name="description" content="sage - Personalized nutrition plans based on your biology, metabolic data, and microbiome" />
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a;">
+
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
         <tr>
             <td align="center" style="padding: 0;">
-                <!-- Hero Image -->
+
+                <!-- Hero Image - Full Width -->
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="padding: 0; text-align: center; background: linear-gradient(135deg, #e8ede6 0%, #d0dfc9 100%);">
-                            <div style="padding: 60px 20px;">
-                                <h1 style="margin: 0; font-size: 32px; font-weight: 400; letter-spacing: -0.5px; color: #2d3a2d;">sage</h1>
-                            </div>
+                        <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
+                            <img src="https://c.animaapp.com/ArhZSyxG/img/frank-sepulveda-st9ymbaqqg4-unsplash.jpg" alt="sage gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
                         </td>
                     </tr>
                 </table>
 
                 <!-- Content Container -->
                 <table role="presentation" style="max-width: 560px; width: 100%; margin: 0 auto; border-collapse: collapse;">
+
+                    <!-- Logo -->
+                    <tr>
+                        <td style="padding: 48px 20px 40px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 400; letter-spacing: -0.3px; color: #000000;">sage</h1>
+                        </td>
+                    </tr>
+
                     <!-- Body -->
                     <tr>
-                        <td style="padding: 48px 20px 0;">
-                            <h2 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 500; color: #1a1a1a;">
-                                Hi ${name},
-                            </h2>
+                        <td style="padding: 0 20px;">
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                Your personalized sage nutrition plan is ready! 🎉
+                                Hi ${name}, your personalized nutrition plan is ready.
                             </p>
 
-                            <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We've analyzed your profile, health data, and goals to create a comprehensive plan tailored specifically for you.
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
+                                We've analyzed your profile, health data, and goals to create a comprehensive plan tailored specifically for you. Your plan includes personalized meal recommendations, micronutrient guidance, and lifestyle integration strategies.
                             </p>
 
                             <!-- CTA Button -->
                             <table role="presentation" style="margin: 0 0 32px 0;">
                                 <tr>
-                                    <td style="background-color: #2d3a2d; border-radius: 8px;">
-                                        <a href="${planUrl}" style="display: inline-block; padding: 16px 32px; font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none;">
-                                            View Your Plan →
+                                    <td style="background-color: #000000; border-radius: 4px; text-align: center;">
+                                        <a href="${planUrl}" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none;">
+                                            View Your Plan
                                         </a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #666666;">
-                                Your plan includes personalized meal recommendations, micronutrient guidance, and lifestyle integration strategies.
+                            <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
+                                <strong>moccet</strong>
                             </p>
 
-                            <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                <strong>moccet sage</strong>
-                            </p>
                         </td>
                     </tr>
 
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 48px 20px 32px; text-align: center; border-top: 1px solid #e0e0e0;">
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #666666;">
-                                Questions? Reply to this email or visit our <a href="https://www.moccet.ai" style="color: #2d3a2d; text-decoration: none;">website</a>.
-                            </p>
+                        <td style="padding: 48px 20px 32px; text-align: center;">
                             <p style="margin: 0; font-size: 13px; color: #666666;">
                                 <a href="<%asm_group_unsubscribe_raw_url%>" style="color: #666666; text-decoration: none;">Unsubscribe</a>
                             </p>
                         </td>
                     </tr>
+
                 </table>
+
             </td>
         </tr>
     </table>
+
 </body>
 </html>`;
 

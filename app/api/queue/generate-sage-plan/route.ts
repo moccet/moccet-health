@@ -3,8 +3,8 @@ import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 
-// Queue consumer can run for up to 15 minutes on Vercel Pro
-export const maxDuration = 900;
+// Queue consumer can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
+export const maxDuration = 800;
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;

@@ -106,37 +106,54 @@ export async function GET(request: NextRequest) {
 
     // Check for existing plan in cache or database
     console.log(`[2/4] Checking for existing nutrition plan...`);
+    console.log(`[DEBUG] Identifier: ${identifier}, Code: ${code}, Email: ${email}`);
     let cachedPlan = devPlanStorage.get(identifier);
 
     // If not in dev storage, check Supabase
     if (!cachedPlan) {
+      console.log('[INFO] Plan not in dev storage, checking Supabase...');
       const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      console.log(`[DEBUG] Has Supabase: ${!!hasSupabase}, FORCE_DEV_MODE: ${process.env.FORCE_DEV_MODE}`);
+
       if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
         try {
           const supabase = await createClient();
           let query;
 
           if (code) {
+            console.log(`[DEBUG] Querying by code: ${code}`);
             query = supabase
               .from('sage_onboarding_data')
               .select('sage_plan')
               .eq('form_data->>uniqueCode', code);
           } else {
+            console.log(`[DEBUG] Querying by email: ${email}`);
             query = supabase
               .from('sage_onboarding_data')
               .select('sage_plan')
               .eq('email', email);
           }
 
-          const { data } = await query.single();
+          const { data, error } = await query.single();
+
+          if (error) {
+            console.log('[INFO] Supabase query error:', error);
+          }
+
           if (data?.sage_plan) {
             cachedPlan = data.sage_plan;
             console.log('[OK] Existing plan found in database');
+          } else {
+            console.log('[INFO] No sage_plan field in database record');
           }
         } catch (error) {
-          console.log('[INFO] No existing plan in database');
+          console.log('[ERROR] Exception checking database:', error);
         }
+      } else {
+        console.log('[INFO] Skipping Supabase check (not configured or dev mode)');
       }
+    } else {
+      console.log('[OK] Plan found in dev storage');
     }
 
     if (cachedPlan) {

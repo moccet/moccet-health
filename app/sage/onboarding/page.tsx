@@ -1622,7 +1622,7 @@ export default function SageOnboarding() {
                     <path d="M2 17L2 19C2 20.1046 2.89543 21 4 21L20 21C21.1046 21 22 20.1046 22 19L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                   <div style={{fontWeight: 500, marginBottom: '8px'}}>Click to upload or drag and drop</div>
-                  <div style={{fontSize: '14px', color: '#999'}}>PDF, PNG, JPEG • max 10MB</div>
+                  <div style={{fontSize: '14px', color: '#999'}}>PDF, PNG, JPG • max 10MB</div>
                 </>
               )}
             </div>

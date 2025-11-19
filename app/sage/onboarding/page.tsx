@@ -712,6 +712,9 @@ export default function SageOnboarding() {
           uniqueCode: uniqueCode,
           fullName: userFirstName,
         }),
+        keepalive: true, // Ensures request continues even if user closes tab
+      }).then(() => {
+        console.log('✅ Background plan generation started');
       }).catch(err => {
         console.error('Error starting plan generation:', err);
       });

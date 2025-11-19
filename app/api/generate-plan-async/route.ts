@@ -17,33 +17,45 @@ export async function POST(request: NextRequest) {
 
     console.log(`📬 Plan generation requested for ${email} (code: ${uniqueCode})`);
 
-    // TODO: Once Vercel Queue is properly configured in production,
-    // this will enqueue the job instead of processing synchronously
+    // Directly import and call the queue consumer function
+    // This keeps the connection alive and ensures the job runs
+    try {
+      const { POST: queueConsumer } = await import('../queue/generate-sage-plan/route');
 
-    // For now, trigger the queue consumer directly
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
+      // Create a mock request for the queue consumer
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
+      const mockRequest = new Request(`${baseUrl}/api/queue/generate-sage-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          uniqueCode,
+          fullName,
+        }),
+      });
 
-    // Call the queue consumer endpoint
-    fetch(`${baseUrl}/api/queue/generate-sage-plan`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        uniqueCode,
-        fullName,
-      }),
-    }).catch(error => {
-      console.error('Error triggering queue consumer:', error);
-    });
+      // AWAIT the queue consumer to keep the connection alive
+      // This ensures the plan generation completes even if user closes the tab
+      // The browser's keepalive:true will maintain the request
+      console.log(`⏳ Starting plan generation (keeping connection alive)...`);
 
-    console.log(`✅ Plan generation started for ${email}`);
+      await queueConsumer(mockRequest as NextRequest);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Plan generation has been started. You will receive an email when your plan is ready.',
-    });
+      console.log(`✅ Plan generation completed for ${email}`);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Plan generation completed successfully!',
+      });
+    } catch (importError) {
+      console.error('Failed to import queue consumer:', importError);
+      return NextResponse.json(
+        { error: 'Failed to start plan generation' },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('Error starting plan generation:', error);

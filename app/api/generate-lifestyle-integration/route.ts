@@ -232,23 +232,15 @@ FORMATTING:
 - Example: "Sleep Window — 10:30 PM to 6:30 AM" or "Sleep Window. 10:30 PM to 6:30 AM"
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert longevity coach creating hyper-personalized lifestyle integration plans. Always respond with valid JSON only. Be specific and reference the user\'s actual data points.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
+    const completion = await openai.responses.create({
+      model: 'gpt-5',
+      input: `You are an expert longevity coach creating hyper-personalized lifestyle integration plans. Always respond with valid JSON only. Be specific and reference the user's actual data points.\n\n${prompt}`,
+      reasoning: { effort: 'medium' },
+      text: { verbosity: 'high' }
     });
 
-    const lifestyleData = JSON.parse(completion.choices[0].message.content || '{}');
+    const responseText = completion.output_text || '{}';
+    const lifestyleData = JSON.parse(responseText);
     console.log('[OK] Lifestyle integration plan generated successfully\n');
 
     // Store in cache

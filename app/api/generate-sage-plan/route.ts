@@ -224,24 +224,14 @@ FORMATTING:
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an elite nutritionist and personalized health consultant. You create evidence-based, highly personalized nutrition plans. You MUST respond with valid JSON only.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.8,
-      max_tokens: 6000,
-      response_format: { type: 'json_object' }
+    const completion = await openai.responses.create({
+      model: 'gpt-5',
+      input: `You are an elite nutritionist and personalized health consultant. You create evidence-based, highly personalized nutrition plans. You MUST respond with valid JSON only.\n\n${prompt}`,
+      reasoning: { effort: 'medium' },
+      text: { verbosity: 'high' }
     });
 
-    let responseText = completion.choices[0].message.content || '{}';
+    let responseText = completion.output_text || '{}';
 
     // Strip markdown code blocks if present
     responseText = responseText.trim();

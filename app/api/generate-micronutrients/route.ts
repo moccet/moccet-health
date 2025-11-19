@@ -143,23 +143,15 @@ FORMATTING:
 - Example: "Vitamin D — 2000 IU" or "Vitamin D. 2000 IU"
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert nutritionist creating personalized micronutrient recommendations. Always respond with valid JSON only.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
+    const completion = await openai.responses.create({
+      model: 'gpt-5',
+      input: `You are an expert nutritionist creating personalized micronutrient recommendations. Always respond with valid JSON only.\n\n${prompt}`,
+      reasoning: { effort: 'medium' },
+      text: { verbosity: 'high' }
     });
 
-    const micronutrientData = JSON.parse(completion.choices[0].message.content || '{}');
+    const responseText = completion.output_text || '{}';
+    const micronutrientData = JSON.parse(responseText);
     console.log('[OK] Micronutrient recommendations generated successfully\n');
 
     // Store in cache

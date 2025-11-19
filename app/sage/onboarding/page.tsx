@@ -654,6 +654,7 @@ export default function SageOnboarding() {
         return;
       }
 
+      const result = await response.json();
       console.log('Onboarding data submitted successfully');
 
       // If user uploaded a lab file, analyze it with AI

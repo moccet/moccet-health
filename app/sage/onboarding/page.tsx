@@ -601,6 +601,12 @@ export default function SageOnboarding() {
     setCurrentScreen(nextScreen);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent, nextScreen: Screen, isDisabled: boolean) => {
+    if (e.key === 'Enter' && !isDisabled) {
+      handleContinue(nextScreen);
+    }
+  };
+
   const handleBack = () => {
     const screens: Screen[] = [
       'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
@@ -657,36 +663,49 @@ export default function SageOnboarding() {
       const result = await response.json();
       console.log('Onboarding data submitted successfully');
 
-      // If user uploaded a lab file, analyze it with AI
+      // Get unique code and user's name
+      const uniqueCode = result.data?.uniqueCode;
+      const userFirstName = formData.fullName.split(' ')[0];
+
+      // If user uploaded a lab file, analyze it with AI (non-blocking)
       if (formData.labFile) {
         console.log('Uploading and analyzing lab file with AI...');
         const labFormData = new FormData();
         labFormData.append('bloodTest', formData.labFile);
         labFormData.append('email', formData.email);
 
-        try {
-          await fetch('/api/analyze-blood-results', {
-            method: 'POST',
-            body: labFormData,
-          });
-          console.log('Lab file AI analysis initiated');
-        } catch (err) {
+        fetch('/api/analyze-blood-results', {
+          method: 'POST',
+          body: labFormData,
+        }).catch(err => {
           console.error('Error analyzing lab file:', err);
-          // Don't block the flow if analysis fails
-        }
+        });
       }
+
+      // Trigger background plan generation
+      console.log('Starting background plan generation...');
+      fetch('/api/generate-plan-async', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          uniqueCode: uniqueCode,
+          fullName: userFirstName,
+        }),
+      }).catch(err => {
+        console.error('Error starting plan generation:', err);
+      });
 
       setLoadingProgress(100);
 
-      // Use unique code if available, otherwise fall back to email
-      const uniqueCode = result.data?.uniqueCode;
-      const redirectUrl = uniqueCode
-        ? `/sage/personalised-plan?code=${uniqueCode}`
-        : `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
-
+      // Keep loading screen visible - user can close window
+      // Email will be sent with link to plan
       setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 500);
+        clearInterval(progressInterval);
+        // Keep isLoading true so screen stays visible
+      }, 1000);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
       clearInterval(progressInterval);
@@ -756,7 +775,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">What&apos;s your full name?</h1>
           <p className="typeform-subtitle">We&apos;ll use this to personalize your sage experience and keep your profile secure.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -786,7 +805,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">How old are you?</h1>
           <p className="typeform-subtitle">Your age helps us tailor nutritional recommendations to your life stage.</p>
           <div className="input-container">
-            <input type="number" className="typeform-input" placeholder="Type your answer here" value={formData.age} onChange={(e) => handleInputChange('age', e.target.value)} autoFocus />
+            <input type="number" className="typeform-input" placeholder="Type your answer here" value={formData.age} onChange={(e) => handleInputChange('age', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'gender', !formData.age.trim())} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -837,6 +856,7 @@ export default function SageOnboarding() {
                 placeholder="Type your answer here"
                 value={formData.weight}
                 onChange={(e) => handleInputChange('weight', e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, 'height', !formData.weight.trim())}
                 autoFocus
               />
               <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -875,6 +895,7 @@ export default function SageOnboarding() {
                 placeholder="Type your answer here"
                 value={formData.height}
                 onChange={(e) => handleInputChange('height', e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, 'email', !formData.height.trim())}
                 autoFocus
               />
               <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -899,7 +920,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Tell us the email for results and updates.</h1>
           <p className="typeform-subtitle">We&apos;ll send your personalized sage nutrition plan and helpful tips to this email. We respect your privacy.</p>
           <div className="input-container">
-            <input type="email" className="typeform-input" placeholder="name@example.com" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} autoFocus />
+            <input type="email" className="typeform-input" placeholder="name@example.com" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'ikigai-intro', !formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))} autoFocus />
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ikigai-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
@@ -1025,7 +1046,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Please list any medications you&apos;re currently taking.</h1>
           <p className="typeform-subtitle">This is crucial for us to check for any nutrient or food interactions.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.medications} onChange={(e) => handleInputChange('medications', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.medications} onChange={(e) => handleInputChange('medications', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'supplements', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1047,7 +1068,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">And any current supplements?</h1>
           <p className="typeform-subtitle">This helps us avoid recommending anything you&apos;re already taking.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.supplements} onChange={(e) => handleInputChange('supplements', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.supplements} onChange={(e) => handleInputChange('supplements', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'medical-conditions', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1211,7 +1232,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Any foods you strongly dislike?</h1>
           <p className="typeform-subtitle">This helps us avoid recommending things you don&apos;t enjoy.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.foodDislikes} onChange={(e) => handleInputChange('foodDislikes', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.foodDislikes} onChange={(e) => handleInputChange('foodDislikes', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'meals-cooked', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1233,7 +1254,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">How many meals per week do you cook at home?</h1>
           <p className="typeform-subtitle">Your perfect plan is the plan that fits in your schedule.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.mealsCooked} onChange={(e) => handleInputChange('mealsCooked', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.mealsCooked} onChange={(e) => handleInputChange('mealsCooked', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'alcohol-consumption', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1255,7 +1276,7 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">How much alcohol do you consumer per week?</h1>
           <p className="typeform-subtitle">Your perfect plan is the plan that works around your habits.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.alcoholConsumption} onChange={(e) => handleInputChange('alcoholConsumption', e.target.value)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.alcoholConsumption} onChange={(e) => handleInputChange('alcoholConsumption', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'completion', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1305,14 +1326,15 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Integrate sage into your ecosystem.</h1>
           <p className="typeform-subtitle">Activity, sleep, and metabolic data help optimize meal content, calendar helps optimize timing.</p>
 
-          {/* Connected Integrations Section */}
-          {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) && (
-            <>
-              <div className="integration-section-header">
-                <h2 className="integration-section-title">Connected</h2>
-                <p className="integration-section-description">These integrations are active and providing data</p>
-              </div>
-              <div className="integrations-grid connected-grid">
+          <div className="integrations-scroll-container">
+            {/* Connected Integrations Section */}
+            {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) && (
+              <>
+                <div className="integration-section-header">
+                  <h2 className="integration-section-title">Connected</h2>
+                  <p className="integration-section-description">These integrations are active and providing data</p>
+                </div>
+                <div className="integrations-grid connected-grid">
                 {gmailConnected && (
                   <div className="integration-item">
                     <div className="integration-info">
@@ -1514,6 +1536,7 @@ export default function SageOnboarding() {
               </div>
             )}
           </div>
+          </div>
 
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
@@ -1618,12 +1641,32 @@ export default function SageOnboarding() {
             <div className="modal-instructions">
               <h3>How to export your data:</h3>
               {uploadModalType === 'oura-ring' && (
-                <ol>
-                  <li>Open the Oura app on your phone</li>
-                  <li>Go to Settings → Account → Export Data</li>
-                  <li>Select date range and export as CSV</li>
-                  <li>Transfer the file to this device and upload below</li>
-                </ol>
+                <>
+                  <ol>
+                    <li>Open the Oura app on your phone</li>
+                    <li>Go to Settings → Account → Export Data</li>
+                    <li>Select date range and export as CSV</li>
+                    <li>Transfer the files to this device</li>
+                  </ol>
+                  <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0f9ff', borderRadius: '6px', fontSize: '14px' }}>
+                    <strong>Oura Ring exports multiple CSV files:</strong>
+                    <ul style={{ marginTop: '8px', marginBottom: '0', paddingLeft: '20px' }}>
+                      <li>dailyactivity.csv</li>
+                      <li>daytimestress.csv</li>
+                      <li>heartrate.csv</li>
+                      <li>ringbatterylevel.csv</li>
+                      <li>sleepmodel.csv</li>
+                      <li>temperature.csv</li>
+                      <li>applicationdebugstate.csv</li>
+                      <li>bloodglucose.csv</li>
+                      <li>dailycardiovascularage.csv</li>
+                      <li>dailycyclephases.csv</li>
+                    </ul>
+                    <p style={{ marginTop: '8px', marginBottom: '0', fontSize: '13px', color: '#666' }}>
+                      Upload each file separately for complete health data analysis.
+                    </p>
+                  </div>
+                </>
               )}
               {uploadModalType === 'whoop' && (
                 <ol>
@@ -1706,6 +1749,24 @@ export default function SageOnboarding() {
           </video>
           <div className="loading-overlay">
             <div className="loading-content">
+              <div className="loading-message" style={{
+                fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontWeight: 500,
+                fontStretch: 'expanded',
+                letterSpacing: '0.5px',
+                color: '#999',
+                textAlign: 'center'
+              }}>
+                <p style={{ fontSize: '16px', marginBottom: '12px' }}>
+                  moccet sage Agents are building your plan.
+                </p>
+                <p style={{ fontSize: '15px', marginBottom: '12px' }}>
+                  This may take up to 5 minutes.
+                </p>
+                <p style={{ fontSize: '15px', marginBottom: '24px' }}>
+                  You can close this screen and sage will email you once your plan is ready.
+                </p>
+              </div>
               <div className="loading-text">loading sage plan</div>
               <div className="loading-bar-container">
                 <div

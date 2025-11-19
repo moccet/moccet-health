@@ -3,8 +3,12 @@ import OpenAI from 'openai';
 import { devOnboardingStorage } from '@/lib/dev-storage';
 
 function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
+  }
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey,
   });
 }
 
@@ -13,10 +17,10 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get('email');
+    const email = searchParams.get('email') || searchParams.get('code');
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email or code is required' }, { status: 400 });
     }
 
     console.log('\n================================================================================');

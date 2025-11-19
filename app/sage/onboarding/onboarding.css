@@ -345,7 +345,7 @@
 .unit-dropdown {
   width: 100px;
   padding: 14px 16px;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 500;
   color: #1a1a1a;
   background: #e8ede6;
@@ -1170,6 +1170,16 @@
   line-height: 1.4;
 }
 
+/* Integration Scroll Container */
+.integrations-scroll-container {
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: 16px;
+  margin-bottom: 24px;
+  padding-right: 4px;
+}
+
 /* Integration Grid Layout */
 .integrations-grid {
   display: grid;
@@ -1177,8 +1187,8 @@
   gap: 12px;
   margin-top: 16px;
   margin-bottom: 16px;
-  max-height: 300px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
   overflow-x: hidden;
   padding-right: 8px;
 }
@@ -1286,20 +1296,24 @@
 }
 
 /* Custom scrollbar for integrations */
+.integrations-scroll-container::-webkit-scrollbar,
 .integrations-grid::-webkit-scrollbar {
   width: 6px;
 }
 
+.integrations-scroll-container::-webkit-scrollbar-track,
 .integrations-grid::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
+.integrations-scroll-container::-webkit-scrollbar-thumb,
 .integrations-grid::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
+.integrations-scroll-container::-webkit-scrollbar-thumb:hover,
 .integrations-grid::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }

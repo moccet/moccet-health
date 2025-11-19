@@ -4,19 +4,23 @@ import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 
 function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
+  }
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey,
   });
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
+    const email = searchParams.get('email') || searchParams.get('code');
 
     if (!email) {
       return NextResponse.json(
-        { error: 'Email parameter is required' },
+        { error: 'Email or code parameter is required' },
         { status: 400 }
       );
     }

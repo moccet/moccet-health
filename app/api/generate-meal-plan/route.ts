@@ -131,8 +131,34 @@ export async function GET(request: NextRequest) {
 
     // Get the nutrition plan context
     console.log(`[2/3] Fetching nutrition plan context...`);
+    console.log(`[DEBUG] Looking for plan with email: ${lookupEmail}`);
+    console.log(`[DEBUG] Dev plan storage keys:`, Array.from(devPlanStorage.keys()));
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nutritionPlan = devPlanStorage.get(lookupEmail) as any;
+    let nutritionPlan = devPlanStorage.get(lookupEmail) as any;
+
+    // If not in dev storage, try Supabase
+    if (!nutritionPlan) {
+      console.log('[INFO] Plan not in dev storage, checking Supabase...');
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          const { data } = await supabase
+            .from('sage_onboarding_data')
+            .select('sage_plan')
+            .eq('email', lookupEmail)
+            .single();
+
+          if (data?.sage_plan) {
+            nutritionPlan = data.sage_plan;
+            console.log('[OK] Nutrition plan retrieved from Supabase');
+          }
+        } catch (error) {
+          console.error('Error fetching plan from Supabase:', error);
+        }
+      }
+    }
 
     if (!nutritionPlan) {
       console.error('No nutrition plan found - please generate the plan first');

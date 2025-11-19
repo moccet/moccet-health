@@ -104,12 +104,43 @@ export async function GET(request: NextRequest) {
     console.log(`    Main Priority: ${formData.mainPriority}`);
     console.log(`    Driving Goal: ${formData.drivingGoal}\n`);
 
-    // Check for existing plan in cache
+    // Check for existing plan in cache or database
     console.log(`[2/4] Checking for existing nutrition plan...`);
-    const cachedPlan = devPlanStorage.get(identifier);
+    let cachedPlan = devPlanStorage.get(identifier);
+
+    // If not in dev storage, check Supabase
+    if (!cachedPlan) {
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          let query;
+
+          if (code) {
+            query = supabase
+              .from('sage_onboarding_data')
+              .select('sage_plan')
+              .eq('form_data->>uniqueCode', code);
+          } else {
+            query = supabase
+              .from('sage_onboarding_data')
+              .select('sage_plan')
+              .eq('email', email);
+          }
+
+          const { data } = await query.single();
+          if (data?.sage_plan) {
+            cachedPlan = data.sage_plan;
+            console.log('[OK] Existing plan found in database');
+          }
+        } catch (error) {
+          console.log('[INFO] No existing plan in database');
+        }
+      }
+    }
 
     if (cachedPlan) {
-      console.log('[OK] Existing plan found in cache - returning cached version\n');
+      console.log('[OK] Existing plan found - returning cached version\n');
       return NextResponse.json({
         success: true,
         plan: cachedPlan,
@@ -274,9 +305,40 @@ Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
     console.log('[OK] AI plan generated successfully\n');
 
-    // Store plan in cache (dev mode) or database (if Supabase configured)
-    console.log(`[4/4] Storing plan in cache...`);
+    // Store plan in cache (dev mode) and database (if Supabase configured)
+    console.log(`[4/4] Storing plan in cache and database...`);
     devPlanStorage.set(identifier, planData);
+
+    // Also store in Supabase for persistence
+    const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+      try {
+        const supabase = await createClient();
+
+        // Get the email to use as the key
+        let emailKey = email;
+        if (code && !emailKey) {
+          // If we only have code, fetch the email from the database
+          const { data: userData } = await supabase
+            .from('sage_onboarding_data')
+            .select('email')
+            .eq('form_data->>uniqueCode', code)
+            .single();
+          emailKey = userData?.email;
+        }
+
+        if (emailKey) {
+          await supabase
+            .from('sage_onboarding_data')
+            .update({ sage_plan: planData })
+            .eq('email', emailKey);
+          console.log('[OK] Plan saved to Supabase database');
+        }
+      } catch (error) {
+        console.error('Failed to save plan to database:', error);
+      }
+    }
+
     console.log('[OK] Plan cached successfully\n');
 
     console.log('='.repeat(80));

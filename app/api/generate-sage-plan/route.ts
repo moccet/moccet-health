@@ -16,9 +16,11 @@ function getOpenAIClient() {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email') || searchParams.get('code');
+    const code = searchParams.get('code');
+    const email = searchParams.get('email');
+    const identifier = code || email;
 
-    if (!email) {
+    if (!identifier) {
       return NextResponse.json(
         { error: 'Email or code parameter is required' },
         { status: 400 }
@@ -30,18 +32,18 @@ export async function GET(request: NextRequest) {
     console.log('='.repeat(80) + '\n');
 
     // Fetch onboarding data (works with both dev mode and Supabase)
-    console.log(`[1/4] Fetching onboarding data for: ${email}`);
+    console.log(`[1/4] Fetching onboarding data for: ${identifier}`);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let formData: any;
 
     // Check dev storage first
-    console.log(`[DEBUG] Checking dev storage for email: ${email}`);
+    console.log(`[DEBUG] Checking dev storage for identifier: ${identifier}`);
     console.log(`[DEBUG] Dev storage size: ${devOnboardingStorage.size}`);
     console.log(`[DEBUG] Dev storage keys:`, Array.from(devOnboardingStorage.keys()));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devData = devOnboardingStorage.get(email) as any;
+    const devData = devOnboardingStorage.get(identifier) as any;
     console.log(`[DEBUG] Dev data found:`, !!devData);
 
     if (devData) {
@@ -53,14 +55,26 @@ export async function GET(request: NextRequest) {
       if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
         try {
           const supabase = await createClient();
-          const { data, error } = await supabase
-            .from('sage_onboarding_data')
-            .select('*')
-            .eq('email', email)
-            .single();
+
+          let query;
+          if (code) {
+            // Search by uniqueCode in the form_data JSON field using the -> operator
+            query = supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('form_data->>uniqueCode', code);
+          } else {
+            // Search by email (primary key)
+            query = supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('email', email);
+          }
+
+          const { data, error } = await query.single();
 
           if (error) {
-            console.error('Failed to fetch onboarding data from Supabase');
+            console.error('Failed to fetch onboarding data from Supabase:', error);
             return NextResponse.json(
               { error: 'No onboarding data found for this email' },
               { status: 404 }
@@ -92,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     // Check for existing plan in cache
     console.log(`[2/4] Checking for existing nutrition plan...`);
-    const cachedPlan = devPlanStorage.get(email);
+    const cachedPlan = devPlanStorage.get(identifier);
 
     if (cachedPlan) {
       console.log('[OK] Existing plan found in cache - returning cached version\n');
@@ -262,7 +276,7 @@ Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
     // Store plan in cache (dev mode) or database (if Supabase configured)
     console.log(`[4/4] Storing plan in cache...`);
-    devPlanStorage.set(email, planData);
+    devPlanStorage.set(identifier, planData);
     console.log('[OK] Plan cached successfully\n');
 
     console.log('='.repeat(80));

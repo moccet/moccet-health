@@ -183,7 +183,7 @@ async function generatePlanInBackground(email: string, uniqueCode: string, fullN
             const { data } = await supabase
               .from('sage_onboarding_data')
               .select('lab_file_analysis')
-              .contains('form_data', { uniqueCode: uniqueCode })
+              .eq('form_data->>uniqueCode', uniqueCode)
               .single();
 
             if (data?.lab_file_analysis) {
@@ -206,7 +206,7 @@ async function generatePlanInBackground(email: string, uniqueCode: string, fullN
             const { data } = await supabase
               .from('sage_onboarding_data')
               .select('*')
-              .contains('form_data', { uniqueCode: uniqueCode })
+              .eq('form_data->>uniqueCode', uniqueCode)
               .single();
             return data;
           } catch {

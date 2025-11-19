@@ -31,6 +31,20 @@ export default function SageOnboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
+  // Calculate progress percentage based on current screen
+  const calculateProgress = () => {
+    const screens: Screen[] = [
+      'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
+      'email', 'ikigai-intro', 'main-priority', 'driving-goal',
+      'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
+      'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
+      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+    ];
+    const currentIndex = screens.indexOf(currentScreen);
+    if (currentIndex === -1) return 0;
+    return (currentIndex / (screens.length - 1)) * 100;
+  };
+
   // Dev mode: Skip to plan with mock data
   const handleDevSkipToPlan = async () => {
     const mockData = {
@@ -724,6 +738,26 @@ export default function SageOnboarding() {
 
   return (
     <div className="onboarding-container">
+      {/* Progress Bar - Hidden on intro, welcome, and loading screens */}
+      {!['intro', 'welcome'].includes(currentScreen) && !isLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          backgroundColor: 'rgba(0, 0, 0, 0.05)',
+          zIndex: 9999
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${calculateProgress()}%`,
+            backgroundColor: '#2d3a2d',
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+      )}
+
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
         <video

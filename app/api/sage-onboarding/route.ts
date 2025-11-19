@@ -234,17 +234,27 @@ export async function GET(request: NextRequest) {
       const supabase = await createClient();
 
       // If searching by code, need to search in the form_data JSON field
-      let query = supabase.from('sage_onboarding_data').select('*');
+      let data, error;
 
       if (code) {
-        // Search by uniqueCode in the form_data JSON field
-        query = query.contains('form_data', { uniqueCode: code });
+        // Search by uniqueCode in the form_data JSON field using the ->> operator
+        const result = await supabase
+          .from('sage_onboarding_data')
+          .select('*')
+          .eq('form_data->>uniqueCode', code)
+          .single();
+        data = result.data;
+        error = result.error;
       } else if (email) {
         // Search by email (primary key)
-        query = query.eq('email', email);
+        const result = await supabase
+          .from('sage_onboarding_data')
+          .select('*')
+          .eq('email', email)
+          .single();
+        data = result.data;
+        error = result.error;
       }
-
-      const { data, error } = await query.single();
 
       if (error) {
         console.log('Failed to fetch onboarding data from Supabase:', error.message);

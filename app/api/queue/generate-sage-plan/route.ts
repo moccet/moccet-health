@@ -117,7 +117,7 @@ async function sendPlanReadyEmail(email: string, name: string, planUrl: string) 
         personalizations: [
           {
             to: [{ email }],
-            subject: 'Your Personalized sage Plan is Ready! 🎉',
+            subject: 'Your Personalized sage Plan is Ready',
           },
         ],
         from: {

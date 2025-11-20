@@ -6,16 +6,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Handle both JSON and FormData
+    // Handle both JSON and FormData (but lab file is now uploaded separately)
     const contentType = request.headers.get('content-type');
-    let email, uniqueCode, fullName, labFile;
+    let email, uniqueCode, fullName;
 
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData();
       email = formData.get('email') as string;
       uniqueCode = formData.get('uniqueCode') as string;
       fullName = formData.get('fullName') as string;
-      labFile = formData.get('labFile') as File | null;
     } else {
       const body = await request.json();
       email = body.email;
@@ -31,39 +30,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`📬 Plan generation requested for ${email} (code: ${uniqueCode})`);
-
-    // If lab file provided, analyze it first
-    if (labFile) {
-      console.log(`🩸 Lab file provided, triggering blood analysis...`);
-
-      try {
-        // Convert File to Buffer for server-side processing
-        const arrayBuffer = await labFile.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        // Create FormData with the buffer as a Blob
-        const analysisFormData = new FormData();
-        const blob = new Blob([buffer], { type: labFile.type });
-        analysisFormData.append('bloodTest', blob, labFile.name);
-        analysisFormData.append('email', email);
-
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
-        const analysisResponse = await fetch(`${baseUrl}/api/analyze-blood-results`, {
-          method: 'POST',
-          body: analysisFormData,
-        });
-
-        if (analysisResponse.ok) {
-          console.log('✅ Blood analysis completed');
-        } else {
-          const errorText = await analysisResponse.text();
-          console.log('⚠️ Blood analysis failed:', errorText);
-        }
-      } catch (error) {
-        console.error('Error analyzing blood results:', error);
-        // Continue anyway - queue consumer will wait for it if needed
-      }
-    }
 
     // Directly import and call the queue consumer function
     // This keeps the connection alive and ensures the job runs

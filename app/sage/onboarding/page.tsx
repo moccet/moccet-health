@@ -114,19 +114,33 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = mockData.fullName.split(' ')[0];
 
-      // Create a mock PDF file for testing blood analysis
+      // Upload mock lab file first (simulating real user flow)
       const mockPdfContent = '%PDF-1.4\nMock lab results PDF for testing';
       const blob = new Blob([mockPdfContent], { type: 'application/pdf' });
       const mockLabFile = new File([blob], 'mock-lab-results.pdf', { type: 'application/pdf' });
 
-      // AWAIT plan generation to complete before redirecting
+      console.log('Uploading mock lab file...');
+      const labFormData = new FormData();
+      labFormData.append('bloodTest', mockLabFile);
+      labFormData.append('email', mockData.email);
+
+      try {
+        await fetch('/api/analyze-blood-results', {
+          method: 'POST',
+          body: labFormData,
+        });
+        console.log('✅ Mock lab file uploaded');
+      } catch (err) {
+        console.error('Error uploading mock lab file:', err);
+      }
+
+      // Start plan generation
       console.log('Starting plan generation (this will take a few minutes)...');
 
       const planFormData = new FormData();
       planFormData.append('email', mockData.email);
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
-      planFormData.append('labFile', mockLabFile);
 
       // AWAIT the generation - this keeps user on loading screen until done
       const planResponse = await fetch('/api/generate-plan-async', {
@@ -754,18 +768,32 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // AWAIT plan generation to complete before redirecting
+      // If lab file uploaded, analyze it first (on frontend)
+      if (formData.labFile) {
+        console.log('Uploading and analyzing lab file...');
+        const labFormData = new FormData();
+        labFormData.append('bloodTest', formData.labFile);
+        labFormData.append('email', formData.email);
+
+        try {
+          await fetch('/api/analyze-blood-results', {
+            method: 'POST',
+            body: labFormData,
+          });
+          console.log('✅ Lab file analysis completed');
+        } catch (err) {
+          console.error('Error analyzing lab file:', err);
+          // Continue anyway
+        }
+      }
+
+      // Start async plan generation (doesn't include lab file anymore)
       console.log('Starting plan generation (this will take a few minutes)...');
 
       const planFormData = new FormData();
       planFormData.append('email', formData.email);
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
-
-      // Include lab file if uploaded - the server will handle analysis
-      if (formData.labFile) {
-        planFormData.append('labFile', formData.labFile);
-      }
 
       // AWAIT the generation - this keeps user on loading screen until done
       const planResponse = await fetch('/api/generate-plan-async', {

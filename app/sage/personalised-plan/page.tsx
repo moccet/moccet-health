@@ -80,6 +80,7 @@ interface NutritionPlan {
 export default function PersonalisedPlanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [planStatus, setPlanStatus] = useState<'queued' | 'processing' | 'completed' | 'failed' | 'unknown'>('unknown');
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [loadingMealPlan, setLoadingMealPlan] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,92 +115,72 @@ export default function PersonalisedPlanPage() {
     // Fetch all data - blood analysis first, then meal plan (to optimize for biomarkers)
     const fetchAllData = async () => {
       try {
+        // Step 0: Check plan status first
+        const statusResponse = await fetch(`/api/plan-status?${paramName}=${encodeURIComponent(identifier)}`);
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          setPlanStatus(statusData.status);
+
+          // If plan is still being generated, show waiting message
+          if (statusData.status === 'queued' || statusData.status === 'processing') {
+            setLoading(false);
+            return; // Don't fetch plan data yet
+          }
+
+          // If plan failed, show error
+          if (statusData.status === 'failed') {
+            setError(statusData.error || 'Plan generation failed');
+            setLoading(false);
+            return;
+          }
+
+          // If no plan found and status is unknown, it might be an old plan without status
+          // Continue to try fetching it
+        }
+
         setLoadingBloodAnalysis(true);
 
-        // Step 1: Fetch plan and blood analysis in parallel
-        const [planResponse, bloodAnalysisResponse] = await Promise.allSettled([
-          fetch(`/api/generate-sage-plan?${paramName}=${encodeURIComponent(identifier)}`),
-          fetch(`/api/analyze-blood-results?${paramName}=${encodeURIComponent(identifier)}`)
-        ]);
+        // Step 1: Fetch plan data (lightweight - just reads from database)
+        const planResponse = await fetch(`/api/get-plan?${paramName}=${encodeURIComponent(identifier)}`);
 
-        // Handle plan response (required)
-        if (planResponse.status === 'fulfilled') {
-          const planData = await planResponse.value.json();
-          if (planResponse.value.ok) {
-            setPlan(planData.plan);
-          } else {
-            throw new Error(planData.error || 'Failed to generate plan');
-          }
-        } else {
+        if (!planResponse.ok) {
           throw new Error('Failed to fetch plan');
         }
 
-        // Handle blood analysis response (optional)
-        if (bloodAnalysisResponse.status === 'fulfilled' && bloodAnalysisResponse.value.ok) {
-          const bloodData = await bloodAnalysisResponse.value.json();
-          console.log('[Blood Analysis] Response:', bloodData);
-          if (bloodData.success) {
-            setBloodAnalysis(bloodData.analysis);
-            console.log('[Blood Analysis] Set:', bloodData.analysis);
-          }
-        } else {
-          console.log('[Blood Analysis] Not found or failed');
+        const planData = await planResponse.json();
+
+        if (!planData.success) {
+          throw new Error(planData.error || 'Plan not found');
         }
+
+        // Set plan data
+        setPlan(planData.plan);
+        setPlanStatus(planData.status || 'completed');
+
+        // Set blood analysis if available
+        if (planData.bloodAnalysis) {
+          setBloodAnalysis(planData.bloodAnalysis);
+          console.log('[Blood Analysis] Loaded from database:', planData.bloodAnalysis);
+        }
+
         setLoadingBloodAnalysis(false);
 
-        // Step 2: Now fetch meal plan (optional) - waits for blood analysis to optimize for biomarkers
-        setLoadingMealPlan(true);
-        console.log('[Meal Plan] Fetching biomarker-optimized meal plan...');
-
-        try {
-          const mealPlanResponse = await fetch(`/api/generate-meal-plan?${paramName}=${encodeURIComponent(identifier)}`);
-          if (mealPlanResponse.ok) {
-            const mealPlanData = await mealPlanResponse.json();
-            if (mealPlanData.success) {
-              setDetailedMealPlan(mealPlanData.mealPlan);
-              console.log('[Meal Plan] Generated successfully');
-            }
-          } else {
-            console.log('[Meal Plan] Not available yet or generation failed');
-          }
-        } catch (mealErr) {
-          console.log('[Meal Plan] Error fetching meal plan:', mealErr);
+        // All additional data (meal plan, micronutrients, lifestyle) loaded from single API call
+        if (planData.mealPlan) {
+          setDetailedMealPlan(planData.mealPlan);
+          console.log('[Meal Plan] Loaded from database');
         }
         setLoadingMealPlan(false);
 
-        // Step 3: Fetch micronutrient recommendations (optional)
-        setLoadingMicronutrients(true);
-        console.log('[Micronutrients] Fetching personalized micronutrient recommendations...');
-
-        try {
-          const micronutrientsResponse = await fetch(`/api/generate-micronutrients?${paramName}=${encodeURIComponent(identifier)}`);
-          if (micronutrientsResponse.ok) {
-            const micronutrientsData = await micronutrientsResponse.json();
-            if (micronutrientsData.success) {
-              setMicronutrients(micronutrientsData.micronutrients);
-              console.log('[Micronutrients] Generated successfully');
-            }
-          }
-        } catch (microErr) {
-          console.log('[Micronutrients] Error fetching:', microErr);
+        if (planData.micronutrients) {
+          setMicronutrients(planData.micronutrients);
+          console.log('[Micronutrients] Loaded from database');
         }
         setLoadingMicronutrients(false);
 
-        // Step 4: Fetch lifestyle integration (optional)
-        setLoadingLifestyle(true);
-        console.log('[Lifestyle] Fetching personalized lifestyle integration plan...');
-
-        try {
-          const lifestyleResponse = await fetch(`/api/generate-lifestyle-integration?${paramName}=${encodeURIComponent(identifier)}`);
-          if (lifestyleResponse.ok) {
-            const lifestyleData = await lifestyleResponse.json();
-            if (lifestyleData.success) {
-              setLifestyleIntegration(lifestyleData.lifestyle);
-              console.log('[Lifestyle] Generated successfully');
-            }
-          }
-        } catch (lifestyleErr) {
-          console.log('[Lifestyle] Error fetching:', lifestyleErr);
+        if (planData.lifestyleIntegration) {
+          setLifestyleIntegration(planData.lifestyleIntegration);
+          console.log('[Lifestyle] Loaded from database');
         }
         setLoadingLifestyle(false);
 
@@ -258,6 +239,59 @@ export default function PersonalisedPlanPage() {
             100% { transform: translateX(100%); }
           }
         `}</style>
+      </div>
+    );
+  }
+
+  // Show waiting message if plan is still being generated
+  if (planStatus === 'queued' || planStatus === 'processing') {
+    return (
+      <div className="plan-loading" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: '#f8f8f8',
+        padding: '20px'
+      }}>
+        <div style={{ textAlign: 'center', maxWidth: '600px' }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '24px'
+          }}>
+            ⏳
+          </div>
+          <h2 style={{
+            fontSize: '32px',
+            marginBottom: '16px',
+            color: '#2d3a2d',
+            fontWeight: 300
+          }}>
+            Your plan is being generated
+          </h2>
+          <p style={{
+            fontSize: '18px',
+            marginBottom: '12px',
+            color: '#666'
+          }}>
+            We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
+          </p>
+          <p style={{
+            fontSize: '16px',
+            color: '#999',
+            marginTop: '24px'
+          }}>
+            This typically takes 5-15 minutes. You&apos;ll receive an email when your plan is ready.
+          </p>
+          <p style={{
+            fontSize: '14px',
+            color: '#999',
+            marginTop: '16px',
+            fontStyle: 'italic'
+          }}>
+            Feel free to close this page - we&apos;ll email you when it&apos;s complete!
+          </p>
+        </div>
       </div>
     );
   }

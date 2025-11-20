@@ -333,6 +333,7 @@ async function handler(request: NextRequest) {
 
     // Send email notification
     console.log('[5/5] Sending plan ready email...');
+    console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
     const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 
     // Update status to completed
@@ -341,7 +342,8 @@ async function handler(request: NextRequest) {
     if (emailSent) {
       console.log(`\n✅ [QSTASH] Complete plan generation finished and email sent to ${email}`);
     } else {
-      console.log(`\n⚠️ [QSTASH] Plan generated but email failed for ${email}`);
+      console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
+      console.error('Check: 1) SENDGRID_API_KEY is set, 2) SENDGRID_FROM_EMAIL is verified in SendGrid dashboard');
     }
 
     return NextResponse.json({

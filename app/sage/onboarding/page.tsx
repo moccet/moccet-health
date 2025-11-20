@@ -796,49 +796,38 @@ export default function SageOnboarding() {
         }
       }
 
-      // Start async plan generation (doesn't include lab file anymore)
-      console.log('Starting plan generation (this will take a few minutes)...');
+      // Queue async plan generation via QStash (doesn't include lab file anymore)
+      console.log('Queueing plan generation...');
 
       const planFormData = new FormData();
       planFormData.append('email', formData.email);
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
 
-      // Start the async call (don't await yet)
-      const planPromise = fetch('/api/generate-plan-async', {
+      const planResponse = await fetch('/api/generate-plan-async', {
         method: 'POST',
         body: planFormData,
       });
 
-      // Mark that async generation has started - user can close window now
-      setAsyncGenerationStarted(true);
-      console.log('✅ Async generation started - safe to close window');
-
-      // Now await the completion
-      const planResponse = await planPromise;
-
       if (!planResponse.ok) {
-        console.error('Plan generation failed');
+        console.error('Failed to queue plan generation');
         clearInterval(progressInterval);
         setIsLoading(false);
-        setAsyncGenerationStarted(false);
-        alert('Plan generation failed - please try again');
+        alert('Failed to queue plan generation - please try again');
         return;
       }
 
-      console.log('✅ Plan generation completed!');
+      const planResult = await planResponse.json();
+      console.log('✅ Plan generation queued:', planResult.message);
       setLoadingProgress(100);
 
-      // Redirect to plan page now that it's ready
+      // Show success message - user will receive email when plan is ready
       setTimeout(() => {
         clearInterval(progressInterval);
         setIsLoading(false);
 
-        const redirectUrl = uniqueCode
-          ? `/sage/personalised-plan?code=${uniqueCode}`
-          : `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
-
-        window.location.href = redirectUrl;
+        // Move to a confirmation screen instead of redirecting
+        setCurrentScreen('final-completion');
       }, 500);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
@@ -1774,17 +1763,15 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'final-completion' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="typeform-title" style={{fontSize: '56px', marginBottom: '24px', lineHeight: '1.2'}}>
-            Today,<br />
-            you take meaningful action toward your goals.
+            Your plan is<br />
+            being generated.
           </h1>
-          <p className="typeform-subtitle" style={{fontSize: '18px', marginBottom: '60px', maxWidth: '650px'}}>
-            Your nutrition plan is ready. Your best self is waiting for you.
+          <p className="typeform-subtitle" style={{fontSize: '18px', marginBottom: '32px', maxWidth: '650px'}}>
+            We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
           </p>
-          <div className="button-container">
-            <button className="typeform-button" style={{fontSize: '18px', padding: '18px 32px'}} onClick={handleSubmit}>
-              View My Plan →
-            </button>
-          </div>
+          <p className="typeform-subtitle" style={{fontSize: '16px', marginBottom: '60px', maxWidth: '650px', opacity: 0.8}}>
+            This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
+          </p>
           <div className="typeform-brand">sage</div>
         </div>
       </div>

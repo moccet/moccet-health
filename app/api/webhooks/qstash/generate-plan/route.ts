@@ -4,9 +4,9 @@ import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 
-// This endpoint can run for up to 15 minutes on Vercel Pro (900s max)
+// This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 // QStash will handle retries if it fails
-export const maxDuration = 900;
+export const maxDuration = 800;
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;

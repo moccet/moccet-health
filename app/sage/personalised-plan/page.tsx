@@ -147,50 +147,59 @@ export default function PersonalisedPlanPage() {
         }
         setLoadingBloodAnalysis(false);
 
-        // Step 2: Now fetch meal plan (required) - waits for blood analysis to optimize for biomarkers
+        // Step 2: Now fetch meal plan (optional) - waits for blood analysis to optimize for biomarkers
         setLoadingMealPlan(true);
         console.log('[Meal Plan] Fetching biomarker-optimized meal plan...');
 
-        const mealPlanResponse = await fetch(`/api/generate-meal-plan?${paramName}=${encodeURIComponent(identifier)}`);
-        if (mealPlanResponse.ok) {
-          const mealPlanData = await mealPlanResponse.json();
-          if (mealPlanData.success) {
-            setDetailedMealPlan(mealPlanData.mealPlan);
-            console.log('[Meal Plan] Generated successfully');
+        try {
+          const mealPlanResponse = await fetch(`/api/generate-meal-plan?${paramName}=${encodeURIComponent(identifier)}`);
+          if (mealPlanResponse.ok) {
+            const mealPlanData = await mealPlanResponse.json();
+            if (mealPlanData.success) {
+              setDetailedMealPlan(mealPlanData.mealPlan);
+              console.log('[Meal Plan] Generated successfully');
+            }
           } else {
-            throw new Error(mealPlanData.error || 'Failed to generate meal plan');
+            console.log('[Meal Plan] Not available yet or generation failed');
           }
-        } else {
-          const errorData = await mealPlanResponse.json();
-          throw new Error(errorData.error || 'Failed to generate meal plan');
+        } catch (mealErr) {
+          console.log('[Meal Plan] Error fetching meal plan:', mealErr);
         }
         setLoadingMealPlan(false);
 
-        // Step 3: Fetch micronutrient recommendations
+        // Step 3: Fetch micronutrient recommendations (optional)
         setLoadingMicronutrients(true);
         console.log('[Micronutrients] Fetching personalized micronutrient recommendations...');
 
-        const micronutrientsResponse = await fetch(`/api/generate-micronutrients?${paramName}=${encodeURIComponent(identifier)}`);
-        if (micronutrientsResponse.ok) {
-          const micronutrientsData = await micronutrientsResponse.json();
-          if (micronutrientsData.success) {
-            setMicronutrients(micronutrientsData.micronutrients);
-            console.log('[Micronutrients] Generated successfully');
+        try {
+          const micronutrientsResponse = await fetch(`/api/generate-micronutrients?${paramName}=${encodeURIComponent(identifier)}`);
+          if (micronutrientsResponse.ok) {
+            const micronutrientsData = await micronutrientsResponse.json();
+            if (micronutrientsData.success) {
+              setMicronutrients(micronutrientsData.micronutrients);
+              console.log('[Micronutrients] Generated successfully');
+            }
           }
+        } catch (microErr) {
+          console.log('[Micronutrients] Error fetching:', microErr);
         }
         setLoadingMicronutrients(false);
 
-        // Step 4: Fetch lifestyle integration
+        // Step 4: Fetch lifestyle integration (optional)
         setLoadingLifestyle(true);
         console.log('[Lifestyle] Fetching personalized lifestyle integration plan...');
 
-        const lifestyleResponse = await fetch(`/api/generate-lifestyle-integration?${paramName}=${encodeURIComponent(identifier)}`);
-        if (lifestyleResponse.ok) {
-          const lifestyleData = await lifestyleResponse.json();
-          if (lifestyleData.success) {
-            setLifestyleIntegration(lifestyleData.lifestyle);
-            console.log('[Lifestyle] Generated successfully');
+        try {
+          const lifestyleResponse = await fetch(`/api/generate-lifestyle-integration?${paramName}=${encodeURIComponent(identifier)}`);
+          if (lifestyleResponse.ok) {
+            const lifestyleData = await lifestyleResponse.json();
+            if (lifestyleData.success) {
+              setLifestyleIntegration(lifestyleData.lifestyle);
+              console.log('[Lifestyle] Generated successfully');
+            }
           }
+        } catch (lifestyleErr) {
+          console.log('[Lifestyle] Error fetching:', lifestyleErr);
         }
         setLoadingLifestyle(false);
 

@@ -30,6 +30,7 @@ export default function SageOnboarding() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
 
   // Calculate progress percentage based on current screen
   const calculateProgress = () => {
@@ -142,16 +143,24 @@ export default function SageOnboarding() {
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
 
-      // AWAIT the generation - this keeps user on loading screen until done
-      const planResponse = await fetch('/api/generate-plan-async', {
+      // Start the async call (don't await yet)
+      const planPromise = fetch('/api/generate-plan-async', {
         method: 'POST',
         body: planFormData,
       });
+
+      // Mark that async generation has started - user can close window now
+      setAsyncGenerationStarted(true);
+      console.log('✅ Async generation started - safe to close window');
+
+      // Now await the completion
+      const planResponse = await planPromise;
 
       if (!planResponse.ok) {
         console.error('Plan generation failed');
         clearInterval(progressInterval);
         setIsLoading(false);
+        setAsyncGenerationStarted(false);
         alert('Plan generation failed - please try again');
         return;
       }
@@ -795,16 +804,24 @@ export default function SageOnboarding() {
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
 
-      // AWAIT the generation - this keeps user on loading screen until done
-      const planResponse = await fetch('/api/generate-plan-async', {
+      // Start the async call (don't await yet)
+      const planPromise = fetch('/api/generate-plan-async', {
         method: 'POST',
         body: planFormData,
       });
+
+      // Mark that async generation has started - user can close window now
+      setAsyncGenerationStarted(true);
+      console.log('✅ Async generation started - safe to close window');
+
+      // Now await the completion
+      const planResponse = await planPromise;
 
       if (!planResponse.ok) {
         console.error('Plan generation failed');
         clearInterval(progressInterval);
         setIsLoading(false);
+        setAsyncGenerationStarted(false);
         alert('Plan generation failed - please try again');
         return;
       }
@@ -1893,24 +1910,26 @@ export default function SageOnboarding() {
           </video>
           <div className="loading-overlay">
             <div className="loading-content">
-              <div className="loading-message" style={{
-                fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-                fontWeight: 500,
-                fontStretch: 'expanded',
-                letterSpacing: '0.5px',
-                color: '#999',
-                textAlign: 'center'
-              }}>
-                <p style={{ fontSize: '16px', marginBottom: '12px' }}>
-                  moccet sage Agents are building your plan.
-                </p>
-                <p style={{ fontSize: '15px', marginBottom: '12px' }}>
-                  This may take up to 5 minutes.
-                </p>
-                <p style={{ fontSize: '15px', marginBottom: '24px' }}>
-                  You can close this screen and sage will email you once your plan is ready.
-                </p>
-              </div>
+              {asyncGenerationStarted && (
+                <div className="loading-message" style={{
+                  fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontWeight: 500,
+                  fontStretch: 'expanded',
+                  letterSpacing: '0.5px',
+                  color: '#999',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ fontSize: '16px', marginBottom: '12px' }}>
+                    moccet sage Agents are building your plan.
+                  </p>
+                  <p style={{ fontSize: '15px', marginBottom: '12px' }}>
+                    This may take up to 5 minutes.
+                  </p>
+                  <p style={{ fontSize: '15px', marginBottom: '24px' }}>
+                    You can close this screen and sage will email you once your plan is ready.
+                  </p>
+                </div>
+              )}
               <div className="loading-text">loading sage plan</div>
               <div className="loading-bar-container">
                 <div

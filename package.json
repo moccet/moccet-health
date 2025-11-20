@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
+    "@upstash/qstash": "^2.8.4",
     "@vercel/functions": "^2.2.13",
     "googleapis": "^165.0.0",
     "lucide-react": "^0.544.0",

@@ -312,21 +312,8 @@ export default function PersonalisedPlanPage() {
 
   return (
     <div className="plan-container">
-      {/* Sidebar */}
+      {/* Sidebar - Share buttons */}
       <div className="plan-sidebar">
-        <button
-          className="sidebar-icon-button"
-          onClick={() => {
-            const subject = encodeURIComponent("My Personalized Nutrition Plan from Sage");
-            const body = encodeURIComponent(`Check out my personalized nutrition plan: ${window.location.href}`);
-            window.location.href = `mailto:?subject=${subject}&body=${body}`;
-          }}
-          title="Email my plan"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 8L10.89 13.26C11.2187 13.4793 11.6049 13.5963 12 13.5963C12.3951 13.5963 12.7813 13.4793 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
         <button
           className="sidebar-icon-button"
           onClick={() => {
@@ -533,8 +520,19 @@ export default function PersonalisedPlanPage() {
 
         {micronutrients && (
           <>
-            {micronutrients.personalizedIntro && (
-              <p className="micronutrients-intro">{micronutrients.personalizedIntro}</p>
+            {/* Personalized intro - use AI-generated or create fallback */}
+            {(micronutrients.personalizedIntro || bloodAnalysis || plan) && (
+              <p className="micronutrients-intro">
+                {micronutrients.personalizedIntro ||
+                  `Based on ${bloodAnalysis ? 'your blood biomarkers' : 'your profile'}${
+                    bloodAnalysis && bloodAnalysis.concerns?.length > 0
+                      ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
+                      : ''
+                  }, your ${plan?.nutritionOverview?.goals?.[0]?.toLowerCase() || 'health goals'}, and your ${
+                    plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
+                  }, these micronutrients are specifically chosen to support your optimal health and performance.`
+                }
+              </p>
             )}
 
             <div className="table-container">
@@ -629,6 +627,24 @@ export default function PersonalisedPlanPage() {
           {/* Sample Meal Plan */}
           <section className="plan-section">
             <h2 className="section-title">Meal Plan</h2>
+
+            {/* Personalized intro for meal plan */}
+            {(detailedMealPlan || plan) && (
+              <p className="meal-plan-intro">
+                {detailedMealPlan?.personalizedIntro ||
+                  `This 7-day meal plan is optimized for ${bloodAnalysis ? 'your biomarkers' : 'your goals'}${
+                    bloodAnalysis && bloodAnalysis.concerns?.length > 0
+                      ? `, specifically targeting ${bloodAnalysis.concerns[0]?.toLowerCase()}`
+                      : ''
+                  }. Each meal is designed around your ${plan?.nutritionOverview?.nutritionStructure?.protein || 'protein'} targets${
+                    plan?.nutritionOverview?.goals?.[0]
+                      ? ` to ${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, 'support ')}`
+                      : ''
+                  }, while respecting your ${plan?.lifestyleIntegration?.exerciseProtocol ? 'training schedule' : 'lifestyle preferences'} and eating window.`
+                }
+              </p>
+            )}
+
             {loadingMealPlan && (
               <div className="meal-plan-loading">
                 <div className="loading-spinner-small"></div>
@@ -710,6 +726,27 @@ export default function PersonalisedPlanPage() {
           {/* Lifestyle Integration */}
           <section className="plan-section">
             <h2 className="section-title">Lifestyle Integration</h2>
+
+            {/* Personalized intro for lifestyle */}
+            {(lifestyleIntegration || plan) && (
+              <p className="lifestyle-intro">
+                {lifestyleIntegration?.personalizedIntro ||
+                  `Your lifestyle plan is tailored to ${
+                    plan?.nutritionOverview?.goals?.[0]
+                      ? `${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, '')}`
+                      : 'your health goals'
+                  }${
+                    bloodAnalysis && bloodAnalysis.concerns?.length > 0
+                      ? ` and optimized to address ${bloodAnalysis.concerns.slice(0, 2).join(' and ').toLowerCase()}`
+                      : ''
+                  }. These protocols integrate seamlessly with your daily routine, ${
+                    plan?.dailyRecommendations?.morningRitual
+                      ? 'from your morning ritual'
+                      : 'from sleep optimization'
+                  } to stress management, ensuring sustainable habits that compound over time.`
+                }
+              </p>
+            )}
 
             {loadingLifestyle && (
               <div className="lifestyle-loading">

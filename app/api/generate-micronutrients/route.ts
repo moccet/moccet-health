@@ -128,10 +128,14 @@ ${nutritionContext}
 ${userContext}
 
 IMPORTANT REQUIREMENTS:
-1. Start with a personalized introduction that references:
-   - Their specific health goals (${onboardingData.mainPriority}, ${onboardingData.drivingGoal})
-   - Key biomarkers from their blood test (if available)
-   - Their specific needs based on medical conditions and lifestyle
+1. Start with a highly personalized 2-3 sentence introduction that MUST reference multiple data sources:
+   - Their specific health goals and priorities (${formData.mainPriority}, ${formData.drivingGoal})
+   ${bloodAnalysis ? `- CRITICAL: Specific biomarkers from their blood test that need attention (mention actual marker names and values)` : ''}
+   - Their age (${formData.age}), gender (${formData.gender}), and lifestyle factors
+   - Medical conditions if any: ${formData.medicalConditions?.join(', ') || 'none'}
+   - Their eating style and preferences (${formData.eatingStyle})
+   - Make it sound like you analyzed their unique biology - be specific, not generic
+   - Example tone: "Based on your blood work showing elevated LDL cholesterol (145 mg/dL) and your goal of improving athletic performance, these micronutrients are specifically chosen to support cardiovascular health and optimize your training recovery..."
 
 2. Create a comprehensive micronutrient table with 10-15 key nutrients they should focus on
 3. Each nutrient must have:

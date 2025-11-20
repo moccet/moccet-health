@@ -1280,23 +1280,25 @@ export default function SageOnboarding() {
         <div className="typeform-content">
           <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">Which best describes your typical eating style?</h1>
-          <div className="options-container image-cards">
-            <button className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', '3-meals')}>
-              <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/3-meals.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-              <div className="image-card-label">3 meals a day</div>
-            </button>
-            <button className={`option-button image-card ${formData.eatingStyle === 'intermittent-fasting' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'intermittent-fasting')}>
-              <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/intermittent-fasting.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-              <div className="image-card-label">Intermittent Fasting</div>
-            </button>
-            <button className={`option-button image-card ${formData.eatingStyle === 'snacking-grazing' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'snacking-grazing')}>
-              <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/snacking.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-              <div className="image-card-label">Snacking / Grazing</div>
-            </button>
-            <button className={`option-button image-card ${formData.eatingStyle === 'no-pattern' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'no-pattern')}>
-              <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/no-pattern.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-              <div className="image-card-label">no set pattern</div>
-            </button>
+          <div className="scrollable-options-wrapper">
+            <div className="options-container image-cards">
+              <button className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', '3-meals')}>
+                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/3-meals.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
+                <div className="image-card-label">3 meals a day</div>
+              </button>
+              <button className={`option-button image-card ${formData.eatingStyle === 'intermittent-fasting' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'intermittent-fasting')}>
+                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/intermittent-fasting.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
+                <div className="image-card-label">Intermittent Fasting</div>
+              </button>
+              <button className={`option-button image-card ${formData.eatingStyle === 'snacking-grazing' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'snacking-grazing')}>
+                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/snacking.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
+                <div className="image-card-label">Snacking / Grazing</div>
+              </button>
+              <button className={`option-button image-card ${formData.eatingStyle === 'no-pattern' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'no-pattern')}>
+                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/no-pattern.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
+                <div className="image-card-label">no set pattern</div>
+              </button>
+            </div>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('first-meal')} disabled={!formData.eatingStyle}>Continue</button>
@@ -1752,7 +1754,7 @@ export default function SageOnboarding() {
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.
           </p> */}
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('final-completion')}>Continue</button>
+            <button className="typeform-button" onClick={handleSubmit}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">sage</div>

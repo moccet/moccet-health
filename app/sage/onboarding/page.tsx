@@ -48,11 +48,11 @@ export default function SageOnboarding() {
   // Dev mode: Skip to plan with mock data
   const handleDevSkipToPlan = async () => {
     const mockData = {
-      fullName: 'Rhouda Test',
+      fullName: 'Dev Test User',
       age: '32',
       gender: 'female',
       weight: '145',
-      weightUnit: 'lbs',
+      weightUnit: 'lbs' as 'lbs' | 'kg',
       height: '5\'6"',
       email: 'dev-test@sage.local',
       mainPriority: 'longevity',
@@ -74,20 +74,93 @@ export default function SageOnboarding() {
       integrations: ['apple-health'],
       timestamp: new Date().toISOString(),
       completed: true,
+      hasLabFile: true, // Simulate that user uploaded a lab file
     };
+
+    // Show loading screen
+    setIsLoading(true);
+    setLoadingProgress(0);
+
+    // Animate progress bar
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 200);
 
     try {
       // Submit mock data to onboarding API
-      await fetch('/api/sage-onboarding', {
+      const response = await fetch('/api/sage-onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mockData),
       });
 
-      // Redirect to plan page
-      window.location.href = `/sage/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
+      if (!response.ok) {
+        console.error('Failed to submit mock onboarding data');
+        clearInterval(progressInterval);
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('Mock onboarding data submitted successfully');
+
+      // Get unique code and user's name
+      const uniqueCode = result.data?.uniqueCode;
+      const userFirstName = mockData.fullName.split(' ')[0];
+
+      // Create a mock PDF file for testing blood analysis
+      const mockPdfContent = '%PDF-1.4\nMock lab results PDF for testing';
+      const blob = new Blob([mockPdfContent], { type: 'application/pdf' });
+      const mockLabFile = new File([blob], 'mock-lab-results.pdf', { type: 'application/pdf' });
+
+      // AWAIT plan generation to complete before redirecting
+      console.log('Starting plan generation (this will take a few minutes)...');
+
+      const planFormData = new FormData();
+      planFormData.append('email', mockData.email);
+      planFormData.append('uniqueCode', uniqueCode);
+      planFormData.append('fullName', userFirstName);
+      planFormData.append('labFile', mockLabFile);
+
+      // AWAIT the generation - this keeps user on loading screen until done
+      const planResponse = await fetch('/api/generate-plan-async', {
+        method: 'POST',
+        body: planFormData,
+      });
+
+      if (!planResponse.ok) {
+        console.error('Plan generation failed');
+        clearInterval(progressInterval);
+        setIsLoading(false);
+        alert('Plan generation failed - please try again');
+        return;
+      }
+
+      console.log('✅ Plan generation completed!');
+      setLoadingProgress(100);
+
+      // Redirect to plan page now that it's ready
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setIsLoading(false);
+
+        const redirectUrl = uniqueCode
+          ? `/sage/personalised-plan?code=${uniqueCode}`
+          : `/sage/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
+
+        window.location.href = redirectUrl;
+      }, 500);
+
     } catch (error) {
       console.error('Error in dev skip:', error);
+      clearInterval(progressInterval);
+      setIsLoading(false);
       alert('Dev skip failed - check console');
     }
   };
@@ -681,9 +754,8 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // Trigger background plan generation (it will handle blood analysis internally)
-      // Pass the lab file to the async endpoint so it can handle everything
-      console.log('Starting background plan generation...');
+      // AWAIT plan generation to complete before redirecting
+      console.log('Starting plan generation (this will take a few minutes)...');
 
       const planFormData = new FormData();
       planFormData.append('email', formData.email);
@@ -695,19 +767,24 @@ export default function SageOnboarding() {
         planFormData.append('labFile', formData.labFile);
       }
 
-      fetch('/api/generate-plan-async', {
+      // AWAIT the generation - this keeps user on loading screen until done
+      const planResponse = await fetch('/api/generate-plan-async', {
         method: 'POST',
         body: planFormData,
-        keepalive: true, // Ensures request continues even if user closes tab
-      }).then(() => {
-        console.log('✅ Background plan generation started');
-      }).catch(err => {
-        console.error('Error starting plan generation:', err);
       });
 
+      if (!planResponse.ok) {
+        console.error('Plan generation failed');
+        clearInterval(progressInterval);
+        setIsLoading(false);
+        alert('Plan generation failed - please try again');
+        return;
+      }
+
+      console.log('✅ Plan generation completed!');
       setLoadingProgress(100);
 
-      // Redirect to plan page after a short delay
+      // Redirect to plan page now that it's ready
       setTimeout(() => {
         clearInterval(progressInterval);
         setIsLoading(false);
@@ -717,7 +794,7 @@ export default function SageOnboarding() {
           : `/sage/personalised-plan?email=${encodeURIComponent(formData.email)}`;
 
         window.location.href = redirectUrl;
-      }, 2000);
+      }, 500);
     } catch (error) {
       console.error('Error submitting onboarding data:', error);
       clearInterval(progressInterval);

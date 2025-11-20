@@ -211,24 +211,44 @@ export default function PersonalisedPlanPage() {
 
   if (loading) {
     return (
-      <div className="plan-loading">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="plan-loading-video"
-        >
-          <source src="/videos/sage.mp4" type="video/mp4" />
-        </video>
-        <div className="plan-loading-overlay">
-          <div className="plan-loading-content">
-            <div className="plan-loading-text">loading sage plan</div>
-            <div className="plan-loading-bar-container">
-              <div className="plan-loading-bar-fill"></div>
-            </div>
+      <div className="plan-loading" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: '#f8f8f8'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '24px',
+            fontWeight: 300,
+            color: '#1a1a1a',
+            marginBottom: '20px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+          }}>
+            loading sage plan
+          </div>
+          <div style={{
+            width: '200px',
+            height: '2px',
+            background: '#e0e0e0',
+            borderRadius: '1px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: '#1a1a1a',
+              animation: 'loading 1.5s ease-in-out infinite'
+            }}></div>
           </div>
         </div>
+        <style>{`
+          @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
       </div>
     );
   }

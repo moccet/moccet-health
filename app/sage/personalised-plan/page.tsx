@@ -562,16 +562,28 @@ export default function PersonalisedPlanPage() {
         )}
 
         {!loadingMicronutrients && !micronutrients && plan.micronutrientFocus && (
-          <div className="table-container">
-            <table className="micronutrient-table">
-              <thead>
-                <tr>
-                  <th>Nutrient</th>
-                  <th>Daily Goal</th>
-                  <th>Food Sources in Plan</th>
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            {/* Personalized intro for fallback micronutrients */}
+            <p className="micronutrients-intro">
+              {`Based on ${bloodAnalysis ? 'your blood biomarkers' : 'your profile'}${
+                bloodAnalysis && bloodAnalysis.concerns?.length > 0
+                  ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
+                  : ''
+              }, your ${plan?.nutritionOverview?.goals?.[0]?.toLowerCase() || 'health goals'}, and your ${
+                plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
+              }, these micronutrients are specifically chosen to support your optimal health and performance.`}
+            </p>
+
+            <div className="table-container">
+              <table className="micronutrient-table">
+                <thead>
+                  <tr>
+                    <th>Nutrient</th>
+                    <th>Daily Goal</th>
+                    <th>Food Sources in Plan</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {plan.micronutrientFocus.map((nutrient, idx) => (
                   <tr key={idx}>
                     <td className="nutrient-name">{nutrient.nutrient}</td>
@@ -582,6 +594,7 @@ export default function PersonalisedPlanPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 

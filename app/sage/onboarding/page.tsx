@@ -29,6 +29,8 @@ export default function SageOnboarding() {
   const [dexcomConnected, setDexcomConnected] = useState(false);
   const [vitalConnected, setVitalConnected] = useState(false);
   const [vitalUserId, setVitalUserId] = useState('');
+  const [teamsConnected, setTeamsConnected] = useState(false);
+  const [teamsEmail, setTeamsEmail] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | 'flo' | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -292,6 +294,13 @@ export default function SageOnboarding() {
     const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
     if (dexcomConnectedCookie) {
       setDexcomConnected(true);
+    }
+
+    const teamsEmailCookie = cookies.find(c => c.trim().startsWith('teams_user_email='));
+    if (teamsEmailCookie) {
+      const email = teamsEmailCookie.split('=')[1];
+      setTeamsConnected(true);
+      setTeamsEmail(decodeURIComponent(email));
     }
   }, []);
 
@@ -816,6 +825,68 @@ export default function SageOnboarding() {
       }));
     } catch (err) {
       console.error('Error disconnecting Vital:', err);
+    }
+  };
+
+  const handleConnectTeams = async () => {
+    try {
+      const response = await fetch('/api/teams/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'teams-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const teamsEmailCookie = cookies.find(c => c.trim().startsWith('teams_user_email='));
+
+          if (teamsEmailCookie) {
+            const email = teamsEmailCookie.split('=')[1];
+            setTeamsConnected(true);
+            setTeamsEmail(decodeURIComponent(email));
+            // Add teams to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('teams')
+                ? prev.integrations
+                : [...prev.integrations, 'teams']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Teams:', err);
+      alert('Failed to connect Microsoft Teams');
+    }
+  };
+
+  const handleDisconnectTeams = async () => {
+    try {
+      await fetch('/api/teams/disconnect', { method: 'POST' });
+      setTeamsConnected(false);
+      setTeamsEmail('');
+      // Remove teams from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'teams')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Teams:', err);
     }
   };
 
@@ -1885,6 +1956,30 @@ export default function SageOnboarding() {
                   <p className="integration-description">Connected</p>
                 </div>
                 <button className="disconnect-button" onClick={handleDisconnectOura}>
+                  Disconnect
+                </button>
+              </div>
+            )}
+
+            {!teamsConnected && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Microsoft Teams</h3>
+                  <p className="integration-description">Search and send messages in Teams</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectTeams}>
+                  Connect
+                </button>
+              </div>
+            )}
+
+            {teamsConnected && (
+              <div className="integration-item connected">
+                <div className="integration-info">
+                  <h3 className="integration-name">Microsoft Teams</h3>
+                  <p className="integration-description">Connected: {teamsEmail}</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectTeams}>
                   Disconnect
                 </button>
               </div>

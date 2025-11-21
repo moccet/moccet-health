@@ -718,8 +718,11 @@ export default function SageOnboarding() {
 
   const handleConnectVital = async () => {
     try {
+      console.log('[Vital] Starting connection...');
+
       // Generate a unique user ID for Vital (using email as base)
       const userId = formData.email || `user_${Date.now()}`;
+      console.log('[Vital] User ID:', userId);
 
       // Get link token from Vital
       const response = await fetch('/api/vital/link', {
@@ -728,31 +731,59 @@ export default function SageOnboarding() {
         body: JSON.stringify({ userId }),
       });
 
+      console.log('[Vital] API response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Vital] API error:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
+      }
+
       const data = await response.json();
+      console.log('[Vital] API response data:', data);
 
       if (data.linkToken) {
         // Open Vital Link Widget
-        // In production, you'd load their SDK and use VitalLink.open()
-        // For now, redirect to their hosted link page
         const linkUrl = `https://link.${data.environment}.tryvital.io/${data.linkToken}`;
+        console.log('[Vital] Opening link URL:', linkUrl);
 
         const width = 600;
         const height = 700;
         const left = (window.screen.width - width) / 2;
         const top = (window.screen.height - height) / 2;
 
-        window.open(
+        const popup = window.open(
           linkUrl,
           'vital-link',
           `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
         );
 
+        if (!popup) {
+          alert('Please allow popups for this site to connect Vital');
+          return;
+        }
+
         // Store userId for later use
         setVitalUserId(userId);
+
+        // Listen for messages from popup
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'vital-connected') {
+            console.log('[Vital] Connection confirmed via message');
+            setVitalConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('vital')
+                ? prev.integrations
+                : [...prev.integrations, 'vital']
+            }));
+          }
+        });
 
         // For demo purposes, mark as connected after opening
         // In production, you'd use webhooks to confirm connection
         setTimeout(() => {
+          console.log('[Vital] Auto-marking as connected');
           setVitalConnected(true);
           setFormData(prev => ({
             ...prev,
@@ -761,10 +792,12 @@ export default function SageOnboarding() {
               : [...prev.integrations, 'vital']
           }));
         }, 3000);
+      } else {
+        throw new Error('No link token received from API');
       }
     } catch (err) {
-      console.error('Error connecting Vital:', err);
-      alert('Failed to connect Vital');
+      console.error('[Vital] Error connecting:', err);
+      alert(`Failed to connect Vital: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 

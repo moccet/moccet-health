@@ -16,22 +16,57 @@ export async function GET(request: NextRequest) {
       throw new Error('No authorization code received');
     }
 
-    // In a real implementation, you would:
-    // 1. Verify the state parameter to prevent CSRF
-    // 2. Exchange the authorization code for an access token
-    // 3. Use the access token to fetch user's email and profile
-    // 4. Request calendar permissions from Microsoft Graph API
-    // 5. Store the access token and refresh token securely in your database
-    // 6. Set up webhooks for calendar updates
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.MICROSOFT_CLIENT_ID || '',
+        client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
+        code,
+        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/outlook/callback`,
+        grant_type: 'authorization_code',
+      }),
+    });
 
-    // For now, we'll just set a cookie with a dummy email
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('Token exchange failed:', errorText);
+      throw new Error('Failed to exchange authorization code for token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Fetch user profile from Microsoft Graph
+    const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!profileResponse.ok) {
+      throw new Error('Failed to fetch user profile');
+    }
+
+    const profile = await profileResponse.json();
+    const userEmail = profile.mail || profile.userPrincipalName;
+
+    console.log(`[Outlook] Connected: ${userEmail}`);
+
+    // Set cookie with actual user email
     const cookieStore = await cookies();
-    cookieStore.set('outlook_email', 'user@outlook.com', {
+    cookieStore.set('outlook_email', userEmail, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });
+
+    // TODO: Store tokens in database for future API calls
+    // For now, we just verify the connection works
 
     // Return HTML to close the popup and signal success to parent window
     return new NextResponse(

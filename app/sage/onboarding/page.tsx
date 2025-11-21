@@ -26,7 +26,7 @@ export default function SageOnboarding() {
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [outlookEmail, setOutlookEmail] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | null>(null);
+  const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | 'flo' | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -406,50 +406,47 @@ export default function SageOnboarding() {
   };
 
   const handleConnectAppleHealth = async () => {
-    try {
-      // For Apple Health, we'll use a simple popup/modal approach
-      // In a real implementation, this would use Apple's HealthKit OAuth
-      const response = await fetch('/api/apple-health/auth');
-      const data = await response.json();
+    // Apple Health data can only be accessed via file upload
+    // User needs to export from iPhone: Health app → Profile → Export All Health Data
 
-      if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xml,.zip';
 
-        window.open(
-          data.authUrl,
-          'apple-health-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const appleHealthCookie = cookies.find(c => c.trim().startsWith('apple_health_connected='));
+      try {
+        const formData = new FormData();
+        formData.append('healthData', file);
+        formData.append('email', formData.get('email') as string || '');
 
-          if (appleHealthCookie) {
-            setAppleHealthConnected(true);
-            // Add apple-health to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('apple-health')
-                ? prev.integrations
-                : [...prev.integrations, 'apple-health']
-            }));
-            clearInterval(pollInterval);
-          }
-        }, 1000);
+        const response = await fetch('/api/apple-health/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+        if (response.ok) {
+          setAppleHealthConnected(true);
+          setFormData(prev => ({
+            ...prev,
+            integrations: prev.integrations.includes('apple-health')
+              ? prev.integrations
+              : [...prev.integrations, 'apple-health']
+          }));
+          alert('Apple Health data uploaded successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Failed to upload: ${error.message || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Error uploading Apple Health data:', err);
+        alert('Failed to upload Apple Health data');
       }
-    } catch (err) {
-      console.error('Error connecting Apple Health:', err);
-      alert('Failed to connect Apple Health');
-    }
+    };
+
+    input.click();
   };
 
   const handleDisconnectAppleHealth = async () => {
@@ -587,7 +584,7 @@ export default function SageOnboarding() {
     }
   };
 
-  const handleOpenUploadModal = (type: 'oura-ring' | 'whoop' | 'cgm') => {
+  const handleOpenUploadModal = (type: 'oura-ring' | 'whoop' | 'cgm' | 'flo') => {
     setUploadModalType(type);
     setUploadModalOpen(true);
   };
@@ -1511,17 +1508,7 @@ export default function SageOnboarding() {
                   </div>
                 )}
 
-                {appleCalendarConnected && (
-                  <div className="integration-item">
-                    <div className="integration-info">
-                      <h3 className="integration-name">Apple Calendar</h3>
-                      <p className="integration-description">Optimize meal timing based on your schedule</p>
-                    </div>
-                    <button className="connect-button connected" onClick={handleDisconnectAppleCalendar}>
-                      ✓ Connected
-                    </button>
-                  </div>
-                )}
+                {/* Apple Calendar removed - not available via web API */}
 
                 {outlookConnected && (
                   <div className="integration-item">
@@ -1582,6 +1569,18 @@ export default function SageOnboarding() {
                     </button>
                   </div>
                 )}
+
+                {formData.integrations.includes('flo') && (
+                  <div className="integration-item">
+                    <div className="integration-info">
+                      <h3 className="integration-name">Flo</h3>
+                      <p className="integration-description">Sync menstrual cycle and hormone tracking data</p>
+                    </div>
+                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('flo')}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1616,17 +1615,8 @@ export default function SageOnboarding() {
               </div>
             )}
 
-            {!appleCalendarConnected && (
-              <div className="integration-item">
-                <div className="integration-info">
-                  <h3 className="integration-name">Apple Calendar</h3>
-                  <p className="integration-description">Optimize meal timing based on your schedule</p>
-                </div>
-                <button className="connect-button" onClick={handleConnectAppleCalendar}>
-                  Connect
-                </button>
-              </div>
-            )}
+            {/* Apple Calendar: Not available - Apple doesn't provide public calendar API for web */}
+            {/* Users should use Google Calendar instead, which is already included via Gmail OAuth */}
 
             {!outlookConnected && (
               <div className="integration-item">
@@ -1683,6 +1673,18 @@ export default function SageOnboarding() {
                   <p className="integration-description">Upload your glucose readings</p>
                 </div>
                 <button className="connect-button" onClick={() => handleOpenUploadModal('cgm')}>
+                  Connect
+                </button>
+              </div>
+            )}
+
+            {!formData.integrations.includes('flo') && (
+              <div className="integration-item">
+                <div className="integration-info">
+                  <h3 className="integration-name">Flo</h3>
+                  <p className="integration-description">Sync menstrual cycle and hormone tracking data</p>
+                </div>
+                <button className="connect-button" onClick={() => handleOpenUploadModal('flo')}>
                   Connect
                 </button>
               </div>

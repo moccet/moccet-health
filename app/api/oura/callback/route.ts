@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+
+    if (error) {
+      throw new Error(`OAuth error: ${error}`);
+    }
+
+    if (!code) {
+      throw new Error('No authorization code received');
+    }
+
+    const clientId = process.env.OURA_CLIENT_ID;
+    const clientSecret = process.env.OURA_CLIENT_SECRET;
+    const redirectUri = process.env.OURA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/oura/callback`;
+
+    if (!clientId || !clientSecret) {
+      throw new Error('Oura credentials not configured');
+    }
+
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch('https://api.ouraring.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('Token exchange failed:', errorText);
+      throw new Error('Failed to exchange authorization code for token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+
+    // Fetch user personal info from Oura API
+    const userInfoResponse = await fetch('https://api.ouraring.com/v2/usercollection/personal_info', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!userInfoResponse.ok) {
+      throw new Error('Failed to fetch Oura user info');
+    }
+
+    const userInfo = await userInfoResponse.json();
+    const userId = userInfo.id || 'oura_user';
+
+    console.log(`[Oura] Connected: User ID ${userId}`);
+
+    // Set cookies with tokens and user info
+    const cookieStore = await cookies();
+    cookieStore.set('oura_access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365 // 1 year
+    });
+
+    if (refreshToken) {
+      cookieStore.set('oura_refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365 // 1 year
+      });
+    }
+
+    cookieStore.set('oura_user_id', userId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365 // 1 year
+    });
+
+    // TODO: Store tokens in database for future API calls
+    // For now, we just verify the connection works
+
+    // Return HTML to close the popup and signal success to parent window
+    return new NextResponse(
+      `<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Oura Connected</title>
+        </head>
+        <body>
+          <script>
+            // Signal to parent window that connection was successful
+            if (window.opener) {
+              window.opener.postMessage({ type: 'oura-connected' }, '*');
+            }
+            // Close the popup after a short delay
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+          </script>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
+            <h1 style="color: #4CAF50;">✓ Connected</h1>
+            <p>Oura Ring has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+          </div>
+        </body>
+      </html>`,
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html',
+        },
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in Oura callback:', error);
+
+    return new NextResponse(
+      `<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Connection Failed</title>
+        </head>
+        <body>
+          <script>
+            // Signal error to parent window
+            if (window.opener) {
+              window.opener.postMessage({ type: 'oura-error' }, '*');
+            }
+            setTimeout(() => {
+              window.close();
+            }, 3000);
+          </script>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
+            <h1 style="color: #f44336;">✗ Connection Failed</h1>
+            <p>Failed to connect Oura Ring. Please try again.</p>
+            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+          </div>
+        </body>
+      </html>`,
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html',
+        },
+      }
+    );
+  }
+}

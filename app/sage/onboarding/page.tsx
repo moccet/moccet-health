@@ -25,6 +25,7 @@ export default function SageOnboarding() {
   const [appleCalendarConnected, setAppleCalendarConnected] = useState(false);
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [outlookEmail, setOutlookEmail] = useState('');
+  const [ouraConnected, setOuraConnected] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | 'flo' | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -278,6 +279,11 @@ export default function SageOnboarding() {
       const email = outlookEmailCookie.split('=')[1];
       setOutlookConnected(true);
       setOutlookEmail(decodeURIComponent(email));
+    }
+
+    const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
+    if (ouraUserIdCookie) {
+      setOuraConnected(true);
     }
   }, []);
 
@@ -581,6 +587,65 @@ export default function SageOnboarding() {
       }));
     } catch (err) {
       console.error('Error disconnecting Outlook:', err);
+    }
+  };
+
+  const handleConnectOura = async () => {
+    try {
+      const response = await fetch('/api/oura/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'oura-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
+
+          if (ouraUserIdCookie) {
+            setOuraConnected(true);
+            // Add oura-ring to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('oura-ring')
+                ? prev.integrations
+                : [...prev.integrations, 'oura-ring']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Oura:', err);
+      alert('Failed to connect Oura Ring');
+    }
+  };
+
+  const handleDisconnectOura = async () => {
+    try {
+      await fetch('/api/oura/disconnect', { method: 'POST' });
+      setOuraConnected(false);
+      // Remove oura-ring from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'oura-ring')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Oura:', err);
     }
   };
 
@@ -1642,14 +1707,26 @@ export default function SageOnboarding() {
               </div>
             )}
 
-            {!formData.integrations.includes('oura-ring') && (
+            {!ouraConnected && (
               <div className="integration-item">
                 <div className="integration-info">
                   <h3 className="integration-name">Oura Ring</h3>
-                  <p className="integration-description">Upload your sleep and activity data</p>
+                  <p className="integration-description">Sync your sleep, activity, and readiness data</p>
                 </div>
-                <button className="connect-button" onClick={() => handleOpenUploadModal('oura-ring')}>
+                <button className="connect-button" onClick={handleConnectOura}>
                   Connect
+                </button>
+              </div>
+            )}
+
+            {ouraConnected && (
+              <div className="integration-item connected">
+                <div className="integration-info">
+                  <h3 className="integration-name">Oura Ring</h3>
+                  <p className="integration-description">Connected</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectOura}>
+                  Disconnect
                 </button>
               </div>
             )}

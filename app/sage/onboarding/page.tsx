@@ -26,6 +26,9 @@ export default function SageOnboarding() {
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [outlookEmail, setOutlookEmail] = useState('');
   const [ouraConnected, setOuraConnected] = useState(false);
+  const [dexcomConnected, setDexcomConnected] = useState(false);
+  const [vitalConnected, setVitalConnected] = useState(false);
+  const [vitalUserId, setVitalUserId] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | 'flo' | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -284,6 +287,11 @@ export default function SageOnboarding() {
     const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
     if (ouraUserIdCookie) {
       setOuraConnected(true);
+    }
+
+    const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
+    if (dexcomConnectedCookie) {
+      setDexcomConnected(true);
     }
   }, []);
 
@@ -646,6 +654,135 @@ export default function SageOnboarding() {
       }));
     } catch (err) {
       console.error('Error disconnecting Oura:', err);
+    }
+  };
+
+  const handleConnectDexcom = async () => {
+    try {
+      const response = await fetch('/api/dexcom/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'dexcom-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          const cookies = document.cookie.split(';');
+          const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
+
+          if (dexcomConnectedCookie) {
+            setDexcomConnected(true);
+            // Add dexcom to integrations if not already present
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('dexcom')
+                ? prev.integrations
+                : [...prev.integrations, 'dexcom']
+            }));
+            clearInterval(pollInterval);
+          }
+        }, 1000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+      }
+    } catch (err) {
+      console.error('Error connecting Dexcom:', err);
+      alert('Failed to connect Dexcom CGM');
+    }
+  };
+
+  const handleDisconnectDexcom = async () => {
+    try {
+      await fetch('/api/dexcom/disconnect', { method: 'POST' });
+      setDexcomConnected(false);
+      // Remove dexcom from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'dexcom')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Dexcom:', err);
+    }
+  };
+
+  const handleConnectVital = async () => {
+    try {
+      // Generate a unique user ID for Vital (using email as base)
+      const userId = formData.email || `user_${Date.now()}`;
+
+      // Get link token from Vital
+      const response = await fetch('/api/vital/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await response.json();
+
+      if (data.linkToken) {
+        // Open Vital Link Widget
+        // In production, you'd load their SDK and use VitalLink.open()
+        // For now, redirect to their hosted link page
+        const linkUrl = `https://link.${data.environment}.tryvital.io/${data.linkToken}`;
+
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          linkUrl,
+          'vital-link',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Store userId for later use
+        setVitalUserId(userId);
+
+        // For demo purposes, mark as connected after opening
+        // In production, you'd use webhooks to confirm connection
+        setTimeout(() => {
+          setVitalConnected(true);
+          setFormData(prev => ({
+            ...prev,
+            integrations: prev.integrations.includes('vital')
+              ? prev.integrations
+              : [...prev.integrations, 'vital']
+          }));
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('Error connecting Vital:', err);
+      alert('Failed to connect Vital');
+    }
+  };
+
+  const handleDisconnectVital = async () => {
+    try {
+      await fetch('/api/vital/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: vitalUserId }),
+      });
+      setVitalConnected(false);
+      setVitalUserId('');
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'vital')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Vital:', err);
     }
   };
 
@@ -1668,18 +1805,7 @@ export default function SageOnboarding() {
               </div>
             )}
 
-            {!appleHealthConnected && (
-              <div className="integration-item">
-                <div className="integration-info">
-                  <h3 className="integration-name">Apple Health</h3>
-                  <p className="integration-description">Track activity, sleep, and health metrics</p>
-                </div>
-                <button className="connect-button" onClick={handleConnectAppleHealth}>
-                  Connect
-                </button>
-              </div>
-            )}
-
+            {/* Apple Health removed - users can use Oura Ring or WHOOP instead */}
             {/* Apple Calendar: Not available - Apple doesn't provide public calendar API for web */}
             {/* Users should use Google Calendar instead, which is already included via Gmail OAuth */}
 
@@ -1731,41 +1857,55 @@ export default function SageOnboarding() {
               </div>
             )}
 
-            {!formData.integrations.includes('whoop') && (
+            {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-info">
-                  <h3 className="integration-name">WHOOP</h3>
-                  <p className="integration-description">Upload your recovery and strain data</p>
+                  <h3 className="integration-name">Vital Health</h3>
+                  <p className="integration-description">Connect Fitbit, Apple Health, WHOOP, Libre & more</p>
                 </div>
-                <button className="connect-button" onClick={() => handleOpenUploadModal('whoop')}>
+                <button className="connect-button" onClick={handleConnectVital}>
                   Connect
                 </button>
               </div>
             )}
 
-            {!formData.integrations.includes('cgm') && (
+            {vitalConnected && (
+              <div className="integration-item connected">
+                <div className="integration-info">
+                  <h3 className="integration-name">Vital Health</h3>
+                  <p className="integration-description">Connected</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectVital}>
+                  Disconnect
+                </button>
+              </div>
+            )}
+
+            {!dexcomConnected && (
               <div className="integration-item">
                 <div className="integration-info">
-                  <h3 className="integration-name">Continuous Glucose Monitor</h3>
-                  <p className="integration-description">Upload your glucose readings</p>
+                  <h3 className="integration-name">Dexcom CGM</h3>
+                  <p className="integration-description">Sync your continuous glucose monitoring data</p>
                 </div>
-                <button className="connect-button" onClick={() => handleOpenUploadModal('cgm')}>
+                <button className="connect-button" onClick={handleConnectDexcom}>
                   Connect
                 </button>
               </div>
             )}
 
-            {!formData.integrations.includes('flo') && (
-              <div className="integration-item">
+            {dexcomConnected && (
+              <div className="integration-item connected">
                 <div className="integration-info">
-                  <h3 className="integration-name">Flo</h3>
-                  <p className="integration-description">Sync menstrual cycle and hormone tracking data</p>
+                  <h3 className="integration-name">Dexcom CGM</h3>
+                  <p className="integration-description">Connected</p>
                 </div>
-                <button className="connect-button" onClick={() => handleOpenUploadModal('flo')}>
-                  Connect
+                <button className="disconnect-button" onClick={handleDisconnectDexcom}>
+                  Disconnect
                 </button>
               </div>
             )}
+
+            {/* Flo integration removed */}
           </div>
           </div>
 

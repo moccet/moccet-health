@@ -27,6 +27,29 @@ export async function POST(request: NextRequest) {
       ? `https://api.eu.vital.io`
       : `https://api.${environment}.tryvital.io`;
 
+    // First, create or get the user in Vital
+    // Documentation: https://docs.tryvital.io/wearables/guides/user_management
+    const createUserResponse = await fetch(`${baseUrl}/v2/user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Vital-API-Key': apiKey,
+      },
+      body: JSON.stringify({
+        client_user_id: userId,
+      }),
+    });
+
+    // User might already exist, which is fine
+    if (!createUserResponse.ok && createUserResponse.status !== 409) {
+      const errorText = await createUserResponse.text();
+      console.error('[Vital] Failed to create user:', errorText);
+      // Continue anyway - user might already exist
+    } else if (createUserResponse.ok) {
+      const userData = await createUserResponse.json();
+      console.log(`[Vital] Created/verified user: ${userData.user_id}`);
+    }
+
     // Create a Link Token
     // Documentation: https://docs.tryvital.io/wearables/guides/link_widget
     const response = await fetch(`${baseUrl}/v2/link/token`, {

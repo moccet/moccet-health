@@ -6,11 +6,12 @@ import './onboarding.css';
 type Screen =
   | 'intro' | 'welcome' | 'name' | 'age' | 'gender' | 'weight' | 'height'
   | 'email' | 'objective-intro' | 'primary-goal' | 'time-horizon' | 'training-days'
-  | 'baseline-intro' | 'injuries' | 'movement-restrictions' | 'medical-conditions'
+  | 'baseline-intro' | 'injuries' | 'movement-restrictions' | 'medications' | 'supplements' | 'medical-conditions'
   | 'environment-intro' | 'equipment' | 'training-location' | 'session-length' | 'exercise-time'
   | 'sleep-quality' | 'stress-level' | 'forge-intake-intro' | 'training-experience' | 'skills-priority'
   | 'effort-familiarity' | 'current-bests' | 'conditioning-preferences' | 'soreness-preference'
-  | 'daily-activity' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
+  | 'daily-activity' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes' | 'meals-cooked' | 'alcohol-consumption'
+  | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
 
 export default function ForgeOnboarding() {
   // Skip intro video in development mode

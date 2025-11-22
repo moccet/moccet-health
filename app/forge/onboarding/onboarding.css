@@ -183,8 +183,8 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: #c9d5c0;
-  color: #2d3a2d;
+  background: #D4A59A;
+  color: #3a2d2d;
   border: none;
   border-radius: 4px;
   padding: 10px 32px;
@@ -199,7 +199,7 @@
 }
 
 .welcome-button:hover {
-  background: #b8c7af;
+  background: #C89488;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
@@ -383,21 +383,21 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   font-size: 15px;
   font-weight: 500;
-  background: #e8ede6;
+  background: #F5E6E3;
   border: 2px solid transparent;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #2d3a2d;
+  color: #3a2d2d;
 }
 
 .toggle-option:hover {
-  background: #dde5da;
+  background: #EDD9D5;
 }
 
 .toggle-option.active {
-  background: #c9d5c0;
-  border-color: #a8b8a0;
+  background: #D4A59A;
+  border-color: #B88478;
 }
 
 /* Height Feet/Inches Container */
@@ -433,7 +433,7 @@
   font-size: 17px;
   font-weight: 500;
   color: #1a1a1a;
-  background: #e8ede6;
+  background: #F5E6E3;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -442,11 +442,11 @@
 }
 
 .unit-dropdown:hover {
-  background: #dce6d9;
+  background: #ECDDD9;
 }
 
 .unit-dropdown:focus {
-  background: #d0dfc9;
+  background: #E5CCC7;
 }
 
 .unit-label {
@@ -471,7 +471,7 @@
 .typeform-input {
   width: 100%;
   border: none;
-  background: #e8ede6;
+  background: #F5E6E3;
   padding: 12px 50px 12px 20px;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   font-size: 17px;
@@ -482,7 +482,7 @@
 }
 
 .typeform-input:focus {
-  background: #dde5da;
+  background: #EDD9D5;
 }
 
 .typeform-input::placeholder {
@@ -552,33 +552,33 @@
 }
 
 .options-container::-webkit-scrollbar-thumb {
-  background: #c9d5c0;
+  background: #D4A59A;
   border-radius: 3px;
 }
 
 .option-button {
   width: 100%;
   padding: 12px 20px;
-  background: #e8ede6;
+  background: #F5E6E3;
   border: 2px solid transparent;
   border-radius: 4px;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   font-size: 15px;
   font-weight: 400;
-  color: #2d3a2d;
+  color: #3a2d2d;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .option-button:hover {
-  background: #dde5da;
+  background: #EDD9D5;
   transform: translateX(4px);
 }
 
 .option-button.selected {
-  background: #c9d5c0;
-  border-color: #a8b8a0;
+  background: #D4A59A;
+  border-color: #B88478;
   font-weight: 500;
 }
 
@@ -594,8 +594,8 @@
 .typeform-button {
   display: inline-flex;
   align-items: center;
-  background: #c9d5c0;
-  color: #2d3a2d;
+  background: #D4A59A;
+  color: #3a2d2d;
   border: none;
   border-radius: 4px;
   padding: 10px 32px;
@@ -610,7 +610,7 @@
 }
 
 .typeform-button:hover:not(:disabled) {
-  background: #b8c7af;
+  background: #C89488;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
@@ -633,7 +633,7 @@
   border-radius: 0;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #2d3a2d;
+  color: #3a2d2d;
   padding: 8px;
 }
 
@@ -678,7 +678,7 @@
 .arrow-up:hover,
 .arrow-down:hover {
   background: transparent;
-  color: #2d3a2d;
+  color: #3a2d2d;
 }
 
 /* Brand */
@@ -749,7 +749,7 @@
 .option-main {
   font-size: 15px;
   font-weight: 500;
-  color: #2d3a2d;
+  color: #3a2d2d;
 }
 
 .option-sub {
@@ -782,8 +782,8 @@
 }
 
 .option-button.checkbox.selected::before {
-  background: #c9d5c0;
-  border-color: #c9d5c0;
+  background: #D4A59A;
+  border-color: #D4A59A;
 }
 
 .option-button.checkbox.selected::after {
@@ -792,7 +792,7 @@
   right: 24px;
   top: 50%;
   transform: translateY(-50%);
-  color: #2d3a2d;
+  color: #3a2d2d;
   font-size: 14px;
   font-weight: 600;
 }
@@ -801,7 +801,7 @@
 .option-button-other {
   width: 100%;
   padding: 12px 20px;
-  background: #e8ede6;
+  background: #F5E6E3;
   border: 2px solid transparent;
   border-radius: 4px;
   display: flex;
@@ -814,7 +814,7 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   font-size: 15px;
   font-weight: 400;
-  color: #2d3a2d;
+  color: #3a2d2d;
   min-width: 60px;
 }
 
@@ -834,8 +834,8 @@
 }
 
 .option-button-other:focus-within {
-  background: #dde5da;
-  border-color: #c9d5c0;
+  background: #EDD9D5;
+  border-color: #D4A59A;
 }
 
 /* Responsive for Typeform */
@@ -1071,11 +1071,11 @@
 .option-button.image-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #c9d5c0;
+  border-color: #D4A59A;
 }
 
 .option-button.image-card.selected {
-  border-color: #a8b8a0;
+  border-color: #B88478;
   border-width: 3px;
   box-shadow: 0 4px 16px rgba(201, 213, 192, 0.3);
 }
@@ -1093,7 +1093,7 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
   font-size: 15px;
   font-weight: 500;
-  color: #2d3a2d;
+  color: #3a2d2d;
 }
 
 @media (max-width: 900px) {
@@ -1165,7 +1165,7 @@
 }
 
 .upload-box:hover {
-  border-color: #a8b8a0;
+  border-color: #B88478;
   background: #f0f3ed;
 }
 
@@ -1252,7 +1252,7 @@
 
 .loading-bar-fill {
   height: 100%;
-  background: #c9d5c0;
+  background: #D4A59A;
   transition: width 0.3s ease;
   border-radius: 1px;
 }
@@ -1455,7 +1455,7 @@
 
 .integrations-scroll-container::-webkit-scrollbar-thumb,
 .integrations-grid::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #C89488;
   border-radius: 3px;
 }
 

@@ -5,12 +5,14 @@ import './onboarding.css';
 
 type Screen =
   | 'intro' | 'welcome' | 'name' | 'age' | 'gender' | 'weight' | 'height'
-  | 'email' | 'ikigai-intro' | 'main-priority' | 'driving-goal'
-  | 'baseline-intro' | 'allergies' | 'medications' | 'supplements' | 'medical-conditions'
-  | 'fuel-intro' | 'eating-style' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes'
-  | 'meals-cooked' | 'alcohol-consumption' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
+  | 'email' | 'objective-intro' | 'primary-goal' | 'time-horizon' | 'training-days'
+  | 'baseline-intro' | 'injuries' | 'movement-restrictions' | 'medical-conditions'
+  | 'environment-intro' | 'equipment' | 'training-location' | 'session-length' | 'exercise-time'
+  | 'sleep-quality' | 'stress-level' | 'forge-intake-intro' | 'training-experience' | 'skills-priority'
+  | 'effort-familiarity' | 'current-bests' | 'conditioning-preferences' | 'soreness-preference'
+  | 'daily-activity' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
 
-export default function SageOnboarding() {
+export default function ForgeOnboarding() {
   // Skip intro video in development mode
   const [currentScreen, setCurrentScreen] = useState<Screen>(
     process.env.NODE_ENV === 'development' ? 'welcome' : 'intro'
@@ -90,10 +92,12 @@ export default function SageOnboarding() {
   const calculateProgress = () => {
     const screens: Screen[] = [
       'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
-      'email', 'ikigai-intro', 'main-priority', 'driving-goal',
-      'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
-      'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+      'email', 'objective-intro', 'primary-goal', 'time-horizon', 'training-days',
+      'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
+      'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
+      'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
+      'effort-familiarity', 'current-bests', 'conditioning-preferences', 'soreness-preference',
+      'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex === -1) return 0;
@@ -105,31 +109,35 @@ export default function SageOnboarding() {
     const mockData = {
       fullName: 'Dev Test User',
       age: '32',
-      gender: 'female',
-      weight: '145',
+      gender: 'male',
+      weight: '185',
       weightUnit: 'lbs' as 'lbs' | 'kg',
-      height: '5\'6"',
-      email: 'dev-test@sage.local',
-      mainPriority: 'longevity',
-      drivingGoal: 'health',
-      allergies: ['none'],
-      otherAllergy: '',
-      medications: 'None',
-      supplements: 'Vitamin D, Magnesium',
+      height: '5\'11"',
+      email: 'dev-test@forge.local',
+      primaryGoal: 'Build muscle',
+      timeHorizon: '6-12 months',
+      trainingDays: '4',
+      injuries: ['none'],
+      movementRestrictions: 'None',
       medicalConditions: ['none'],
       otherCondition: '',
-      eatingStyle: 'intermittent-fasting',
-      firstMeal: '9-11am',
-      energyCrash: 'snack',
-      proteinSources: ['poultry', 'fish-seafood', 'eggs'],
-      otherProtein: '',
-      foodDislikes: 'Brussels sprouts',
-      mealsCooked: '10-12',
-      alcoholConsumption: '1-2 drinks per week',
+      equipment: ['Full gym access'],
+      trainingLocation: 'Gym',
+      sessionLength: '60-90 minutes',
+      exerciseTime: 'Morning',
+      sleepQuality: '7',
+      stressLevel: '4',
+      trainingExperience: '2-3 years',
+      skillsPriority: ['Strength', 'Hypertrophy'],
+      effortFamiliarity: 'Yes',
+      currentBests: 'Squat 5RM 315 lbs; Bench 5RM 225 lbs; Deadlift 5RM 405 lbs',
+      conditioningPreferences: ['LISS cardio'],
+      sorenessPreference: '6',
+      dailyActivity: 'Moderately active',
       integrations: ['apple-health'],
       timestamp: new Date().toISOString(),
       completed: true,
-      hasLabFile: true, // Simulate that user uploaded a lab file
+      hasLabFile: false,
     };
 
     // Show loading screen
@@ -149,7 +157,7 @@ export default function SageOnboarding() {
 
     try {
       // Submit mock data to onboarding API
-      const response = await fetch('/api/sage-onboarding', {
+      const response = await fetch('/api/forge-onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mockData),
@@ -180,7 +188,7 @@ export default function SageOnboarding() {
       labFormData.append('email', mockData.email);
 
       try {
-        await fetch('/api/analyze-blood-results', {
+        await fetch('/api/forge-analyze-blood-results', {
           method: 'POST',
           body: labFormData,
         });
@@ -198,7 +206,7 @@ export default function SageOnboarding() {
       planFormData.append('fullName', userFirstName);
 
       // Start the async call (don't await yet)
-      const planPromise = fetch('/api/generate-plan-async', {
+      const planPromise = fetch('/api/forge-generate-plan-async', {
         method: 'POST',
         body: planFormData,
       });
@@ -228,8 +236,8 @@ export default function SageOnboarding() {
         setIsLoading(false);
 
         const redirectUrl = uniqueCode
-          ? `/sage/personalised-plan?code=${uniqueCode}`
-          : `/sage/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
+          ? `/forge/personalised-plan?code=${uniqueCode}`
+          : `/forge/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
 
         window.location.href = redirectUrl;
       }, 500);
@@ -253,14 +261,31 @@ export default function SageOnboarding() {
     heightFeet: '',
     heightInches: '',
     email: '',
-    mainPriority: '',
-    drivingGoal: '',
+    primaryGoal: '',
+    timeHorizon: '',
+    trainingDays: '',
+    injuries: [] as string[],
+    movementRestrictions: '',
+    medicalConditions: [] as string[],
+    otherCondition: '',
+    equipment: [] as string[],
+    trainingLocation: '',
+    sessionLength: '',
+    exerciseTime: '',
+    sleepQuality: '5',
+    stressLevel: '5',
+    trainingExperience: '',
+    skillsPriority: [] as string[],
+    effortFamiliarity: '',
+    currentBests: '',
+    conditioningPreferences: [] as string[],
+    sorenessPreference: '5',
+    dailyActivity: '',
+    // Legacy nutrition fields (to be replaced with fitness screens)
     allergies: [] as string[],
     otherAllergy: '',
     medications: '',
     supplements: '',
-    medicalConditions: [] as string[],
-    otherCondition: '',
     eatingStyle: '',
     firstMeal: '',
     energyCrash: '',
@@ -1050,7 +1075,7 @@ export default function SageOnboarding() {
     }
   };
 
-  const toggleArrayValue = (field: 'allergies' | 'medicalConditions' | 'proteinSources' | 'integrations', value: string) => {
+  const toggleArrayValue = (field: 'injuries' | 'allergies' | 'medicalConditions' | 'equipment' | 'skillsPriority' | 'conditioningPreferences' | 'proteinSources' | 'integrations', value: string) => {
     setFormData(prev => {
       const currentArray = prev[field];
       if (currentArray.includes(value)) {
@@ -1074,10 +1099,12 @@ export default function SageOnboarding() {
   const handleBack = () => {
     const screens: Screen[] = [
       'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
-      'email', 'ikigai-intro', 'main-priority', 'driving-goal',
-      'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
-      'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+      'email', 'objective-intro', 'primary-goal', 'time-horizon', 'training-days',
+      'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
+      'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
+      'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
+      'effort-familiarity', 'current-bests', 'conditioning-preferences', 'soreness-preference',
+      'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex > 1) {
@@ -1109,7 +1136,7 @@ export default function SageOnboarding() {
 
     try {
       // Submit onboarding data
-      const response = await fetch('/api/sage-onboarding', {
+      const response = await fetch('/api/forge-onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1139,7 +1166,7 @@ export default function SageOnboarding() {
         labFormData.append('email', formData.email);
 
         try {
-          await fetch('/api/analyze-blood-results', {
+          await fetch('/api/forge-analyze-blood-results', {
             method: 'POST',
             body: labFormData,
           });
@@ -1158,7 +1185,7 @@ export default function SageOnboarding() {
       planFormData.append('uniqueCode', uniqueCode);
       planFormData.append('fullName', userFirstName);
 
-      const planResponse = await fetch('/api/generate-plan-async', {
+      const planResponse = await fetch('/api/forge-generate-plan-async', {
         method: 'POST',
         body: planFormData,
       });
@@ -1233,10 +1260,10 @@ export default function SageOnboarding() {
       {/* Welcome Screen */}
       <div className={`welcome-screen ${currentScreen === 'welcome' ? 'active' : 'hidden'}`}>
         <div className="welcome-content">
-          <h1 className="welcome-title">Welcome to sage.</h1>
+          <h1 className="welcome-title">Welcome to forge.</h1>
           <p className="welcome-subtitle">
-            Your health is more than just food.<br />
-            sage builds nutrition intelligence from your unique biology.
+            Your fitness journey is uniquely yours.<br />
+            forge builds fitness intelligence from your unique biology.
           </p>
           <button className="welcome-button" onClick={handleGetStarted}>
             <span>Let&apos;s get started</span>
@@ -1269,7 +1296,7 @@ export default function SageOnboarding() {
             </button>
           )}
 
-          <div className="welcome-brand">sage</div>
+          <div className="welcome-brand">forge</div>
         </div>
       </div>
 
@@ -1277,13 +1304,13 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'name' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="typeform-title">What&apos;s your full name?</h1>
-          <p className="typeform-subtitle">We&apos;ll use this to personalize your sage experience and keep your profile secure.</p>
+          <p className="typeform-subtitle">We&apos;ll use this to personalize your forge experience and keep your profile secure.</p>
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2)} autoFocus />
-            <svg className={`microphone-icon ${isListening && activeField === 'fullName' ? 'listening' : ''}`} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => startDictation('fullName')} style={{cursor: 'pointer'}}>
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           {formData.fullName.trim() && formData.fullName.trim().split(/\s+/).length < 2 && (
@@ -1299,7 +1326,7 @@ export default function SageOnboarding() {
             </button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1311,16 +1338,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="number" className="typeform-input" placeholder="Type your answer here" value={formData.age} onChange={(e) => handleInputChange('age', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'gender', !formData.age.trim())} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('gender')} disabled={!formData.age.trim()}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1343,7 +1370,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('weight')} disabled={!formData.gender}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1364,9 +1391,9 @@ export default function SageOnboarding() {
                 autoFocus
               />
               <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <select
@@ -1382,7 +1409,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('height')} disabled={!formData.weight.trim()}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1424,9 +1451,9 @@ export default function SageOnboarding() {
                   autoFocus
                 />
                 <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
               <div className="unit-label">cm</div>
@@ -1444,9 +1471,9 @@ export default function SageOnboarding() {
                     autoFocus
                   />
                   <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="unit-label">ft</div>
@@ -1462,9 +1489,9 @@ export default function SageOnboarding() {
                     onKeyPress={(e) => handleKeyPress(e, 'email', !formData.heightFeet.trim() && !formData.heightInches.trim())}
                   />
                   <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div className="unit-label">in</div>
@@ -1482,7 +1509,7 @@ export default function SageOnboarding() {
             </button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1490,82 +1517,101 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'email' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="typeform-title">Tell us the email for results and updates.</h1>
-          <p className="typeform-subtitle">We&apos;ll send your personalized sage nutrition plan and helpful tips to this email. We respect your privacy.</p>
+          <p className="typeform-subtitle">We&apos;ll send your personalized forge fitness plan and helpful tips to this email. We respect your privacy.</p>
           <div className="input-container">
-            <input type="email" className="typeform-input" placeholder="name@example.com" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'ikigai-intro', !formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))} autoFocus />
+            <input type="email" className="typeform-input" placeholder="name@example.com" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'objective-intro', !formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))} autoFocus />
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('ikigai-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('objective-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Section 1: The Ikigai - Intro */}
-      <div className={`typeform-screen section-screen ${currentScreen === 'ikigai-intro' ? 'active' : 'hidden'}`}>
+      {/* Section 1: The Objective - Intro */}
+      <div className={`typeform-screen section-screen ${currentScreen === 'objective-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="section-title">1 The Ikigai</h1>
+          <h1 className="section-title">1 The Objective</h1>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('main-priority')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('primary-goal')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Main Priority Screen */}
-      <div className={`typeform-screen ${currentScreen === 'main-priority' ? 'active' : 'hidden'}`}>
+      {/* Primary Goal Screen */}
+      <div className={`typeform-screen ${currentScreen === 'primary-goal' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">1 The Ikigai</p>
-          <h1 className="typeform-title">What is your main priority?</h1>
+          <p className="section-label">1 The Objective</p>
+          <h1 className="typeform-title">What is your primary goal right now?</h1>
           <div className="options-container">
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'longevity' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'longevity')}>
+            <button className={`option-button with-subtitle ${formData.primaryGoal === 'longevity' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'longevity')}>
               <div className="option-main">Longevity and Aging</div>
               <div className="option-sub">Preventing disease & increasing long-term health</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'cognitive' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'cognitive')}>
-              <div className="option-main">Cognitive Performance</div>
-              <div className="option-sub">Better focus & mental clarity</div>
+            <button className={`option-button with-subtitle ${formData.primaryGoal === 'rehabilitation' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'rehabilitation')}>
+              <div className="option-main">Rehabilitation</div>
+              <div className="option-sub">Recover from injury</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'physical' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'physical')}>
+            <button className={`option-button with-subtitle ${formData.primaryGoal === 'physical-performance' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'physical-performance')}>
               <div className="option-main">Physical performance</div>
               <div className="option-sub">More stamina & less fatigue</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'body-composition' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'body-composition')}>
-              <div className="option-main">Body composition</div>
-              <div className="option-sub">Losing fat & building muscle</div>
+            <button className={`option-button with-subtitle ${formData.primaryGoal === 'build-up' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'build-up')}>
+              <div className="option-main">Build up</div>
+              <div className="option-sub">Building muscle and strength</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'emotional' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'emotional')}>
-              <div className="option-main">Emotional Balance</div>
-              <div className="option-sub">Reducing stress & improving mood</div>
+            <button className={`option-button with-subtitle ${formData.primaryGoal === 'slim-down' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'slim-down')}>
+              <div className="option-main">Slim down</div>
+              <div className="option-sub">Losing fat and general weight loss</div>
             </button>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('driving-goal')} disabled={!formData.mainPriority}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('time-horizon')} disabled={!formData.primaryGoal}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Driving Goal Screen */}
-      <div className={`typeform-screen ${currentScreen === 'driving-goal' ? 'active' : 'hidden'}`}>
+      {/* Time Horizon Screen */}
+      <div className={`typeform-screen ${currentScreen === 'time-horizon' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">1 The Ikigai</p>
-          <h1 className="typeform-title">What is driving this goal?</h1>
+          <p className="section-label">1 The Objective</p>
+          <h1 className="typeform-title">What time horizon are you planning for?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.drivingGoal === 'career' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'career')}>Career & Performance</button>
-            <button className={`option-button ${formData.drivingGoal === 'family' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'family')}>Family & Relationships</button>
-            <button className={`option-button ${formData.drivingGoal === 'athletic' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'athletic')}>An Athletic or Personal Goal</button>
-            <button className={`option-button ${formData.drivingGoal === 'health' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'health')}>General Health & Well-being</button>
-            <button className={`option-button ${formData.drivingGoal === 'condition' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'condition')}>Managing a Health Condition</button>
+            <button className={`option-button ${formData.timeHorizon === 'short-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'short-term')}>Short-term (up to 12 weeks)</button>
+            <button className={`option-button ${formData.timeHorizon === 'medium-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'medium-term')}>Medium term (3-12 months)</button>
+            <button className={`option-button ${formData.timeHorizon === 'long-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'long-term')}>Long-term (more than one year)</button>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('baseline-intro')} disabled={!formData.drivingGoal}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('training-days')} disabled={!formData.timeHorizon}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Training Days Screen */}
+      <div className={`typeform-screen ${currentScreen === 'training-days' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">1 The Objective</p>
+          <h1 className="typeform-title">How many days per week can you train?</h1>
+          <p className="typeform-subtitle">Reflect on your weekly time for exercise.<br />The best plan is the one that works with your schedule.</p>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px'}}>
+            <button className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '1')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>1</button>
+            <button className={`option-button ${formData.trainingDays === '2' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '2')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>2</button>
+            <button className={`option-button ${formData.trainingDays === '3' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '3')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>3</button>
+            <button className={`option-button ${formData.trainingDays === '4' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '4')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>4</button>
+            <button className={`option-button ${formData.trainingDays === '5+' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '5+')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>5+</button>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('baseline-intro')} disabled={!formData.trainingDays}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1573,41 +1619,64 @@ export default function SageOnboarding() {
       <div className={`typeform-screen section-screen ${currentScreen === 'baseline-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="section-title">2 The Baseline</h1>
+          <p className="typeform-subtitle">We want to make your training safer and more effective. Help us understand your starting point.</p>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('allergies')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('injuries')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Allergies Screen */}
-      <div className={`typeform-screen ${currentScreen === 'allergies' ? 'active' : 'hidden'}`}>
+      {/* Injuries Screen */}
+      <div className={`typeform-screen ${currentScreen === 'injuries' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <p className="section-label">2 The Baseline</p>
-          <h1 className="typeform-title">Any allergies or intolerances?</h1>
+          <h1 className="typeform-title">Do you have any current or recent injuries?</h1>
           <div className="options-container">
-            {['peanuts', 'tree-nuts', 'dairy', 'gluten', 'soy', 'shellfish', 'none'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.allergies.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('allergies', option)}>
-                {option === 'peanuts' && 'Peanuts'}
-                {option === 'tree-nuts' && 'Tree nuts'}
-                {option === 'dairy' && 'Dairy'}
-                {option === 'gluten' && 'Gluten'}
-                {option === 'soy' && 'Soy'}
-                {option === 'shellfish' && 'Shellfish'}
+            {['shoulder', 'elbow-wrist', 'lower-back', 'hip', 'knee', 'ankle-foot', 'none'].map((option) => (
+              <button key={option} className={`option-button checkbox ${formData.injuries.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('injuries', option)}>
+                {option === 'shoulder' && 'Shoulder'}
+                {option === 'elbow-wrist' && 'Elbow / wrist'}
+                {option === 'lower-back' && 'Lower back'}
+                {option === 'hip' && 'Hip'}
+                {option === 'knee' && 'Knee'}
+                {option === 'ankle-foot' && 'Ankle / foot'}
                 {option === 'none' && 'None'}
               </button>
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherAllergy} onChange={(e) => handleInputChange('otherAllergy', e.target.value)} />
+              <input type="text" placeholder="Please specify ...." />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('medications')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Movement Restrictions Screen */}
+      <div className={`typeform-screen ${currentScreen === 'movement-restrictions' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">2 The Baseline</p>
+          <h1 className="typeform-title">List any movements you must avoid or modify.</h1>
+          <p className="typeform-subtitle">E.g. &apos;No overhead pressing,&apos; &apos;Avoid deep squats.&apos; If none, write &apos;None.&apos;</p>
+          <div className="input-container">
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.movementRestrictions} onChange={(e) => handleInputChange('movementRestrictions', e.target.value)} autoFocus />
+            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('medical-conditions')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1620,16 +1689,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.medications} onChange={(e) => handleInputChange('medications', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'supplements', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('supplements')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1642,16 +1711,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.supplements} onChange={(e) => handleInputChange('supplements', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'medical-conditions', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('medical-conditions')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1659,14 +1728,14 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'medical-conditions' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <p className="section-label">2 The Baseline</p>
-          <h1 className="typeform-title">Do you have any diagnosed medical conditions?</h1>
+          <h1 className="typeform-title">Any diagnosed conditions we should consider?</h1>
           <div className="options-container">
-            {['high-blood-pressure', 'high-cholesterol', 'diabetes', 'hypothyroidism', 'pcos', 'ibs-ibd', 'none'].map((option) => (
+            {['high-blood-pressure', 'high-cholesterol', 'diabetes', 'thyroid', 'pcos', 'ibs-ibd', 'none'].map((option) => (
               <button key={option} className={`option-button checkbox ${formData.medicalConditions.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('medicalConditions', option)}>
                 {option === 'high-blood-pressure' && 'High Blood Pressure'}
                 {option === 'high-cholesterol' && 'High cholesterol'}
                 {option === 'diabetes' && 'Type 2 Diabetes / Pre-Diabetes'}
-                {option === 'hypothyroidism' && 'Hypothyroidism'}
+                {option === 'thyroid' && 'Thyroid condition'}
                 {option === 'pcos' && 'PCOS'}
                 {option === 'ibs-ibd' && 'IBS / IBD'}
                 {option === 'none' && 'None'}
@@ -1678,55 +1747,326 @@ export default function SageOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('fuel-intro')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('environment-intro')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Section 3: The Fuel - Intro */}
-      <div className={`typeform-screen section-screen ${currentScreen === 'fuel-intro' ? 'active' : 'hidden'}`}>
+      {/* Section 3: The Environment - Intro */}
+      <div className={`typeform-screen section-screen ${currentScreen === 'environment-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="section-title">3 The Fuel</h1>
+          <h1 className="section-title">3 The Environment</h1>
+          <p className="typeform-subtitle">Let&apos;s explore the resources and setting you have for training, so your plan fits your actual environment.</p>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('eating-style')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('equipment')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
-      {/* Eating Style Screen */}
-      <div className={`typeform-screen ${currentScreen === 'eating-style' ? 'active' : 'hidden'}`}>
+      {/* Equipment Screen */}
+      <div className={`typeform-screen ${currentScreen === 'equipment' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">3 The Fuel</p>
-          <h1 className="typeform-title">Which best describes your typical eating style?</h1>
-          <div className="scrollable-options-wrapper">
-            <div className="options-container image-cards">
-              <button className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', '3-meals')}>
-                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/3-meals.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-                <div className="image-card-label">3 meals a day</div>
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">What equipment do you have regular access to?</h1>
+          <div className="options-container">
+            {['commercial-gym', 'power-rack-barbell-plates', 'dumbbells', 'kettlebells', 'cables-machines', 'resistance-bands', 'bodyweight-only', 'cardio-machines'].map((option) => (
+              <button key={option} className={`option-button checkbox ${formData.equipment.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('equipment', option)}>
+                {option === 'commercial-gym' && 'Commercial Gym'}
+                {option === 'power-rack-barbell-plates' && 'Power Rack + Barbell + Plates'}
+                {option === 'dumbbells' && 'Dumbbells'}
+                {option === 'kettlebells' && 'Kettlebells'}
+                {option === 'cables-machines' && 'Cables or Machines'}
+                {option === 'resistance-bands' && 'Resistance Bands'}
+                {option === 'bodyweight-only' && 'Body Weight Only'}
+                {option === 'cardio-machines' && 'Cardio Machines'}
               </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'intermittent-fasting' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'intermittent-fasting')}>
-                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/intermittent-fasting.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-                <div className="image-card-label">Intermittent Fasting</div>
+            ))}
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('training-location')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Training Location Screen */}
+      <div className={`typeform-screen ${currentScreen === 'training-location' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">Where do you usually train?</h1>
+          <div className="options-container">
+            <button className={`option-button ${formData.trainingLocation === 'gym' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'gym')}>Gym</button>
+            <button className={`option-button ${formData.trainingLocation === 'home' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'home')}>Home</button>
+            <button className={`option-button ${formData.trainingLocation === 'outdoors' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'outdoors')}>Outdoors</button>
+            <button className={`option-button ${formData.trainingLocation === 'mix' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'mix')}>Mix of these</button>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('session-length')} disabled={!formData.trainingLocation}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Session Length Screen */}
+      <div className={`typeform-screen ${currentScreen === 'session-length' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">How long is your average training session?</h1>
+          <p className="typeform-subtitle">So we can better understand your daily rhythm.</p>
+          <div className="input-container">
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.sessionLength} onChange={(e) => handleInputChange('sessionLength', e.target.value)} autoFocus />
+            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('exercise-time')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Exercise Time Screen */}
+      <div className={`typeform-screen ${currentScreen === 'exercise-time' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">When do you usually exercise?</h1>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
+            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
+            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
+            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
+            <button className={`option-button ${formData.exerciseTime === 'it-varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it-varies')} style={{minWidth: '150px'}}>it varies</button>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Sleep Quality Screen */}
+      <div className={`typeform-screen ${currentScreen === 'sleep-quality' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">How well did you sleep the past 2 weeks?</h1>
+          <p className="typeform-subtitle">Reflect on your sleep quality and select a number that you feel describes it best, with 1 being poor and 10 being excellent.</p>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
+              <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''}`} onClick={() => handleInputChange('sleepQuality', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+            ))}
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('stress-level')} disabled={!formData.sleepQuality}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Stress Level Screen */}
+      <div className={`typeform-screen ${currentScreen === 'stress-level' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">3 The Environment</p>
+          <h1 className="typeform-title">What is your average daily stress level?</h1>
+          <p className="typeform-subtitle">Reflect on your daily stress and select a number that you feel describes it best, with 1 being little to no stress and 10 being the maximum amount of stress.</p>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
+              <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''}`} onClick={() => handleInputChange('stressLevel', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+            ))}
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('forge-intake-intro')} disabled={!formData.stressLevel}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Section 4: The Forge Intake - Intro */}
+      <div className={`typeform-screen section-screen ${currentScreen === 'forge-intake-intro' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <h1 className="section-title">4 The Forge Intake</h1>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('training-experience')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Training Experience Screen */}
+      <div className={`typeform-screen ${currentScreen === 'training-experience' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">How long have you been training?</h1>
+          <p className="typeform-subtitle">So we can better understand your fitness experience.</p>
+          <div className="input-container">
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.trainingExperience} onChange={(e) => handleInputChange('trainingExperience', e.target.value)} autoFocus />
+            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('skills-priority')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Skills Priority Screen */}
+      <div className={`typeform-screen ${currentScreen === 'skills-priority' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">Which skills do you want to prioritize?</h1>
+          <div className="options-container">
+            {['mobility', 'endurance-stamina', 'running-speed', 'olympic-lifts', 'upper-body-strength', 'lower-body-strength', 'flexibility'].map((option) => (
+              <button key={option} className={`option-button checkbox ${formData.skillsPriority.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('skillsPriority', option)}>
+                {option === 'mobility' && 'Mobility'}
+                {option === 'endurance-stamina' && 'Endurance and Stamina'}
+                {option === 'running-speed' && 'Running Speed'}
+                {option === 'olympic-lifts' && 'Olympic Lifts'}
+                {option === 'upper-body-strength' && 'Upper Body Strength'}
+                {option === 'lower-body-strength' && 'Lower Body Strength'}
+                {option === 'flexibility' && 'Flexibility'}
               </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'snacking-grazing' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'snacking-grazing')}>
-                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/snacking.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-                <div className="image-card-label">Snacking / Grazing</div>
-              </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'no-pattern' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'no-pattern')}>
-                <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/no-pattern.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
-                <div className="image-card-label">no set pattern</div>
-              </button>
+            ))}
+            <div className="option-button-other">
+              <span>Other</span>
+              <input type="text" placeholder="Please specify ...." />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('first-meal')} disabled={!formData.eatingStyle}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('effort-familiarity')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Effort Familiarity Screen */}
+      <div className={`typeform-screen ${currentScreen === 'effort-familiarity' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">Are you comfortable using RPE or RIR for effort?</h1>
+          <div className="options-container">
+            <button className={`option-button ${formData.effortFamiliarity === 'yes' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'yes')}>Yes</button>
+            <button className={`option-button ${formData.effortFamiliarity === 'no' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'no')}>No</button>
+            <button className={`option-button ${formData.effortFamiliarity === 'learn' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'learn')}>I would like to learn it</button>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={!formData.effortFamiliarity}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Current Bests Screen */}
+      <div className={`typeform-screen ${currentScreen === 'current-bests' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">What are your current bests?</h1>
+          <p className="typeform-subtitle">Example: Squat 5RM 100 kg; Bench 5RM 80 kg; Deadlift 5RM 140 kg; Pull ups max 8</p>
+          <div className="input-container">
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.currentBests} onChange={(e) => handleInputChange('currentBests', e.target.value)} autoFocus />
+            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('conditioning-preferences')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Conditioning Preferences Screen */}
+      <div className={`typeform-screen ${currentScreen === 'conditioning-preferences' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">What are your conditioning preferences?</h1>
+          <div className="options-container">
+            {['zone2-cardio', 'intervals-hiit', 'circuits-metcons', 'sport-specific', 'minimal-none'].map((option) => (
+              <button key={option} className={`option-button checkbox ${formData.conditioningPreferences.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('conditioningPreferences', option)}>
+                {option === 'zone2-cardio' && 'Zone 2 Cardio'}
+                {option === 'intervals-hiit' && 'Intervals or HIIT'}
+                {option === 'circuits-metcons' && 'Circuits or Metcons'}
+                {option === 'sport-specific' && 'Sport specific'}
+                {option === 'minimal-none' && 'Minimal or None'}
+              </button>
+            ))}
+            <div className="option-button-other">
+              <span>Other</span>
+              <input type="text" placeholder="Please specify ...." />
+            </div>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('soreness-preference')}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Soreness Preference Screen */}
+      <div className={`typeform-screen ${currentScreen === 'soreness-preference' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">What is your preferred soreness level after sessions?</h1>
+          <p className="typeform-subtitle">Reflect on your preferred soreness level and select a number that you feel describes it best, with 1 being little to no soreness and 10 being the maximum amount of soreness.</p>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
+              <button key={num} className={`option-button ${formData.sorenessPreference === num ? 'selected' : ''}`} onClick={() => handleInputChange('sorenessPreference', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+            ))}
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('daily-activity')} disabled={!formData.sorenessPreference}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
+        </div>
+      </div>
+
+      {/* Daily Activity Screen */}
+      <div className={`typeform-screen ${currentScreen === 'daily-activity' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label">4 The Forge Intake</p>
+          <h1 className="typeform-title">How active are you during the day?</h1>
+          <div className="options-container">
+            <button className={`option-button with-subtitle ${formData.dailyActivity === 'sedentary' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'sedentary')}>
+              <div className="option-main">Mostly Sedentary</div>
+              <div className="option-sub">You&apos;re seated for most of the day (desk job, driving, watching TV)</div>
+            </button>
+            <button className={`option-button with-subtitle ${formData.dailyActivity === 'mixed' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'mixed')}>
+              <div className="option-main">Mixed Activity</div>
+              <div className="option-sub">You&apos;re on your feet for part of the day with light movement (teaching, shopping, light housework)</div>
+            </button>
+            <button className={`option-button with-subtitle ${formData.dailyActivity === 'active' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'active')}>
+              <div className="option-main">Active</div>
+              <div className="option-sub">You&apos;re moving most of the day and doing physical tasks (construction work, physical labor, constant walking)</div>
+            </button>
+          </div>
+          <div className="button-container">
+            <button className="typeform-button" onClick={() => handleContinue('completion')} disabled={!formData.dailyActivity}>Continue</button>
+            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+          </div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1746,7 +2086,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('energy-crash')} disabled={!formData.firstMeal}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1765,7 +2105,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('protein-sources')} disabled={!formData.energyCrash}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1795,7 +2135,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('food-dislikes')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1808,16 +2148,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.foodDislikes} onChange={(e) => handleInputChange('foodDislikes', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'meals-cooked', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('meals-cooked')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1830,16 +2170,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.mealsCooked} onChange={(e) => handleInputChange('mealsCooked', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'alcohol-consumption', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('alcohol-consumption')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1852,16 +2192,16 @@ export default function SageOnboarding() {
           <div className="input-container">
             <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.alcoholConsumption} onChange={(e) => handleInputChange('alcoholConsumption', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'completion', false)} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('completion')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -1870,34 +2210,34 @@ export default function SageOnboarding() {
         <div className="typeform-content" style={{textAlign: 'center'}}>
           <h1 className="typeform-title" style={{fontSize: '64px', marginBottom: '30px', textAlign: 'center'}}>You&apos;re all set.</h1>
           <p className="typeform-subtitle" style={{fontSize: '20px', marginBottom: '60px', maxWidth: '700px', textAlign: 'center', marginLeft: 'auto', marginRight: 'auto'}}>
-            Thank you. Your sage profile is ready.<br />
+            Thank you. Your forge profile is ready.<br />
             The final step is to connect your health data.
           </p>
           <div className="button-container" style={{justifyContent: 'center', paddingLeft: '0'}}>
             <button className="typeform-button" onClick={() => handleContinue('final-step-intro')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
       {/* Section 5: The Final Step - Intro */}
       <div className={`typeform-screen section-screen ${currentScreen === 'final-step-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="section-title">4 The Final Step</h1>
+          <h1 className="section-title">5 The Final Step</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ecosystem-integration')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
       {/* Ecosystem Integration Screen */}
       <div className={`typeform-screen ${currentScreen === 'ecosystem-integration' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Final Step</p>
-          <h1 className="typeform-title">Integrate sage into your ecosystem.</h1>
+          <p className="section-label">5 The Final Step</p>
+          <h1 className="typeform-title">Integrate forge into your ecosystem.</h1>
           <p className="typeform-subtitle">Activity, sleep, and metabolic data help optimize meal content, calendar helps optimize timing.</p>
 
           <div className="integrations-scroll-container">
@@ -2025,7 +2365,7 @@ export default function SageOnboarding() {
           {/* Available Integrations Section */}
           <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
             <h2 className="integration-section-title">Available</h2>
-            <p className="integration-section-description">Connect your tools to provide Sage with richer data</p>
+            <p className="integration-section-description">Connect your tools to provide Forge with richer data</p>
           </div>
           <div className="integrations-grid">
             {!gmailConnected && (
@@ -2205,14 +2545,14 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
       {/* Lab Upload Screen */}
       <div className={`typeform-screen ${currentScreen === 'lab-upload' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <p className="section-label">4 The Final Step</p>
+          <p className="section-label">5 The Final Step</p>
           <h1 className="typeform-title">Upload your labs and bloodwork.</h1>
           <p className="typeform-subtitle">Please upload your most recent blood test results to unlock your personalized plan.</p>
           <div className="upload-container">
@@ -2268,7 +2608,7 @@ export default function SageOnboarding() {
             <button className="typeform-button" onClick={handleSubmit}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -2285,7 +2625,7 @@ export default function SageOnboarding() {
           <p className="typeform-subtitle" style={{fontSize: '16px', marginBottom: '60px', maxWidth: '650px', opacity: 0.8}}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
-          <div className="typeform-brand">sage</div>
+          <div className="typeform-brand">forge</div>
         </div>
       </div>
 
@@ -2420,17 +2760,17 @@ export default function SageOnboarding() {
                   textAlign: 'center'
                 }}>
                   <p style={{ fontSize: '16px', marginBottom: '12px' }}>
-                    moccet sage Agents are building your plan.
+                    moccet forge Agents are building your plan.
                   </p>
                   <p style={{ fontSize: '15px', marginBottom: '12px' }}>
                     This may take up to 5 minutes.
                   </p>
                   <p style={{ fontSize: '15px', marginBottom: '24px' }}>
-                    You can close this screen and sage will email you once your plan is ready.
+                    You can close this screen and forge will email you once your plan is ready.
                   </p>
                 </div>
               )}
-              <div className="loading-text">loading sage plan</div>
+              <div className="loading-text">loading forge plan</div>
               <div className="loading-bar-container">
                 <div
                   className="loading-bar-fill"

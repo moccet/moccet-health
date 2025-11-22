@@ -201,6 +201,9 @@ export default function SageOnboarding() {
     weight: '',
     weightUnit: 'lbs' as 'lbs' | 'kg',
     height: '',
+    heightUnit: 'cm' as 'cm' | 'ft',
+    heightFeet: '',
+    heightInches: '',
     email: '',
     mainPriority: '',
     drivingGoal: '',
@@ -1339,28 +1342,96 @@ export default function SageOnboarding() {
       <div className={`typeform-screen ${currentScreen === 'height' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="typeform-title">What is your height?</h1>
-          <p className="typeform-subtitle">Please enter your height in centimeters, this helps us create your personalized plan.</p>
-          <div className="input-with-unit-container">
-            <div className="input-container">
-              <input
-                type="number"
-                className="typeform-input"
-                placeholder="Type your answer here"
-                value={formData.height}
-                onChange={(e) => handleInputChange('height', e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'email', !formData.height.trim())}
-                autoFocus
-              />
-              <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="unit-label">cm</div>
+          <p className="typeform-subtitle">Please enter your height, this helps us create your personalized plan.</p>
+
+          {/* Unit Toggle */}
+          <div className="height-unit-toggle">
+            <button
+              className={`toggle-option ${formData.heightUnit === 'cm' ? 'active' : ''}`}
+              onClick={() => handleInputChange('heightUnit', 'cm')}
+              type="button"
+            >
+              cm
+            </button>
+            <button
+              className={`toggle-option ${formData.heightUnit === 'ft' ? 'active' : ''}`}
+              onClick={() => handleInputChange('heightUnit', 'ft')}
+              type="button"
+            >
+              ft/in
+            </button>
           </div>
+
+          {/* Conditional Input Based on Unit */}
+          {formData.heightUnit === 'cm' ? (
+            <div className="input-with-unit-container">
+              <div className="input-container">
+                <input
+                  type="number"
+                  className="typeform-input"
+                  placeholder="Type your answer here"
+                  value={formData.height}
+                  onChange={(e) => handleInputChange('height', e.target.value)}
+                  onKeyPress={(e) => handleKeyPress(e, 'email', !formData.height.trim())}
+                  autoFocus
+                />
+                <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="unit-label">cm</div>
+            </div>
+          ) : (
+            <div className="height-ft-in-container">
+              <div className="input-with-unit-container">
+                <div className="input-container">
+                  <input
+                    type="number"
+                    className="typeform-input"
+                    placeholder="Feet"
+                    value={formData.heightFeet}
+                    onChange={(e) => handleInputChange('heightFeet', e.target.value)}
+                    autoFocus
+                  />
+                  <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="unit-label">ft</div>
+              </div>
+              <div className="input-with-unit-container">
+                <div className="input-container">
+                  <input
+                    type="number"
+                    className="typeform-input"
+                    placeholder="Inches"
+                    value={formData.heightInches}
+                    onChange={(e) => handleInputChange('heightInches', e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, 'email', !formData.heightFeet.trim() && !formData.heightInches.trim())}
+                  />
+                  <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="unit-label">in</div>
+              </div>
+            </div>
+          )}
+
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('email')} disabled={!formData.height.trim()}>Continue</button>
+            <button
+              className="typeform-button"
+              onClick={() => handleContinue('email')}
+              disabled={formData.heightUnit === 'cm' ? !formData.height.trim() : !formData.heightFeet.trim() && !formData.heightInches.trim()}
+            >
+              Continue
+            </button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">sage</div>
@@ -1792,6 +1863,9 @@ export default function SageOnboarding() {
                 <div className="integrations-grid connected-grid">
                 {gmailConnected && (
                   <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/google.png" alt="Google Calendar" />
+                    </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Google Calendar</h3>
                       <p className="integration-description">Sync your schedule for meal timing optimization</p>
@@ -1818,6 +1892,9 @@ export default function SageOnboarding() {
 
                 {outlookConnected && (
                   <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/outlook.png" alt="Outlook" />
+                    </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Outlook</h3>
                       <p className="integration-description">Sync your Outlook calendar for meal timing</p>
@@ -1830,6 +1907,9 @@ export default function SageOnboarding() {
 
                 {slackConnected && (
                   <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/slack.png" alt="Slack" />
+                    </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Slack</h3>
                       <p className="integration-description">Receive daily meal plans and reminders</p>
@@ -1842,6 +1922,9 @@ export default function SageOnboarding() {
 
                 {formData.integrations.includes('oura-ring') && (
                   <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/oura.png" alt="Oura Ring" />
+                    </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Oura Ring</h3>
                       <p className="integration-description">Upload your sleep and activity data</p>
@@ -1899,6 +1982,9 @@ export default function SageOnboarding() {
           <div className="integrations-grid">
             {!gmailConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/google.png" alt="Google Calendar" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Google Calendar</h3>
                   <p className="integration-description">Sync your schedule for meal timing optimization</p>
@@ -1915,6 +2001,9 @@ export default function SageOnboarding() {
 
             {!outlookConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/outlook.png" alt="Outlook" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Outlook</h3>
                   <p className="integration-description">Sync your Outlook calendar for meal timing</p>
@@ -1927,6 +2016,9 @@ export default function SageOnboarding() {
 
             {!slackConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/slack.png" alt="Slack" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Slack</h3>
                   <p className="integration-description">Receive daily meal plans and reminders</p>
@@ -1939,6 +2031,9 @@ export default function SageOnboarding() {
 
             {!ouraConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/oura.png" alt="Oura Ring" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Oura Ring</h3>
                   <p className="integration-description">Sync your sleep, activity, and readiness data</p>
@@ -1951,6 +2046,9 @@ export default function SageOnboarding() {
 
             {ouraConnected && (
               <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/oura.png" alt="Oura Ring" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Oura Ring</h3>
                   <p className="integration-description">Connected</p>
@@ -1963,6 +2061,9 @@ export default function SageOnboarding() {
 
             {!teamsConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/teams.png" alt="Microsoft Teams" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Microsoft Teams</h3>
                   <p className="integration-description">Search and send messages in Teams</p>
@@ -1975,6 +2076,9 @@ export default function SageOnboarding() {
 
             {teamsConnected && (
               <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/teams.png" alt="Microsoft Teams" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Microsoft Teams</h3>
                   <p className="integration-description">Connected: {teamsEmail}</p>
@@ -1987,6 +2091,9 @@ export default function SageOnboarding() {
 
             {!vitalConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/vital.png" alt="Vital Health" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>
                   <p className="integration-description">Connect Fitbit, Apple Health, WHOOP, Libre & more</p>
@@ -1999,6 +2106,9 @@ export default function SageOnboarding() {
 
             {vitalConnected && (
               <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/vital.png" alt="Vital Health" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>
                   <p className="integration-description">Connected</p>
@@ -2011,6 +2121,9 @@ export default function SageOnboarding() {
 
             {!dexcomConnected && (
               <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/dexcom.png" alt="Dexcom CGM" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Dexcom CGM</h3>
                   <p className="integration-description">Sync your continuous glucose monitoring data</p>
@@ -2023,6 +2136,9 @@ export default function SageOnboarding() {
 
             {dexcomConnected && (
               <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/dexcom.png" alt="Dexcom CGM" />
+                </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Dexcom CGM</h3>
                   <p className="integration-description">Connected</p>

@@ -1175,66 +1175,66 @@ export default function PersonalisedPlanPage() {
             {plan.lifestyleIntegration ? (
               <div className="lifestyle-clean">
                 {/* Sleep Optimization */}
-                {plan.lifestyleIntegration.sleepOptimization && (
+                {lifestyleIntegration.sleepOptimization && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Sleep Optimization</h3>
-                    {plan.lifestyleIntegration.sleepOptimization.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{plan.lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
+                    {lifestyleIntegration.sleepOptimization.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
                     )}
 
-                    {plan.lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
+                    {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
                       <div className="lifestyle-text">
-                        <p><strong>Optimal Sleep Window:</strong> {plan.lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
+                        <p><strong>Optimal Sleep Window:</strong> {lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.sleepOptimization.preBedroutine && plan.lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
+                    {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Pre-Bed Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
+                        {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
                           <p key={idx}>• {item}</p>
                         ))}
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.sleepOptimization.morningProtocol && plan.lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
+                    {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Morning Protocol:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
+                        {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
                           <p key={idx}>• {item}</p>
                         ))}
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.sleepOptimization.whyThisMatters && (
+                    {lifestyleIntegration.sleepOptimization.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {plan.lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Exercise Protocol */}
-                {plan.lifestyleIntegration.exerciseProtocol && (
+                {lifestyleIntegration.exerciseProtocol && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Exercise Protocol</h3>
-                    {plan.lifestyleIntegration.exerciseProtocol.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{plan.lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
+                    {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
                     )}
 
-                    {plan.lifestyleIntegration.exerciseProtocol.weeklyStructure && (
+                    {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
                       <div className="lifestyle-text">
-                        <p><strong>Weekly Structure:</strong> {plan.lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
+                        <p><strong>Weekly Structure:</strong> {lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.exerciseProtocol.workoutSplit && plan.lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
+                    {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Workout Split:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
+                        {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
                           <p key={idx}>
                             <strong>{workout.day}:</strong> {workout.focus}
                             {workout.duration && <> • {workout.duration}</>}
@@ -1243,27 +1243,27 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.exerciseProtocol.whyThisMatters && (
+                    {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {plan.lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Stress Management */}
-                {plan.lifestyleIntegration.stressManagement && (
+                {lifestyleIntegration.stressManagement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Stress Management</h3>
-                    {plan.lifestyleIntegration.stressManagement.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{plan.lifestyleIntegration.stressManagement.personalizedIntro}</p>
+                    {lifestyleIntegration.stressManagement.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
                     )}
 
-                    {plan.lifestyleIntegration.stressManagement.dailyPractices && plan.lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
+                    {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Daily Practices:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
+                        {lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
                           <p key={idx}>
                             <strong>{practice.practice}</strong>
                             {practice.timing && <> • {practice.timing}</>}
@@ -1274,27 +1274,27 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.stressManagement.whyThisMatters && (
+                    {lifestyleIntegration.stressManagement.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {plan.lifestyleIntegration.stressManagement.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.stressManagement.whyThisMatters}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Skin Improvement */}
-                {plan.lifestyleIntegration.skinImprovement && (
+                {lifestyleIntegration.skinImprovement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Skin Improvement</h3>
-                    {plan.lifestyleIntegration.skinImprovement.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{plan.lifestyleIntegration.skinImprovement.personalizedIntro}</p>
+                    {lifestyleIntegration.skinImprovement.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyleIntegration.skinImprovement.personalizedIntro}</p>
                     )}
 
-                    {plan.lifestyleIntegration.skinImprovement.morningRoutine && plan.lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
+                    {lifestyleIntegration.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Morning Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
+                        {lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
                           <p key={idx}>
                             {idx + 1}. <strong>{step.product}</strong>
                             {step.purpose && <> - {step.purpose}</>}
@@ -1303,11 +1303,11 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.skinImprovement.eveningRoutine && plan.lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
+                    {lifestyleIntegration.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Evening Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {plan.lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
+                        {lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
                           <p key={idx}>
                             {idx + 1}. <strong>{step.product}</strong>
                             {step.purpose && <> - {step.purpose}</>}
@@ -1316,9 +1316,9 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {plan.lifestyleIntegration.skinImprovement.whyThisMatters && (
+                    {lifestyleIntegration.skinImprovement.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {plan.lifestyleIntegration.skinImprovement.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.skinImprovement.whyThisMatters}</p>
                       </div>
                     )}
                   </div>

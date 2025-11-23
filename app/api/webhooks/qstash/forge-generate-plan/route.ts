@@ -250,46 +250,107 @@ async function handler(request: NextRequest) {
       console.log('[OK] Ready to generate plan with all available data');
     }
 
-    // Import the generation functions directly - TODO: Create forge-specific plan generators
-    // For now, we'll use placeholder logic that you can replace with actual forge plan generation
-    console.log('[1/5] Generating main forge fitness plan (with blood analysis data)...');
+    // Fetch user's onboarding data from storage
+    console.log('[1/3] Fetching user onboarding data...');
 
-    // TODO: Replace these with actual forge-specific plan generation endpoints:
-    // - /api/generate-forge-plan - Main fitness plan
-    // - /api/generate-workout-plan - Detailed workout programming
-    // - /api/generate-recovery-plan - Recovery and regeneration strategies
-    // - /api/generate-performance-metrics - Performance tracking and metrics
+    let formData;
+    let bloodAnalysisData;
 
-    // Placeholder: Store a basic plan structure
-    const planData = {
+    // Check dev storage first
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const devData = devOnboardingStorage.get(email) as any;
+    if (devData) {
+      formData = devData.form_data;
+      bloodAnalysisData = devData.lab_file_analysis;
+      console.log('[OK] Retrieved data from dev storage');
+    } else {
+      // Try Supabase
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          const { data } = await supabase
+            .from('forge_onboarding_data')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (data) {
+            formData = data.form_data;
+            bloodAnalysisData = data.lab_file_analysis;
+            console.log('[OK] Retrieved data from Supabase');
+          }
+        } catch (error) {
+          console.error('Error fetching from Supabase:', error);
+          throw new Error('Could not fetch user data');
+        }
+      }
+    }
+
+    if (!formData) {
+      throw new Error('No user data found');
+    }
+
+    // Generate comprehensive fitness plan
+    console.log('[2/3] Generating comprehensive fitness plan with AI...');
+
+    const planResponse = await fetch(`${baseUrl}/api/generate-forge-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formData,
+        bloodAnalysis: bloodAnalysisData
+      })
+    });
+
+    if (!planResponse.ok) {
+      throw new Error('Failed to generate fitness plan');
+    }
+
+    const planResult = await planResponse.json();
+
+    if (!planResult.success || !planResult.plan) {
+      throw new Error('Invalid plan generation response');
+    }
+
+    console.log('[OK] Comprehensive fitness plan generated');
+
+    // Store the generated plan
+    console.log('[3/3] Storing fitness plan...');
+
+    // Store in dev storage
+    devPlanStorage.set(uniqueCode, {
       email,
       uniqueCode,
       fullName,
       status: 'completed',
       generatedAt: new Date().toISOString(),
-      plan: {
-        overview: 'Personalized fitness plan based on your profile',
-        // Add actual plan data here when generation endpoints are created
+      plan: planResult.plan
+    });
+
+    // Store in Supabase if available
+    const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+      try {
+        const supabase = await createClient();
+        await supabase
+          .from('forge_onboarding_data')
+          .update({
+            forge_plan: planResult.plan,
+            plan_generation_status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', email);
+        console.log('[OK] Plan stored in Supabase');
+      } catch (error) {
+        console.error('Error storing in Supabase:', error);
       }
-    };
+    }
 
-    devPlanStorage.set(uniqueCode, planData);
-    console.log('[OK] Main forge plan generated');
-
-    console.log('[2/5] Generating detailed workout programming...');
-    // TODO: Implement workout plan generation
-    console.log('[OK] Workout programming generated');
-
-    console.log('[3/5] Generating recovery strategies...');
-    // TODO: Implement recovery plan generation
-    console.log('[OK] Recovery strategies generated');
-
-    console.log('[4/5] Generating performance tracking...');
-    // TODO: Implement performance metrics generation
-    console.log('[OK] Performance tracking generated');
+    console.log('[OK] Fitness plan stored successfully');
 
     // Send email notification
-    console.log('[5/5] Sending plan ready email...');
+    console.log('[4/4] Sending plan ready email...');
     console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
     const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 

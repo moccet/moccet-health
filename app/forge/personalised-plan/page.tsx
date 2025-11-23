@@ -97,29 +97,46 @@ interface FitnessPlan {
       };
     };
   };
-  recoveryProtocol: {
-    dailyPractices: string[];
-    weeklyPractices: string[];
-    sleepOptimization: string;
-    stressManagement: string;
-    mobilityWork: string;
+  recoveryProtocol?: {
+    dailyPractices?: string[];
+    weeklyPractices?: string[];
+    sleepOptimization?: string;
+    stressManagement?: string;
+    mobilityWork?: string;
+    activeRecovery?: string;
+    personalizedNotes?: string;
   };
-  supplementRecommendations: {
-    essential: Array<{
+  supplementRecommendations?: {
+    essential?: Array<{
       supplement: string;
       dosage: string;
       timing: string;
       rationale: string;
       duration: string;
     }>;
-    optional: Array<{
+    optional?: Array<{
       supplement: string;
       dosage: string;
       timing: string;
       rationale: string;
       duration: string;
     }>;
-    considerations: string;
+    essentialSupplements?: Array<{
+      name: string;
+      dosage: string;
+      timing: string;
+      rationale: string;
+      benefits?: string;
+    }>;
+    optionalSupplements?: Array<{
+      name: string;
+      dosage: string;
+      timing: string;
+      rationale: string;
+      benefits?: string;
+    }>;
+    considerations?: string;
+    personalizedNotes?: string;
   };
   nutritionGuidance: {
     proteinTarget: string;
@@ -720,7 +737,7 @@ export default function PersonalisedPlanPage() {
               <h3 className="overview-heading">Essential Supplements</h3>
               <div style={{ display: 'grid', gap: '15px' }}>
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {plan.supplementRecommendations.essential.map((supp: any, idx: number) => (
+                {(plan.supplementRecommendations?.essentialSupplements || plan.supplementRecommendations?.essential || []).map((supp: any, idx: number) => (
                   <div key={idx} style={{
                     background: '#f5f5f5',
                     border: '2px solid #000',
@@ -728,7 +745,7 @@ export default function PersonalisedPlanPage() {
                     padding: '15px'
                   }}>
                     <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>
-                      {supp.supplement}
+                      {supp.name || supp.supplement}
                     </div>
                     <div style={{ fontSize: '14px', marginBottom: '8px' }}>
                       <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
@@ -736,9 +753,16 @@ export default function PersonalisedPlanPage() {
                     <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
                       <strong>Why:</strong> {supp.rationale}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>
-                      <strong>Duration:</strong> {supp.duration}
-                    </div>
+                    {supp.benefits && (
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+                        <strong>Benefits:</strong> {supp.benefits}
+                      </div>
+                    )}
+                    {supp.duration && (
+                      <div style={{ fontSize: '12px', color: '#888' }}>
+                        <strong>Duration:</strong> {supp.duration}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -748,7 +772,7 @@ export default function PersonalisedPlanPage() {
               <h3 className="overview-heading">Optional Supplements</h3>
               <div style={{ display: 'grid', gap: '15px' }}>
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {plan.supplementRecommendations.optional.map((supp: any, idx: number) => (
+                {(plan.supplementRecommendations?.optionalSupplements || plan.supplementRecommendations?.optional || []).map((supp: any, idx: number) => (
                   <div key={idx} style={{
                     background: '#fff',
                     border: '1px solid #ddd',
@@ -756,7 +780,7 @@ export default function PersonalisedPlanPage() {
                     padding: '15px'
                   }}>
                     <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>
-                      {supp.supplement}
+                      {supp.name || supp.supplement}
                     </div>
                     <div style={{ fontSize: '14px', marginBottom: '8px' }}>
                       <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
@@ -764,9 +788,16 @@ export default function PersonalisedPlanPage() {
                     <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
                       <strong>Why:</strong> {supp.rationale}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>
-                      <strong>Duration:</strong> {supp.duration}
-                    </div>
+                    {supp.benefits && (
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+                        <strong>Benefits:</strong> {supp.benefits}
+                      </div>
+                    )}
+                    {supp.duration && (
+                      <div style={{ fontSize: '12px', color: '#888' }}>
+                        <strong>Duration:</strong> {supp.duration}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -787,7 +818,7 @@ export default function PersonalisedPlanPage() {
                 <h3>Daily Practices</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.recoveryProtocol.dailyPractices.map((practice: any, idx: number) => (
+                  {(plan.recoveryProtocol?.dailyPractices || []).map((practice: any, idx: number) => (
                     <li key={idx}>{practice}</li>
                   ))}
                 </ul>
@@ -796,7 +827,7 @@ export default function PersonalisedPlanPage() {
                 <h3>Weekly Practices</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.recoveryProtocol.weeklyPractices.map((practice: any, idx: number) => (
+                  {(plan.recoveryProtocol?.weeklyPractices || []).map((practice: any, idx: number) => (
                     <li key={idx}>{practice}</li>
                   ))}
                 </ul>
@@ -805,15 +836,15 @@ export default function PersonalisedPlanPage() {
             <div style={{ marginTop: '20px' }}>
               <div className="lifestyle-item">
                 <h3>Sleep Optimization</h3>
-                <p>{plan.recoveryProtocol.sleepOptimization}</p>
+                <p>{plan.recoveryProtocol?.sleepOptimization || 'Not available'}</p>
               </div>
               <div className="lifestyle-item">
                 <h3>Stress Management</h3>
-                <p>{plan.recoveryProtocol.stressManagement}</p>
+                <p>{plan.recoveryProtocol?.stressManagement || 'Not available'}</p>
               </div>
               <div className="lifestyle-item">
                 <h3>Mobility Work</h3>
-                <p>{plan.recoveryProtocol.mobilityWork}</p>
+                <p>{plan.recoveryProtocol?.mobilityWork || 'Not available'}</p>
               </div>
             </div>
           </section>

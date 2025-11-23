@@ -2054,10 +2054,10 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">When do you usually exercise?</h1>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
-            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
-            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
-            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
-            <button className={`option-button ${formData.exerciseTime === 'it-varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it-varies')} style={{minWidth: '150px'}}>it varies</button>
+            <button className={`option-button ${formData.exerciseTime === 'Morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
+            <button className={`option-button ${formData.exerciseTime === 'Midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
+            <button className={`option-button ${formData.exerciseTime === 'Evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
+            <button className={`option-button ${formData.exerciseTime === 'It-varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it-varies')} style={{minWidth: '150px'}}>it varies</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>

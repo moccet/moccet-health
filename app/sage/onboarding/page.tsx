@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './onboarding.css';
 
 type Screen =
@@ -39,6 +39,17 @@ export default function SageOnboarding() {
   const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+
+  // Video sound controls
+  const [introVideoMuted, setIntroVideoMuted] = useState(true);
+  const introVideoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleIntroSound = () => {
+    if (introVideoRef.current) {
+      introVideoRef.current.muted = !introVideoMuted;
+      setIntroVideoMuted(!introVideoMuted);
+    }
+  };
 
   // Speech recognition functionality
   const startDictation = (fieldName: keyof typeof formData) => {
@@ -121,7 +132,7 @@ export default function SageOnboarding() {
       eatingStyle: 'intermittent-fasting',
       firstMeal: '9-11am',
       energyCrash: 'snack',
-      proteinSources: ['poultry', 'fish-seafood', 'eggs'],
+      proteinSources: ['chicken', 'fish-seafood', 'eggs'],
       otherProtein: '',
       foodDislikes: 'Brussels sprouts',
       mealsCooked: '10-12',
@@ -1215,15 +1226,60 @@ export default function SageOnboarding() {
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
         <video
+          ref={introVideoRef}
           playsInline
+          autoPlay
+          muted
+          loop
           className="intro-video"
           preload="auto"
         >
           <source src="/videos/sage.mp4" type="video/mp4" />
         </video>
         <button
+          className="video-sound-toggle"
+          onClick={toggleIntroSound}
+          aria-label={introVideoMuted ? 'Unmute video' : 'Mute video'}
+          style={{
+            position: 'absolute',
+            bottom: '80px',
+            right: '30px',
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '18px',
+            zIndex: 10
+          }}
+        >
+          {introVideoMuted ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+          )}
+        </button>
+        <button
           className="skip-intro-button"
-          onClick={() => setCurrentScreen('welcome')}
+          onClick={() => {
+            if (introVideoRef.current) {
+              introVideoRef.current.pause();
+              introVideoRef.current.muted = true;
+            }
+            setCurrentScreen('welcome');
+          }}
           aria-label="Skip intro video"
         >
           Skip
@@ -1775,9 +1831,9 @@ export default function SageOnboarding() {
           <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">What are your preferred protein sources?</h1>
           <div className="options-container">
-            {['poultry', 'red-meat', 'fish-seafood', 'eggs', 'dairy', 'plant-based', 'protein-powder'].map((protein) => (
+            {['chicken', 'red-meat', 'fish-seafood', 'eggs', 'dairy', 'plant-based', 'protein-powder'].map((protein) => (
               <button key={protein} className={`option-button checkbox ${formData.proteinSources.includes(protein) ? 'selected' : ''}`} onClick={() => toggleArrayValue('proteinSources', protein)}>
-                {protein === 'poultry' && 'Poultry'}
+                {protein === 'chicken' && 'chicken'}
                 {protein === 'red-meat' && 'Red meat'}
                 {protein === 'fish-seafood' && 'Fish / Seafood'}
                 {protein === 'eggs' && 'Eggs'}

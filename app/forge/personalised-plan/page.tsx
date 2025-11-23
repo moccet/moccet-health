@@ -398,7 +398,7 @@ export default function PersonalisedPlanPage() {
       {/* Hero Image */}
       <div className="hero-image-container">
         <img
-          src="/forge-hero.png"
+          src="/images/forge-loading.png"
           alt="Forge Fitness Plan"
           className="hero-image"
         />

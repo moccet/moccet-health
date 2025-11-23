@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS public.forge_onboarding_data (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add index on email for faster lookups
-CREATE INDEX IF NOT EXISTS forge_onboarding_data_email_idx ON public.forge_onboarding_data(email);
+-- Add unique constraint on email (required for upsert ON CONFLICT)
+ALTER TABLE public.forge_onboarding_data ADD CONSTRAINT forge_onboarding_data_email_key UNIQUE (email);
+
+-- Add index on email for faster lookups (unique constraint automatically creates an index, but keeping this for clarity)
+-- CREATE INDEX IF NOT EXISTS forge_onboarding_data_email_idx ON public.forge_onboarding_data(email);
 
 -- Add index on uniqueCode in form_data JSONB for faster lookups by code
 CREATE INDEX IF NOT EXISTS forge_onboarding_data_unique_code_idx ON public.forge_onboarding_data((form_data->>'uniqueCode'));

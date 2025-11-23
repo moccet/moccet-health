@@ -36,7 +36,7 @@ const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
-                            <img src="https://c.animaapp.com/ArhZSyxG/img/frank-sepulveda-st9ymbaqqg4-unsplash.jpg" alt="forge gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
+                            <img src="https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg" alt="forge gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
                         </td>
                     </tr>
                 </table>
@@ -113,8 +113,11 @@ async function sendPlanReadyEmail(email: string, name: string, planUrl: string) 
 
     const msg = {
       to: email,
-      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@moccet.ai',
-      subject: 'Your Personalized Fitness Plan is Ready 🔥',
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL || 'superintelligence@moccet.com',
+        name: 'forge'
+      },
+      subject: 'Your Personalized Fitness Plan is Ready',
       html: EMAIL_TEMPLATE(name, planUrl),
     };
 
@@ -292,7 +295,7 @@ async function handler(request: NextRequest) {
     }
 
     // Generate comprehensive fitness plan
-    console.log('[2/3] Generating comprehensive fitness plan with AI...');
+    console.log('[2/5] Generating comprehensive fitness plan with AI...');
 
     const planResponse = await fetch(`${baseUrl}/api/generate-forge-plan`, {
       method: 'POST',
@@ -315,8 +318,69 @@ async function handler(request: NextRequest) {
 
     console.log('[OK] Comprehensive fitness plan generated');
 
+    // Generate personalized supplement recommendations
+    console.log('[3/5] Generating personalized supplement recommendations...');
+
+    const supplementsResponse = await fetch(`${baseUrl}/api/forge-generate-supplements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formData,
+        bloodAnalysis: bloodAnalysisData
+      })
+    });
+
+    let supplementRecommendations = null;
+    if (supplementsResponse.ok) {
+      const supplementResult = await supplementsResponse.json();
+      if (supplementResult.success) {
+        supplementRecommendations = supplementResult.supplementRecommendations;
+        console.log('[OK] Supplement recommendations generated');
+      }
+    } else {
+      console.warn('[WARN] Failed to generate supplement recommendations, will use default');
+    }
+
+    // Generate personalized recovery protocol
+    console.log('[4/5] Generating personalized recovery protocol...');
+
+    // Check if user has calendar connected (we'll need to fetch this from integrations)
+    const calendarData = formData.integrations?.includes('apple-calendar') ||
+                        formData.integrations?.includes('google-calendar') ?
+                        { connected: true } : null;
+
+    const recoveryResponse = await fetch(`${baseUrl}/api/forge-generate-recovery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formData,
+        bloodAnalysis: bloodAnalysisData,
+        calendarData
+      })
+    });
+
+    let recoveryProtocol = null;
+    if (recoveryResponse.ok) {
+      const recoveryResult = await recoveryResponse.json();
+      if (recoveryResult.success) {
+        recoveryProtocol = recoveryResult.recoveryProtocol;
+        console.log('[OK] Recovery protocol generated');
+      }
+    } else {
+      console.warn('[WARN] Failed to generate recovery protocol, will use default');
+    }
+
+    // Merge the new personalized sections into the plan
+    const enhancedPlan = {
+      ...planResult.plan,
+      ...(supplementRecommendations && { supplementRecommendations }),
+      ...(recoveryProtocol && { recoveryProtocol })
+    };
+
+    console.log('[OK] Enhanced plan with personalized supplements and recovery');
+
     // Store the generated plan
-    console.log('[3/3] Storing fitness plan...');
+    console.log('[5/5] Storing fitness plan...');
 
     // Store in dev storage
     devPlanStorage.set(uniqueCode, {
@@ -325,7 +389,7 @@ async function handler(request: NextRequest) {
       fullName,
       status: 'completed',
       generatedAt: new Date().toISOString(),
-      plan: planResult.plan
+      plan: enhancedPlan
     });
 
     // Store in Supabase if available
@@ -336,7 +400,7 @@ async function handler(request: NextRequest) {
         await supabase
           .from('forge_onboarding_data')
           .update({
-            forge_plan: planResult.plan,
+            forge_plan: enhancedPlan,
             plan_generation_status: 'completed',
             updated_at: new Date().toISOString()
           })

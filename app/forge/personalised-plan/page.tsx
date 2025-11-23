@@ -491,6 +491,11 @@ export default function PersonalisedPlanPage() {
       {/* Fitness Plan Sections - Only for fitness plans */}
       {isFitnessPlan(plan) && (
         <>
+          {/* Decorative Image 1 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/152B53DF-AD96-42ED-BDB2-DA150D3FF857.png" alt="Fitness training" className="plan-image" />
+          </div>
+
           {/* Training Philosophy */}
           <section className="plan-section">
             <h2 className="section-title">Training Philosophy</h2>
@@ -535,6 +540,11 @@ export default function PersonalisedPlanPage() {
               </div>
             </div>
           </section>
+
+          {/* Decorative Image 2 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/15C867CC-152F-4E9B-81E6-ACF57A9C1F73.png" alt="Workout program" className="plan-image" />
+          </div>
 
           {/* 7-Day Workout Program */}
           <section className="plan-section">
@@ -762,18 +772,12 @@ export default function PersonalisedPlanPage() {
               </div>
             </div>
 
-            {plan.supplementRecommendations.considerations && (
-              <div style={{
-                background: '#fff3cd',
-                border: '1px solid #ffc107',
-                borderRadius: '8px',
-                padding: '15px',
-                fontSize: '14px'
-              }}>
-                <strong>⚠️ Important Considerations:</strong> {plan.supplementRecommendations.considerations}
-              </div>
-            )}
           </section>
+
+          {/* Decorative Image 3 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/3E33A2E7-42C9-4E27-88F6-57AF1A54DD8D.png" alt="Recovery and wellness" className="plan-image" />
+          </div>
 
           {/* Recovery Protocol */}
           <section className="plan-section">
@@ -839,6 +843,11 @@ export default function PersonalisedPlanPage() {
             </div>
           </section>
 
+          {/* Decorative Image 6 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/8B4AB139-C742-440C-849F-7AE394A3A037.png" alt="Progress tracking" className="plan-image" />
+          </div>
+
           {/* Progress Tracking & Injury Prevention */}
           <section className="plan-section">
             <h2 className="section-title">Progress Tracking</h2>
@@ -866,6 +875,11 @@ export default function PersonalisedPlanPage() {
               <strong>When to Reassess:</strong> {plan.progressTracking.whenToReassess}
             </div>
           </section>
+
+          {/* Decorative Image 4 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/498BA8A7-59A9-485F-8481-AB1C2122C236.png" alt="Injury prevention" className="plan-image" />
+          </div>
 
           <section className="plan-section">
             <h2 className="section-title">Injury Prevention</h2>
@@ -900,6 +914,11 @@ export default function PersonalisedPlanPage() {
             </div>
           </section>
 
+          {/* Decorative Image 5 */}
+          <div className="plan-image-container">
+            <img src="/images/forge/7C9557A4-F309-4837-A1AF-58B6D4BB3051.png" alt="Adaptive training" className="plan-image" />
+          </div>
+
           {/* Adaptive Features */}
           <section className="plan-section">
             <h2 className="section-title">Adaptive Features</h2>
@@ -922,6 +941,11 @@ export default function PersonalisedPlanPage() {
               </div>
             </div>
           </section>
+
+          {/* Decorative Image 7 - Final */}
+          <div className="plan-image-container">
+            <img src="/images/forge/A89F1709-0CA0-4C39-A794-854DED0A76F8.png" alt="Fitness journey" className="plan-image" />
+          </div>
         </>
       )}
 

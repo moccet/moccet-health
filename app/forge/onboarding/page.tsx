@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import './onboarding.css';
 
 type Screen =
@@ -42,6 +42,26 @@ export default function ForgeOnboarding() {
   const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+
+  // Video sound controls
+  const [introVideoMuted, setIntroVideoMuted] = useState(true);
+  const [loadingVideoMuted, setLoadingVideoMuted] = useState(true);
+  const introVideoRef = useRef<HTMLVideoElement>(null);
+  const loadingVideoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleIntroSound = () => {
+    if (introVideoRef.current) {
+      introVideoRef.current.muted = !introVideoMuted;
+      setIntroVideoMuted(!introVideoMuted);
+    }
+  };
+
+  const toggleLoadingSound = () => {
+    if (loadingVideoRef.current) {
+      loadingVideoRef.current.muted = !loadingVideoMuted;
+      setLoadingVideoMuted(!loadingVideoMuted);
+    }
+  };
 
   // Speech recognition functionality
   const startDictation = (fieldName: keyof typeof formData) => {
@@ -1079,10 +1099,29 @@ export default function ForgeOnboarding() {
   const toggleArrayValue = (field: 'injuries' | 'allergies' | 'medicalConditions' | 'equipment' | 'skillsPriority' | 'conditioningPreferences' | 'proteinSources' | 'integrations', value: string) => {
     setFormData(prev => {
       const currentArray = prev[field];
-      if (currentArray.includes(value)) {
-        return { ...prev, [field]: currentArray.filter((v: string) => v !== value) };
+
+      // Special handling for "none" or "minimal-none" option (exclusive options)
+      const isNoneOption = value === 'none' || value === 'minimal-none';
+
+      if (isNoneOption) {
+        // If clicking a "none" option, clear all other selections and set only this option
+        if (currentArray.includes(value)) {
+          // If the "none" option is already selected, unselect it
+          return { ...prev, [field]: [] };
+        } else {
+          // Select only this "none" option, clear everything else
+          return { ...prev, [field]: [value] };
+        }
       } else {
-        return { ...prev, [field]: [...currentArray, value] };
+        // If clicking any option other than "none"
+        if (currentArray.includes(value)) {
+          // Unselect this option
+          return { ...prev, [field]: currentArray.filter((v: string) => v !== value) };
+        } else {
+          // Select this option and remove any "none" options if they were selected
+          const newArray = currentArray.filter((v: string) => v !== 'none' && v !== 'minimal-none');
+          return { ...prev, [field]: [...newArray, value] };
+        }
       }
     });
   };
@@ -1096,6 +1135,134 @@ export default function ForgeOnboarding() {
       handleContinue(nextScreen);
     }
   };
+
+  // Navigation mapping for global Enter key handler
+  const getNextScreen = useCallback((): Screen | null => {
+    const navigationMap: Record<Screen, Screen | null> = {
+      'intro': 'welcome',
+      'welcome': 'name',
+      'name': 'age',
+      'age': 'gender',
+      'gender': 'weight',
+      'weight': 'height',
+      'height': 'email',
+      'email': 'objective-intro',
+      'objective-intro': 'primary-goal',
+      'primary-goal': 'time-horizon',
+      'time-horizon': 'training-days',
+      'training-days': 'baseline-intro',
+      'baseline-intro': 'injuries',
+      'injuries': 'movement-restrictions',
+      'movement-restrictions': 'medications',
+      'medications': 'supplements',
+      'supplements': 'medical-conditions',
+      'medical-conditions': 'environment-intro',
+      'environment-intro': 'equipment',
+      'equipment': 'training-location',
+      'training-location': 'session-length',
+      'session-length': 'exercise-time',
+      'exercise-time': 'sleep-quality',
+      'sleep-quality': 'stress-level',
+      'stress-level': 'forge-intake-intro',
+      'forge-intake-intro': 'training-experience',
+      'training-experience': 'skills-priority',
+      'skills-priority': 'effort-familiarity',
+      'effort-familiarity': 'current-bests',
+      'current-bests': 'conditioning-preferences',
+      'conditioning-preferences': 'soreness-preference',
+      'soreness-preference': 'daily-activity',
+      'daily-activity': 'completion',
+      'first-meal': 'energy-crash',
+      'energy-crash': 'protein-sources',
+      'protein-sources': 'food-dislikes',
+      'food-dislikes': 'meals-cooked',
+      'meals-cooked': 'alcohol-consumption',
+      'alcohol-consumption': 'completion',
+      'completion': 'final-step-intro',
+      'final-step-intro': 'ecosystem-integration',
+      'ecosystem-integration': 'lab-upload',
+      'lab-upload': null,
+      'final-completion': null,
+    };
+    return navigationMap[currentScreen];
+  }, [currentScreen]);
+
+  // Check if current screen's Continue button would be disabled
+  const isContinueDisabled = useCallback((): boolean => {
+    switch (currentScreen) {
+      case 'name':
+        return !formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2;
+      case 'age':
+        return !formData.age.trim();
+      case 'gender':
+        return !formData.gender;
+      case 'weight':
+        return !formData.weight.trim();
+      case 'height':
+        return formData.heightUnit === 'cm'
+          ? !formData.height.trim()
+          : !formData.heightFeet.trim() && !formData.heightInches.trim();
+      case 'email':
+        return !formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+      case 'primary-goal':
+        return !formData.primaryGoal;
+      case 'time-horizon':
+        return !formData.timeHorizon;
+      case 'training-days':
+        return !formData.trainingDays;
+      case 'injuries':
+        return formData.injuries.length === 0;
+      case 'medical-conditions':
+        return formData.medicalConditions.length === 0;
+      case 'equipment':
+        return formData.equipment.length === 0;
+      case 'skills-priority':
+        return formData.skillsPriority.length === 0;
+      case 'conditioning-preferences':
+        return formData.conditioningPreferences.length === 0;
+      case 'training-location':
+        return !formData.trainingLocation;
+      case 'exercise-time':
+        return !formData.exerciseTime;
+      case 'sleep-quality':
+        return !formData.sleepQuality;
+      case 'stress-level':
+        return !formData.stressLevel;
+      case 'effort-familiarity':
+        return !formData.effortFamiliarity;
+      case 'soreness-preference':
+        return !formData.sorenessPreference;
+      case 'daily-activity':
+        return !formData.dailyActivity;
+      case 'first-meal':
+        return !formData.firstMeal;
+      case 'energy-crash':
+        return !formData.energyCrash;
+      default:
+        return false;
+    }
+  }, [currentScreen, formData]);
+
+  // Global Enter key handler
+  useEffect(() => {
+    const handleGlobalEnter = (e: KeyboardEvent) => {
+      // Only handle Enter key
+      if (e.key !== 'Enter') return;
+
+      // Don't handle if Continue button is disabled
+      if (isContinueDisabled()) return;
+
+      // Get next screen (lab-upload returns null, so it won't auto-advance)
+      const nextScreen = getNextScreen();
+      if (nextScreen) {
+        e.preventDefault();
+        setCurrentScreen(nextScreen);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalEnter);
+    return () => window.removeEventListener('keydown', handleGlobalEnter);
+  }, [currentScreen, formData, getNextScreen, isContinueDisabled]);
 
   const handleBack = () => {
     const screens: Screen[] = [
@@ -1243,12 +1410,40 @@ export default function ForgeOnboarding() {
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
         <video
+          ref={introVideoRef}
           playsInline
+          autoPlay
+          muted
+          loop
           className="intro-video"
           preload="auto"
         >
           <source src="/videos/forge.mp4" type="video/mp4" />
         </video>
+        <button
+          className="video-sound-toggle"
+          onClick={toggleIntroSound}
+          aria-label={introVideoMuted ? 'Unmute video' : 'Mute video'}
+          style={{
+            position: 'absolute',
+            bottom: '80px',
+            right: '30px',
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '18px',
+            zIndex: 10
+          }}
+        >
+          {introVideoMuted ? '🔇' : '🔊'}
+        </button>
         <button
           className="skip-intro-button"
           onClick={() => setCurrentScreen('welcome')}
@@ -1652,7 +1847,7 @@ export default function ForgeOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')} disabled={formData.injuries.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -1748,7 +1943,7 @@ export default function ForgeOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('environment-intro')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('environment-intro')} disabled={formData.medicalConditions.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -1788,7 +1983,7 @@ export default function ForgeOnboarding() {
             ))}
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('training-location')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('training-location')} disabled={formData.equipment.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -1950,7 +2145,7 @@ export default function ForgeOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('effort-familiarity')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('effort-familiarity')} disabled={formData.skillsPriority.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -2018,7 +2213,7 @@ export default function ForgeOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('soreness-preference')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('soreness-preference')} disabled={formData.conditioningPreferences.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -2773,6 +2968,7 @@ export default function ForgeOnboarding() {
       {isLoading && (
         <div className="loading-screen">
           <video
+            ref={loadingVideoRef}
             autoPlay
             muted
             loop
@@ -2781,6 +2977,30 @@ export default function ForgeOnboarding() {
           >
             <source src="/videos/forge.mp4" type="video/mp4" />
           </video>
+          <button
+            className="video-sound-toggle"
+            onClick={toggleLoadingSound}
+            aria-label={loadingVideoMuted ? 'Unmute video' : 'Mute video'}
+            style={{
+              position: 'absolute',
+              bottom: '30px',
+              right: '30px',
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '18px',
+              zIndex: 10
+            }}
+          >
+            {loadingVideoMuted ? '🔇' : '🔊'}
+          </button>
           <div className="loading-overlay">
             <div className="loading-content">
               {asyncGenerationStarted && (

@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code');
     const email = searchParams.get('email');
 
+    console.log('[GET-PLAN] Received request with code:', code, 'email:', email);
+
     if (!code && !email) {
       return NextResponse.json(
         { error: 'Either code or email parameter is required' },
@@ -29,8 +31,11 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await sageQuery.single();
 
+    console.log('[GET-PLAN] Sage query result - error:', error, 'hasData:', !!data);
+
     // If not found in sage table, try forge table
     if (error || !data) {
+      console.log('[GET-PLAN] Not found in sage table, trying forge table...');
       const forgeQuery = supabase
         .from('forge_onboarding_data')
         .select('forge_plan, lab_file_analysis, plan_generation_status, plan_generation_error');
@@ -43,7 +48,10 @@ export async function GET(request: NextRequest) {
 
       const forgeResult = await forgeQuery.single();
 
+      console.log('[GET-PLAN] Forge query result - error:', forgeResult.error, 'hasData:', !!forgeResult.data);
+
       if (forgeResult.error || !forgeResult.data) {
+        console.log('[GET-PLAN] Not found in either table');
         return NextResponse.json(
           {
             success: false,
@@ -54,6 +62,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Return forge plan data
+      console.log('[GET-PLAN] Returning forge plan data');
       return NextResponse.json({
         success: true,
         plan: forgeResult.data.forge_plan,
@@ -64,6 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return sage plan data
+    console.log('[GET-PLAN] Returning sage plan data');
     return NextResponse.json({
       success: true,
       plan: data.sage_plan,

@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Token exchange failed:', errorText);
-      throw new Error('Failed to exchange authorization code for token');
+      console.error('Status:', tokenResponse.status);
+      console.error('Client ID:', process.env.MICROSOFT_CLIENT_ID);
+      console.error('Redirect URI:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/outlook/callback`);
+      throw new Error(`Failed to exchange authorization code for token: ${errorText}`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -103,6 +106,8 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in Outlook callback:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 
     return new NextResponse(
       `<!DOCTYPE html>

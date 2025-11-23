@@ -16,29 +16,60 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const query = supabase
+    // Try sage table first
+    const sageQuery = supabase
       .from('sage_onboarding_data')
       .select('plan_generation_status, plan_generation_error, sage_plan, email');
 
     if (code) {
-      query.eq('form_data->>uniqueCode', code);
+      sageQuery.eq('form_data->>uniqueCode', code);
     } else {
-      query.eq('email', email);
+      sageQuery.eq('email', email);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await sageQuery.single();
 
+    // If not found in sage table, try forge table
     if (error || !data) {
-      return NextResponse.json(
-        {
-          status: 'not_found',
-          message: 'No plan found for this user'
-        },
-        { status: 404 }
-      );
+      const forgeQuery = supabase
+        .from('forge_onboarding_data')
+        .select('plan_generation_status, plan_generation_error, forge_plan, email');
+
+      if (code) {
+        forgeQuery.eq('form_data->>uniqueCode', code);
+      } else {
+        forgeQuery.eq('email', email);
+      }
+
+      const forgeResult = await forgeQuery.single();
+
+      if (forgeResult.error || !forgeResult.data) {
+        return NextResponse.json(
+          {
+            status: 'not_found',
+            message: 'No plan found for this user'
+          },
+          { status: 404 }
+        );
+      }
+
+      // Determine the actual status for forge
+      let status = forgeResult.data.plan_generation_status || 'unknown';
+
+      // If no status is set but plan exists, mark as completed
+      if (!forgeResult.data.plan_generation_status && forgeResult.data.forge_plan) {
+        status = 'completed';
+      }
+
+      return NextResponse.json({
+        status,
+        error: forgeResult.data.plan_generation_error,
+        hasPlan: !!forgeResult.data.forge_plan,
+        email: forgeResult.data.email
+      });
     }
 
-    // Determine the actual status
+    // Determine the actual status for sage
     let status = data.plan_generation_status || 'unknown';
 
     // If no status is set but plan exists, mark as completed

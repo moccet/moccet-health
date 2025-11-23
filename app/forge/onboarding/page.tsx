@@ -1861,7 +1861,7 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">How well did you sleep the past 2 weeks?</h1>
           <p className="typeform-subtitle">Reflect on your sleep quality and select a number that you feel describes it best, with 1 being poor and 10 being excellent.</p>
-          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
               <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''}`} onClick={() => handleInputChange('sleepQuality', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
             ))}
@@ -1880,7 +1880,7 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">What is your average daily stress level?</h1>
           <p className="typeform-subtitle">Reflect on your daily stress and select a number that you feel describes it best, with 1 being little to no stress and 10 being the maximum amount of stress.</p>
-          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
               <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''}`} onClick={() => handleInputChange('stressLevel', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
             ))}
@@ -2481,7 +2481,7 @@ export default function ForgeOnboarding() {
             {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-logo">
-                  <img src="/images/vital.png" alt="Vital Health" />
+                  <img src="/images/vital.jpg" alt="Vital Health" />
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>
@@ -2614,16 +2614,46 @@ export default function ForgeOnboarding() {
       </div>
 
       {/* Final Completion Screen */}
-      <div className={`typeform-screen ${currentScreen === 'final-completion' ? 'active' : 'hidden'}`}>
+      <div className={`typeform-screen ${currentScreen === 'final-completion' ? 'active' : 'hidden'}`} style={{
+        backgroundImage: 'url(/images/forge-loading.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
         <div className="typeform-content">
-          <h1 className="typeform-title" style={{fontSize: '56px', marginBottom: '24px', lineHeight: '1.2'}}>
+          <h1 style={{
+            fontFamily: '"Crimson Text", Georgia, serif',
+            fontSize: '56px',
+            fontWeight: 400,
+            color: '#1a1a1a',
+            marginBottom: '24px',
+            lineHeight: '1.2',
+            letterSpacing: '-0.5px'
+          }}>
             Your plan is<br />
             being generated.
           </h1>
-          <p className="typeform-subtitle" style={{fontSize: '18px', marginBottom: '32px', maxWidth: '650px'}}>
+          <p style={{
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: '18px',
+            fontWeight: 400,
+            color: '#4a4a4a',
+            marginBottom: '32px',
+            maxWidth: '650px',
+            lineHeight: '1.6'
+          }}>
             We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
           </p>
-          <p className="typeform-subtitle" style={{fontSize: '16px', marginBottom: '60px', maxWidth: '650px', opacity: 0.8}}>
+          <p style={{
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: '16px',
+            fontWeight: 400,
+            color: '#4a4a4a',
+            marginBottom: '60px',
+            maxWidth: '650px',
+            opacity: 0.8,
+            lineHeight: '1.6'
+          }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
           <div className="typeform-brand">forge</div>

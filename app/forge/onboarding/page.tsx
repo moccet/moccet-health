@@ -1247,7 +1247,7 @@ export default function ForgeOnboarding() {
           className="intro-video"
           preload="auto"
         >
-          <source src="/videos/sage.mp4" type="video/mp4" />
+          <source src="/videos/forge.mp4" type="video/mp4" />
         </video>
         <button
           className="skip-intro-button"
@@ -1863,7 +1863,7 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle">Reflect on your sleep quality and select a number that you feel describes it best, with 1 being poor and 10 being excellent.</p>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
-              <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''}`} onClick={() => handleInputChange('sleepQuality', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+              <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''}`} onClick={() => handleInputChange('sleepQuality', num)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
             ))}
           </div>
           <div className="button-container">
@@ -1882,7 +1882,7 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle">Reflect on your daily stress and select a number that you feel describes it best, with 1 being little to no stress and 10 being the maximum amount of stress.</p>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
-              <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''}`} onClick={() => handleInputChange('stressLevel', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+              <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''}`} onClick={() => handleInputChange('stressLevel', num)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
             ))}
           </div>
           <div className="button-container">
@@ -2031,9 +2031,9 @@ export default function ForgeOnboarding() {
           <p className="section-label">4 The Forge Intake</p>
           <h1 className="typeform-title">What is your preferred soreness level after sessions?</h1>
           <p className="typeform-subtitle">Reflect on your preferred soreness level and select a number that you feel describes it best, with 1 being little to no soreness and 10 being the maximum amount of soreness.</p>
-          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap'}}>
+          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
-              <button key={num} className={`option-button ${formData.sorenessPreference === num ? 'selected' : ''}`} onClick={() => handleInputChange('sorenessPreference', num)} style={{minWidth: '60px', fontSize: '20px', padding: '15px'}}>{num}</button>
+              <button key={num} className={`option-button ${formData.sorenessPreference === num ? 'selected' : ''}`} onClick={() => handleInputChange('sorenessPreference', num)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
             ))}
           </div>
           <div className="button-container">
@@ -2625,10 +2625,11 @@ export default function ForgeOnboarding() {
             fontFamily: '"Crimson Text", Georgia, serif',
             fontSize: '56px',
             fontWeight: 400,
-            color: '#1a1a1a',
+            color: '#ffffff',
             marginBottom: '24px',
             lineHeight: '1.2',
-            letterSpacing: '-0.5px'
+            letterSpacing: '-0.5px',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
             Your plan is<br />
             being generated.
@@ -2637,22 +2638,23 @@ export default function ForgeOnboarding() {
             fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             fontSize: '18px',
             fontWeight: 400,
-            color: '#4a4a4a',
+            color: '#ffffff',
             marginBottom: '32px',
             maxWidth: '650px',
-            lineHeight: '1.6'
+            lineHeight: '1.6',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>
-            We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
+            We&apos;re analyzing your unique biology, health data, and goals to create your personalized fitness plan.
           </p>
           <p style={{
             fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             fontSize: '16px',
             fontWeight: 400,
-            color: '#4a4a4a',
+            color: '#ffffff',
             marginBottom: '60px',
             maxWidth: '650px',
-            opacity: 0.8,
-            lineHeight: '1.6'
+            lineHeight: '1.6',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
@@ -2777,7 +2779,7 @@ export default function ForgeOnboarding() {
             playsInline
             className="loading-video"
           >
-            <source src="/videos/sage.mp4" type="video/mp4" />
+            <source src="/videos/forge.mp4" type="video/mp4" />
           </video>
           <div className="loading-overlay">
             <div className="loading-content">

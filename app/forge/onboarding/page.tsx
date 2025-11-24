@@ -2843,31 +2843,38 @@ export default function ForgeOnboarding() {
             Your plan is<br />
             being generated.
           </h1>
+        </div>
+        <div style={{
+          position: 'fixed',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingBottom: '40px'
+        }}>
           <p style={{
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: '18px',
-            fontWeight: 400,
-            color: '#ffffff',
-            marginBottom: '32px',
-            maxWidth: '650px',
-            lineHeight: '1.6',
-            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-          }}>
-            We&apos;re analyzing your unique biology, health data, and goals to create your personalized fitness plan.
-          </p>
-          <p style={{
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize: '16px',
             fontWeight: 400,
             color: '#ffffff',
-            marginBottom: '60px',
-            maxWidth: '650px',
-            lineHeight: '1.6',
+            marginBottom: '40px',
+            textAlign: 'center',
+            letterSpacing: '0.3px',
             textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
-          <div className="typeform-brand">forge</div>
+          <div style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontSize: '18px',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            color: '#ffffff',
+            letterSpacing: '0.5px',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+          }}>forge</div>
         </div>
       </div>
 

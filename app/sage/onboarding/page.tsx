@@ -2348,30 +2348,36 @@ export default function SageOnboarding() {
             Your plan is<br />
             being generated.
           </h1>
+        </div>
+        <div style={{
+          position: 'fixed',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingBottom: '40px'
+        }}>
           <p style={{
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: '18px',
-            fontWeight: 400,
-            color: '#4a4a4a',
-            marginBottom: '32px',
-            maxWidth: '650px',
-            lineHeight: '1.6'
-          }}>
-            We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
-          </p>
-          <p style={{
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize: '16px',
             fontWeight: 400,
             color: '#4a4a4a',
-            marginBottom: '60px',
-            maxWidth: '650px',
-            opacity: 0.8,
-            lineHeight: '1.6'
+            marginBottom: '40px',
+            textAlign: 'center',
+            letterSpacing: '0.3px'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
-          <div className="typeform-brand">sage</div>
+          <div style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontSize: '18px',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            color: '#4a4a4a',
+            letterSpacing: '0.5px'
+          }}>sage</div>
         </div>
       </div>
 

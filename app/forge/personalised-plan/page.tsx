@@ -839,7 +839,7 @@ export default function PersonalisedPlanPage() {
                         {day.warmup.description}
                       </p>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {day.warmup.exercises.map((exercise: any, idx: number) => (
+                      {day.warmup.exercises?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
                           background: '#fff',
                           border: '1px solid #e0e0e0',
@@ -872,7 +872,7 @@ export default function PersonalisedPlanPage() {
                         Main Workout
                       </h4>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {day.mainWorkout.map((exercise: any, idx: number) => (
+                      {day.mainWorkout?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
                           background: '#fff',
                           border: '2px solid #000',
@@ -943,7 +943,7 @@ export default function PersonalisedPlanPage() {
                         {day.cooldown.description}
                       </p>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {day.cooldown.exercises.map((exercise: any, idx: number) => (
+                      {day.cooldown.exercises?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
                           background: '#fff',
                           border: '1px solid #e0e0e0',

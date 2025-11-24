@@ -68,34 +68,33 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildForgePlanPrompt(formData: any, bloodAnalysis: any): string {
-  const {
-    fullName,
-    age,
-    gender,
-    weight,
-    height,
-    primaryGoal,
-    timeHorizon,
-    trainingDays,
-    injuries,
-    movementRestrictions,
-    medicalConditions,
-    medications,
-    supplements,
-    equipment,
-    trainingLocation,
-    sessionLength,
-    exerciseTime,
-    sleepQuality,
-    stressLevel,
-    trainingExperience,
-    skillsPriority,
-    effortFamiliarity,
-    currentBests,
-    conditioningPreferences,
-    sorenessPreference,
-    dailyActivity
-  } = formData;
+  // Extract fields with proper fallbacks for undefined values
+  const fullName = formData.fullName || 'Client';
+  const age = formData.age || '30';
+  const gender = formData.gender || 'not specified';
+  const weight = formData.weight || 'not specified';
+  const height = formData.height || 'not specified';
+  const primaryGoal = formData.primaryGoal || 'improve overall fitness';
+  const timeHorizon = formData.timeHorizon || '3-6 months';
+  const trainingDays = formData.trainingDays || '3-4';
+  const injuries = formData.injuries || 'None';
+  const movementRestrictions = formData.movementRestrictions || 'None';
+  const medicalConditions = formData.medicalConditions || 'None';
+  const medications = formData.medications || 'None';
+  const supplements = formData.supplements || 'None';
+  const equipment = formData.equipment || [];
+  const trainingLocation = formData.trainingLocation || 'gym';
+  const sessionLength = formData.sessionLength || '45-60 minutes';
+  const exerciseTime = formData.exerciseTime || 'flexible';
+  const sleepQuality = formData.sleepQuality || '7';
+  const stressLevel = formData.stressLevel || '5';
+  const trainingExperience = formData.trainingExperience || 'intermediate';
+  const skillsPriority = formData.skillsPriority || 'balanced approach';
+  const effortFamiliarity = formData.effortFamiliarity || 'somewhat familiar';
+  const currentBests = formData.currentBests || 'not specified';
+  const conditioningPreferences = formData.conditioningPreferences || 'moderate cardio';
+  const sorenessPreference = formData.sorenessPreference || '5';
+  const dailyActivity = formData.dailyActivity || 'moderately active';
 
   // Build biomarker summary if available
   let biomarkerContext = '';
@@ -313,6 +312,7 @@ IMPORTANT INSTRUCTIONS:
 13. If they have biomarker concerns, adjust training intensity and recovery accordingly
 14. All 7 days must be detailed using WEEKDAY NAMES (Monday, Tuesday, etc.) - use rest/active recovery days appropriately
 15. Be specific with exercise names, form cues, and progression strategies in simple, accessible language
+16. CRITICAL: NEVER output the word "undefined" or leave any fields empty. If a value is not specified, infer the most appropriate answer based on their other data. For example, if session length is not specified, recommend "45-60 minutes" based on their experience level and goals.
 16. Every section should feel like it was written specifically for THIS person, not a generic template
 17. Reference specific numbers from their profile (weight, sleep score, stress level, training days, etc.) throughout the plan`;
 }

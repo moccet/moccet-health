@@ -63,6 +63,10 @@ export async function GET(request: NextRequest) {
 
       // Return forge plan data
       console.log('[GET-PLAN] Returning forge plan data');
+      console.log('[GET-PLAN] Plan keys:', forgeResult.data.forge_plan ? Object.keys(forgeResult.data.forge_plan) : 'null');
+      console.log('[GET-PLAN] Has sevenDayProgram:', !!forgeResult.data.forge_plan?.sevenDayProgram);
+      console.log('[GET-PLAN] Has trainingPhilosophy:', !!forgeResult.data.forge_plan?.trainingPhilosophy);
+
       return NextResponse.json({
         success: true,
         plan: forgeResult.data.forge_plan,

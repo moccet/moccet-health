@@ -222,7 +222,8 @@ function isNutritionPlan(plan: FitnessPlan | NutritionPlan): plan is NutritionPl
 }
 
 function isFitnessPlan(plan: FitnessPlan | NutritionPlan): plan is FitnessPlan {
-  return 'sevenDayProgram' in plan;
+  // Check for either sevenDayProgram (old structure) or weeklyProgram (new structure)
+  return 'sevenDayProgram' in plan || 'weeklyProgram' in plan || 'trainingPhilosophy' in plan;
 }
 
 export default function PersonalisedPlanPage() {
@@ -230,17 +231,21 @@ export default function PersonalisedPlanPage() {
   const [error, setError] = useState('');
   const [planStatus, setPlanStatus] = useState<'queued' | 'processing' | 'completed' | 'failed' | 'unknown'>('unknown');
   const [plan, setPlan] = useState<FitnessPlan | NutritionPlan | null>(null);
-  const [loadingBloodAnalysis, setLoadingBloodAnalysis] = useState(false);
   const [bloodAnalysis, setBloodAnalysis] = useState<BloodAnalysis | null>(null);
+  const [loadingBloodAnalysis, setLoadingBloodAnalysis] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
     // Get code or email from URL params
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    const email = params.get('email');
+    const emailParam = params.get('email');
+
+    // Set email state
+    setEmail(emailParam);
 
     // Use code parameter if available, otherwise use email parameter
-    const identifier = code || email;
+    const identifier = code || emailParam;
 
     if (!identifier) {
       setError('No plan identifier provided');
@@ -297,10 +302,23 @@ export default function PersonalisedPlanPage() {
         setPlanStatus(planData.status || 'completed');
 
         // Log plan type for debugging
-        if (planData.plan?.sevenDayProgram) {
+        console.log('[PLAN DEBUG] Plan keys:', Object.keys(planData.plan || {}));
+        console.log('[PLAN DEBUG] Has sevenDayProgram?', !!planData.plan?.sevenDayProgram);
+        console.log('[PLAN DEBUG] Has weeklyProgram?', !!planData.plan?.weeklyProgram);
+        console.log('[PLAN DEBUG] Has trainingPhilosophy?', !!planData.plan?.trainingPhilosophy);
+        console.log('[PLAN DEBUG] Has sampleMealPlan?', !!planData.plan?.sampleMealPlan);
+
+        if (planData.plan?.sevenDayProgram || planData.plan?.weeklyProgram || planData.plan?.trainingPhilosophy) {
           console.log('[PLAN TYPE] Fitness Plan detected');
+          if (planData.plan?.sevenDayProgram) {
+            console.log('[PLAN DEBUG] Using sevenDayProgram structure, length:', planData.plan.sevenDayProgram.length);
+          } else if (planData.plan?.weeklyProgram) {
+            console.log('[PLAN DEBUG] Using weeklyProgram structure, days:', Object.keys(planData.plan.weeklyProgram));
+          }
         } else if (planData.plan?.sampleMealPlan) {
           console.log('[PLAN TYPE] Nutrition Plan detected (legacy)');
+        } else {
+          console.log('[PLAN TYPE] Unknown plan type or missing plan structure');
         }
 
         // Set blood analysis if available
@@ -376,7 +394,8 @@ export default function PersonalisedPlanPage() {
         justifyContent: 'center',
         minHeight: '100vh',
         background: '#f8f8f8',
-        padding: '20px'
+        padding: '20px',
+        position: 'relative'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
           <div style={{
@@ -393,28 +412,38 @@ export default function PersonalisedPlanPage() {
           }}>
             Your plan is being generated
           </h2>
-          <p style={{
-            fontSize: '18px',
-            marginBottom: '12px',
-            color: '#666'
-          }}>
-            We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
-          </p>
-          <p style={{
-            fontSize: '16px',
-            color: '#999',
-            marginTop: '24px'
-          }}>
-            This typically takes 5-15 minutes. You&apos;ll receive an email when your plan is ready.
-          </p>
-          <p style={{
-            fontSize: '14px',
-            color: '#999',
-            marginTop: '16px',
-            fontStyle: 'italic'
-          }}>
-            Feel free to close this page - we&apos;ll email you when it&apos;s complete!
-          </p>
+        </div>
+
+        {/* Footer text with email notification */}
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          textAlign: 'center',
+          fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontSize: '16px',
+          fontWeight: 400,
+          color: '#999',
+          letterSpacing: '0.3px'
+        }}>
+          This typically takes 5-15 minutes. You&apos;ll receive an email at {email || 'your email'} when your plan is ready.
+        </div>
+
+        {/* Brand footer */}
+        <div style={{
+          position: 'fixed',
+          bottom: '40px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontSize: '18px',
+          fontWeight: 500,
+          fontStretch: 'expanded',
+          color: '#999',
+          letterSpacing: '0.5px'
+        }}>
+          forge
         </div>
       </div>
     );
@@ -583,12 +612,51 @@ export default function PersonalisedPlanPage() {
 
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Key Principles</h3>
-              <ul className="goals-list" style={{ fontSize: '15px', lineHeight: '1.8' }}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => (
-                  <li key={idx} style={{ marginBottom: '12px' }}>{principle}</li>
-                ))}
-              </ul>
+              <div style={{
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '15px',
+                  lineHeight: '1.8'
+                }}>
+                  <tbody>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => {
+                      // Split on first colon
+                      const colonIndex = principle.indexOf(':');
+                      const title = colonIndex !== -1 ? principle.substring(0, colonIndex).trim() : principle;
+                      const description = colonIndex !== -1 ? principle.substring(colonIndex + 1).trim() : '';
+
+                      return (
+                        <tr key={idx} style={{
+                          borderBottom: idx < plan.trainingPhilosophy.keyPrinciples.length - 1 ? '1px solid #e0e0e0' : 'none'
+                        }}>
+                          <td style={{
+                            padding: '16px 20px',
+                            fontWeight: '600',
+                            verticalAlign: 'top',
+                            width: '35%',
+                            color: '#1a1a1a'
+                          }}>
+                            {title}
+                          </td>
+                          <td style={{
+                            padding: '16px 20px',
+                            verticalAlign: 'top',
+                            color: '#4a4a4a'
+                          }}>
+                            {description || title}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div>
@@ -656,12 +724,51 @@ export default function PersonalisedPlanPage() {
 
             <div>
               <h3 className="overview-heading">Daily Focus Areas</h3>
-              <ul className="goals-list" style={{ fontSize: '15px', lineHeight: '1.8' }}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => (
-                  <li key={idx} style={{ marginBottom: '12px' }}>{area}</li>
-                ))}
-              </ul>
+              <div style={{
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '15px',
+                  lineHeight: '1.8'
+                }}>
+                  <tbody>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => {
+                      // Split on first colon
+                      const colonIndex = area.indexOf(':');
+                      const day = colonIndex !== -1 ? area.substring(0, colonIndex).trim() : `Day ${idx + 1}`;
+                      const description = colonIndex !== -1 ? area.substring(colonIndex + 1).trim() : area;
+
+                      return (
+                        <tr key={idx} style={{
+                          borderBottom: idx < plan.weeklyStructure.focusAreas.length - 1 ? '1px solid #e0e0e0' : 'none'
+                        }}>
+                          <td style={{
+                            padding: '16px 20px',
+                            fontWeight: '600',
+                            verticalAlign: 'top',
+                            width: '20%',
+                            color: '#1a1a1a'
+                          }}>
+                            {day}
+                          </td>
+                          <td style={{
+                            padding: '16px 20px',
+                            verticalAlign: 'top',
+                            color: '#4a4a4a'
+                          }}>
+                            {description}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -674,13 +781,31 @@ export default function PersonalisedPlanPage() {
           <section className="plan-section">
             <h2 className="section-title">Weekly Workout Program</h2>
             <div className="meal-plan-grid">
-              {Object.keys(plan.weeklyProgram || plan.sevenDayProgram || {}).map((dayKey, dayIdx) => {
-                const day = (plan.weeklyProgram || plan.sevenDayProgram)?.[dayKey];
-                if (!day) return null;
-
-                // Day name mapping for old format
+              {(() => {
+                // Define day order
+                const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
                 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                const displayDayName = day.dayName || dayNames[dayIdx] || `Day ${dayIdx + 1}`;
+
+                // Get the program (either weeklyProgram or sevenDayProgram)
+                const program = plan.weeklyProgram || plan.sevenDayProgram || {};
+
+                // Sort keys by day order
+                const sortedDayKeys = Object.keys(program).sort((a, b) => {
+                  const indexA = dayOrder.indexOf(a.toLowerCase());
+                  const indexB = dayOrder.indexOf(b.toLowerCase());
+                  // If day not found in order, put it at the end
+                  if (indexA === -1) return 1;
+                  if (indexB === -1) return -1;
+                  return indexA - indexB;
+                });
+
+                return sortedDayKeys.map((dayKey, dayIdx) => {
+                  const day = program[dayKey];
+                  if (!day) return null;
+
+                  // Get proper day name
+                  const dayIndex = dayOrder.indexOf(dayKey.toLowerCase());
+                  const displayDayName = day.dayName || (dayIndex !== -1 ? dayNames[dayIndex] : `Day ${dayIdx + 1}`);
 
                 return (
                   <div key={dayKey} className="day-column">
@@ -838,7 +963,8 @@ export default function PersonalisedPlanPage() {
                     </div>
                   </div>
                 );
-              })}
+              });
+              })()}
             </div>
           </section>
 
@@ -946,16 +1072,16 @@ export default function PersonalisedPlanPage() {
                 </ul>
               </div>
             </div>
-            <div style={{ marginTop: '20px' }}>
-              <div className="lifestyle-item">
+            <div className="recommendations-grid" style={{ marginTop: '20px' }}>
+              <div className="recommendation-card">
                 <h3>Sleep Optimization</h3>
                 <p>{plan.recoveryProtocol?.sleepOptimization || 'Not available'}</p>
               </div>
-              <div className="lifestyle-item">
+              <div className="recommendation-card">
                 <h3>Stress Management</h3>
                 <p>{plan.recoveryProtocol?.stressManagement || 'Not available'}</p>
               </div>
-              <div className="lifestyle-item">
+              <div className="recommendation-card">
                 <h3>Mobility Work</h3>
                 <p>{plan.recoveryProtocol?.mobilityWork || 'Not available'}</p>
               </div>
@@ -968,20 +1094,20 @@ export default function PersonalisedPlanPage() {
             <div className="overview-grid">
               <div className="overview-column">
                 <h3 className="overview-heading">Protein Target</h3>
-                <p style={{ fontSize: '20px', fontWeight: 'bold' }}>{plan.nutritionGuidance.proteinTarget}</p>
+                <p>{plan.nutritionGuidance.proteinTarget}</p>
               </div>
               <div className="overview-column">
                 <h3 className="overview-heading">Calorie Guidance</h3>
                 <p>{plan.nutritionGuidance.calorieGuidance}</p>
               </div>
             </div>
-            <div style={{ marginTop: '20px' }}>
-              <div className="lifestyle-item">
-                <h3>Meal Timing</h3>
+            <div className="overview-grid" style={{ marginTop: '20px' }}>
+              <div className="overview-column">
+                <h3 className="overview-heading">Meal Timing</h3>
                 <p>{plan.nutritionGuidance.mealTiming}</p>
               </div>
-              <div className="lifestyle-item">
-                <h3>Hydration</h3>
+              <div className="overview-column">
+                <h3 className="overview-heading">Hydration</h3>
                 <p>{plan.nutritionGuidance.hydration}</p>
               </div>
             </div>
@@ -1016,8 +1142,9 @@ export default function PersonalisedPlanPage() {
               </div>
             </div>
             {(plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess) && (
-              <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-                <strong>When to Reassess:</strong> {plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess}
+              <div className="recommendation-card" style={{ marginTop: '20px' }}>
+                <h3>When to Reassess</h3>
+                <p>{plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess}</p>
               </div>
             )}
           </section>
@@ -1048,15 +1175,6 @@ export default function PersonalisedPlanPage() {
                   ))}
                 </ul>
               </div>
-            </div>
-            <div style={{ marginTop: '20px' }}>
-              <h3 className="overview-heading">Warning Signals</h3>
-              <ul className="goals-list">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {plan.injuryPrevention.warningSignals.map((signal: any, idx: number) => (
-                  <li key={idx}>{signal}</li>
-                ))}
-              </ul>
             </div>
           </section>
 
@@ -1094,24 +1212,6 @@ export default function PersonalisedPlanPage() {
           </div>
         </>
       )}
-
-      {/* Nutrition Divider Image */}
-      <div className="nutrition-divider">
-        <img
-          src="/nutrition-divider.png"
-          alt="Nutrition Plan"
-          className="divider-image"
-        />
-      </div>
-
-      {/* Daily Recommendations Divider Image */}
-      <div className="daily-recs-divider">
-        <img
-          src="/daily-recs-divider.png"
-          alt="Daily Recommendations"
-          className="divider-image-auto"
-        />
-      </div>
 
       {/* Daily Recommendations - Only for nutrition plans */}
       {isNutritionPlan(plan) && plan.dailyRecommendations && (

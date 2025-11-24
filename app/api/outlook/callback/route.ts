@@ -100,6 +100,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
+          'Cross-Origin-Opener-Policy': 'unsafe-none',
         },
       }
     );
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
+          'Cross-Origin-Opener-Policy': 'unsafe-none',
         },
       }
     );

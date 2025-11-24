@@ -9,7 +9,7 @@ type Screen =
   | 'baseline-intro' | 'injuries' | 'movement-restrictions' | 'medications' | 'supplements' | 'medical-conditions'
   | 'environment-intro' | 'equipment' | 'training-location' | 'session-length' | 'exercise-time'
   | 'sleep-quality' | 'stress-level' | 'forge-intake-intro' | 'training-experience' | 'skills-priority'
-  | 'effort-familiarity' | 'current-bests' | 'conditioning-preferences' | 'soreness-preference'
+  | 'current-bests' | 'conditioning-preferences' | 'soreness-preference'
   | 'daily-activity' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes' | 'meals-cooked' | 'alcohol-consumption'
   | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
 
@@ -117,7 +117,7 @@ export default function ForgeOnboarding() {
       'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
       'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
       'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
-      'effort-familiarity', 'current-bests', 'conditioning-preferences', 'soreness-preference',
+      'current-bests', 'conditioning-preferences', 'soreness-preference',
       'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
@@ -293,14 +293,14 @@ export default function ForgeOnboarding() {
     trainingLocation: '',
     sessionLength: '',
     exerciseTime: '',
-    sleepQuality: '5',
-    stressLevel: '5',
+    sleepQuality: '',
+    stressLevel: '',
     trainingExperience: '',
     skillsPriority: [] as string[],
     effortFamiliarity: '',
     currentBests: '',
     conditioningPreferences: [] as string[],
-    sorenessPreference: '5',
+    sorenessPreference: '',
     dailyActivity: '',
     // Legacy nutrition fields (to be replaced with fitness screens)
     allergies: [] as string[],
@@ -1190,8 +1190,7 @@ export default function ForgeOnboarding() {
       'stress-level': 'forge-intake-intro',
       'forge-intake-intro': 'training-experience',
       'training-experience': 'skills-priority',
-      'skills-priority': 'effort-familiarity',
-      'effort-familiarity': 'current-bests',
+      'skills-priority': 'current-bests',
       'current-bests': 'conditioning-preferences',
       'conditioning-preferences': 'soreness-preference',
       'soreness-preference': 'daily-activity',
@@ -1252,8 +1251,6 @@ export default function ForgeOnboarding() {
         return !formData.sleepQuality;
       case 'stress-level':
         return !formData.stressLevel;
-      case 'effort-familiarity':
-        return !formData.effortFamiliarity;
       case 'soreness-preference':
         return !formData.sorenessPreference;
       case 'daily-activity':
@@ -1295,7 +1292,7 @@ export default function ForgeOnboarding() {
       'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
       'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
       'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
-      'effort-familiarity', 'current-bests', 'conditioning-preferences', 'soreness-preference',
+      'current-bests', 'conditioning-preferences', 'soreness-preference',
       'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
@@ -1856,7 +1853,12 @@ export default function ForgeOnboarding() {
       <div className={`typeform-screen section-screen ${currentScreen === 'baseline-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="section-title">2 The Baseline</h1>
-          <p className="typeform-subtitle">We want to make your training safer and more effective. Help us understand your starting point.</p>
+          <p className="typeform-subtitle" style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            letterSpacing: '0.5px'
+          }}>We want to make your training safer and more effective. Help us understand your starting point.</p>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('injuries')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -2078,10 +2080,10 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">When do you usually exercise?</h1>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
-            <button className={`option-button ${formData.exerciseTime === 'Morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
-            <button className={`option-button ${formData.exerciseTime === 'Midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
-            <button className={`option-button ${formData.exerciseTime === 'Evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
-            <button className={`option-button ${formData.exerciseTime === 'It-varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it-varies')} style={{minWidth: '150px'}}>it varies</button>
+            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
+            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
+            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
+            <button className={`option-button ${formData.exerciseTime === 'it varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it varies')} style={{minWidth: '150px'}}>it varies</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>
@@ -2186,25 +2188,7 @@ export default function ForgeOnboarding() {
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('effort-familiarity')} disabled={formData.skillsPriority.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
-          </div>
-          <div className="typeform-brand">forge</div>
-        </div>
-      </div>
-
-      {/* Effort Familiarity Screen */}
-      <div className={`typeform-screen ${currentScreen === 'effort-familiarity' ? 'active' : 'hidden'}`}>
-        <div className="typeform-content">
-          <p className="section-label">4 The Forge Intake</p>
-          <h1 className="typeform-title">Are you comfortable using RPE or RIR for effort?</h1>
-          <div className="options-container">
-            <button className={`option-button ${formData.effortFamiliarity === 'yes' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'yes')}>Yes</button>
-            <button className={`option-button ${formData.effortFamiliarity === 'no' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'no')}>No</button>
-            <button className={`option-button ${formData.effortFamiliarity === 'learn' ? 'selected' : ''}`} onClick={() => handleInputChange('effortFamiliarity', 'learn')}>I would like to learn it</button>
-          </div>
-          <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={!formData.effortFamiliarity}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={formData.skillsPriority.length === 0}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
           </div>
           <div className="typeform-brand">forge</div>
@@ -2554,7 +2538,7 @@ export default function ForgeOnboarding() {
                       <h3 className="integration-name">Oura Ring</h3>
                       <p className="integration-description">Upload your sleep and activity data</p>
                     </div>
-                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('oura-ring')}>
+                    <button className="connect-button connected" onClick={handleDisconnectOura}>
                       ✓ Connected
                     </button>
                   </div>
@@ -2665,21 +2649,6 @@ export default function ForgeOnboarding() {
                 </div>
                 <button className="connect-button" onClick={handleConnectOura}>
                   Connect
-                </button>
-              </div>
-            )}
-
-            {ouraConnected && (
-              <div className="integration-item connected">
-                <div className="integration-logo">
-                  <img src="/images/oura.png" alt="Oura Ring" />
-                </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">Oura Ring</h3>
-                  <p className="integration-description">Connected</p>
-                </div>
-                <button className="disconnect-button" onClick={handleDisconnectOura}>
-                  Disconnect
                 </button>
               </div>
             )}

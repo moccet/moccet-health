@@ -117,10 +117,14 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     console.log(`[Vital API] Created link token for client_user_id: ${userId}, vital_user_id: ${vitalUserId}`);
+    console.log(`[Vital API] Full response data:`, JSON.stringify(data, null, 2));
+    console.log(`[Vital API] Link token: ${data.link_token}`);
+    console.log(`[Vital API] Link web URL: ${data.link_web_url || 'NOT PROVIDED'}`);
 
     return NextResponse.json({
       success: true,
       linkToken: data.link_token,
+      linkUrl: data.link_web_url, // The full URL provided by Vital/Junction
       environment,
       region,
       vitalUserId, // Return this so frontend can store it if needed

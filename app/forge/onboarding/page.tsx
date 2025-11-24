@@ -876,8 +876,9 @@ export default function ForgeOnboarding() {
       console.log('[Vital] API response data:', data);
 
       if (data.linkToken) {
-        // Open Vital Link Widget
-        const linkUrl = `https://link.${data.environment}.tryvital.io/${data.linkToken}`;
+        // Open Vital Link Widget using the URL provided by Vital API
+        // Fallback to constructing URL if linkUrl is not provided
+        const linkUrl = data.linkUrl || `https://link.tryvital.io/${data.linkToken}`;
         console.log('[Vital] Opening link URL:', linkUrl);
 
         const width = 600;

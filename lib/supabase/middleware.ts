@@ -39,5 +39,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Add COOP header for pages that open OAuth popups
+  // This allows popups to communicate back via postMessage
+  if (request.nextUrl.pathname.includes('/onboarding') ||
+      request.nextUrl.pathname.includes('/forge') ||
+      request.nextUrl.pathname.includes('/sage')) {
+    supabaseResponse.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  }
+
   return supabaseResponse;
 }

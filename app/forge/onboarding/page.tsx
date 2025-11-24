@@ -850,8 +850,11 @@ export default function ForgeOnboarding() {
     try {
       console.log('[Vital] Starting connection...');
 
-      // Generate a unique user ID for Vital (using email as base)
-      const userId = formData.email || `user_${Date.now()}`;
+      // Generate a unique user ID for Vital (hash email or use timestamp)
+      // Note: Vital recommends NOT using PII (email) directly
+      const userId = formData.email
+        ? `user_${btoa(formData.email).replace(/[^a-zA-Z0-9]/g, '')}` // Base64 encode and remove special chars
+        : `user_${Date.now()}`;
       console.log('[Vital] User ID:', userId);
 
       // Get link token from Vital
@@ -2080,10 +2083,10 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">When do you usually exercise?</h1>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
-            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>morning</button>
-            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>midday</button>
-            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>evening</button>
-            <button className={`option-button ${formData.exerciseTime === 'it varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it varies')} style={{minWidth: '150px'}}>it varies</button>
+            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>Morning</button>
+            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>Midday</button>
+            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>Evening</button>
+            <button className={`option-button ${formData.exerciseTime === 'it varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it varies')} style={{minWidth: '150px'}}>It varies</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>

@@ -49,23 +49,47 @@ export async function POST(request: NextRequest) {
 
     console.log('[Vital API] Create user response status:', createUserResponse.status);
 
-    // User might already exist, which is fine
-    if (!createUserResponse.ok && createUserResponse.status !== 409) {
+    let vitalUserId: string;
+
+    if (createUserResponse.ok) {
+      const userData = await createUserResponse.json();
+      vitalUserId = userData.user_id;
+      console.log(`[Vital API] Created user. Vital user_id: ${vitalUserId}`);
+    } else if (createUserResponse.status === 409) {
+      // User already exists, need to resolve their Vital user_id
+      console.log('[Vital API] User already exists (409), resolving user_id...');
+      const resolveResponse = await fetch(`${baseUrl}/v2/user/resolve/${encodeURIComponent(userId)}`, {
+        headers: {
+          'X-Vital-API-Key': apiKey,
+        },
+      });
+
+      if (!resolveResponse.ok) {
+        const errorText = await resolveResponse.text();
+        console.error('[Vital API] Failed to resolve user_id:', errorText);
+        return NextResponse.json(
+          { error: 'Failed to resolve existing user' },
+          { status: 500 }
+        );
+      }
+
+      const resolveData = await resolveResponse.json();
+      vitalUserId = resolveData.user_id;
+      console.log(`[Vital API] Resolved existing user. Vital user_id: ${vitalUserId}`);
+    } else {
       const errorText = await createUserResponse.text();
       console.error('[Vital API] Failed to create user:', createUserResponse.status, errorText);
-      // Continue anyway - user might already exist
-    } else if (createUserResponse.ok) {
-      const userData = await createUserResponse.json();
-      console.log(`[Vital API] Created/verified user: ${userData.user_id}`);
-    } else if (createUserResponse.status === 409) {
-      console.log('[Vital API] User already exists (409), continuing...');
+      return NextResponse.json(
+        { error: 'Failed to create Vital user', details: errorText },
+        { status: createUserResponse.status }
+      );
     }
 
-    // Create a Link Token
+    // Create a Link Token using Vital's user_id (UUID), not client_user_id
     // Documentation: https://docs.tryvital.io/wearables/guides/link_widget
-    console.log('[Vital API] Creating link token for userId:', userId);
+    console.log('[Vital API] Creating link token for Vital user_id:', vitalUserId);
     const linkTokenBody = {
-      user_id: userId,
+      user_id: vitalUserId, // IMPORTANT: Use Vital's UUID, not client_user_id
       ...(provider && { provider }), // Optional: specify a specific provider
     };
     console.log('[Vital API] Link token request body:', JSON.stringify(linkTokenBody));
@@ -92,13 +116,14 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    console.log(`[Vital] Created link token for user ${userId}`);
+    console.log(`[Vital API] Created link token for client_user_id: ${userId}, vital_user_id: ${vitalUserId}`);
 
     return NextResponse.json({
       success: true,
       linkToken: data.link_token,
       environment,
       region,
+      vitalUserId, // Return this so frontend can store it if needed
     });
 
   } catch (error) {

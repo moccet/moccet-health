@@ -80,10 +80,6 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Signal to parent window that connection was successful
-            if (window.opener) {
-              window.opener.postMessage({ type: 'outlook-connected' }, '*');
-            }
             // Close the popup after a short delay
             setTimeout(() => {
               window.close();
@@ -100,7 +96,6 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
-          'Cross-Origin-Opener-Policy': 'unsafe-none',
         },
       }
     );
@@ -118,10 +113,6 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Signal error to parent window
-            if (window.opener) {
-              window.opener.postMessage({ type: 'outlook-error' }, '*');
-            }
             setTimeout(() => {
               window.close();
             }, 3000);
@@ -137,7 +128,6 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/html',
-          'Cross-Origin-Opener-Policy': 'unsafe-none',
         },
       }
     );

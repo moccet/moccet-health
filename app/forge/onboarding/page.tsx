@@ -722,7 +722,27 @@ export default function ForgeOnboarding() {
           `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
         );
 
-        // Poll for connection status
+        // Listen for messages from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'oura-connected') {
+            console.log('[Oura] Connection confirmed via message');
+            setOuraConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('oura-ring')
+                ? prev.integrations
+                : [...prev.integrations, 'oura-ring']
+            }));
+            window.removeEventListener('message', handleMessage);
+          } else if (event.data.type === 'oura-error') {
+            console.error('[Oura] Connection failed');
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Poll for connection status (backup mechanism)
         const pollInterval = setInterval(async () => {
           const cookies = document.cookie.split(';');
           const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
@@ -737,11 +757,15 @@ export default function ForgeOnboarding() {
                 : [...prev.integrations, 'oura-ring']
             }));
             clearInterval(pollInterval);
+            window.removeEventListener('message', handleMessage);
           }
         }, 1000);
 
         // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          window.removeEventListener('message', handleMessage);
+        }, 300000);
       }
     } catch (err) {
       console.error('Error connecting Oura:', err);

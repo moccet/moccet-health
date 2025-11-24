@@ -63,9 +63,13 @@ interface FitnessPlan {
     overview: string;
     trainingDays: number;
     focusAreas: string[];
+    rationale?: string;
+    volumeDistribution?: string;
+    intensityFramework?: string;
   };
-  sevenDayProgram: {
+  sevenDayProgram?: {
     [key: string]: {
+      dayName?: string;
       focus: string;
       duration: string;
       warmup: {
@@ -86,6 +90,40 @@ interface FitnessPlan {
         intensity: string;
         notes: string;
         progressionNotes: string;
+      }>;
+      cooldown: {
+        description: string;
+        exercises: Array<{
+          name: string;
+          duration: string;
+          notes: string;
+        }>;
+      };
+    };
+  };
+  weeklyProgram?: {
+    [key: string]: {
+      dayName?: string;
+      focus: string;
+      duration: string;
+      warmup: {
+        description: string;
+        exercises: Array<{
+          name: string;
+          sets: string;
+          reps: string;
+          notes: string;
+        }>;
+      };
+      mainWorkout: Array<{
+        exercise: string;
+        sets: string;
+        reps: string;
+        rest: string;
+        tempo?: string;
+        intensity: string;
+        notes: string;
+        progressionNotes?: string;
       }>;
       cooldown: {
         description: string;
@@ -143,22 +181,39 @@ interface FitnessPlan {
     calorieGuidance: string;
     mealTiming: string;
     hydration: string;
+    macroBreakdown?: string;
+    mealFrequency?: string;
+    supplementTiming?: string;
   };
   progressTracking: {
-    metrics: string[];
-    benchmarks: string[];
-    whenToReassess: string;
+    metricsOverview?: string;
+    weeklyMetrics?: string[];
+    monthlyMetrics?: string[];
+    performanceBenchmarks?: string[];
+    biometricTargets?: string;
+    reassessmentSchedule?: string;
+    progressionIndicators?: string;
+    metrics?: string[]; // Old format
+    benchmarks?: string[]; // Old format
+    whenToReassess?: string; // Old format
   };
   injuryPrevention: {
+    personalizedRiskAssessment?: string;
     commonRisks: string[];
     preventionStrategies: string[];
     warningSignals: string[];
+    injuryProtocol?: string;
+    mobilityPrescription?: string;
   };
   adaptiveFeatures: {
+    energyBasedAdjustments?: string;
     highEnergyDay: string;
+    normalEnergyDay?: string;
     lowEnergyDay: string;
     travelModifications: string;
     injuryModifications: string;
+    scheduleAdaptations?: string;
+    recoverStatus?: string;
   };
 }
 
@@ -516,45 +571,97 @@ export default function PersonalisedPlanPage() {
           {/* Training Philosophy */}
           <section className="plan-section">
             <h2 className="section-title">Training Philosophy</h2>
-            <div className="overview-grid">
-              <div className="overview-column">
-                <h3 className="overview-heading">Approach</h3>
-                <p>{plan.trainingPhilosophy.approach}</p>
-              </div>
-              <div className="overview-column">
-                <h3 className="overview-heading">Key Principles</h3>
-                <ul className="goals-list">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => (
-                    <li key={idx}>{principle}</li>
-                  ))}
-                </ul>
+
+            <div style={{ marginBottom: '30px' }}>
+              <h3 className="overview-heading">Approach</h3>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                {plan.trainingPhilosophy.approach.split('\n').map((paragraph: string, idx: number) => (
+                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                ))}
               </div>
             </div>
-            <div style={{ marginTop: '20px' }}>
+
+            <div style={{ marginBottom: '30px' }}>
+              <h3 className="overview-heading">Key Principles</h3>
+              <ul className="goals-list" style={{ fontSize: '15px', lineHeight: '1.8' }}>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => (
+                  <li key={idx} style={{ marginBottom: '12px' }}>{principle}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
               <h3 className="overview-heading">Progression Strategy</h3>
-              <p>{plan.trainingPhilosophy.progressionStrategy}</p>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                {plan.trainingPhilosophy.progressionStrategy.split('\n').map((paragraph: string, idx: number) => (
+                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                ))}
+              </div>
             </div>
           </section>
 
           {/* Weekly Structure */}
           <section className="plan-section">
             <h2 className="section-title">Weekly Structure</h2>
-            <p style={{ marginBottom: '20px' }}>{plan.weeklyStructure.overview}</p>
-            <div className="overview-grid">
-              <div className="overview-column">
+
+            <div style={{ marginBottom: '30px' }}>
+              <h3 className="overview-heading">Overview</h3>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                {plan.weeklyStructure.overview.split('\n').map((paragraph: string, idx: number) => (
+                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', marginBottom: '30px' }}>
+              <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
                 <h3 className="overview-heading">Training Days Per Week</h3>
-                <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#000' }}>{plan.weeklyStructure.trainingDays}</p>
+                <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#000', marginBottom: '10px' }}>{plan.weeklyStructure.trainingDays}</p>
               </div>
-              <div className="overview-column">
-                <h3 className="overview-heading">Focus Areas</h3>
-                <ul className="goals-list">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => (
-                    <li key={idx}>{area}</li>
+            </div>
+
+            {plan.weeklyStructure.rationale && (
+              <div style={{ marginBottom: '30px' }}>
+                <h3 className="overview-heading">Rationale</h3>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                  {plan.weeklyStructure.rationale.split('\n').map((paragraph: string, idx: number) => (
+                    paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
-                </ul>
+                </div>
               </div>
+            )}
+
+            {plan.weeklyStructure.volumeDistribution && (
+              <div style={{ marginBottom: '30px' }}>
+                <h3 className="overview-heading">Volume Distribution</h3>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                  {plan.weeklyStructure.volumeDistribution.split('\n').map((paragraph: string, idx: number) => (
+                    paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {plan.weeklyStructure.intensityFramework && (
+              <div style={{ marginBottom: '30px' }}>
+                <h3 className="overview-heading">Intensity Framework</h3>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                  {plan.weeklyStructure.intensityFramework.split('\n').map((paragraph: string, idx: number) => (
+                    paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="overview-heading">Daily Focus Areas</h3>
+              <ul className="goals-list" style={{ fontSize: '15px', lineHeight: '1.8' }}>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => (
+                  <li key={idx} style={{ marginBottom: '12px' }}>{area}</li>
+                ))}
+              </ul>
             </div>
           </section>
 
@@ -563,15 +670,21 @@ export default function PersonalisedPlanPage() {
             <img src="/images/forge/15C867CC-152F-4E9B-81E6-ACF57A9C1F73.png" alt="Workout program" className="plan-image" />
           </div>
 
-          {/* 7-Day Workout Program */}
+          {/* Weekly Workout Program */}
           <section className="plan-section">
-            <h2 className="section-title">7-Day Workout Program</h2>
+            <h2 className="section-title">Weekly Workout Program</h2>
             <div className="meal-plan-grid">
-              {Object.keys(plan.sevenDayProgram).map((dayKey, dayIdx) => {
-                const day = plan.sevenDayProgram[dayKey];
+              {Object.keys(plan.weeklyProgram || plan.sevenDayProgram || {}).map((dayKey, dayIdx) => {
+                const day = (plan.weeklyProgram || plan.sevenDayProgram)?.[dayKey];
+                if (!day) return null;
+
+                // Day name mapping for old format
+                const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                const displayDayName = day.dayName || dayNames[dayIdx] || `Day ${dayIdx + 1}`;
+
                 return (
                   <div key={dayKey} className="day-column">
-                    <h3 className="day-title">Day {dayIdx + 1}</h3>
+                    <h3 className="day-title">{displayDayName}</h3>
                     <div className="workout-day-header" style={{
                       background: '#f5f5f5',
                       padding: '15px',
@@ -887,7 +1000,7 @@ export default function PersonalisedPlanPage() {
                 <h3>Metrics to Track</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.progressTracking.metrics.map((metric: any, idx: number) => (
+                  {(plan.progressTracking.weeklyMetrics || plan.progressTracking.metrics || []).map((metric: any, idx: number) => (
                     <li key={idx}>{metric}</li>
                   ))}
                 </ul>
@@ -896,15 +1009,17 @@ export default function PersonalisedPlanPage() {
                 <h3>Performance Benchmarks</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.progressTracking.benchmarks.map((benchmark: any, idx: number) => (
+                  {(plan.progressTracking.performanceBenchmarks || plan.progressTracking.benchmarks || []).map((benchmark: any, idx: number) => (
                     <li key={idx}>{benchmark}</li>
                   ))}
                 </ul>
               </div>
             </div>
-            <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-              <strong>When to Reassess:</strong> {plan.progressTracking.whenToReassess}
-            </div>
+            {(plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess) && (
+              <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+                <strong>When to Reassess:</strong> {plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess}
+              </div>
+            )}
           </section>
 
           {/* Decorative Image 4 */}

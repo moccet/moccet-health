@@ -555,9 +555,7 @@ export default function PersonalisedPlanPage() {
                     bloodAnalysis && bloodAnalysis.concerns?.length > 0
                       ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
                       : ''
-                  }, your ${plan?.nutritionOverview?.goals?.[0]?.toLowerCase() || 'health goals'}, and your ${
-                    plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
-                  }, these micronutrients are specifically chosen to support your optimal health and performance.`
+                  }, your health goals, and your personalized nutrition plan, these micronutrients are specifically chosen to support your optimal health and performance.`
                 }
               </p>
             )}
@@ -676,9 +674,9 @@ export default function PersonalisedPlanPage() {
                     bloodAnalysis && bloodAnalysis.concerns?.length > 0
                       ? `, specifically targeting ${bloodAnalysis.concerns[0]?.toLowerCase()}`
                       : ''
-                  }. Each meal is designed around your ${plan?.nutritionOverview?.nutritionStructure?.protein || 'protein'} targets${
+                  }. Each meal is designed to meet your daily nutrition targets${
                     plan?.nutritionOverview?.goals?.[0]
-                      ? ` to ${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, 'support ')}`
+                      ? ` and ${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, 'support ')}`
                       : ''
                   }, while respecting your ${plan?.lifestyleIntegration?.exerciseProtocol ? 'training schedule' : 'lifestyle preferences'} and eating window.`
                 }

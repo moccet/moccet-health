@@ -1064,10 +1064,28 @@ export default function SageOnboarding() {
   const toggleArrayValue = (field: 'allergies' | 'medicalConditions' | 'proteinSources' | 'integrations', value: string) => {
     setFormData(prev => {
       const currentArray = prev[field];
-      if (currentArray.includes(value)) {
-        return { ...prev, [field]: currentArray.filter((v: string) => v !== value) };
+
+      // Handle "none" option logic
+      if (value === 'none') {
+        // If "none" is being selected, clear all other options and only keep "none"
+        if (currentArray.includes('none')) {
+          // If "none" is already selected, uncheck it
+          return { ...prev, [field]: [] };
+        } else {
+          // Select only "none", clear all other options
+          return { ...prev, [field]: ['none'] };
+        }
       } else {
-        return { ...prev, [field]: [...currentArray, value] };
+        // If any other option is being selected, remove "none" if it's present
+        let newArray;
+        if (currentArray.includes(value)) {
+          // Uncheck the current value
+          newArray = currentArray.filter((v: string) => v !== value);
+        } else {
+          // Check the current value and remove "none" if present
+          newArray = [...currentArray.filter((v: string) => v !== 'none'), value];
+        }
+        return { ...prev, [field]: newArray };
       }
     });
   };
@@ -1656,7 +1674,7 @@ export default function SageOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherAllergy} onChange={(e) => handleInputChange('otherAllergy', e.target.value)} />
+              <input type="text" placeholder="Please specify ...." value={formData.otherAllergy} onChange={(e) => handleInputChange('otherAllergy', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'medications', false)} />
             </div>
           </div>
           <div className="button-container">
@@ -1730,7 +1748,7 @@ export default function SageOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherCondition} onChange={(e) => handleInputChange('otherCondition', e.target.value)} />
+              <input type="text" placeholder="Please specify ...." value={formData.otherCondition} onChange={(e) => handleInputChange('otherCondition', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'fuel-intro', false)} />
             </div>
           </div>
           <div className="button-container">
@@ -1844,7 +1862,7 @@ export default function SageOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherProtein} onChange={(e) => handleInputChange('otherProtein', e.target.value)} />
+              <input type="text" placeholder="Please specify ...." value={formData.otherProtein} onChange={(e) => handleInputChange('otherProtein', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'food-dislikes', false)} />
             </div>
           </div>
           <div className="button-container">
@@ -2335,20 +2353,16 @@ export default function SageOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          textAlign: 'center'
-        }}>
+        <div className="typeform-content">
           <h1 style={{
-            fontFamily: '"Crimson Text", Georgia, serif',
-            fontSize: '56px',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '48px',
             fontWeight: 400,
             color: '#ffffff',
-            lineHeight: '1.2',
-            letterSpacing: '-0.5px'
+            lineHeight: '1.15',
+            letterSpacing: '-1px',
+            marginBottom: '32px',
+            textAlign: 'left'
           }}>
             Your plan is being generated.
           </h1>

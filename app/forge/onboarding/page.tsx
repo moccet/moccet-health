@@ -2829,20 +2829,16 @@ export default function ForgeOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          textAlign: 'center'
-        }}>
+        <div className="typeform-content">
           <h1 style={{
-            fontFamily: '"Crimson Text", Georgia, serif',
-            fontSize: '56px',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '48px',
             fontWeight: 400,
             color: '#ffffff',
-            lineHeight: '1.2',
-            letterSpacing: '-0.5px',
+            lineHeight: '1.15',
+            letterSpacing: '-1px',
+            marginBottom: '32px',
+            textAlign: 'left',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
             Your plan is being generated.

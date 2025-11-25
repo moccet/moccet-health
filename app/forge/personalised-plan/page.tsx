@@ -573,10 +573,10 @@ export default function PersonalisedPlanPage() {
 
       {/* Personalized Greeting */}
       <section className="plan-section greeting-section">
-        <h2 className="section-heading">{plan.personalizedGreeting}</h2>
+        <h2 className="section-heading mb-4">{plan.personalizedGreeting}</h2>
         <p className="section-subheading">Your biomarker data, your insights, your plan.</p>
         <p className="intro-text">
-          This nutrition plan has been crafted especially for you in accordance with your unique biology.
+          This fitness plan has been crafted especially for you in accordance with your unique biology.
           It takes into account your most recent lab results, daily wearable data and habitual information.
         </p>
 
@@ -597,23 +597,29 @@ export default function PersonalisedPlanPage() {
           <h2 className="section-title">Personalized metrics | {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
           <p className="section-subtitle">Your lab results are in. These are the biomarkers that you should focus on.</p>
 
-          <div className="biomarkers-table-container">
-              <table className="biomarkers-table">
-                <thead>
-                  <tr>
-                    <th>Biomarker</th>
-                    <th>Value</th>
-                    <th>Optimal Range</th>
-                    <th>Status</th>
+          <div className="biomarkers-table-container" style={{ overflowX: 'auto' }}>
+              <table className="biomarkers-table" style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                display: 'table',
+                background: '#fafafa',
+                fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px'
+              }}>
+                <thead style={{ display: 'table-header-group', borderBottom: '1px solid #e0e0e0' }}>
+                  <tr style={{ display: 'table-row' }}>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Biomarker</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Value</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Optimal Range</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody style={{ display: 'table-row-group' }}>
                   {bloodAnalysis.biomarkers.map((marker, idx) => (
-                    <tr key={idx}>
-                      <td className="biomarker-name">{marker.name}</td>
-                      <td className="biomarker-value">{marker.value}</td>
-                      <td className="biomarker-range">{marker.referenceRange || 'N/A'}</td>
-                      <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`}>{marker.status}</td>
+                    <tr key={idx} style={{ display: 'table-row', borderBottom: '1px solid #f0f0f0' }}>
+                      <td className="biomarker-name" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#1a1a1a', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.name}</td>
+                      <td className="biomarker-value" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#1a1a1a', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.value}</td>
+                      <td className="biomarker-range" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#666', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.referenceRange || 'N/A'}</td>
+                      <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`} style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.status}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -838,7 +844,7 @@ export default function PersonalisedPlanPage() {
           </div>
 
           {/* Weekly Workout Program */}
-          <section className="plan-section">
+          <section className="plan-section" id="workout-program">
             <h2 className="section-title">Weekly Workout Program</h2>
             <div className="meal-plan-grid">
               {(() => {
@@ -1247,19 +1253,19 @@ export default function PersonalisedPlanPage() {
           <section className="plan-section">
             <h2 className="section-title">Adaptive Features</h2>
             <div className="lifestyle-grid">
-              <div className="lifestyle-item">
+              <div className="lifestyle-item mb-6">
                 <h3>High Energy Day Adjustments</h3>
                 <p>{plan.adaptiveFeatures.highEnergyDay}</p>
               </div>
-              <div className="lifestyle-item">
+              <div className="lifestyle-item mb-6">
                 <h3>Low Energy Day Adjustments</h3>
                 <p>{plan.adaptiveFeatures.lowEnergyDay}</p>
               </div>
-              <div className="lifestyle-item">
+              <div className="lifestyle-item mb-6">
                 <h3>Travel Modifications</h3>
                 <p>{plan.adaptiveFeatures.travelModifications}</p>
               </div>
-              <div className="lifestyle-item">
+              <div className="lifestyle-item mb-6">
                 <h3>Injury Modifications</h3>
                 <p>{plan.adaptiveFeatures.injuryModifications}</p>
               </div>

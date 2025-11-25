@@ -295,9 +295,14 @@ IMPORTANT:
 - Address their main health priority: ${formData.mainPriority}
 
 FORMATTING:
-- DO NOT use colons (:) anywhere in the text
-- Use em dashes (—) or periods instead of colons
-- Example: Instead of "Breakfast: Oatmeal" write "Breakfast — Oatmeal" or "Breakfast. Oatmeal"
+- DO NOT use colons (:) ANYWHERE in the plan - not for labels, titles, or in sentences
+- Use em dashes (—) instead of colons for labels and separators
+- Example: Instead of "Breakfast: Oatmeal" write "Breakfast — Oatmeal"
+- Example: Instead of "On training days: pre workout" write "On training days — pre workout" or "On training days, pre workout"
+- Use proper punctuation in sentences: commas for lists, periods for sentence endings
+- When listing items in a sentence, use commas to separate them (e.g., "fish, nuts, seeds, and colorful produce")
+- Only use periods to end complete sentences, NOT to separate list items within a sentence
+- NEVER use colons after phrases like "Aim for", "On training days", "Keep the", etc.
 
 🔥 CRITICAL RECIPE REQUIREMENTS 🔥:
 1. EVERY meal in the sampleMealPlan MUST include detailed "ingredients" and "cookingInstructions" arrays
@@ -313,6 +318,11 @@ FORMATTING:
    - Include cooking times (e.g., "Bake for 15-20 minutes")
    - Include technique details (e.g., "Sauté over medium-high heat until golden", "Season with salt and black pepper")
    - Include assembly and plating instructions
+   - CRITICAL: Use commas (,) to separate multiple actions within a single step, NOT periods (.)
+   - Example CORRECT: "Heat oil in a skillet, add tofu cubes, season with salt and pepper, and cook 6 to 8 minutes turning until golden."
+   - Example WRONG: "Heat oil in a skillet. add tofu cubes. season with salt and pepper. and cook 6 to 8 minutes"
+   - Each cooking instruction should be ONE complete sentence ending with a period
+   - Within that sentence, use commas to separate the sequence of actions
 5. For complex meals, break down into preparation phases (e.g., prep vegetables, cook protein, make sauce, assemble)
 6. Make recipes practical and achievable based on their cooking frequency (${formData.mealsCooked} meals/week)
 7. For people who cook less frequently, include simpler recipes with fewer steps

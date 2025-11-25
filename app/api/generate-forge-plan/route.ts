@@ -327,6 +327,16 @@ IMPORTANT INSTRUCTIONS:
 17. Every section should feel like it was written specifically for THIS person, not a generic template
 18. Reference specific numbers from their profile (weight, sleep score, stress level, training days, etc.) throughout the plan
 
+FORMATTING RULES:
+- DO NOT use colons (:) ANYWHERE in the plan - not for labels, titles, or in sentences
+- Use em dashes (—) instead of colons for labels and separators
+- Example: Instead of "Warm-up: Dynamic stretches" write "Warm-up — Dynamic stretches"
+- Example: Instead of "On heavy days: focus on" write "On heavy days — focus on" or "On heavy days, focus on"
+- Use proper punctuation: commas for lists, periods for sentence endings
+- When listing items in a sentence, use commas to separate them (e.g., "squats, lunges, deadlifts, and rows")
+- Only use periods to end complete sentences, NOT to separate list items within a sentence
+- NEVER use colons after phrases like "Aim for", "On training days", "Focus on", etc.
+
 🔥 CRITICAL WORKOUT VOLUME REQUIREMENTS 🔥:
 19. The workout duration MUST match the claimed duration (${sessionLength}). This is NON-NEGOTIABLE.
 20. Calculate actual workout time: Warmup (8-12 min) + Main Workout Time + Cooldown (5-8 min) MUST equal the stated duration

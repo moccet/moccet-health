@@ -394,9 +394,9 @@ export default function PersonalisedPlanPage() {
           It takes into account your most recent lab results, daily wearable data and habitual information.
         </p>
 
-        {/* Executive Summary */}
+        {/* Personal Summary */}
         <div className="executive-summary-container">
-          <h2 className="section-title">Executive Summary</h2>
+          <h2 className="section-title">Personal Summary</h2>
           <div className="executive-summary">
             {plan.executiveSummary.split('\n').map((paragraph, idx) => (
               paragraph.trim() && <p key={idx}>{paragraph}</p>

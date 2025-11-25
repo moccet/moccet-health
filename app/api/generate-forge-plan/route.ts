@@ -174,7 +174,7 @@ Generate a comprehensive fitness plan in JSON format with the following structur
       "focus": "e.g., Lower Body Strength",
       "duration": "${sessionLength}",
       "warmup": {
-        "description": "Specific warm-up routine",
+        "description": "Specific warm-up routine lasting 8-12 minutes",
         "exercises": [
           {
             "name": "Exercise name",
@@ -197,7 +197,7 @@ Generate a comprehensive fitness plan in JSON format with the following structur
         }
       ],
       "cooldown": {
-        "description": "Cool-down routine",
+        "description": "Cool-down routine lasting 5-8 minutes",
         "exercises": [
           {
             "name": "Stretch or mobility work",
@@ -217,6 +217,17 @@ Generate a comprehensive fitness plan in JSON format with the following structur
     // For rest days, set focus as "Rest & Recovery" and provide active recovery activities
     // Use simple intensity language: "Easy pace", "Moderate effort", "Challenging but doable", "Very challenging - push hard"
     // Avoid technical terms like RPE, 1RM, tempo notation - use descriptive language instead
+
+    // CRITICAL WORKOUT DURATION REQUIREMENTS:
+    // - Warmup must include 4-6 exercises lasting 8-12 minutes total
+    // - Main workout must include enough exercises to match the claimed duration (${sessionLength})
+    // - For 45-60 minute sessions: Include 5-8 main exercises with 3-4 sets each
+    // - For 30-45 minute sessions: Include 4-6 main exercises with 3-4 sets each
+    // - For 60+ minute sessions: Include 8-12 main exercises with 3-5 sets each
+    // - Each main exercise takes approximately 4-6 minutes including rest (e.g., 4 sets × 45s work + 60s rest = 6.7 minutes)
+    // - Cooldown must include 3-5 stretches/mobility exercises lasting 5-8 minutes total
+    // - The total duration must ACTUALLY match the claimed duration when you calculate: warmup time + (number of exercises × sets × (work time + rest time)) + cooldown time
+    // - Example for 45-60 min: 10 min warmup + 35-40 min main workout (6 exercises × 6 min each) + 8 min cooldown = 53-58 minutes
   },
   "recoveryProtocol": {
     "dailyPractices": ["List of daily recovery habits"],
@@ -313,6 +324,28 @@ IMPORTANT INSTRUCTIONS:
 14. All 7 days must be detailed using WEEKDAY NAMES (Monday, Tuesday, etc.) - use rest/active recovery days appropriately
 15. Be specific with exercise names, form cues, and progression strategies in simple, accessible language
 16. CRITICAL: NEVER output the word "undefined" or leave any fields empty. If a value is not specified, infer the most appropriate answer based on their other data. For example, if session length is not specified, recommend "45-60 minutes" based on their experience level and goals.
-16. Every section should feel like it was written specifically for THIS person, not a generic template
-17. Reference specific numbers from their profile (weight, sleep score, stress level, training days, etc.) throughout the plan`;
+17. Every section should feel like it was written specifically for THIS person, not a generic template
+18. Reference specific numbers from their profile (weight, sleep score, stress level, training days, etc.) throughout the plan
+
+🔥 CRITICAL WORKOUT VOLUME REQUIREMENTS 🔥:
+19. The workout duration MUST match the claimed duration (${sessionLength}). This is NON-NEGOTIABLE.
+20. Calculate actual workout time: Warmup (8-12 min) + Main Workout Time + Cooldown (5-8 min) MUST equal the stated duration
+21. For 45-60 minute workouts:
+    - Warmup: 4-6 dynamic exercises (8-12 minutes total)
+    - Main Workout: 6-8 exercises with 3-4 sets each (30-40 minutes total)
+    - Cooldown: 3-5 stretches (5-8 minutes total)
+    - Each main exercise = ~5 minutes (e.g., 3 sets × 12 reps × 45s + 60s rest = 5.25 min)
+22. For 30-45 minute workouts:
+    - Warmup: 3-5 dynamic exercises (6-8 minutes)
+    - Main Workout: 4-6 exercises with 3 sets each (18-25 minutes)
+    - Cooldown: 3-4 stretches (5-7 minutes)
+23. For 60-90 minute workouts:
+    - Warmup: 5-7 dynamic exercises (10-15 minutes)
+    - Main Workout: 8-12 exercises with 3-5 sets each (40-60 minutes)
+    - Cooldown: 4-6 stretches (8-10 minutes)
+24. DO NOT create short workouts (2-3 exercises) that claim to be 45-60 minutes. This is false and unhelpful.
+25. Warmup exercises should include: dynamic mobility, activation drills, movement prep - NOT just 2 exercises
+26. Cooldown should include: static stretches for all major muscle groups worked - NOT just 2 stretches
+27. Verify your math: Count each exercise, multiply by sets, add work+rest time, ensure it matches duration
+28. A "Full Body" workout claiming 45-60 minutes with only 2 main exercises is WRONG. Full body needs 6-8 exercises minimum.`;
 }

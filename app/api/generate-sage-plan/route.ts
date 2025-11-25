@@ -249,8 +249,19 @@ Generate a JSON response with the following structure:
         {
           "time": "7:45 am",
           "name": "Breakfast name",
-          "description": "Detailed meal description",
-          "macros": "calories | protein | carbs | fiber"
+          "description": "Brief one-line description of the meal",
+          "macros": "calories | protein | carbs | fiber",
+          "ingredients": [
+            "Exact amount ingredient 1 (e.g., 150g chicken breast)",
+            "Exact amount ingredient 2 (e.g., 1 cup brown rice, cooked)",
+            "Exact amount ingredient 3 (e.g., 2 tbsp olive oil)"
+          ],
+          "cookingInstructions": [
+            "Step 1: Detailed first cooking step",
+            "Step 2: Detailed second cooking step",
+            "Step 3: Detailed third cooking step",
+            "Step 4: Final assembly and serving instructions"
+          ]
         }
       ]
     },
@@ -287,6 +298,60 @@ FORMATTING:
 - DO NOT use colons (:) anywhere in the text
 - Use em dashes (—) or periods instead of colons
 - Example: Instead of "Breakfast: Oatmeal" write "Breakfast — Oatmeal" or "Breakfast. Oatmeal"
+
+🔥 CRITICAL RECIPE REQUIREMENTS 🔥:
+1. EVERY meal in the sampleMealPlan MUST include detailed "ingredients" and "cookingInstructions" arrays
+2. Ingredients must specify EXACT amounts with units:
+   - Use grams (g) for proteins, vegetables, grains
+   - Use cups/tablespoons for liquids, oils, dressings
+   - Use pieces/items for whole foods (e.g., "2 medium tomatoes", "1 large cucumber")
+   - Example: "150g chicken breast, diced", "1 cup brown rice, cooked", "2 tbsp extra virgin olive oil", "1/2 medium red onion, thinly sliced"
+3. List ALL ingredients needed for the meal, including seasonings, oils, garnishes
+4. CookingInstructions must be detailed step-by-step:
+   - Minimum 4-6 steps per recipe
+   - Include temperatures (e.g., "Preheat oven to 400°F")
+   - Include cooking times (e.g., "Bake for 15-20 minutes")
+   - Include technique details (e.g., "Sauté over medium-high heat until golden", "Season with salt and black pepper")
+   - Include assembly and plating instructions
+5. For complex meals, break down into preparation phases (e.g., prep vegetables, cook protein, make sauce, assemble)
+6. Make recipes practical and achievable based on their cooking frequency (${formData.mealsCooked} meals/week)
+7. For people who cook less frequently, include simpler recipes with fewer steps
+8. For people who cook more frequently, you can include more elaborate techniques
+9. NEVER provide a meal without ingredients and cooking instructions - this is unacceptable
+10. The description field should be a brief one-liner, while ingredients and cookingInstructions provide the full detail
+
+EXAMPLE OF CORRECT MEAL FORMAT:
+{
+  "time": "12:15 pm",
+  "name": "Chicken shawarma bowl",
+  "description": "Spiced grilled chicken with brown rice, fresh vegetables, and tahini sauce",
+  "macros": "780 kcal | 55g protein | 65g carbs | 10g fiber",
+  "ingredients": [
+    "200g chicken breast, cut into strips",
+    "1 cup brown rice, uncooked",
+    "1 medium cucumber, diced",
+    "2 medium tomatoes, diced",
+    "1/2 red onion, thinly sliced",
+    "2 tbsp apple cider vinegar",
+    "1 tsp sugar",
+    "3 tbsp tahini",
+    "2 tbsp lemon juice",
+    "1 clove garlic, minced",
+    "2 tsp shawarma spice blend (cumin, coriander, paprika, turmeric, cinnamon)",
+    "2 tbsp olive oil",
+    "Fresh parsley for garnish",
+    "Salt and black pepper to taste"
+  ],
+  "cookingInstructions": [
+    "Cook 1 cup brown rice according to package directions (typically 45 minutes). Set aside and keep warm.",
+    "While rice cooks, prepare pickled onions. Combine sliced red onion with apple cider vinegar, sugar, and a pinch of salt in a small bowl. Let sit for at least 15 minutes.",
+    "Season chicken strips with shawarma spice blend, salt, and pepper. Heat 1 tbsp olive oil in a skillet over medium-high heat.",
+    "Cook chicken for 6-8 minutes, turning occasionally, until golden brown and cooked through (internal temperature 165°F). Remove from heat.",
+    "Prepare tahini sauce by whisking together tahini, lemon juice, minced garlic, and 2-3 tbsp water until smooth and pourable. Season with salt.",
+    "Dice cucumber and tomatoes. Chop fresh parsley.",
+    "Assemble bowl: Start with brown rice as the base, add grilled chicken, top with cucumbers, tomatoes, pickled onions, and parsley. Drizzle generously with tahini sauce."
+  ]
+}
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 

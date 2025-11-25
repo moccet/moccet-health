@@ -234,6 +234,38 @@ export default function PersonalisedPlanPage() {
   const [bloodAnalysis, setBloodAnalysis] = useState<BloodAnalysis | null>(null);
   const [loadingBloodAnalysis, setLoadingBloodAnalysis] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
+
+  // Helper function to get the correct image path based on gender
+  const getImagePath = (imageNumber: number): string => {
+    const isFemale = gender?.toLowerCase() === 'female';
+
+    if (isFemale) {
+      // Map to female-specific images
+      const femaleImages = [
+        'studiosiraj_instructional_illustration_of_a_woman_doing_a_barbe_05211cb1-f012-4763-bd3d-94f6ff51f62a.png', // Training
+        'studiosiraj_instructional_illustration_of_a_woman_doing_a_push__dfe579db-f247-4e76-97f4-f81d07bda077.png', // Workout program
+        'studiosiraj_instructional_illustration_of_a_woman_doing_yoga_--_5fd75609-0566-48e3-bb4d-2e8f37c0bc0d.png', // Recovery
+        'studiosiraj_instructional_illustration_of_a_woman_sprinting_--c_7c58aa6a-7612-4ccc-a9a1-0ed252c3aef6.png', // Progress tracking
+        'studiosiraj_instructional_illustration_of_a_woman_legs_apart_el_c4cfa759-f6d3-4ae9-8e27-8fce4d8fe80f.png', // Injury prevention
+        'studiosiraj_instructional_illustration_of_a_woman_doing_a_barbe_b105ca49-3fdf-49b5-a330-7df6fbc57ca3.png', // Adaptive training
+        'studiosiraj_instructional_illustration_of_a_woman_doing_a_barbe_05211cb1-f012-4763-bd3d-94f6ff51f62a.png', // Final
+      ];
+      return `/images/forge-female/${femaleImages[imageNumber - 1]}`;
+    }
+
+    // Default male/generic images
+    const maleImages = [
+      '152B53DF-AD96-42ED-BDB2-DA150D3FF857.png', // Training
+      '15C867CC-152F-4E9B-81E6-ACF57A9C1F73.png', // Workout program
+      '3E33A2E7-42C9-4E27-88F6-57AF1A54DD8D.png', // Recovery
+      '8B4AB139-C742-440C-849F-7AE394A3A037.png', // Progress tracking
+      '498BA8A7-59A9-485F-8481-AB1C2122C236.png', // Injury prevention
+      '7C9557A4-F309-4837-A1AF-58B6D4BB3051.png', // Adaptive training
+      'A89F1709-0CA0-4C39-A794-854DED0A76F8.png', // Final
+    ];
+    return `/images/forge/${maleImages[imageNumber - 1]}`;
+  };
 
   useEffect(() => {
     // Get code or email from URL params
@@ -300,6 +332,7 @@ export default function PersonalisedPlanPage() {
         // Set plan data
         setPlan(planData.plan);
         setPlanStatus(planData.status || 'completed');
+        setGender(planData.gender || null);
 
         // Log plan type for debugging
         console.log('[PLAN DEBUG] Plan keys:', Object.keys(planData.plan || {}));
@@ -594,7 +627,7 @@ export default function PersonalisedPlanPage() {
         <>
           {/* Decorative Image 1 */}
           <div className="plan-image-container">
-            <img src="/images/forge/152B53DF-AD96-42ED-BDB2-DA150D3FF857.png" alt="Fitness training" className="plan-image" />
+            <img src={getImagePath(1)} alt="Fitness training" className="plan-image" />
           </div>
 
           {/* Training Philosophy */}
@@ -774,7 +807,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 2 */}
           <div className="plan-image-container">
-            <img src="/images/forge/15C867CC-152F-4E9B-81E6-ACF57A9C1F73.png" alt="Workout program" className="plan-image" />
+            <img src={getImagePath(2)} alt="Workout program" className="plan-image" />
           </div>
 
           {/* Weekly Workout Program */}
@@ -1046,7 +1079,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 3 */}
           <div className="plan-image-container">
-            <img src="/images/forge/3E33A2E7-42C9-4E27-88F6-57AF1A54DD8D.png" alt="Recovery and wellness" className="plan-image" />
+            <img src={getImagePath(3)} alt="Recovery and wellness" className="plan-image" />
           </div>
 
           {/* Recovery Protocol */}
@@ -1115,7 +1148,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 6 */}
           <div className="plan-image-container">
-            <img src="/images/forge/8B4AB139-C742-440C-849F-7AE394A3A037.png" alt="Progress tracking" className="plan-image" />
+            <img src={getImagePath(4)} alt="Progress tracking" className="plan-image" />
           </div>
 
           {/* Progress Tracking & Injury Prevention */}
@@ -1151,7 +1184,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 4 */}
           <div className="plan-image-container">
-            <img src="/images/forge/498BA8A7-59A9-485F-8481-AB1C2122C236.png" alt="Injury prevention" className="plan-image" />
+            <img src={getImagePath(5)} alt="Injury prevention" className="plan-image" />
           </div>
 
           <section className="plan-section">
@@ -1180,7 +1213,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 5 */}
           <div className="plan-image-container">
-            <img src="/images/forge/7C9557A4-F309-4837-A1AF-58B6D4BB3051.png" alt="Adaptive training" className="plan-image" />
+            <img src={getImagePath(6)} alt="Adaptive training" className="plan-image" />
           </div>
 
           {/* Adaptive Features */}
@@ -1208,7 +1241,7 @@ export default function PersonalisedPlanPage() {
 
           {/* Decorative Image 7 - Final */}
           <div className="plan-image-container">
-            <img src="/images/forge/A89F1709-0CA0-4C39-A794-854DED0A76F8.png" alt="Fitness journey" className="plan-image" />
+            <img src={getImagePath(7)} alt="Fitness journey" className="plan-image" />
           </div>
         </>
       )}

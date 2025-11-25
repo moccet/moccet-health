@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       console.log('[GET-PLAN] Not found in sage table, trying forge table...');
       const forgeQuery = supabase
         .from('forge_onboarding_data')
-        .select('forge_plan, lab_file_analysis, plan_generation_status, plan_generation_error');
+        .select('forge_plan, lab_file_analysis, plan_generation_status, plan_generation_error, form_data');
 
       if (code) {
         forgeQuery.eq('form_data->>uniqueCode', code);
@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
         plan: forgeResult.data.forge_plan,
         bloodAnalysis: forgeResult.data.lab_file_analysis,
         status: forgeResult.data.plan_generation_status || 'completed',
-        error: forgeResult.data.plan_generation_error
+        error: forgeResult.data.plan_generation_error,
+        gender: forgeResult.data.form_data?.gender
       });
     }
 

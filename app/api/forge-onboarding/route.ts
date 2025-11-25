@@ -134,12 +134,16 @@ export async function POST(request: NextRequest) {
       const supabase = await createClient();
 
       // Store onboarding data in Supabase
+      // Clear old plan data when new onboarding is submitted
       const { data: insertedData, error: insertError } = await supabase
         .from('forge_onboarding_data')
         .upsert({
           email: data.email,
           form_data: formData,
           lab_file_analysis: null, // Will be populated if they uploaded a lab file
+          forge_plan: null, // Clear old plan when new onboarding is submitted
+          plan_generation_status: null, // Reset plan generation status
+          plan_generation_error: null, // Clear old errors
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'email',

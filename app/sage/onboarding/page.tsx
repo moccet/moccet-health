@@ -2335,18 +2335,22 @@ export default function SageOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div className="typeform-content">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          textAlign: 'center'
+        }}>
           <h1 style={{
             fontFamily: '"Crimson Text", Georgia, serif',
             fontSize: '56px',
             fontWeight: 400,
-            color: '#1a1a1a',
-            marginBottom: '24px',
+            color: '#ffffff',
             lineHeight: '1.2',
             letterSpacing: '-0.5px'
           }}>
-            Your plan is<br />
-            being generated.
+            Your plan is being generated.
           </h1>
         </div>
         <div style={{
@@ -2361,12 +2365,13 @@ export default function SageOnboarding() {
         }}>
           <p style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '16px',
-            fontWeight: 400,
-            color: '#4a4a4a',
+            fontSize: '18px',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            color: '#ffffff',
             marginBottom: '40px',
             textAlign: 'center',
-            letterSpacing: '0.3px'
+            letterSpacing: '0.5px'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>
@@ -2375,7 +2380,7 @@ export default function SageOnboarding() {
             fontSize: '18px',
             fontWeight: 500,
             fontStretch: 'expanded',
-            color: '#4a4a4a',
+            color: '#ffffff',
             letterSpacing: '0.5px'
           }}>sage</div>
         </div>

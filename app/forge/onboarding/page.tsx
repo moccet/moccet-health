@@ -2829,19 +2829,23 @@ export default function ForgeOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div className="typeform-content">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          textAlign: 'center'
+        }}>
           <h1 style={{
             fontFamily: '"Crimson Text", Georgia, serif',
             fontSize: '56px',
             fontWeight: 400,
             color: '#ffffff',
-            marginBottom: '24px',
             lineHeight: '1.2',
             letterSpacing: '-0.5px',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
-            Your plan is<br />
-            being generated.
+            Your plan is being generated.
           </h1>
         </div>
         <div style={{
@@ -2856,12 +2860,13 @@ export default function ForgeOnboarding() {
         }}>
           <p style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '16px',
-            fontWeight: 400,
-            color: '#ffffff',
+            fontSize: '18px',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            color: '#999',
             marginBottom: '40px',
             textAlign: 'center',
-            letterSpacing: '0.3px',
+            letterSpacing: '0.5px',
             textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
@@ -2871,7 +2876,7 @@ export default function ForgeOnboarding() {
             fontSize: '18px',
             fontWeight: 500,
             fontStretch: 'expanded',
-            color: '#ffffff',
+            color: '#999',
             letterSpacing: '0.5px',
             textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>forge</div>

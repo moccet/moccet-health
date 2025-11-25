@@ -298,10 +298,37 @@ export default function PersonalisedPlanPage() {
 
   if (error) {
     return (
-      <div className="plan-error">
-        <h1>Unable to Load Plan</h1>
-        <p>{error}</p>
-        <button onClick={() => window.location.href = '/sage'}>Return to Sage</button>
+      <div className="plan-error" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '20px',
+        textAlign: 'center',
+        background: '#f8f8f8'
+      }}>
+        <h1 style={{ fontSize: '32px', marginBottom: '16px', color: '#2d3a2d' }}>Unable to Load Plan</h1>
+        <p style={{ fontSize: '18px', marginBottom: '24px', color: '#666', maxWidth: '600px' }}>
+          {error.includes('No plan found') || error.includes('Failed to fetch plan')
+            ? 'Your plan is currently being generated. This typically takes 5-15 minutes. Please check your email for a notification when your plan is ready, or try refreshing this page in a few minutes.'
+            : error
+          }
+        </p>
+        <button
+          onClick={() => window.location.href = '/sage'}
+          style={{
+            padding: '12px 24px',
+            fontSize: '16px',
+            background: '#2d3a2d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Return to Sage
+        </button>
       </div>
     );
   }

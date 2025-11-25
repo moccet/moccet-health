@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // Try sage table first
     const sageQuery = supabase
       .from('sage_onboarding_data')
-      .select('sage_plan, lab_file_analysis, plan_generation_status, plan_generation_error, meal_plan, micronutrients, lifestyle_integration');
+      .select('sage_plan, lab_file_analysis, plan_generation_status, plan_generation_error, meal_plan, micronutrients, lifestyle_integration, form_data');
 
     if (code) {
       sageQuery.eq('form_data->>uniqueCode', code);
@@ -32,6 +32,15 @@ export async function GET(request: NextRequest) {
     const { data, error } = await sageQuery.single();
 
     console.log('[GET-PLAN] Sage query result - error:', error, 'hasData:', !!data);
+
+    // Debug: Check if any records exist with this code
+    if (error && code) {
+      const debugQuery = await supabase
+        .from('sage_onboarding_data')
+        .select('email, form_data')
+        .limit(5);
+      console.log('[GET-PLAN DEBUG] Sample sage records:', debugQuery.data?.map(d => ({ email: d.email, uniqueCode: d.form_data?.uniqueCode })));
+    }
 
     // If not found in sage table, try forge table
     if (error || !data) {
@@ -49,6 +58,15 @@ export async function GET(request: NextRequest) {
       const forgeResult = await forgeQuery.single();
 
       console.log('[GET-PLAN] Forge query result - error:', forgeResult.error, 'hasData:', !!forgeResult.data);
+
+      // Debug: Check if any records exist with this code
+      if (forgeResult.error && code) {
+        const debugQuery = await supabase
+          .from('forge_onboarding_data')
+          .select('email, form_data')
+          .limit(5);
+        console.log('[GET-PLAN DEBUG] Sample forge records:', debugQuery.data?.map(d => ({ email: d.email, uniqueCode: d.form_data?.uniqueCode })));
+      }
 
       if (forgeResult.error || !forgeResult.data) {
         console.log('[GET-PLAN] Not found in either table');

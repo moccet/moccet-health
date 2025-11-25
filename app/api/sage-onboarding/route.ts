@@ -134,12 +134,19 @@ export async function POST(request: NextRequest) {
       const supabase = await createClient();
 
       // Store onboarding data in Supabase
+      // Clear old plan data when new onboarding is submitted
       const { data: insertedData, error: insertError } = await supabase
         .from('sage_onboarding_data')
         .upsert({
           email: data.email,
           form_data: formData,
           lab_file_analysis: null, // Will be populated if they uploaded a lab file
+          sage_plan: null, // Clear old plan when new onboarding is submitted
+          meal_plan: null, // Clear old meal plan
+          micronutrients: null, // Clear old micronutrients
+          lifestyle_integration: null, // Clear old lifestyle integration
+          plan_generation_status: null, // Reset plan generation status
+          plan_generation_error: null, // Clear old errors
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'email',

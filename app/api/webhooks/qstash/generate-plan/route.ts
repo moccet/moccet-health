@@ -181,6 +181,39 @@ async function handler(request: NextRequest) {
 
     console.log(`\n🚀 [QSTASH] Starting plan generation for ${email} (code: ${uniqueCode})`);
 
+    // Check if plan is already being generated or completed (idempotency check)
+    try {
+      const supabase = await createClient();
+      const { data: existingData } = await supabase
+        .from('sage_onboarding_data')
+        .select('plan_generation_status, sage_plan')
+        .eq('email', email)
+        .single();
+
+      if (existingData) {
+        // If plan is already processing, skip to avoid duplicate generation
+        if (existingData.plan_generation_status === 'processing') {
+          console.log('⚠️ [QSTASH] Plan is already being generated. Skipping duplicate job.');
+          return NextResponse.json({
+            message: 'Plan generation already in progress',
+            skipped: true
+          }, { status: 200 });
+        }
+
+        // If plan is already completed and exists, skip
+        if (existingData.plan_generation_status === 'completed' && existingData.sage_plan) {
+          console.log('⚠️ [QSTASH] Plan already exists. Skipping duplicate job.');
+          return NextResponse.json({
+            message: 'Plan already generated',
+            skipped: true
+          }, { status: 200 });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to check existing plan status:', error);
+      // Continue anyway - better to potentially duplicate than to fail
+    }
+
     // Update status to processing
     await updateJobStatus(email, 'processing');
 

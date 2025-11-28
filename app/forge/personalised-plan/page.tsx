@@ -680,7 +680,7 @@ export default function PersonalisedPlanPage() {
         <div className="executive-summary-container">
           <h2 className="section-title">Personal Summary</h2>
           <div className="executive-summary">
-            {plan.executiveSummary.split('\n').map((paragraph, idx) => (
+            {(plan.executiveSummary || '').split('\n').map((paragraph, idx) => (
               paragraph.trim() && <p key={idx}>{paragraph}</p>
             ))}
           </div>
@@ -766,7 +766,7 @@ export default function PersonalisedPlanPage() {
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Approach</h3>
               <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                {plan.trainingPhilosophy.approach.split('\n').map((paragraph: string, idx: number) => (
+                {(plan.trainingPhilosophy.approach || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
               </div>
@@ -822,7 +822,7 @@ export default function PersonalisedPlanPage() {
             <div>
               <h3 className="overview-heading">Progression Strategy</h3>
               <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                {plan.trainingPhilosophy.progressionStrategy.split('\n').map((paragraph: string, idx: number) => (
+                {(plan.trainingPhilosophy.progressionStrategy || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
               </div>
@@ -836,7 +836,7 @@ export default function PersonalisedPlanPage() {
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Overview</h3>
               <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                {plan.weeklyStructure.overview.split('\n').map((paragraph: string, idx: number) => (
+                {(plan.weeklyStructure.overview || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
               </div>
@@ -853,7 +853,7 @@ export default function PersonalisedPlanPage() {
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Rationale</h3>
                 <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                  {plan.weeklyStructure.rationale.split('\n').map((paragraph: string, idx: number) => (
+                  {(plan.weeklyStructure.rationale || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
                 </div>
@@ -864,7 +864,7 @@ export default function PersonalisedPlanPage() {
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Volume Distribution</h3>
                 <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                  {plan.weeklyStructure.volumeDistribution.split('\n').map((paragraph: string, idx: number) => (
+                  {(plan.weeklyStructure.volumeDistribution || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
                 </div>
@@ -875,7 +875,7 @@ export default function PersonalisedPlanPage() {
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Intensity Framework</h3>
                 <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
-                  {plan.weeklyStructure.intensityFramework.split('\n').map((paragraph: string, idx: number) => (
+                  {(plan.weeklyStructure.intensityFramework || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
                 </div>

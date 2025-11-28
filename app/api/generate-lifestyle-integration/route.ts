@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { devOnboardingStorage } from '@/lib/dev-storage';
+import { buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -102,11 +103,60 @@ export async function GET(req: NextRequest) {
       console.log('[OK] Nutrition context retrieved\n');
     }
 
+    // Step 3.5: Aggregate unified context from ecosystem
+    console.log(`[3.5/5] Aggregating unified context from ecosystem data...`);
+    let unifiedContext = null;
+
+    if (lookupEmail) {
+      try {
+        const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: lookupEmail,
+            contextType: 'sage',
+            forceRefresh: false,
+          }),
+        });
+
+        if (contextResponse.ok) {
+          const contextData = await contextResponse.json();
+          unifiedContext = contextData.context;
+          console.log('[OK] Unified context aggregated successfully');
+          console.log(`[OK] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+        } else {
+          console.log('[WARN] Failed to aggregate context, proceeding with standard approach');
+        }
+      } catch (error) {
+        console.error('[WARN] Error aggregating context:', error);
+        console.log('[WARN] Proceeding with standard approach');
+      }
+    }
+
     // Generate lifestyle integration with AI
-    console.log(`[4/4] Generating hyper-personalized lifestyle integration plan...`);
+    console.log(`[4/5] Generating hyper-personalized lifestyle integration plan...`);
     const openai = getOpenAIClient();
 
-    const userContext = `
+    const prompt = unifiedContext
+      ? `You are an expert longevity coach, exercise physiologist, and sleep specialist creating a hyper-personalized lifestyle integration plan.
+
+UNIFIED ECOSYSTEM CONTEXT:
+${JSON.stringify(unifiedContext.unifiedProfile, null, 2)}
+
+KEY INSIGHTS:
+${unifiedContext.keyInsights.map((i: { insight: string; sources: string[] }) => `- ${i.insight} (${i.sources.join(', ')})`).join('\n')}
+
+PRIORITY AREAS:
+${unifiedContext.priorityAreas.map((p: { area: string; severity: string }) => `- ${p.area} (${p.severity})`).join('\n')}
+
+USER PROFILE:
+Name: ${formData.fullName || 'User'}
+Age: ${formData.age}, Gender: ${formData.gender}
+Main Priority: ${formData.mainPriority}
+Driving Goal: ${formData.drivingGoal}
+Eating Style: ${formData.eatingStyle}`
+      : `You are an expert longevity coach, exercise physiologist, and sleep specialist creating a hyper-personalized lifestyle integration plan.
+
 USER PROFILE:
 Name: ${formData.fullName || 'User'}
 Age: ${formData.age}, Gender: ${formData.gender}
@@ -129,11 +179,6 @@ Medications: ${formData.medications?.join(', ') || 'none'}
 Supplements: ${formData.supplements?.join(', ') || 'none'}
 ${biomarkerContext}
 ${nutritionContext}
-`;
-
-    const prompt = `You are an expert longevity coach, exercise physiologist, and sleep specialist creating a hyper-personalized lifestyle integration plan.
-
-${userContext}
 
 CRITICAL: This must be DEEPLY personalized based on THEIR specific data, not generic advice.
 
@@ -251,18 +296,20 @@ Generate a JSON response with this exact structure:
   }
 }
 
-REMEMBER: Every recommendation must feel like it was written specifically for this person, not generic advice.
+REMEMBER. Every recommendation must feel like it was written specifically for this person, not generic advice.
 Reference specific numbers from their profile throughout.
 
-FORMATTING:
-- DO NOT use colons (:) anywhere in the text
+FORMATTING.
+- DO NOT use colons (.) anywhere in the text
 - Use em dashes (—) or periods instead
-- Example: "Sleep Window — 10:30 PM to 6:30 AM" or "Sleep Window. 10:30 PM to 6:30 AM"
+- Example. "Sleep Window — 10.30 PM to 6.30 AM" or "Sleep Window. 10.30 PM to 6.30 AM"
 `;
+
+    console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
 
     const completion = await openai.responses.create({
       model: 'gpt-5',
-      input: `You are an expert longevity coach creating hyper-personalized lifestyle integration plans. Always respond with valid JSON only. Be specific and reference the user's actual data points.\n\n${prompt}`,
+      input: prompt,
       reasoning: { effort: 'medium' },
       text: { verbosity: 'high' }
     });

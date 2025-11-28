@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { buildFitnessPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
 
 export const maxDuration = 300;
 
@@ -18,36 +19,73 @@ export async function POST(request: NextRequest) {
 
     console.log('[FORGE-PLAN] Generating comprehensive fitness plan...');
 
-    const openai = getOpenAIClient();
+    // Step 1: Aggregate unified context from ecosystem
+    console.log('[FORGE-PLAN] Aggregating unified context from ecosystem data...');
+    let unifiedContext = null;
+    const userEmail = formData.email;
 
-    // Build the prompt for comprehensive fitness plan generation
-    const prompt = buildForgePlanPrompt(formData, bloodAnalysis);
+    if (userEmail) {
+      try {
+        const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userEmail,
+            contextType: 'forge',
+            forceRefresh: false,
+          }),
+        });
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an elite strength and conditioning coach and fitness expert. You create comprehensive, personalized fitness plans that are safe, effective, and scientifically grounded. You consider the client's complete profile including training history, goals, injuries, available equipment, and biomarkers when available.
-
-Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`
-        },
-        {
-          role: 'user',
-          content: prompt
+        if (contextResponse.ok) {
+          const contextData = await contextResponse.json();
+          unifiedContext = contextData.context;
+          console.log('[FORGE-PLAN] ✅ Unified context aggregated');
+          console.log(`[FORGE-PLAN] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+        } else {
+          console.log('[FORGE-PLAN] ⚠️ Context aggregation failed, using standard prompt');
         }
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    });
-
-    const planContent = completion.choices[0].message.content;
-    if (!planContent) {
-      throw new Error('No plan content generated');
+      } catch (error) {
+        console.error('[FORGE-PLAN] Error aggregating context:', error);
+        console.log('[FORGE-PLAN] Proceeding with standard prompt');
+      }
     }
 
+    const openai = getOpenAIClient();
+
+    // Build the prompt (ecosystem-enriched or standard)
+    const prompt = unifiedContext
+      ? buildFitnessPlanPrompt(unifiedContext, formData)
+      : buildForgePlanPrompt(formData, bloodAnalysis);
+
+    const systemPrompt = unifiedContext
+      ? buildSystemPrompt()
+      : `You are an elite strength and conditioning coach and fitness expert. You create comprehensive, personalized fitness plans that are safe, effective, and scientifically grounded. You consider the client's complete profile including training history, goals, injuries, available equipment, and biomarkers when available.
+
+Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`;
+
+    console.log(`[FORGE-PLAN] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+    console.log(`[FORGE-PLAN] Model: GPT-5 for superior reasoning and personalization`);
+
+    const completion = await openai.responses.create({
+      model: 'gpt-5',
+      input: `${systemPrompt}\n\n${prompt}`,
+      reasoning: { effort: 'high' },
+      text: { verbosity: 'high' }
+    });
+
+    let planContent = completion.output_text || '{}';
+
+    // Strip markdown code blocks if present
+    planContent = planContent.trim();
+    if (planContent.startsWith('```json')) {
+      planContent = planContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    } else if (planContent.startsWith('```')) {
+      planContent = planContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
+    }
+    planContent = planContent.trim();
+
     const plan = JSON.parse(planContent);
-    console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully');
+    console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
 
     return NextResponse.json({
       success: true,

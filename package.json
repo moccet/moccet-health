@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.5.3",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
     "@types/adm-zip": "^0.5.7",
@@ -26,6 +28,7 @@
     "pdfjs-dist": "^3.11.174",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stripe": "^20.0.0",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {

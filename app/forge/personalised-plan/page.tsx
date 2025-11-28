@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import './personalised-plan.css';
+import ShoppingCart from '@/components/ShoppingCart';
 
 interface Biomarker {
   name: string;
@@ -235,6 +236,82 @@ export default function PersonalisedPlanPage() {
   const [loadingBloodAnalysis, setLoadingBloodAnalysis] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [gender, setGender] = useState<string | null>(null);
+  const [planCode, setPlanCode] = useState<string | null>(null);
+
+  // Supplement product enrichment
+  const [enrichedEssentialSupplements, setEnrichedEssentialSupplements] = useState<any[]>([]);
+  const [enrichedOptionalSupplements, setEnrichedOptionalSupplements] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
+
+  // Enrich supplements with product data
+  const enrichSupplements = async (supplements: any[], type: 'essential' | 'optional') => {
+    if (!supplements || supplements.length === 0) return;
+
+    setLoadingProducts(true);
+    try {
+      const response = await fetch('/api/supplements/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendations: supplements }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        if (type === 'essential') {
+          setEnrichedEssentialSupplements(data.recommendations);
+        } else {
+          setEnrichedOptionalSupplements(data.recommendations);
+        }
+      }
+    } catch (error) {
+      console.error('Error enriching supplements:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  // Add to cart handler
+  const handleAddToCart = async (productId: string, supplementName: string, recommendation: any) => {
+    if (!email) {
+      alert('Please log in to add items to cart');
+      return;
+    }
+
+    setAddingToCart(productId);
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          productId,
+          quantity: 1,
+          planCode,
+          recommendationContext: {
+            supplementName,
+            dosage: recommendation.dosage,
+            timing: recommendation.timing,
+            rationale: recommendation.rationale,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`✅ Added ${supplementName} to cart!`);
+        // Trigger cart refresh by reloading the cart component
+        window.dispatchEvent(new Event('cartUpdated'));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add to cart');
+    } finally {
+      setAddingToCart(null);
+    }
+  };
 
   // Helper function to get the correct image path based on gender
   const getImagePath = (imageNumber: number): string => {
@@ -333,6 +410,22 @@ export default function PersonalisedPlanPage() {
         setPlan(planData.plan);
         setPlanStatus(planData.status || 'completed');
         setGender(planData.gender || null);
+        setPlanCode(code || null);
+
+        // Enrich supplements with product data if this is a fitness plan
+        if (planData.plan?.supplementRecommendations) {
+          const essential = planData.plan.supplementRecommendations.essentialSupplements ||
+                           planData.plan.supplementRecommendations.essential || [];
+          const optional = planData.plan.supplementRecommendations.optionalSupplements ||
+                          planData.plan.supplementRecommendations.optional || [];
+
+          if (essential.length > 0) {
+            enrichSupplements(essential, 'essential');
+          }
+          if (optional.length > 0) {
+            enrichSupplements(optional, 'optional');
+          }
+        }
 
         // Log plan type for debugging
         console.log('[PLAN DEBUG] Plan keys:', Object.keys(planData.plan || {}));
@@ -525,6 +618,9 @@ export default function PersonalisedPlanPage() {
 
   return (
     <div className="plan-container">
+      {/* Shopping Cart */}
+      {email && <ShoppingCart userEmail={email} planCode={planCode || undefined} />}
+
       {/* Sidebar - Share buttons */}
       <div className="plan-sidebar">
         <button
@@ -679,8 +775,6 @@ export default function PersonalisedPlanPage() {
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Key Principles</h3>
               <div style={{
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
                 overflow: 'hidden'
               }}>
                 <table style={{
@@ -791,8 +885,6 @@ export default function PersonalisedPlanPage() {
             <div>
               <h3 className="overview-heading">Daily Focus Areas</h3>
               <div style={{
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
                 overflow: 'hidden'
               }}>
                 <table style={{
@@ -1040,37 +1132,124 @@ export default function PersonalisedPlanPage() {
 
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Essential Supplements</h3>
-              <div style={{ display: 'grid', gap: '15px' }}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(plan.supplementRecommendations?.essentialSupplements || plan.supplementRecommendations?.essential || []).map((supp: any, idx: number) => (
-                  <div key={idx} style={{
-                    background: '#f5f5f5',
-                    border: '2px solid #000',
-                    borderRadius: '8px',
-                    padding: '15px'
-                  }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>
-                      {supp.name || supp.supplement}
-                    </div>
-                    <div style={{ fontSize: '14px', marginBottom: '8px' }}>
-                      <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
-                      <strong>Why:</strong> {supp.rationale}
-                    </div>
-                    {supp.benefits && (
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
-                        <strong>Benefits:</strong> {supp.benefits}
+              {loadingProducts ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                  Loading products...
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: '15px' }}>
+                  {enrichedEssentialSupplements.map((supp: any, idx: number) => (
+                    <div key={idx} style={{
+                      background: '#f5f5f5',
+                      border: '2px solid #000',
+                      borderRadius: '8px',
+                      padding: '15px'
+                    }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '8px' }}>
+                        💊 {supp.name || supp.supplement}
                       </div>
-                    )}
-                    {supp.duration && (
-                      <div style={{ fontSize: '12px', color: '#888' }}>
-                        <strong>Duration:</strong> {supp.duration}
+
+                      {/* Product Info */}
+                      {supp.product && (
+                        <div style={{
+                          background: '#fff',
+                          padding: '12px',
+                          borderRadius: '6px',
+                          marginBottom: '12px',
+                          border: '1px solid #ddd'
+                        }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                            {supp.product.brand} {supp.product.name}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                            {supp.product.quantity} {supp.product.unit} • {supp.product.strength}
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '8px'
+                          }}>
+                            <div>
+                              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#000' }}>
+                                ${supp.product.retailPrice.toFixed(2)}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>
+                                ${supp.product.perDayPrice.toFixed(2)}/day
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              {supp.product.inStock ? (
+                                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
+                                  ✓ In Stock
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600' }}>
+                                  Out of Stock
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Add to Cart Button */}
+                          {supp.product.inStock && (
+                            <button
+                              onClick={() => handleAddToCart(supp.product.productId, supp.name, supp)}
+                              disabled={addingToCart === supp.product.productId}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: '#000',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
+                                opacity: addingToCart === supp.product.productId ? 0.6 : 1,
+                              }}
+                            >
+                              {addingToCart === supp.product.productId ? 'Adding...' : `Add to Cart - $${supp.product.retailPrice.toFixed(2)}`}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Recommendation Details */}
+                      <div style={{ fontSize: '14px', marginBottom: '8px' }}>
+                        <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
+                        <strong>Why:</strong> {supp.rationale}
+                      </div>
+                      {supp.benefits && (
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+                          <strong>Benefits:</strong> {supp.benefits}
+                        </div>
+                      )}
+                      {supp.duration && (
+                        <div style={{ fontSize: '12px', color: '#888' }}>
+                          <strong>Duration:</strong> {supp.duration}
+                        </div>
+                      )}
+
+                      {/* No Match Warning */}
+                      {supp.matchStatus === 'no_match' && (
+                        <div style={{
+                          background: '#fef3c7',
+                          padding: '10px',
+                          borderRadius: '6px',
+                          marginTop: '10px',
+                          fontSize: '13px',
+                          color: '#92400e'
+                        }}>
+                          ⚠️ Product not available in our store yet. We'll add it soon!
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '20px' }}>

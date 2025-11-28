@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
+import { buildNutritionPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -167,12 +168,44 @@ export async function GET(request: NextRequest) {
 
     console.log('[OK] No existing plan - generating new one\n');
 
+    // Step 2.5: Aggregate unified context from ecosystem
+    console.log(`[2.5/5] Aggregating unified context from ecosystem data...`);
+    let unifiedContext = null;
+    const userEmail = email || formData.email;
+
+    try {
+      const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          contextType: 'sage',
+          forceRefresh: false,
+        }),
+      });
+
+      if (contextResponse.ok) {
+        const contextData = await contextResponse.json();
+        unifiedContext = contextData.context;
+        console.log('[OK] Unified context aggregated successfully');
+        console.log(`[OK] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+      } else {
+        console.log('[WARN] Failed to aggregate context, proceeding with onboarding data only');
+      }
+    } catch (error) {
+      console.error('[WARN] Error aggregating context:', error);
+      console.log('[WARN] Proceeding with onboarding data only');
+    }
+
     // Generate AI plan
-    console.log(`[3/4] Generating personalized nutrition plan with AI...`);
+    console.log(`[3/5] Generating personalized nutrition plan with AI...`);
     const openai = getOpenAIClient();
 
-    // Build comprehensive prompt with all onboarding data
-    const userContext = `
+    // Build comprehensive prompt with unified context
+    const prompt = unifiedContext
+      ? buildNutritionPlanPrompt(unifiedContext, formData)
+      : `You are an elite nutritionist, longevity expert, and personalized health consultant. Generate a comprehensive, personalized Sage Nutrition Plan for this individual.
+
 User Profile:
 - Name: ${formData.fullName}
 - Age: ${formData.age}
@@ -201,11 +234,6 @@ Nutrition Profile (The Fuel):
 
 Connected Integrations: ${formData.integrations.join(', ') || 'None yet'}
 ${formData.hasLabFile ? 'Lab results: Uploaded (analysis pending)' : 'Lab results: Not uploaded'}
-`;
-
-    const prompt = `You are an elite nutritionist, longevity expert, and personalized health consultant. Generate a comprehensive, personalized Sage Nutrition Plan for this individual.
-
-${userContext}
 
 Your task is to create a complete nutrition plan that addresses their specific goals, health conditions, lifestyle, and preferences. The plan should be:
 1. Evidence-based and scientifically sound
@@ -365,9 +393,13 @@ EXAMPLE OF CORRECT MEAL FORMAT:
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
+    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'You are an elite nutritionist and personalized health consultant. You create evidence-based, highly personalized nutrition plans. You MUST respond with valid JSON only.';
+
+    console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+
     const completion = await openai.responses.create({
       model: 'gpt-5',
-      input: `You are an elite nutritionist and personalized health consultant. You create evidence-based, highly personalized nutrition plans. You MUST respond with valid JSON only.\n\n${prompt}`,
+      input: `${systemPrompt}\n\n${prompt}`,
       reasoning: { effort: 'medium' },
       text: { verbosity: 'high' }
     });

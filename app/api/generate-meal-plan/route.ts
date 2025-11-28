@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
+import { buildMealPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -200,11 +201,51 @@ export async function GET(request: NextRequest) {
       console.log('[NOTE] No blood analysis found - generating standard meal plan\n');
     }
 
+    // Step 3.5: Aggregate unified context from ecosystem
+    console.log(`[3.5/5] Aggregating unified context from ecosystem data...`);
+    let unifiedContext = null;
+
+    try {
+      const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: lookupEmail,
+          contextType: 'sage',
+          forceRefresh: false,
+        }),
+      });
+
+      if (contextResponse.ok) {
+        const contextData = await contextResponse.json();
+        unifiedContext = contextData.context;
+        console.log('[OK] Unified context aggregated successfully');
+        console.log(`[OK] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+      } else {
+        console.log('[WARN] Failed to aggregate context, proceeding with standard approach');
+      }
+    } catch (error) {
+      console.error('[WARN] Error aggregating context:', error);
+      console.log('[WARN] Proceeding with standard approach');
+    }
+
     // Generate detailed meal plan with AI
-    console.log(`[4/4] Generating biomarker-optimized 7-day meal plan...`);
+    console.log(`[4/5] Generating biomarker-optimized 7-day meal plan...`);
     const openai = getOpenAIClient();
 
-    const userContext = `
+    // Extract nutrition targets
+    const nutritionTargets = {
+      calories: nutritionPlan.nutritionOverview.nutritionStructure.calories,
+      protein: nutritionPlan.nutritionOverview.nutritionStructure.protein,
+      carbs: nutritionPlan.nutritionOverview.nutritionStructure.carbs,
+      fiber: nutritionPlan.nutritionOverview.nutritionStructure.fiber,
+      fat: nutritionPlan.nutritionOverview.nutritionStructure.fat,
+    };
+
+    const prompt = unifiedContext
+      ? buildMealPlanPrompt(unifiedContext, formData, nutritionTargets)
+      : `You are an elite nutritionist and longevity medicine expert creating a biomarker-optimized, personalized 7-day meal plan.
+
 User Profile:
 - Name: ${formData.fullName}
 - Age: ${formData.age}
@@ -217,11 +258,11 @@ Health Goals:
 - Driving Goal: ${formData.drivingGoal}
 
 Nutrition Targets (from their plan):
-- Calories: ${nutritionPlan.nutritionOverview.nutritionStructure.calories}
-- Protein: ${nutritionPlan.nutritionOverview.nutritionStructure.protein}
-- Carbs: ${nutritionPlan.nutritionOverview.nutritionStructure.carbs}
-- Fiber: ${nutritionPlan.nutritionOverview.nutritionStructure.fiber}
-- Fat: ${nutritionPlan.nutritionOverview.nutritionStructure.fat}
+- Calories: ${nutritionTargets.calories}
+- Protein: ${nutritionTargets.protein}
+- Carbs: ${nutritionTargets.carbs}
+- Fiber: ${nutritionTargets.fiber}
+- Fat: ${nutritionTargets.fat}
 
 Dietary Preferences & Restrictions:
 - Eating Style: ${formData.eatingStyle}
@@ -233,11 +274,6 @@ Dietary Preferences & Restrictions:
 
 Current Supplements: ${formData.supplements || 'None'}
 Medical Conditions: ${formData.medicalConditions.join(', ')} ${formData.otherCondition ? `+ ${formData.otherCondition}` : ''}
-`;
-
-    const prompt = `You are an elite nutritionist and longevity medicine expert creating a biomarker-optimized, personalized 7-day meal plan.
-
-${userContext}
 ${biomarkerContext}
 
 Create a comprehensive 7-day meal plan with detailed recipes, cooking instructions, nutritional breakdowns, and biomarker optimization notes.
@@ -329,9 +365,13 @@ FORMATTING:
 
 Return ONLY valid JSON. Be specific, creative, and delicious!`;
 
+    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'You are an elite nutritionist specializing in personalized meal planning. You create detailed, practical meal plans with recipes. You MUST respond with valid JSON only.';
+
+    console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+
     const completion = await openai.responses.create({
       model: 'gpt-5',
-      input: `You are an elite nutritionist specializing in personalized meal planning. You create detailed, practical meal plans with recipes. You MUST respond with valid JSON only.\n\n${prompt}`,
+      input: `${systemPrompt}\n\n${prompt}`,
       reasoning: { effort: 'medium' },
       text: { verbosity: 'high' }
     });

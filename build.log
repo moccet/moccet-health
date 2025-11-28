@@ -1,0 +1,57 @@
+
+> moccet-new@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.3
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Failed to compile.
+
+./app/checkout/page.tsx
+Module not found: Can't resolve '@stripe/react-stripe-js'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/generate-lifestyle-integration/route.ts
+Error:   [31mx[0m Expected ';', '}' or <eof>
+     ,-[[36;1;4m/Users/sofianyoussef/Desktop/moccet/moccet-new/app/api/generate-lifestyle-integration/route.ts[0m:183:1]
+ [2m180[0m | ${biomarkerContext}
+ [2m181[0m | ${nutritionContext}`;
+ [2m182[0m | 
+ [2m183[0m | CRITICAL: This must be DEEPLY personalized based on THEIR specific data, not generic advice.
+     : [35;1m          ^^|^[0m[33;1m ^^^^[0m
+     :             [35;1m`-- [35;1mThis is the expression part of an expression statement[0m[0m
+ [2m184[0m | 
+ [2m185[0m | Create a comprehensive lifestyle integration plan with these 4 pillars:
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/api/generate-lifestyle-integration/route.ts
+
+./app/api/generate-micronutrients/route.ts
+Error:   [31mx[0m Expected ';', '}' or <eof>
+     ,-[[36;1;4m/Users/sofianyoussef/Desktop/moccet/moccet-new/app/api/generate-micronutrients/route.ts[0m:182:1]
+ [2m179[0m | ${biomarkerContext}
+ [2m180[0m | ${nutritionContext}`;
+ [2m181[0m | 
+ [2m182[0m | IMPORTANT REQUIREMENTS:
+     : [35;1m^^^^|^^^^[0m[33;1m ^^^^^^^^^^^^[0m
+     :     [35;1m`-- [35;1mThis is the expression part of an expression statement[0m[0m
+ [2m183[0m | 1. Start with a highly personalized 2-3 sentence introduction that MUST reference multiple data sources:
+ [2m184[0m |    - Their specific health goals and priorities (${formData.mainPriority}, ${formData.drivingGoal})
+ [2m185[0m |    ${bloodAnalysis ? `- CRITICAL: Specific biomarkers from their blood test that need attention (mention actual marker names and values)` : ''}
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/api/generate-micronutrients/route.ts
+
+
+> Build failed because of webpack errors

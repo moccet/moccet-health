@@ -105,7 +105,7 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildForgePlanPrompt(formData: any, bloodAnalysis: any): string {
+export function buildForgePlanPrompt(formData: any, bloodAnalysis: any): string {
   // Extract fields with proper fallbacks for undefined values
   const fullName = formData.fullName || 'Client';
   const age = formData.age || '30';

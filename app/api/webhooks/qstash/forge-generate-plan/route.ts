@@ -3,6 +3,8 @@ import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
+import { buildFitnessPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
+import { buildForgePlanPrompt } from '@/app/api/generate-forge-plan/route';
 
 // This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 // QStash will handle retries if it fails
@@ -16,6 +18,85 @@ function getOpenAIClient() {
   return new OpenAI({
     apiKey,
   });
+}
+
+// Inline fitness plan generation to avoid timeout issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, baseUrl: string) {
+  console.log('[FORGE-PLAN] Generating comprehensive fitness plan...');
+
+  // Step 1: Aggregate unified context from ecosystem
+  console.log('[FORGE-PLAN] Aggregating unified context from ecosystem data...');
+  let unifiedContext = null;
+  const userEmail = formData.email;
+
+  if (userEmail) {
+    try {
+      const contextResponse = await fetch(`${baseUrl}/api/aggregate-context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          contextType: 'forge',
+          forceRefresh: false,
+        }),
+      });
+
+      if (contextResponse.ok) {
+        const contextData = await contextResponse.json();
+        unifiedContext = contextData.context;
+        console.log('[FORGE-PLAN] ✅ Unified context aggregated');
+        console.log(`[FORGE-PLAN] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+      } else {
+        console.log('[FORGE-PLAN] ⚠️ Context aggregation failed, using standard prompt');
+      }
+    } catch (error) {
+      console.error('[FORGE-PLAN] Error aggregating context:', error);
+      console.log('[FORGE-PLAN] Proceeding with standard prompt');
+    }
+  }
+
+  const openai = getOpenAIClient();
+
+  // Build the prompt (ecosystem-enriched or standard)
+  const prompt = unifiedContext
+    ? buildFitnessPlanPrompt(unifiedContext, formData)
+    : buildForgePlanPrompt(formData, bloodAnalysis);
+
+  const systemPrompt = unifiedContext
+    ? buildSystemPrompt()
+    : `You are an elite strength and conditioning coach and fitness expert. You create comprehensive, personalized fitness plans that are safe, effective, and scientifically grounded. You consider the client's complete profile including training history, goals, injuries, available equipment, and biomarkers when available.
+
+Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`;
+
+  console.log(`[FORGE-PLAN] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+  console.log(`[FORGE-PLAN] Model: GPT-5 for superior reasoning and personalization`);
+
+  const completion = await openai.responses.create({
+    model: 'gpt-5',
+    input: `${systemPrompt}\n\n${prompt}`,
+    reasoning: { effort: 'high' },
+    text: { verbosity: 'high' }
+  });
+
+  let planContent = completion.output_text || '{}';
+
+  // Strip markdown code blocks if present
+  planContent = planContent.trim();
+  if (planContent.startsWith('```json')) {
+    planContent = planContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+  } else if (planContent.startsWith('```')) {
+    planContent = planContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
+  }
+  planContent = planContent.trim();
+
+  const plan = JSON.parse(planContent);
+  console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
+
+  return {
+    success: true,
+    plan
+  };
 }
 
 const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
@@ -330,24 +411,8 @@ async function handler(request: NextRequest) {
     // Generate comprehensive fitness plan
     console.log('[2/5] Generating comprehensive fitness plan with AI...');
 
-    const planResponse = await fetch(`${baseUrl}/api/generate-forge-plan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        formData,
-        bloodAnalysis: bloodAnalysisData
-      })
-    });
-
-    if (!planResponse.ok) {
-      throw new Error('Failed to generate fitness plan');
-    }
-
-    const planResult = await planResponse.json();
-
-    if (!planResult.success || !planResult.plan) {
-      throw new Error('Invalid plan generation response');
-    }
+    // INLINE AI GENERATION - Don't call separate endpoint to avoid timeout issues
+    const planResult = await generateFitnessPlanInline(formData, bloodAnalysisData, baseUrl);
 
     console.log('[OK] Comprehensive fitness plan generated');
 

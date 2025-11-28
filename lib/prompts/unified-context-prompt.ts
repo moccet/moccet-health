@@ -82,14 +82,14 @@ function buildUserProfileSection(onboardingData: OnboardingData): string {
  * Build physiological data section from ecosystem
  */
 function buildPhysiologicalDataSection(context: UnifiedContext): string {
-  const { physiological } = context.unifiedProfile as {
-    physiological: {
+  const physiological = (context.unifiedProfile as {
+    physiological?: {
       biomarkers?: { biomarkers?: Array<{ name: string; value: string; status: string; implications: string }>; concerns?: string[] };
       sleep?: { avgHours: number | null; quality: string | null; hrvStatus: string | null; sleepDebt: number | null };
       glucose?: { avgGlucose: number | null; variability: string | null; spikePatterns: string[]; status: string };
       recovery?: { status: string; readinessScore: number | null; trainingLoad: string; overtrainingRisk: boolean };
     };
-  };
+  })?.physiological || {};
 
   let section = '\n## PHYSIOLOGICAL DATA (From Wearables + Lab Work)\n';
 
@@ -150,27 +150,35 @@ function buildPhysiologicalDataSection(context: UnifiedContext): string {
  * Build behavioral patterns section
  */
 function buildBehavioralPatternsSection(context: UnifiedContext): string {
-  const { behavioral } = context.unifiedProfile as {
-    behavioral: {
-      workPatterns: { stressLevel: string; workLifeBalance: string; breakDeficiency: boolean; optimalMealWindows: string[] };
-      sleepSchedule: { afterHoursWork: boolean; impact: string };
+  const behavioral = (context.unifiedProfile as {
+    behavioral?: {
+      workPatterns?: { stressLevel: string; workLifeBalance: string; breakDeficiency: boolean; optimalMealWindows: string[] };
+      sleepSchedule?: { afterHoursWork: boolean; impact: string };
     };
-  };
+  })?.behavioral;
+
+  if (!behavioral) {
+    return '\n## BEHAVIORAL PATTERNS (From Gmail/Slack Analysis)\n\n**No behavioral data available**\n';
+  }
 
   let section = '\n## BEHAVIORAL PATTERNS (From Gmail/Slack Analysis)\n';
 
-  section += '\n**Work & Stress Patterns:**\n';
-  section += `- Stress Level: ${behavioral.workPatterns.stressLevel}\n`;
-  section += `- Work-Life Balance: ${behavioral.workPatterns.workLifeBalance}\n`;
-  section += `- Break Deficiency: ${behavioral.workPatterns.breakDeficiency ? 'YES (insufficient breaks between meetings)' : 'No'}\n`;
+  if (behavioral.workPatterns) {
+    section += '\n**Work & Stress Patterns:**\n';
+    section += `- Stress Level: ${behavioral.workPatterns.stressLevel}\n`;
+    section += `- Work-Life Balance: ${behavioral.workPatterns.workLifeBalance}\n`;
+    section += `- Break Deficiency: ${behavioral.workPatterns.breakDeficiency ? 'YES (insufficient breaks between meetings)' : 'No'}\n`;
 
-  if (behavioral.workPatterns.optimalMealWindows.length > 0) {
-    section += `- Optimal Meal Windows: ${behavioral.workPatterns.optimalMealWindows.join(', ')} (avoiding meeting peaks)\n`;
+    if (behavioral.workPatterns.optimalMealWindows?.length > 0) {
+      section += `- Optimal Meal Windows: ${behavioral.workPatterns.optimalMealWindows.join(', ')} (avoiding meeting peaks)\n`;
+    }
   }
 
-  section += '\n**Sleep Schedule Impact:**\n';
-  section += `- After-Hours Work Activity: ${behavioral.sleepSchedule.afterHoursWork ? 'High (disrupting sleep)' : 'Low'}\n`;
-  section += `- Impact: ${behavioral.sleepSchedule.impact}\n`;
+  if (behavioral.sleepSchedule) {
+    section += '\n**Sleep Schedule Impact:**\n';
+    section += `- After-Hours Work Activity: ${behavioral.sleepSchedule.afterHoursWork ? 'High (disrupting sleep)' : 'Low'}\n`;
+    section += `- Impact: ${behavioral.sleepSchedule.impact}\n`;
+  }
 
   return section.trim();
 }

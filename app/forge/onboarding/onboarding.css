@@ -361,6 +361,19 @@
   text-align: left;
 }
 
+.typeform-subtitle-brand {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  font-stretch: expanded;
+  color: #999;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+  margin-bottom: 40px;
+  max-width: 800px;
+  text-align: left;
+}
+
 /* Input Fields */
 .input-with-unit-container {
   display: flex;

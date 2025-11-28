@@ -2001,7 +2001,7 @@ export default function ForgeOnboarding() {
       <div className={`typeform-screen section-screen ${currentScreen === 'environment-intro' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <h1 className="section-title">3 The Environment</h1>
-          <p className="typeform-subtitle">Let&apos;s explore the resources and setting you have for training, so your plan fits your actual environment.</p>
+          <p className="typeform-subtitle-brand">Let&apos;s explore the resources and setting you have for training, so your plan fits your actual environment.</p>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('equipment')}>Continue</button>
             <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -2829,7 +2829,16 @@ export default function ForgeOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div className="typeform-content">
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          justifyContent: 'center',
+          paddingLeft: '40px',
+          paddingRight: '40px'
+        }}>
           <h1 style={{
             fontFamily: '"Playfair Display", Georgia, serif',
             fontSize: '48px',

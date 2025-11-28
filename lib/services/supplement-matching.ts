@@ -203,15 +203,66 @@ export async function matchSupplementToProduct(
     }
 
     if (!mappings || mappings.length === 0) {
-      console.warn(`[Supplement Matching] No match found for: "${supplementName}"`);
+      console.log(`[Supplement Matching] No match found for: "${supplementName}" - Creating new product automatically`);
 
-      // Log unmatched supplement for manual catalog expansion
-      await logUnmatchedSupplement(supplementName, recommendation.dosage);
+      // Automatically create product for unmatched supplement
+      const newProduct = await createSupplementProduct(supplementName, recommendation.dosage);
+
+      if (!newProduct) {
+        console.error(`[Supplement Matching] Failed to create product for: "${supplementName}"`);
+        return {
+          ...recommendation,
+          product: null,
+          matchStatus: 'no_match',
+        };
+      }
+
+      // Return the newly created product
+      const perDayPrice = calculatePerDayPrice(
+        newProduct.retail_price,
+        newProduct.quantity,
+        recommendation.dosage
+      );
+
+      const productMatch: ProductMatch = {
+        productId: newProduct.id,
+        sku: newProduct.sku,
+        name: newProduct.name,
+        brand: newProduct.brand,
+        dosageForm: newProduct.dosage_form,
+        strength: newProduct.strength,
+        quantity: newProduct.quantity,
+        unit: newProduct.unit,
+
+        wholesaleCost: parseFloat(newProduct.wholesale_cost),
+        retailPrice: parseFloat(newProduct.retail_price),
+        margin: parseFloat(newProduct.margin),
+        marginPercent: parseFloat(newProduct.margin_percent),
+        perDayPrice,
+
+        stockLevel: newProduct.stock_level,
+        inStock: true,
+        lowStockAlert: false,
+
+        description: newProduct.description || '',
+        benefits: newProduct.benefits || [],
+        directions: newProduct.directions || '',
+        warnings: newProduct.warnings || '',
+        imageUrl: newProduct.image_url || '/images/supplements/default.png',
+
+        thirdPartyTested: newProduct.third_party_tested,
+        certifications: newProduct.certifications || [],
+
+        matchScore: 1.0,
+        matchReason: 'Auto-created product',
+      };
+
+      console.log(`[Supplement Matching] ✅ Created "${supplementName}" - SKU: ${newProduct.sku} - $${newProduct.retail_price}`);
 
       return {
         ...recommendation,
-        product: null,
-        matchStatus: 'no_match',
+        product: productMatch,
+        matchStatus: 'matched',
       };
     }
 
@@ -489,5 +540,79 @@ export async function validateProductAvailability(productId: string): Promise<{
       available: false,
       reason: 'Validation failed',
     };
+  }
+}
+
+/**
+ * Automatically creates a supplement product when no match is found
+ */
+async function createSupplementProduct(
+  supplementName: string,
+  dosage: string
+): Promise<any | null> {
+  try {
+    // Parse dosage to extract strength
+    const dosageMatch = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|g|mcg|µg|iu)/i);
+    const strength = dosageMatch ? `${dosageMatch[1]}${dosageMatch[2]}` : '1000mg';
+
+    // Generate SKU
+    const sku = `AUTO-${supplementName.toUpperCase().replace(/[^A-Z0-9]/g, '-')}-${Date.now()}`;
+
+    // Determine product type and set defaults
+    const isProtein = /protein|whey|casein/i.test(supplementName);
+    const isPowder = isProtein || /powder|creatine/i.test(supplementName);
+
+    const quantity = isPowder ? 1000 : 120; // grams for powder, capsules otherwise
+    const unit = isPowder ? 'grams' : 'capsules';
+    const dosageForm = isPowder ? 'Powder' : 'Capsule';
+
+    // Pricing: $30 margin
+    const wholesaleCost = isProtein ? 35.00 : 15.00; // Higher wholesale for protein
+    const retailPrice = wholesaleCost + 30.00; // Always $30 margin
+
+    // Create product
+    const { data: product, error } = await supabase
+      .from('supplement_products')
+      .insert({
+        sku,
+        name: supplementName,
+        brand: 'Premium Select',
+        dosage_form: dosageForm,
+        strength,
+        quantity,
+        unit,
+        wholesale_cost: wholesaleCost,
+        retail_price: retailPrice,
+        description: `High-quality ${supplementName} supplement`,
+        stock_level: 1000, // Start with good stock
+        reorder_point: 100,
+        is_active: true,
+        third_party_tested: true,
+        certifications: ['GMP Certified'],
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Supplement Matching] Error creating product:', error);
+      return null;
+    }
+
+    // Create name mapping for future lookups
+    await supabase.from('supplement_name_mappings').insert({
+      recommendation_name: supplementName,
+      recommendation_name_variations: [],
+      product_id: product.id,
+      is_primary_match: true,
+      match_score: 1.0,
+      dosage_unit: dosageMatch ? dosageMatch[2].toLowerCase() : 'mg',
+    });
+
+    console.log(`[Supplement Matching] Created product and mapping for: ${supplementName}`);
+
+    return product;
+  } catch (error) {
+    console.error('[Supplement Matching] Error in createSupplementProduct:', error);
+    return null;
   }
 }

@@ -2838,7 +2838,7 @@ export default function ForgeOnboarding() {
             lineHeight: '1.15',
             letterSpacing: '-1px',
             marginBottom: '32px',
-            textAlign: 'left',
+            textAlign: 'center',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
             Your plan is being generated.

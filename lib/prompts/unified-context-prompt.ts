@@ -125,7 +125,7 @@ function buildPhysiologicalDataSection(context: UnifiedContext): string {
     section += `- Average Glucose: ${physiological.glucose.avgGlucose} mg/dL\n`;
     section += `- Variability: ${physiological.glucose.variability}\n`;
     section += `- Status: ${physiological.glucose.status}\n`;
-    if (physiological.glucose.spikePatterns.length > 0) {
+    if (physiological.glucose.spikePatterns && physiological.glucose.spikePatterns.length > 0) {
       section += `- ⚠️ Spike Triggers: ${physiological.glucose.spikePatterns.join(', ')}\n`;
     }
   } else {
@@ -187,7 +187,7 @@ function buildBehavioralPatternsSection(context: UnifiedContext): string {
  * Build key insights section with cross-source correlations
  */
 function buildKeyInsightsSection(context: UnifiedContext): string {
-  if (context.keyInsights.length === 0) {
+  if (!context.keyInsights || context.keyInsights.length === 0) {
     return '';
   }
 
@@ -212,7 +212,7 @@ function buildKeyInsightsSection(context: UnifiedContext): string {
  * Build priority optimization areas
  */
 function buildPriorityAreasSection(context: UnifiedContext): string {
-  if (context.priorityAreas.length === 0) {
+  if (!context.priorityAreas || context.priorityAreas.length === 0) {
     return '';
   }
 
@@ -234,7 +234,7 @@ function buildPriorityAreasSection(context: UnifiedContext): string {
  * Build data sources attribution
  */
 function buildDataSourcesSection(context: UnifiedContext): string {
-  const sources = context.dataSourcesUsed;
+  const sources = context.dataSourcesUsed || {};
   let section = '\n## DATA SOURCES USED\n';
 
   Object.entries(sources).forEach(([sourceName, sourceData]) => {
@@ -404,22 +404,36 @@ ${buildBehavioralPatternsSection(context)}
 ## MEAL PLAN PERSONALIZATION REQUIREMENTS
 
 1. **Timing Based on Real Data:**
-   - Use optimal meal windows from Gmail/Slack analysis: ${(context.unifiedProfile as { behavioral: { workPatterns: { optimalMealWindows: string[] } } }).behavioral.workPatterns.optimalMealWindows.join(', ') || '12:00-13:00, 18:00-19:00'}
+   ${(() => {
+      const behavioral = (context.unifiedProfile as { behavioral?: { workPatterns?: { optimalMealWindows?: string[] } } })?.behavioral;
+      const mealWindows = behavioral?.workPatterns?.optimalMealWindows;
+      return `- Use optimal meal windows from Gmail/Slack analysis: ${mealWindows && mealWindows.length > 0 ? mealWindows.join(', ') : '12:00-13:00, 18:00-19:00'}`;
+    })()}
    - Avoid scheduling meals during meeting peaks
    - Account for work stress patterns
 
 2. **Glucose Optimization:**
-   ${(context.unifiedProfile as { physiological: { glucose?: { spikePatterns: string[] } } }).physiological.glucose?.spikePatterns && (context.unifiedProfile as { physiological: { glucose?: { spikePatterns: string[] } } }).physiological.glucose.spikePatterns.length > 0
-      ? `- CGM data shows spikes triggered by: ${(context.unifiedProfile as { physiological: { glucose?: { spikePatterns: string[] } } }).physiological.glucose.spikePatterns.join(', ')}\n   - Design meals to avoid these triggers`
-      : '- No CGM data available - use general low-glycemic principles'
-    }
+   ${(() => {
+      const physiological = (context.unifiedProfile as { physiological?: { glucose?: { spikePatterns?: string[] } } })?.physiological;
+      const spikePatterns = physiological?.glucose?.spikePatterns;
+      return spikePatterns && spikePatterns.length > 0
+        ? `- CGM data shows spikes triggered by: ${spikePatterns.join(', ')}\n   - Design meals to avoid these triggers`
+        : '- No CGM data available - use general low-glycemic principles';
+    })()}
 
 3. **Recovery Support:**
-   - Sleep quality is ${(context.unifiedProfile as { physiological: { sleep?: { quality: string | null } } }).physiological.sleep?.quality || 'unknown'} → ${(context.unifiedProfile as { physiological: { sleep?: { quality: string | null } } }).physiological.sleep?.quality === 'poor' ? 'prioritize sleep-supporting nutrients (magnesium, tryptophan)' : 'maintain current sleep nutrition'}
+   ${(() => {
+      const physiological = (context.unifiedProfile as { physiological?: { sleep?: { quality?: string | null } } })?.physiological;
+      const sleepQuality = physiological?.sleep?.quality || 'unknown';
+      return `- Sleep quality is ${sleepQuality} → ${sleepQuality === 'poor' ? 'prioritize sleep-supporting nutrients (magnesium, tryptophan)' : 'maintain current sleep nutrition'}`;
+    })()}
 
 4. **Meal Complexity:**
-   - Work stress level: ${(context.unifiedProfile as { behavioral: { workPatterns: { stressLevel: string } } }).behavioral.workPatterns.stressLevel}
-   - ${(context.unifiedProfile as { behavioral: { workPatterns: { stressLevel: string } } }).behavioral.workPatterns.stressLevel === 'high' ? 'Prioritize quick-prep meals (15-20 min) on high-stress days' : 'Can include more complex recipes'}
+   ${(() => {
+      const behavioral = (context.unifiedProfile as { behavioral?: { workPatterns?: { stressLevel?: string } } })?.behavioral;
+      const stressLevel = behavioral?.workPatterns?.stressLevel || 'moderate';
+      return `- Work stress level: ${stressLevel}\n   - ${stressLevel === 'high' ? 'Prioritize quick-prep meals (15-20 min) on high-stress days' : 'Can include more complex recipes'}`;
+    })()}
 
 **Output Format:** Return JSON with 7-day meal plan. Include biomarker optimization notes for each meal.
 `.trim();

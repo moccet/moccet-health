@@ -55,27 +55,41 @@ export async function POST(request: NextRequest) {
       const userData = await createUserResponse.json();
       vitalUserId = userData.user_id;
       console.log(`[Vital API] Created user. Vital user_id: ${vitalUserId}`);
-    } else if (createUserResponse.status === 409) {
-      // User already exists, need to resolve their Vital user_id
-      console.log('[Vital API] User already exists (409), resolving user_id...');
-      const resolveResponse = await fetch(`${baseUrl}/v2/user/resolve/${encodeURIComponent(userId)}`, {
-        headers: {
-          'X-Vital-API-Key': apiKey,
-        },
-      });
+    } else if (createUserResponse.status === 409 || createUserResponse.status === 400) {
+      // User already exists (409) or duplicate user (400), need to resolve their Vital user_id
+      const errorText = await createUserResponse.text();
 
-      if (!resolveResponse.ok) {
-        const errorText = await resolveResponse.text();
-        console.error('[Vital API] Failed to resolve user_id:', errorText);
+      // Check if it's a "user already exists" error
+      const isUserExists = errorText.includes('already exists') || errorText.includes('INVALID_REQUEST');
+
+      if (isUserExists) {
+        console.log(`[Vital API] User already exists (${createUserResponse.status}), resolving user_id...`);
+        const resolveResponse = await fetch(`${baseUrl}/v2/user/resolve/${encodeURIComponent(userId)}`, {
+          headers: {
+            'X-Vital-API-Key': apiKey,
+          },
+        });
+
+        if (!resolveResponse.ok) {
+          const resolveErrorText = await resolveResponse.text();
+          console.error('[Vital API] Failed to resolve user_id:', resolveErrorText);
+          return NextResponse.json(
+            { error: 'Failed to resolve existing user' },
+            { status: 500 }
+          );
+        }
+
+        const resolveData = await resolveResponse.json();
+        vitalUserId = resolveData.user_id;
+        console.log(`[Vital API] Resolved existing user. Vital user_id: ${vitalUserId}`);
+      } else {
+        // It's a different kind of 400 error
+        console.error('[Vital API] Failed to create user:', createUserResponse.status, errorText);
         return NextResponse.json(
-          { error: 'Failed to resolve existing user' },
-          { status: 500 }
+          { error: 'Failed to create Vital user', details: errorText },
+          { status: createUserResponse.status }
         );
       }
-
-      const resolveData = await resolveResponse.json();
-      vitalUserId = resolveData.user_id;
-      console.log(`[Vital API] Resolved existing user. Vital user_id: ${vitalUserId}`);
     } else {
       const errorText = await createUserResponse.text();
       console.error('[Vital API] Failed to create user:', createUserResponse.status, errorText);

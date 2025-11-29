@@ -95,7 +95,8 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
 
   return {
     success: true,
-    plan
+    plan,
+    unifiedContext // Return the context so specialized agents can use it
   };
 }
 
@@ -195,7 +196,7 @@ async function sendPlanReadyEmail(email: string, name: string, planUrl: string) 
     const msg = {
       to: email,
       from: {
-        email: process.env.SENDGRID_FROM_EMAIL || 'superintelligence@moccet.com',
+        email: process.env.SENDGRID_FROM_EMAIL || 'team@moccet.com',
         name: 'forge'
       },
       subject: 'Your Personalized Fitness Plan is Ready',
@@ -408,77 +409,145 @@ async function handler(request: NextRequest) {
       throw new Error('No user data found');
     }
 
-    // Generate comprehensive fitness plan
-    console.log('[2/5] Generating comprehensive fitness plan with AI...');
+    // Generate comprehensive fitness plan (base protocols)
+    console.log('[2/7] Generating base protocols (assessment + recommendations)...');
 
     // INLINE AI GENERATION - Don't call separate endpoint to avoid timeout issues
     const planResult = await generateFitnessPlanInline(formData, bloodAnalysisData, baseUrl);
 
-    console.log('[OK] Comprehensive fitness plan generated');
+    console.log('[OK] Base protocols generated');
 
-    // Generate personalized supplement recommendations
-    console.log('[3/5] Generating personalized supplement recommendations...');
+    // Extract structured data for specialized agents
+    const basePlan = planResult.plan;
+    const unifiedContext = planResult.unifiedContext; // Get the rich ecosystem context
 
-    const supplementsResponse = await fetch(`${baseUrl}/api/forge-generate-supplements`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        formData,
-        bloodAnalysis: bloodAnalysisData
-      })
-    });
-
-    let supplementRecommendations = null;
-    if (supplementsResponse.ok) {
-      const supplementResult = await supplementsResponse.json();
-      if (supplementResult.success) {
-        supplementRecommendations = supplementResult.supplementRecommendations;
-        console.log('[OK] Supplement recommendations generated');
-      }
-    } else {
-      console.warn('[WARN] Failed to generate supplement recommendations, will use default');
-    }
-
-    // Generate personalized recovery protocol
-    console.log('[4/5] Generating personalized recovery protocol...');
-
-    // Check if user has calendar connected (we'll need to fetch this from integrations)
-    const calendarData = formData.integrations?.includes('apple-calendar') ||
-                        formData.integrations?.includes('google-calendar') ?
-                        { connected: true } : null;
-
-    const recoveryResponse = await fetch(`${baseUrl}/api/forge-generate-recovery`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        formData,
-        bloodAnalysis: bloodAnalysisData,
-        calendarData
-      })
-    });
-
-    let recoveryProtocol = null;
-    if (recoveryResponse.ok) {
-      const recoveryResult = await recoveryResponse.json();
-      if (recoveryResult.success) {
-        recoveryProtocol = recoveryResult.recoveryProtocol;
-        console.log('[OK] Recovery protocol generated');
-      }
-    } else {
-      console.warn('[WARN] Failed to generate recovery protocol, will use default');
-    }
-
-    // Merge the new personalized sections into the plan
-    const enhancedPlan = {
-      ...planResult.plan,
-      ...(supplementRecommendations && { supplementRecommendations }),
-      ...(recoveryProtocol && { recoveryProtocol })
+    const userProfile = {
+      name: formData.fullName || formData.name,
+      age: formData.age,
+      gender: formData.gender,
+      weight: formData.weight,
+      height: formData.height,
+      fitnessLevel: formData.fitnessLevel || formData.trainingExperience,
+      experienceLevel: formData.trainingExperience,
+      currentActivity: formData.currentActivity || 'Not specified',
+      goals: formData.goals || [formData.primaryGoal],
+      equipment: formData.equipment || [],
+      timeAvailable: formData.sessionLength || 60,
+      sessionsPerWeek: formData.trainingDays || 3,
+      injuries: formData.injuries || [],
+      preferences: formData.preferences || [],
+      activityLevel: formData.activityLevel || 'Moderate',
+      dietaryPreferences: formData.dietaryPreferences || [],
+      allergies: formData.allergies || [],
+      restrictions: formData.dietaryRestrictions || [],
+      lifestyle: formData.lifestyle || 'Standard'
     };
 
-    console.log('[OK] Enhanced plan with personalized supplements and recovery');
+    const biomarkers = bloodAnalysisData?.biomarkers || {};
+    const recommendations = basePlan?.recommendations || basePlan || {};
+
+    // Call specialized agents IN PARALLEL with FULL UNIFIED CONTEXT
+    console.log('[3/7] Calling 4 specialized agents in parallel with unified context...');
+    if (unifiedContext) {
+      console.log('[CONTEXT] Passing ecosystem data to specialized agents (Sage journals, health trends, behavioral patterns)');
+    }
+
+    const [trainingResult, nutritionResult, recoveryResult, adaptationResult] = await Promise.all([
+      // Training Agent
+      fetch(`${baseUrl}/api/forge-generate-training`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userProfile,
+          biomarkers,
+          recommendations,
+          unifiedContext // Pass the full ecosystem context
+        })
+      }).then(res => res.json()).catch(err => {
+        console.error('[TRAINING-AGENT] Error:', err);
+        return { success: false };
+      }),
+
+      // Nutrition Agent
+      fetch(`${baseUrl}/api/forge-generate-nutrition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userProfile,
+          biomarkers,
+          recommendations,
+          unifiedContext // Pass the full ecosystem context
+        })
+      }).then(res => res.json()).catch(err => {
+        console.error('[NUTRITION-AGENT] Error:', err);
+        return { success: false };
+      }),
+
+      // Recovery Agent
+      fetch(`${baseUrl}/api/forge-generate-recovery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userProfile,
+          biomarkers,
+          recommendations,
+          unifiedContext // Pass the full ecosystem context
+        })
+      }).then(res => res.json()).catch(err => {
+        console.error('[RECOVERY-AGENT] Error:', err);
+        return { success: false };
+      }),
+
+      // Adaptation Agent (needs training program, so we'll use a placeholder for now)
+      fetch(`${baseUrl}/api/forge-generate-adaptation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userProfile,
+          biomarkers,
+          trainingProgram: { weeklyProgram: {} }, // Will be populated after training agent
+          unifiedContext // Pass the full ecosystem context
+        })
+      }).then(res => res.json()).catch(err => {
+        console.error('[ADAPTATION-AGENT] Error:', err);
+        return { success: false };
+      })
+    ]);
+
+    console.log('[OK] All specialized agents completed');
+    console.log(`  Training: ${trainingResult.success ? '✅' : '❌'}`);
+    console.log(`  Nutrition: ${nutritionResult.success ? '✅' : '❌'}`);
+    console.log(`  Recovery: ${recoveryResult.success ? '✅' : '❌'}`);
+    console.log(`  Adaptation: ${adaptationResult.success ? '✅' : '❌'}`);
+
+    // Merge all specialized agent results into the comprehensive plan
+    console.log('[4/7] Merging all agent results into comprehensive plan...');
+
+    const enhancedPlan = {
+      ...basePlan,
+      // Training program from specialized agent
+      ...(trainingResult.success && trainingResult.weeklyProgram && {
+        weeklyProgram: trainingResult.weeklyProgram
+      }),
+      // Nutrition guidance from specialized agent
+      ...(nutritionResult.success && nutritionResult.nutritionGuidance && {
+        nutritionGuidance: nutritionResult.nutritionGuidance
+      }),
+      // Progress tracking and injury prevention from recovery agent
+      ...(recoveryResult.success && {
+        ...(recoveryResult.progressTracking && { progressTracking: recoveryResult.progressTracking }),
+        ...(recoveryResult.injuryPrevention && { injuryPrevention: recoveryResult.injuryPrevention })
+      }),
+      // Adaptive features from adaptation agent
+      ...(adaptationResult.success && adaptationResult.adaptiveFeatures && {
+        adaptiveFeatures: adaptationResult.adaptiveFeatures
+      })
+    };
+
+    console.log('[OK] Comprehensive plan assembled with all specialized sections');
 
     // Store the generated plan
-    console.log('[5/5] Storing fitness plan...');
+    console.log('[5/7] Storing comprehensive fitness plan...');
 
     // Store in dev storage
     devPlanStorage.set(uniqueCode, {
@@ -512,15 +581,16 @@ async function handler(request: NextRequest) {
     console.log('[OK] Fitness plan stored successfully');
 
     // Send email notification
-    console.log('[4/4] Sending plan ready email...');
+    console.log('[6/7] Sending plan ready email...');
     console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
     const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 
     // Update status to completed
+    console.log('[7/7] Finalizing...');
     await updateJobStatus(email, 'completed');
 
     if (emailSent) {
-      console.log(`\n✅ [QSTASH] Complete fitness plan generation finished and email sent to ${email}`);
+      console.log(`\n✅ [QSTASH] Complete fitness plan generation finished with specialized agents and email sent to ${email}`);
     } else {
       console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
       console.error('Check: 1) SENDGRID_API_KEY is set, 2) SENDGRID_FROM_EMAIL is verified in SendGrid dashboard');

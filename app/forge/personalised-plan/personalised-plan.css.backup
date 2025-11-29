@@ -17,16 +17,17 @@
 .hero-image-container {
   width: 100%;
   margin-bottom: 60px;
-  height: 100vh;
+  max-height: 90vh;
   overflow: hidden;
 }
 
 .hero-image {
   width: 100%;
-  height: 100vh;
+  height: auto;
+  max-height: 90vh;
   display: block;
   object-fit: cover;
-  object-position: center;
+  object-position: bottom;
 }
 
 /* Plan Image Containers - Scattered throughout */
@@ -80,7 +81,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 72px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   letter-spacing: -2px;
   margin-bottom: 16px;
   line-height: 1.1;
@@ -89,7 +90,7 @@
 .plan-subtitle {
   font-size: 24px;
   font-weight: 400;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin: 0;
 }
 
@@ -113,7 +114,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 48px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
   line-height: 1.2;
   letter-spacing: -0.5px;
@@ -124,14 +125,14 @@
   font-size: 28px;
   font-weight: 400;
   font-style: italic;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   line-height: 1.3;
 }
 
 .intro-text {
   font-size: 16px;
-  color: #ffffff;
+  color: #1a1a1a;
   line-height: 1.7;
   max-width: 900px;
   margin-bottom: 0;
@@ -141,7 +142,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 42px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -154,7 +155,7 @@
 
 .insights-subtitle {
   font-size: 16px;
-  color: #999;
+  color: #666;
   margin-bottom: 32px;
   line-height: 1.6;
 }
@@ -175,7 +176,7 @@
 }
 
 .insights-loading p {
-  color: #999;
+  color: #666;
   font-size: 14px;
   font-style: italic;
 }
@@ -192,21 +193,21 @@
   display: inline-block;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
 }
 
 .insight-title {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   line-height: 1.4;
 }
 
 .insight-text {
   font-size: 15px;
-  color: #b3b3b3;
+  color: #4a4a4a;
   line-height: 1.7;
   margin-bottom: 12px;
   line-height: 1.5;
@@ -220,7 +221,7 @@
 .executive-summary p {
   font-size: 16px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -237,7 +238,7 @@
   font-size: 28px;
   font-weight: 400;
   margin-bottom: 32px;
-  color: #ffffff;
+  color: #1a1a1a;
   letter-spacing: -0.5px;
 }
 
@@ -256,7 +257,7 @@
 .goals-list li {
   font-size: 16px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 20px;
   padding-left: 0;
   position: relative;
@@ -269,7 +270,7 @@
 .nutrition-structure p {
   font-size: 16px;
   line-height: 1.8;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -309,11 +310,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   border: 1px solid #1a1a1a;
-  background: rgba(255,255,255,0.03);
+  background: #ffffff;
 }
 
 .recommendation-card {
-  background: rgba(255,255,255,0.03);
+  background: #ffffff;
   padding: 32px;
   border-right: 1px solid #1a1a1a;
   border-bottom: 1px solid #1a1a1a;
@@ -339,7 +340,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 20px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 20px;
   line-height: 1.3;
 }
@@ -353,7 +354,7 @@
 .recommendation-card li {
   font-size: 14px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   padding-left: 20px;
   position: relative;
@@ -363,7 +364,7 @@
   content: '•';
   position: absolute;
   left: 0;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 16px;
 }
 
@@ -380,14 +381,14 @@
 }
 
 .micronutrient-table thead {
-  background: rgba(255,255,255,0.02);
+  background: #f5f5f5;
 }
 
 .micronutrient-table th {
   text-align: left;
   padding: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   border-bottom: 2px solid #e0e0e0;
 }
 
@@ -446,7 +447,7 @@
 }
 
 .day-column {
-  background: rgba(255,255,255,0.02);
+  background: #fafafa;
   padding: 24px;
   border-radius: 6px;
   border: 1px solid #e5e5e5;
@@ -456,7 +457,7 @@
   font-family: "Inter", sans-serif;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   text-align: center;
 }
@@ -468,7 +469,7 @@
 }
 
 .meal-card {
-  background: rgba(255,255,255,0.03);
+  background: #ffffff;
   padding: 16px;
   border-radius: 4px;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -492,7 +493,7 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #999;
+  color: #666;
   margin-bottom: 8px;
 }
 
@@ -506,14 +507,14 @@
 .meal-name {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
 }
 
 .meal-description {
   font-size: 13px;
   line-height: 1.5;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin-bottom: 8px;
 }
 
@@ -526,7 +527,7 @@
 
 .meal-meta {
   font-size: 11px;
-  color: #999;
+  color: #666;
   margin-bottom: 6px;
 }
 
@@ -555,7 +556,7 @@
     font-size: 14px;
     padding: 16px 20px;
     margin: -12px -18px 0 -18px;
-    background: rgba(255,255,255,0.02);
+    background: #f5f5f5;
   }
 
   .meal-details summary:active {
@@ -595,7 +596,7 @@
     font-size: 14px;
     padding: 16px 20px;
     margin: 0 -18px;
-    background: rgba(255,255,255,0.03);
+    background: #ffffff;
     border: 1px solid #e5e5e5;
     border-top: none;
     border-radius: 0 0 4px 4px;
@@ -606,7 +607,7 @@
   font-size: 12px;
   font-weight: 600;
   margin: 12px 0 8px;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Mobile: Larger recipe headings */
@@ -625,7 +626,7 @@
 .instructions-list {
   margin: 0;
   padding-left: 20px;
-  color: #b3b3b3;
+  color: #4a4a4a;
   line-height: 1.6;
 }
 
@@ -652,7 +653,7 @@
 .meal-plan-loading {
   text-align: center;
   padding: 20px;
-  color: #999;
+  color: #666;
   font-size: 14px;
   font-style: italic;
 }
@@ -667,14 +668,14 @@
 .lifestyle-item h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
 }
 
 .lifestyle-item p {
   font-size: 15px;
   line-height: 1.8;
-  color: #b3b3b3;
+  color: #2d2d2d;
 }
 
 /* Features List */
@@ -711,14 +712,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
   line-height: 1.3;
 }
 
 .waitlist-subtitle {
   font-size: 18px;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin-bottom: 40px;
 }
 
@@ -730,7 +731,7 @@
 
 .qr-box {
   padding: 20px;
-  background: rgba(255,255,255,0.03);
+  background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -749,7 +750,7 @@
 .plan-footer p {
   font-size: 12px;
   line-height: 1.6;
-  color: #999;
+  color: #666;
   margin-bottom: 16px;
 }
 
@@ -862,7 +863,7 @@
 /* Error State */
 .plan-error {
   min-height: 100vh;
-  background: #1a1a1a;
+  background: #f8f8f8;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -875,13 +876,13 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
 .plan-error p {
   font-size: 16px;
-  color: #999;
+  color: #666;
   margin-bottom: 32px;
 }
 
@@ -1025,7 +1026,7 @@
 .blood-summary {
   margin-bottom: 40px;
   padding: 24px;
-  background: rgba(255,255,255,0.03);
+  background: #f8f9fa;
   border-radius: 12px;
   border-left: 4px solid #2563eb;
 }
@@ -1034,14 +1035,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 28px;
   font-weight: 500;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
 .summary-text {
   font-size: 16px;
   line-height: 1.7;
-  color: #b3b3b3;
+  color: #4a4a4a;
 }
 
 /* Biomarkers Grid */
@@ -1096,7 +1097,7 @@
 .biomarker-name {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin: 0;
 }
 
@@ -1120,13 +1121,13 @@
 }
 
 .status-badge.borderline {
-  background: rgba(254,243,199,0.08);
+  background: #fef3c7;
   color: #92400e;
 }
 
 .status-badge.high,
 .status-badge.low {
-  background: rgba(254,226,226,0.08);
+  background: #fee2e2;
   color: #991b1b;
 }
 
@@ -1140,7 +1141,7 @@
 .biomarker-value .value {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .biomarker-value .reference-range {
@@ -1152,7 +1153,7 @@
 .biomarker-implications {
   font-size: 14px;
   line-height: 1.6;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin: 8px 0;
 }
 
@@ -1171,12 +1172,12 @@
 }
 
 .concerns-card {
-  background: rgba(254,242,242,0.08);
+  background: #fef2f2;
   border-left: 4px solid #ef4444;
 }
 
 .positives-card {
-  background: rgba(240,253,244,0.08);
+  background: #f0fdf4;
   border-left: 4px solid #10b981;
 }
 
@@ -1214,7 +1215,7 @@
 
 /* Recommendations Section */
 .recommendations-section {
-  background: rgba(255,255,255,0.03);
+  background: #f8f9fa;
   padding: 32px;
   border-radius: 12px;
   margin-bottom: 32px;
@@ -1231,7 +1232,7 @@
 .recommendation-group h4 {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
 }
 
@@ -1245,7 +1246,7 @@
   padding: 10px 0 10px 24px;
   font-size: 15px;
   line-height: 1.6;
-  color: #b3b3b3;
+  color: #4a4a4a;
   position: relative;
 }
 
@@ -1263,12 +1264,12 @@
   background: transparent;
   border-radius: 8px;
   font-size: 15px;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Personalized Notes */
 .personalized-notes {
-  background: rgba(255,251,235,0.08);
+  background: #fffbeb;
   padding: 24px;
   border-radius: 12px;
   border-left: 4px solid #f59e0b;
@@ -1324,14 +1325,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
 
 .blood-metrics-section .section-subtitle {
   font-size: 16px;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin-bottom: 40px;
   font-weight: 400;
 }
@@ -1344,18 +1345,18 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 18px;
-  background: rgba(255,255,255,0.02);
+  background: #fafafa;
 }
 
 .biomarkers-table thead {
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .biomarkers-table th {
   text-align: left;
   padding: 12px 24px;
   font-weight: 400;
-  color: #999;
+  color: #666;
   font-size: 16px;
   background: transparent;
 }
@@ -1370,13 +1371,13 @@
 
 .biomarkers-table td {
   padding: 12px 24px;
-  color: #ffffff;
+  color: #1a1a1a;
   font-weight: 400;
 }
 
 .biomarker-name {
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .biomarker-value {
@@ -1384,7 +1385,7 @@
 }
 
 .biomarker-range {
-  color: #999;
+  color: #666;
 }
 
 .biomarker-status {
@@ -1442,7 +1443,7 @@
 
 /* Profile Summary Card */
 .profile-summary-card {
-  background: rgba(255,255,255,0.03);
+  background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
@@ -1451,7 +1452,7 @@
 .profile-summary-title {
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -1470,14 +1471,14 @@
 .profile-summary-label {
   font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .profile-summary-value {
   font-size: 15px;
-  color: #ffffff;
+  color: #1a1a1a;
   line-height: 1.5;
 }
 
@@ -1527,7 +1528,7 @@
 
 .meal-tag {
   padding: 3px 8px;
-  background: rgba(255,255,255,0.03);
+  background: #f3f4f6;
   color: #374151;
   border-radius: 12px;
   font-size: 11px;
@@ -1560,10 +1561,10 @@
 .lifestyle-intro {
   font-size: 16px;
   line-height: 1.7;
-  color: #b3b3b3;
+  color: #4a4a4a;
   margin-bottom: 32px;
   padding: 20px 24px;
-  background: rgba(255,255,255,0.03);
+  background: #f9f9f9;
   border-radius: 4px;
   max-width: 900px;
 }
@@ -1582,7 +1583,7 @@
 /* Micronutrient Table Enhancements */
 .nutrient-name {
   font-weight: 500;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .nutrient-goal {
@@ -1632,7 +1633,7 @@
 /* Lifestyle Integration Section */
 .lifestyle-section {
   padding: 60px 24px;
-  background: rgba(255,255,255,0.03);
+  background: #ffffff;
 }
 
 .lifestyle-loading {
@@ -1659,7 +1660,7 @@
   font-family: "Playfair Display", Georgia, serif;
   font-size: 32px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   line-height: 1.3;
 }
@@ -1669,7 +1670,7 @@
   font-size: 18px;
   font-weight: 400;
   font-style: italic;
-  color: #999;
+  color: #666;
   margin-bottom: 24px;
   line-height: 1.5;
 }
@@ -1692,7 +1693,7 @@
 
 .lifestyle-text strong {
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Workout Split */
@@ -1705,7 +1706,7 @@
 
 .workout-day {
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
+  background: #f3f4f6;
   border-radius: 6px;
   font-size: 14px;
   color: #374151;
@@ -1726,7 +1727,7 @@
 
 .practice-item {
   padding: 12px;
-  background: rgba(255,255,255,0.03);
+  background: #f3f4f6;
   border-radius: 6px;
   font-size: 14px;
 }
@@ -1806,20 +1807,19 @@
   top: 0;
   height: 100vh;
   width: 100px;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(10px);
+  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 32px;
   z-index: 100;
-  border-left: 1px solid rgba(255,255,255,0.1);
+  border-left: 1px solid #f0f0f0;
 }
 
 .sidebar-icon-button {
   background: transparent;
-  color: #e5e5e5;
+  color: #1a1a1a;
   border: none;
   padding: 12px;
   cursor: pointer;
@@ -1833,14 +1833,12 @@
 }
 
 .sidebar-icon-button:hover {
-  background: rgba(255,255,255,0.08);
-  color: #ffffff;
+  background: #f5f5f5;
 }
 
 .sidebar-icon-button svg {
   width: 28px;
   height: 28px;
-  fill: currentColor;
 }
 
 /* Mobile: Bottom bar */
@@ -1857,10 +1855,9 @@
     justify-content: center;
     gap: 0;
     border-left: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    border-top: 1px solid #e5e5e5;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
     padding: 8px 0;
   }
 
@@ -1871,7 +1868,7 @@
   }
 
   .sidebar-icon-button:active {
-    background: rgba(255,255,255,0.1);
+    background: #e8e8e8;
   }
 
   .sidebar-icon-button svg {
@@ -1894,10 +1891,9 @@
     justify-content: center;
     gap: 16px;
     border-left: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    border-top: 1px solid #e5e5e5;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
     padding: 12px 0;
   }
 
@@ -1926,7 +1922,7 @@
   table tbody tr {
     display: block;
     margin-bottom: 16px;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    border: 1px solid #e0e0e0 !important;
     border-radius: 8px;
     overflow: hidden;
   }
@@ -1944,7 +1940,7 @@
 
   /* Make first column (titles) stand out on mobile */
   table tbody tr td:first-child {
-    background: #1a1a1a;
+    background: #f8f8f8;
     font-weight: 600;
     font-size: 14px;
   }

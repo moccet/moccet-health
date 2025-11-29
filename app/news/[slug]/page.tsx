@@ -104,10 +104,27 @@ export default async function BlogDetailPage({ params }: PageProps) {
   if (!post) {
     return (
       <main className="blog-detail-page">
-        <nav className="blog-detail-nav">
-          <Link href="/" className="nav-link">moccet</Link>
-          <Link href="/news" className="nav-link nav-link-back">← Back to News</Link>
-          <Link href="/sage" className="nav-link">sage</Link>
+        <nav className="news-nav">
+          <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+            <div className="ellipse"></div>
+            <div className="div"></div>
+            <div className="ellipse-2"></div>
+            <div className="ellipse-3"></div>
+            <div className="ellipse-4"></div>
+            <div className="ellipse-5"></div>
+            <div className="ellipse-6"></div>
+          </Link>
+          <div className="nav-menu">
+            <Link href="/sage" className="nav-link">Sage</Link>
+            <Link href="/forge" className="nav-link">Forge</Link>
+            <Link href="/news" className="nav-link">Stories</Link>
+            <Link href="/#waitlist" className="nav-link">
+              Join the waitlist
+              <svg className="nav-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          </div>
         </nav>
 
         <div className="blog-detail-content">
@@ -133,10 +150,27 @@ export default async function BlogDetailPage({ params }: PageProps) {
         />
       )}
 
-      <nav className="blog-detail-nav">
-        <Link href="/" className="nav-link">moccet</Link>
-        <Link href="/news" className="nav-link nav-link-back">← Back to News</Link>
-        <Link href="/sage" className="nav-link">sage</Link>
+      <nav className="news-nav">
+        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+          <div className="ellipse"></div>
+          <div className="div"></div>
+          <div className="ellipse-2"></div>
+          <div className="ellipse-3"></div>
+          <div className="ellipse-4"></div>
+          <div className="ellipse-5"></div>
+          <div className="ellipse-6"></div>
+        </Link>
+        <div className="nav-menu">
+          <Link href="/sage" className="nav-link">Sage</Link>
+          <Link href="/forge" className="nav-link">Forge</Link>
+          <Link href="/news" className="nav-link">Stories</Link>
+          <Link href="/#waitlist" className="nav-link">
+            Join the waitlist
+            <svg className="nav-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+        </div>
       </nav>
 
       <article>

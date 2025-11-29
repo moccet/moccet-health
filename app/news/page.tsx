@@ -173,6 +173,13 @@ export default function NewsPage() {
                       )}
                       <div className="blog-card-content">
                         <h3 className="blog-card-title">{post.title}</h3>
+                        <p className="blog-card-date">
+                          {new Date(post.pubDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
                       </div>
                     </Link>
                   ))}

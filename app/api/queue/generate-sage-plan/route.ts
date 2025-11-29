@@ -99,7 +99,7 @@ const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
 
 async function sendPlanReadyEmail(email: string, name: string, planUrl: string) {
   const sendGridApiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'superintelligence@moccet.com';
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'team@moccet.com';
 
   if (!sendGridApiKey) {
     console.error('SENDGRID_API_KEY is not configured');

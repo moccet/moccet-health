@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { generateRecoveryProtocolPrompt } from '@/lib/prompts/recovery-protocol-prompt';
+import { buildTrainingProgramPrompt } from '@/lib/prompts/training-program-prompt';
 
 export const maxDuration = 300; // 5 minutes max
 
@@ -14,52 +14,51 @@ function getOpenAIClient() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[RECOVERY-AGENT] Starting recovery protocol generation...');
+    console.log('[TRAINING-AGENT] Starting training program generation...');
 
     const body = await request.json();
-    const { userProfile, biomarkers, recommendations, trainingProgram, unifiedContext } = body;
+    const { userProfile, biomarkers, recommendations, unifiedContext } = body;
 
-    if (!userProfile) {
+    if (!userProfile || !recommendations) {
       return NextResponse.json(
-        { error: 'Missing required field: userProfile' },
+        { error: 'Missing required fields: userProfile and recommendations are required' },
         { status: 400 }
       );
     }
 
     const openai = getOpenAIClient();
 
-    // Build the specialized recovery prompt
+    // Build the specialized training prompt
+    const trainingProtocol = recommendations.training_protocol || {};
     const promptInput = {
       userProfile,
-      biomarkers: biomarkers || {},
-      recommendations: recommendations || {},
-      trainingProgram
+      trainingProtocol,
+      biomarkers: biomarkers || {}
     };
 
-    const basePrompt = generateRecoveryProtocolPrompt(promptInput);
+    const basePrompt = buildTrainingProgramPrompt(promptInput);
 
     // Enrich with unified context if available
     let prompt = basePrompt;
     if (unifiedContext) {
-      console.log('[RECOVERY-AGENT] Enriching prompt with unified ecosystem context');
+      console.log('[TRAINING-AGENT] Enriching prompt with unified ecosystem context');
       const contextEnrichment = `\n\n## ECOSYSTEM CONTEXT (Sage Journals, Health Trends, Behavioral Patterns)
 
-This user has been actively tracking their health and wellness through the moccet ecosystem. Use the following context to make highly personalized recovery and injury prevention recommendations:
+This user has been actively tracking their health and wellness through the moccet ecosystem. Use the following context to make highly personalized training recommendations:
 
 ${JSON.stringify(unifiedContext, null, 2)}
 
 **Instructions for using this context:**
-- Look for patterns in sleep quality, stress levels, and recovery capacity from Sage journals
-- Identify correlations between recovery practices and performance outcomes
-- Consider historical injury patterns or recurring pain points
-- Adapt progress tracking metrics based on what the user actually tracks consistently
-- Account for real-world recovery constraints (sleep schedule, work stress, etc.)
-- Reference specific insights about their recovery needs from journal entries
+- Look for patterns in Sage journal entries (energy levels, mood, exercise adherence)
+- Consider historical health trends and how they correlate with training
+- Adapt recommendations based on stated preferences and past behaviors
+- Reference specific insights from their journal entries when explaining exercise selection
+- Account for real-world constraints mentioned in their data (travel, work schedule, etc.)
 `;
       prompt = basePrompt + contextEnrichment;
     }
 
-    console.log('[RECOVERY-AGENT] Calling GPT-5 with high reasoning...');
+    console.log('[TRAINING-AGENT] Calling GPT-5 with high reasoning...');
     const completion = await openai.responses.create({
       model: 'gpt-5',
       input: prompt,
@@ -78,17 +77,16 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const recoveryData = JSON.parse(responseText);
-    console.log('[RECOVERY-AGENT] ✅ Recovery protocol generated successfully');
+    const weeklyProgram = JSON.parse(responseText);
+    console.log('[TRAINING-AGENT] ✅ Training program generated successfully');
 
     return NextResponse.json({
       success: true,
-      progressTracking: recoveryData.progressTracking,
-      injuryPrevention: recoveryData.injuryPrevention
+      weeklyProgram
     });
 
   } catch (error) {
-    console.error('[RECOVERY-AGENT] ❌ Error generating recovery protocol:', error);
+    console.error('[TRAINING-AGENT] ❌ Error generating training program:', error);
     return NextResponse.json(
       {
         success: false,

@@ -2467,7 +2467,7 @@ export default function ForgeOnboarding() {
 
           <div className="integrations-scroll-container">
             {/* Connected Integrations Section */}
-            {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) && (
+            {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
               <>
                 <div className="integration-section-header">
                   <h2 className="integration-section-title">Connected</h2>
@@ -2533,6 +2533,21 @@ export default function ForgeOnboarding() {
                   </div>
                 )}
 
+                {vitalConnected && (
+                  <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/vital.png" alt="Vital Health" />
+                    </div>
+                    <div className="integration-info">
+                      <h3 className="integration-name">Vital Health</h3>
+                      <p className="integration-description">Connect Fitbit, Apple Health, WHOOP, Libre & more</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectVital}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
                 {formData.integrations.includes('oura-ring') && (
                   <div className="integration-item">
                     <div className="integration-logo">
@@ -2588,7 +2603,7 @@ export default function ForgeOnboarding() {
           )}
 
           {/* Available Integrations Section */}
-          <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
+          <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
             <h2 className="integration-section-title">Available</h2>
             <p className="integration-section-description">Connect your tools to provide Forge with richer data</p>
           </div>
@@ -2690,7 +2705,7 @@ export default function ForgeOnboarding() {
             {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-logo">
-                  <img src="/images/vital.jpg" alt="Vital Health" />
+                  <img src="/images/vital.png" alt="Vital Health" />
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>

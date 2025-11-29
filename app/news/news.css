@@ -21,7 +21,7 @@ body {
 /* News Page Container */
 .news-page {
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background-color: #fbfaf4;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -60,7 +60,7 @@ body {
   border-radius: 30px;
   position: absolute;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .nav-logo .div {
@@ -72,7 +72,7 @@ body {
   border-radius: 28.5px;
   position: absolute;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .nav-logo .ellipse-2 {
@@ -84,7 +84,7 @@ body {
   border-radius: 26.25px;
   position: absolute;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .nav-logo .ellipse-3 {
@@ -96,7 +96,7 @@ body {
   border-radius: 18.75px;
   position: absolute;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .nav-logo .ellipse-4 {
@@ -108,7 +108,7 @@ body {
   border-radius: 11.25px;
   position: absolute;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .nav-logo .ellipse-5 {
@@ -119,7 +119,7 @@ body {
   height: 15px;
   border-radius: 34.58px / 7.5px;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
   transform: translateX(-50%) rotate(-45deg);
 }
 
@@ -131,7 +131,7 @@ body {
   height: 15px;
   border-radius: 34.58px / 7.5px;
   border: 0.75px solid;
-  border-color: #ffffff;
+  border-color: #1a1a1a;
   transform: translateX(-50%);
 }
 
@@ -149,7 +149,7 @@ body {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-stretch: expanded;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 16px;
   letter-spacing: -0.02em;
   text-decoration: none;
@@ -165,7 +165,7 @@ body {
   display: inline-block;
   margin-left: 4px;
   vertical-align: middle;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Mobile Menu Button */
@@ -179,7 +179,7 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #ffffff;
+  color: #1a1a1a;
   z-index: 1001;
   padding: 0;
   transition: opacity 0.2s ease;
@@ -201,7 +201,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(251, 250, 244, 0.98);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -221,7 +221,7 @@ body {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-stretch: expanded;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 24px;
   letter-spacing: -0.02em;
   text-decoration: none;
@@ -250,17 +250,18 @@ body {
 
 .featured-post-link {
   display: flex;
-  gap: 32px;
+  gap: 40px;
   text-decoration: none;
   color: inherit;
   background-color: transparent;
   border-radius: 12px;
   overflow: hidden;
-  padding: 20px;
+  padding: 0;
+  max-width: 1400px;
 }
 
 .featured-post-image-wrapper {
-  flex: 0 0 68%;
+  flex: 0 0 80%;
   overflow: hidden;
   border-radius: 12px;
 }
@@ -268,7 +269,8 @@ body {
 .featured-post-image {
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  min-height: 420px;
+  max-height: 420px;
   object-fit: cover;
   display: block;
   border-radius: 12px;
@@ -286,7 +288,7 @@ body {
 .featured-post-title {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 28px;
   letter-spacing: -0.01em;
   line-height: 1.25;
@@ -296,7 +298,7 @@ body {
 .featured-post-description {
   font-family: "Inter", Helvetica;
   font-weight: 400;
-  color: #cccccc;
+  color: #4a4a4a;
   font-size: 13px;
   line-height: 1.6;
   margin: 0 0 16px 0;
@@ -305,11 +307,11 @@ body {
 .featured-post-button {
   font-family: "Inter", Helvetica;
   font-weight: 500;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 11px;
   letter-spacing: 0.8px;
   background-color: transparent;
-  border: 1px solid #ffffff;
+  border: 1px solid #1a1a1a;
   border-radius: 3px;
   padding: 8px 16px;
   cursor: pointer;
@@ -319,7 +321,7 @@ body {
 }
 
 .featured-post-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(26, 26, 26, 0.05);
 }
 
 /* Blog Grid Section */
@@ -335,53 +337,50 @@ body {
 
 .blog-card {
   background-color: transparent;
-  border-radius: 12px;
-  overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   text-decoration: none;
   color: inherit;
   position: relative;
-  min-height: 250px;
-  transition: transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .blog-card:hover {
-  transform: translateY(-4px);
+  opacity: 0.8;
 }
 
 .blog-card-image {
   width: 100%;
-  height: 100%;
-  min-height: 250px;
+  height: 240px;
   object-fit: cover;
   display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
+  border-radius: 16px;
+  margin-bottom: 16px;
 }
 
 .blog-card-content {
-  padding: 20px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  position: relative;
-  z-index: 1;
-  justify-content: flex-end;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%);
+  gap: 8px;
 }
 
 .blog-card-title {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 600;
-  color: #ffffff;
-  font-size: 20px;
-  letter-spacing: -0.01em;
+  font-weight: 500;
+  color: #1a1a1a;
+  font-size: 18px;
+  letter-spacing: -0.02em;
   line-height: 1.3;
+  margin: 0;
+}
+
+.blog-card-date {
+  font-family: "Inter", Helvetica;
+  font-weight: 400;
+  color: #666666;
+  font-size: 14px;
   margin: 0;
 }
 
@@ -402,7 +401,7 @@ body {
 .empty-state p {
   font-family: "Inter", Helvetica;
   font-weight: 400;
-  color: #cccccc;
+  color: #4a4a4a;
   font-size: 16px;
   line-height: 1.6;
   margin: 20px 0 0 0;
@@ -411,14 +410,14 @@ body {
 .empty-state h3 {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 28px;
   letter-spacing: -0.01em;
   margin: 0;
 }
 
 .empty-state a {
-  color: #ffffff;
+  color: #1a1a1a;
   text-decoration: underline;
 }
 

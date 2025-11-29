@@ -223,8 +223,8 @@ function isNutritionPlan(plan: FitnessPlan | NutritionPlan): plan is NutritionPl
 }
 
 function isFitnessPlan(plan: FitnessPlan | NutritionPlan): plan is FitnessPlan {
-  // Check for either sevenDayProgram (old structure) or weeklyProgram (new structure)
-  return 'sevenDayProgram' in plan || 'weeklyProgram' in plan || 'trainingPhilosophy' in plan;
+  // Check for either sevenDayProgram (old structure) or weeklyProgram (new structure) or new comprehensive structure
+  return 'sevenDayProgram' in plan || 'weeklyProgram' in plan || 'trainingPhilosophy' in plan || 'training_plan' in plan || 'training_protocol' in plan;
 }
 
 export default function PersonalisedPlanPage() {
@@ -273,10 +273,8 @@ export default function PersonalisedPlanPage() {
 
   // Add to cart handler
   const handleAddToCart = async (productId: string, supplementName: string, recommendation: any) => {
-    if (!email) {
-      alert('Please log in to add items to cart');
-      return;
-    }
+    // Use email if logged in, otherwise use planCode as identifier for guest checkout
+    const userIdentifier = email || `guest-${planCode}`;
 
     setAddingToCart(productId);
     try {
@@ -284,7 +282,7 @@ export default function PersonalisedPlanPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
+          email: userIdentifier,
           productId,
           quantity: 1,
           planCode,
@@ -299,7 +297,7 @@ export default function PersonalisedPlanPage() {
 
       const data = await response.json();
       if (data.success) {
-        alert(`✅ Added ${supplementName} to cart!`);
+        alert(`Added ${supplementName} to cart`);
         // Trigger cart refresh by reloading the cart component
         window.dispatchEvent(new Event('cartUpdated'));
       } else {
@@ -406,11 +404,184 @@ export default function PersonalisedPlanPage() {
           throw new Error(planData.error || 'Plan not found');
         }
 
-        // Set plan data
+        // TRANSFORM THE PLAN FIRST before setting state
+        // Check if we have the new comprehensive structure with nested plan
+        if (planData.plan?.plan?.training_protocol || planData.plan?.plan?.nutrition_protocol) {
+          console.log('[PLAN TYPE] New comprehensive plan structure detected - transforming to legacy format...');
+
+          // Transform the new comprehensive structure to match the old UI expectations
+          const userName = planData.plan.user?.name || 'Your';
+
+          // Create executive summary from the actual plan assessment/notes
+          let executiveSummary = '';
+          if (planData.plan.assessment && typeof planData.plan.assessment === 'string') {
+            executiveSummary = planData.plan.assessment;
+          } else if (planData.plan.notes && typeof planData.plan.notes === 'string') {
+            executiveSummary = planData.plan.notes;
+          } else {
+            // Build a summary from the protocols if no assessment/notes available
+            const protocols = planData.plan.plan;
+            const parts = [];
+            if (protocols.training_protocol) {
+              parts.push(`Training: ${protocols.training_protocol.phase ||'Structured training program'}`);
+            }
+            if (protocols.nutrition_protocol) {
+              parts.push(`Nutrition: Personalized nutrition protocol based on your biomarkers`);
+            }
+            if (protocols.lipid_management_protocol) {
+              parts.push(`Focus on lipid optimization for cardiovascular health`);
+            }
+            if (protocols.blood_pressure_management_protocol) {
+              parts.push(`Blood pressure management through lifestyle modifications`);
+            }
+            executiveSummary = parts.length > 0
+              ? parts.join('. ') + '.'
+              : 'Comprehensive health and fitness plan tailored to your biomarkers and health data.';
+          }
+
+          const transformedPlan = {
+            personalizedGreeting: `${userName} Comprehensive Health Plan`,
+            executiveSummary,
+
+            // Transform training protocol to trainingPhilosophy
+            trainingPhilosophy: {
+              approach: planData.plan.plan.training_protocol?.recommendations?.[0]?.causal_rationale || 'Evidence-based training approach tailored to your biomarkers.',
+              keyPrinciples: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) => ({
+                title: rec.name || '',
+                description: `${rec.intensity || ''}\n${rec.causal_rationale || ''}`.trim()
+              })) || [],
+              progressionStrategy: (() => {
+                const rules = planData.plan.plan.training_protocol?.progression_rules_week_3_plus;
+                if (typeof rules === 'string') return rules;
+                if (Array.isArray(rules)) {
+                  // Format array of rules as readable text
+                  return rules.map((rule: any, idx: number) =>
+                    `Rule ${idx + 1}: ${rule.rule || rule.description || JSON.stringify(rule)}`
+                  ).join('\n\n');
+                }
+                if (typeof rules === 'object' && rules !== null) {
+                  // Format object rules as readable text
+                  return Object.entries(rules).map(([key, value]) =>
+                    `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`
+                  ).join('\n\n');
+                }
+                return 'Progressive overload based on recovery metrics and performance.';
+              })()
+            },
+
+            // Transform to weekly structure
+            weeklyStructure: {
+              overview: planData.plan.plan.training_protocol?.phase || 'Structured weekly training program',
+              trainingDays: planData.plan.plan.training_protocol?.recommendations?.[0]?.frequency_per_week || 3,
+              focusAreas: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) => rec.name) || [],
+              rationale: (() => {
+                const summary = planData.plan.data_summary;
+                if (typeof summary === 'string') return summary;
+                if (typeof summary === 'object' && summary !== null) {
+                  // Format data summary object as readable text
+                  const available = summary.available || {};
+                  const notAvailable = summary.not_available || {};
+                  let text = '';
+
+                  if (available.conditions) {
+                    text += `Health Conditions: ${Array.isArray(available.conditions) ? available.conditions.join(', ') : available.conditions}\n\n`;
+                  }
+                  if (available.demographics) {
+                    text += `Demographics: ${Array.isArray(available.demographics) ? available.demographics.join(', ') : JSON.stringify(available.demographics)}\n\n`;
+                  }
+                  if (Object.keys(notAvailable).length > 0) {
+                    text += `Data not available: ${Object.keys(notAvailable).join(', ')}`;
+                  }
+
+                  return text.trim() || 'Data-driven training approach based on your health profile';
+                }
+                return 'Data-driven training approach based on your health profile';
+              })(),
+              volumeDistribution: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) =>
+                `${rec.name}: ${rec.frequency_per_week || rec.frequency_per_day || ''} sessions`
+              ).join('\n') || '',
+              intensityFramework: 'Progressive training intensity based on heart rate zones and biomarker data.'
+            },
+
+            // Add nutrition guidance from nutrition protocol
+            nutritionGuidance: planData.plan.plan.nutrition_protocol ? {
+              proteinTarget: planData.plan.plan.nutrition_protocol.daily_targets?.protein ||
+                (planData.plan.plan.nutrition_protocol.objectives ? `See nutrition protocol objectives` : undefined),
+              calorieGuidance: planData.plan.plan.nutrition_protocol.daily_targets?.calories ||
+                (planData.plan.plan.nutrition_protocol.objectives ? `See nutrition protocol objectives` : undefined),
+              hydration: planData.plan.plan.nutrition_protocol.daily_targets?.hydration || undefined,
+              timing: typeof planData.plan.plan.nutrition_protocol.meal_timing === 'string'
+                ? planData.plan.plan.nutrition_protocol.meal_timing
+                : (planData.plan.plan.nutrition_protocol.meal_timing ? JSON.stringify(planData.plan.plan.nutrition_protocol.meal_timing) : undefined),
+            } : undefined,
+
+            // Add progress tracking
+            progressTracking: {
+              weeklyMetrics: [
+                'Track resting heart rate and HRV daily',
+                'Monitor blood pressure weekly',
+                'Assess energy levels and recovery quality',
+                'Track workout performance and progressive overload',
+                'Monitor sleep quality and duration'
+              ],
+              biomarkerRetesting: planData.plan.monitoring_and_adjustment || 'Retest biomarkers in 12 weeks to assess progress'
+            },
+
+            // Add injury prevention
+            injuryPrevention: {
+              commonRisks: [
+                'Avoid rapid increases in training volume',
+                'Include adequate warm-up and mobility work',
+                'Monitor blood pressure during exercise',
+                'Proper breathing technique during resistance training',
+                'Progressive loading to avoid overtraining'
+              ],
+              preventionStrategies: [
+                'Start with conservative loads and volumes',
+                'Include 5-10 minutes of dynamic warm-up before training',
+                'Practice proper breathing: exhale during exertion',
+                'Monitor recovery markers (HRV, resting HR) daily',
+                'Include mobility work and stretching post-workout',
+                'Progress gradually: 5-10% increase per week maximum'
+              ],
+              protocols: 'Focus on proper form, gradual progression, and recovery optimization'
+            },
+
+            // Add adaptive features
+            adaptiveFeatures: {
+              highEnergyDay: 'On high energy days with good HRV and recovery scores, you can push intensity slightly higher or add volume within the prescribed ranges.',
+              lowEnergyDay: 'On low energy days or with elevated resting heart rate, reduce intensity by 10-20% or focus on mobility and light aerobic work.',
+              busySchedule: 'For busy days, prioritize compound movements and reduce total session time while maintaining intensity.',
+              travelAdjustments: 'During travel, focus on bodyweight exercises and maintain movement frequency even if volume is reduced.'
+            },
+
+            // Keep all the original data
+            ...planData.plan,
+            ...planData.plan.plan,
+
+            // Add nutrition data if available
+            nutritionProtocol: planData.plan.plan.nutrition_protocol,
+            lipidManagement: planData.plan.plan.lipid_management_protocol,
+            sleepRecovery: planData.plan.plan.sleep_and_recovery_protocol,
+            bloodPressureManagement: planData.plan.plan.blood_pressure_management_protocol,
+          };
+
+          planData.plan = transformedPlan;
+          console.log('[PLAN DEBUG] Transformed plan to legacy format');
+          console.log('[PLAN DEBUG] Has trainingPhilosophy now:', !!planData.plan.trainingPhilosophy);
+        }
+
+        // NOW Set plan data after transformation
+        console.log('[PLAN DEBUG] Setting plan state...');
+        console.log('[PLAN DEBUG] Plan has personalizedGreeting:', !!planData.plan?.personalizedGreeting);
+        console.log('[PLAN DEBUG] Plan has executiveSummary:', !!planData.plan?.executiveSummary);
+        console.log('[PLAN DEBUG] Plan has trainingPhilosophy:', !!planData.plan?.trainingPhilosophy);
+        console.log('[PLAN DEBUG] isFitnessPlan result:', isFitnessPlan(planData.plan));
         setPlan(planData.plan);
         setPlanStatus(planData.status || 'completed');
         setGender(planData.gender || null);
         setPlanCode(code || null);
+        console.log('[PLAN DEBUG] All state set');
 
         // Enrich supplements with product data if this is a fitness plan
         if (planData.plan?.supplementRecommendations) {
@@ -425,26 +596,6 @@ export default function PersonalisedPlanPage() {
           if (optional.length > 0) {
             enrichSupplements(optional, 'optional');
           }
-        }
-
-        // Log plan type for debugging
-        console.log('[PLAN DEBUG] Plan keys:', Object.keys(planData.plan || {}));
-        console.log('[PLAN DEBUG] Has sevenDayProgram?', !!planData.plan?.sevenDayProgram);
-        console.log('[PLAN DEBUG] Has weeklyProgram?', !!planData.plan?.weeklyProgram);
-        console.log('[PLAN DEBUG] Has trainingPhilosophy?', !!planData.plan?.trainingPhilosophy);
-        console.log('[PLAN DEBUG] Has sampleMealPlan?', !!planData.plan?.sampleMealPlan);
-
-        if (planData.plan?.sevenDayProgram || planData.plan?.weeklyProgram || planData.plan?.trainingPhilosophy) {
-          console.log('[PLAN TYPE] Fitness Plan detected');
-          if (planData.plan?.sevenDayProgram) {
-            console.log('[PLAN DEBUG] Using sevenDayProgram structure, length:', planData.plan.sevenDayProgram.length);
-          } else if (planData.plan?.weeklyProgram) {
-            console.log('[PLAN DEBUG] Using weeklyProgram structure, days:', Object.keys(planData.plan.weeklyProgram));
-          }
-        } else if (planData.plan?.sampleMealPlan) {
-          console.log('[PLAN TYPE] Nutrition Plan detected (legacy)');
-        } else {
-          console.log('[PLAN TYPE] Unknown plan type or missing plan structure');
         }
 
         // Set blood analysis if available
@@ -474,13 +625,13 @@ export default function PersonalisedPlanPage() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: '#f8f8f8'
+        background: '#1a1a1a'
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             fontSize: '24px',
             fontWeight: 300,
-            color: '#1a1a1a',
+            color: '#ffffff',
             marginBottom: '20px',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
           }}>
@@ -489,14 +640,14 @@ export default function PersonalisedPlanPage() {
           <div style={{
             width: '200px',
             height: '2px',
-            background: '#e0e0e0',
+            background: 'rgba(255,255,255,0.1)',
             borderRadius: '1px',
             overflow: 'hidden'
           }}>
             <div style={{
               width: '100%',
               height: '100%',
-              background: '#1a1a1a',
+              background: '#ffffff',
               animation: 'loading 1.5s ease-in-out infinite'
             }}></div>
           </div>
@@ -519,26 +670,35 @@ export default function PersonalisedPlanPage() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: '#f8f8f8',
+        background: '#1a1a1a',
         padding: '20px',
         position: 'relative'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
           <div style={{
-            fontSize: '48px',
-            marginBottom: '24px'
-          }}>
-            ⏳
-          </div>
+            width: '64px',
+            height: '64px',
+            margin: '0 auto 24px',
+            border: '3px solid rgba(255,255,255,0.1)',
+            borderTop: '3px solid #ffffff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
           <h2 style={{
             fontSize: '32px',
             marginBottom: '16px',
-            color: '#2d3a2d',
+            color: '#ffffff',
             fontWeight: 300
           }}>
             Your plan is being generated
           </h2>
         </div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
 
         {/* Footer text with email notification */}
         <div style={{
@@ -585,10 +745,10 @@ export default function PersonalisedPlanPage() {
         minHeight: '100vh',
         padding: '20px',
         textAlign: 'center',
-        background: '#f8f8f8'
+        background: '#1a1a1a'
       }}>
-        <h1 style={{ fontSize: '32px', marginBottom: '16px', color: '#2d3a2d' }}>Unable to Load Plan</h1>
-        <p style={{ fontSize: '18px', marginBottom: '24px', color: '#666', maxWidth: '600px' }}>
+        <h1 style={{ fontSize: '32px', marginBottom: '16px', color: '#ffffff' }}>Unable to Load Plan</h1>
+        <p style={{ fontSize: '18px', marginBottom: '24px', color: '#999', maxWidth: '600px' }}>
           {error.includes('No plan found') || error.includes('Failed to fetch plan')
             ? 'Your plan is currently being generated. This typically takes 5-15 minutes. Please check your email for a notification when your plan is ready, or try refreshing this page in a few minutes.'
             : error
@@ -619,7 +779,7 @@ export default function PersonalisedPlanPage() {
   return (
     <div className="plan-container">
       {/* Shopping Cart */}
-      {email && <ShoppingCart userEmail={email} planCode={planCode || undefined} />}
+      <ShoppingCart userEmail={email || `guest-${planCode}`} planCode={planCode || undefined} />
 
       {/* Sidebar - Share buttons */}
       <div className="plan-sidebar">
@@ -698,23 +858,23 @@ export default function PersonalisedPlanPage() {
                 width: '100%',
                 borderCollapse: 'collapse',
                 display: 'table',
-                background: '#fafafa',
+                background: 'rgba(255,255,255,0.05)',
                 fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px'
               }}>
                 <thead style={{ display: 'table-header-group', borderBottom: '1px solid #e0e0e0' }}>
                   <tr style={{ display: 'table-row' }}>
-                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Biomarker</th>
-                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Value</th>
-                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Optimal Range</th>
-                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#666', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Status</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#999', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Biomarker</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#999', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Value</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#999', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Optimal Range</th>
+                    <th style={{ display: 'table-cell', textAlign: 'left', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, color: '#999', fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '16px' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody style={{ display: 'table-row-group' }}>
                   {bloodAnalysis.biomarkers.map((marker, idx) => (
                     <tr key={idx} style={{ display: 'table-row', borderBottom: '1px solid #f0f0f0' }}>
-                      <td className="biomarker-name" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#1a1a1a', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.name}</td>
-                      <td className="biomarker-value" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#1a1a1a', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.value}</td>
-                      <td className="biomarker-range" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#666', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.referenceRange || 'N/A'}</td>
+                      <td className="biomarker-name" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#ffffff', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.name}</td>
+                      <td className="biomarker-value" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#ffffff', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.value}</td>
+                      <td className="biomarker-range" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#999', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.referenceRange || 'N/A'}</td>
                       <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`} style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.status}</td>
                     </tr>
                   ))}
@@ -765,7 +925,7 @@ export default function PersonalisedPlanPage() {
 
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Approach</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                 {(plan.trainingPhilosophy.approach || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
@@ -786,10 +946,22 @@ export default function PersonalisedPlanPage() {
                   <tbody>
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => {
-                      // Split on first colon
-                      const colonIndex = principle.indexOf(':');
-                      const title = colonIndex !== -1 ? principle.substring(0, colonIndex).trim() : principle;
-                      const description = colonIndex !== -1 ? principle.substring(colonIndex + 1).trim() : '';
+                      // Handle both object format {title, description} and string format
+                      let title: string;
+                      let description: string;
+
+                      if (typeof principle === 'object' && principle.title) {
+                        title = principle.title;
+                        description = principle.description || '';
+                      } else if (typeof principle === 'string') {
+                        // Split on first colon for legacy string format
+                        const colonIndex = principle.indexOf(':');
+                        title = colonIndex !== -1 ? principle.substring(0, colonIndex).trim() : principle;
+                        description = colonIndex !== -1 ? principle.substring(colonIndex + 1).trim() : '';
+                      } else {
+                        title = String(principle);
+                        description = '';
+                      }
 
                       return (
                         <tr key={idx} style={{
@@ -800,14 +972,14 @@ export default function PersonalisedPlanPage() {
                             fontWeight: '600',
                             verticalAlign: 'top',
                             width: '35%',
-                            color: '#1a1a1a'
+                            color: '#ffffff'
                           }}>
                             {title}
                           </td>
                           <td style={{
                             padding: '16px 20px',
                             verticalAlign: 'top',
-                            color: '#4a4a4a'
+                            color: '#b3b3b3'
                           }}>
                             {description || title}
                           </td>
@@ -821,7 +993,7 @@ export default function PersonalisedPlanPage() {
 
             <div>
               <h3 className="overview-heading">Progression Strategy</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                 {(plan.trainingPhilosophy.progressionStrategy || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
@@ -835,7 +1007,7 @@ export default function PersonalisedPlanPage() {
 
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Overview</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                 {(plan.weeklyStructure.overview || '').split('\n').map((paragraph: string, idx: number) => (
                   paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                 ))}
@@ -843,16 +1015,16 @@ export default function PersonalisedPlanPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', marginBottom: '30px' }}>
-              <div style={{ background: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <h3 className="overview-heading">Training Days Per Week</h3>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#000', marginBottom: '10px' }}>{plan.weeklyStructure.trainingDays}</p>
+                <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#ffffff', marginBottom: '10px' }}>{plan.weeklyStructure.trainingDays}</p>
               </div>
             </div>
 
             {plan.weeklyStructure.rationale && (
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Rationale</h3>
-                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                   {(plan.weeklyStructure.rationale || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
@@ -863,7 +1035,7 @@ export default function PersonalisedPlanPage() {
             {plan.weeklyStructure.volumeDistribution && (
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Volume Distribution</h3>
-                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                   {(plan.weeklyStructure.volumeDistribution || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
@@ -874,7 +1046,7 @@ export default function PersonalisedPlanPage() {
             {plan.weeklyStructure.intensityFramework && (
               <div style={{ marginBottom: '30px' }}>
                 <h3 className="overview-heading">Intensity Framework</h3>
-                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#1a1a1a' }}>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
                   {(plan.weeklyStructure.intensityFramework || '').split('\n').map((paragraph: string, idx: number) => (
                     paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
                   ))}
@@ -910,14 +1082,14 @@ export default function PersonalisedPlanPage() {
                             fontWeight: '600',
                             verticalAlign: 'top',
                             width: '20%',
-                            color: '#1a1a1a'
+                            color: '#ffffff'
                           }}>
                             {day}
                           </td>
                           <td style={{
                             padding: '16px 20px',
                             verticalAlign: 'top',
-                            color: '#4a4a4a'
+                            color: '#b3b3b3'
                           }}>
                             {description}
                           </td>
@@ -947,6 +1119,42 @@ export default function PersonalisedPlanPage() {
                 // Get the program (either weeklyProgram or sevenDayProgram)
                 const program = plan.weeklyProgram || plan.sevenDayProgram || {};
 
+                // Check if program is empty
+                if (Object.keys(program).length === 0) {
+                  return (
+                    <div style={{
+                      padding: '40px',
+                      textAlign: 'center',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      width: '100%'
+                    }}>
+                      <h3 style={{ fontSize: '20px', marginBottom: '15px', color: '#ffffff' }}>
+                        Training Protocol Overview
+                      </h3>
+                      <p style={{ fontSize: '16px', color: '#b3b3b3', lineHeight: '1.6', marginBottom: '20px' }}>
+                        Your plan includes comprehensive training protocols based on your biomarkers and health data.
+                        See the "Training Philosophy" and "Weekly Structure" sections above for your personalized training recommendations.
+                      </p>
+                      {plan.weeklyStructure?.focusAreas && plan.weeklyStructure.focusAreas.length > 0 && (
+                        <div style={{ marginTop: '20px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#ffffff' }}>
+                            Your Training Focus Areas:
+                          </p>
+                          <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {plan.weeklyStructure.focusAreas.map((area: string, idx: number) => (
+                              <li key={idx} style={{ fontSize: '15px', color: '#cccccc', marginBottom: '8px' }}>
+                                • {area}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 // Sort keys by day order
                 const sortedDayKeys = Object.keys(program).sort((a, b) => {
                   const indexA = dayOrder.indexOf(a.toLowerCase());
@@ -969,15 +1177,16 @@ export default function PersonalisedPlanPage() {
                   <div key={dayKey} className="day-column">
                     <h3 className="day-title">{displayDayName}</h3>
                     <div className="workout-day-header" style={{
-                      background: '#f5f5f5',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
                       padding: '15px',
                       borderRadius: '8px',
                       marginBottom: '15px'
                     }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '5px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '5px', color: '#ffffff' }}>
                         {day.focus}
                       </div>
-                      <div style={{ fontSize: '14px', color: '#666' }}>
+                      <div style={{ fontSize: '14px', color: '#999' }}>
                         Duration: {day.duration}
                       </div>
                     </div>
@@ -988,25 +1197,25 @@ export default function PersonalisedPlanPage() {
                         fontSize: '14px',
                         fontWeight: 'bold',
                         textTransform: 'uppercase',
-                        color: '#666',
+                        color: '#999',
                         marginBottom: '10px'
                       }}>
                         Warmup
                       </h4>
-                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#555' }}>
+                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
                         {day.warmup.description}
                       </p>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {day.warmup.exercises?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
-                          background: '#fff',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '1px solid #e0e0e0',
                           borderRadius: '6px',
                           padding: '10px',
                           marginBottom: '8px'
                         }}>
                           <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
-                          <div style={{ fontSize: '13px', color: '#666' }}>
+                          <div style={{ fontSize: '13px', color: '#999' }}>
                             {exercise.sets} × {exercise.reps}
                           </div>
                           {exercise.notes && (
@@ -1024,7 +1233,7 @@ export default function PersonalisedPlanPage() {
                         fontSize: '14px',
                         fontWeight: 'bold',
                         textTransform: 'uppercase',
-                        color: '#000',
+                        color: '#ffffff',
                         marginBottom: '10px'
                       }}>
                         Main Workout
@@ -1032,7 +1241,7 @@ export default function PersonalisedPlanPage() {
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {day.mainWorkout?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
-                          background: '#fff',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '2px solid #000',
                           borderRadius: '8px',
                           padding: '12px',
@@ -1049,22 +1258,22 @@ export default function PersonalisedPlanPage() {
                             marginBottom: '8px'
                           }}>
                             <div>
-                              <span style={{ color: '#666' }}>Sets × Reps:</span> <strong>{exercise.sets} × {exercise.reps}</strong>
+                              <span style={{ color: '#999' }}>Sets × Reps:</span> <strong>{exercise.sets} × {exercise.reps}</strong>
                             </div>
                             <div>
-                              <span style={{ color: '#666' }}>Rest:</span> <strong>{exercise.rest}</strong>
+                              <span style={{ color: '#999' }}>Rest:</span> <strong>{exercise.rest}</strong>
                             </div>
                             <div>
-                              <span style={{ color: '#666' }}>Tempo:</span> <strong>{exercise.tempo}</strong>
+                              <span style={{ color: '#999' }}>Tempo:</span> <strong>{exercise.tempo}</strong>
                             </div>
                             <div>
-                              <span style={{ color: '#666' }}>Intensity:</span> <strong>{exercise.intensity}</strong>
+                              <span style={{ color: '#999' }}>Intensity:</span> <strong>{exercise.intensity}</strong>
                             </div>
                           </div>
                           {exercise.notes && (
                             <div style={{
                               fontSize: '12px',
-                              color: '#555',
+                              color: '#b3b3b3',
                               background: '#f9f9f9',
                               padding: '8px',
                               borderRadius: '4px',
@@ -1092,25 +1301,25 @@ export default function PersonalisedPlanPage() {
                         fontSize: '14px',
                         fontWeight: 'bold',
                         textTransform: 'uppercase',
-                        color: '#666',
+                        color: '#999',
                         marginBottom: '10px'
                       }}>
                         Cooldown
                       </h4>
-                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#555' }}>
+                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
                         {day.cooldown.description}
                       </p>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {day.cooldown.exercises?.map((exercise: any, idx: number) => (
                         <div key={idx} style={{
-                          background: '#fff',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '1px solid #e0e0e0',
                           borderRadius: '6px',
                           padding: '10px',
                           marginBottom: '8px'
                         }}>
                           <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
-                          <div style={{ fontSize: '13px', color: '#666' }}>{exercise.duration}</div>
+                          <div style={{ fontSize: '13px', color: '#999' }}>{exercise.duration}</div>
                           {exercise.notes && (
                             <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>
                               {exercise.notes}
@@ -1133,117 +1342,233 @@ export default function PersonalisedPlanPage() {
             <div style={{ marginBottom: '30px' }}>
               <h3 className="overview-heading">Essential Supplements</h3>
               {loadingProducts ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
                   Loading products...
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   {enrichedEssentialSupplements.map((supp: any, idx: number) => (
                     <div key={idx} style={{
-                      background: '#f5f5f5',
-                      border: '2px solid #000',
-                      borderRadius: '8px',
-                      padding: '15px'
+                      background: 'transparent',
+                      borderBottom: idx < enrichedEssentialSupplements.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                      paddingBottom: '32px'
                     }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '8px' }}>
-                        💊 {supp.name || supp.supplement}
+                      <div style={{
+                        fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: '600',
+                        fontSize: '20px',
+                        marginBottom: '16px',
+                        color: '#ffffff',
+                        letterSpacing: '-0.01em'
+                      }}>
+                        {supp.name || supp.supplement}
                       </div>
 
                       {/* Product Info */}
                       {supp.product && (
                         <div style={{
-                          background: '#fff',
-                          padding: '12px',
-                          borderRadius: '6px',
-                          marginBottom: '12px',
-                          border: '1px solid #ddd'
+                          background: 'rgba(255,255,255,0.02)',
+                          padding: '20px',
+                          borderRadius: '8px',
+                          marginBottom: '16px',
+                          border: '1px solid rgba(255,255,255,0.06)'
                         }}>
-                          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                          <div style={{
+                            fontFamily: '"Inter", Helvetica, sans-serif',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            marginBottom: '6px',
+                            color: '#e5e5e5'
+                          }}>
                             {supp.product.brand} {supp.product.name}
                           </div>
-                          <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                          <div style={{
+                            fontFamily: '"Inter", Helvetica, sans-serif',
+                            fontSize: '13px',
+                            color: '#999',
+                            marginBottom: '16px'
+                          }}>
                             {supp.product.quantity} {supp.product.unit} • {supp.product.strength}
                           </div>
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginBottom: '8px'
+                            marginBottom: '16px'
                           }}>
                             <div>
-                              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#000' }}>
+                              <div style={{
+                                fontFamily: '"SF Pro", sans-serif',
+                                fontSize: '28px',
+                                fontWeight: '600',
+                                color: '#ffffff',
+                                letterSpacing: '-0.02em'
+                              }}>
                                 ${supp.product.retailPrice.toFixed(2)}
                               </div>
-                              <div style={{ fontSize: '12px', color: '#666' }}>
+                              <div style={{
+                                fontFamily: '"Inter", Helvetica, sans-serif',
+                                fontSize: '12px',
+                                color: '#888',
+                                marginTop: '4px'
+                              }}>
                                 ${supp.product.perDayPrice.toFixed(2)}/day
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               {supp.product.inStock ? (
-                                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
-                                  ✓ In Stock
+                                <div style={{
+                                  fontFamily: '"Inter", Helvetica, sans-serif',
+                                  fontSize: '12px',
+                                  color: '#10b981',
+                                  fontWeight: '400'
+                                }}>
+                                  In Stock
                                 </div>
                               ) : (
-                                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600' }}>
+                                <div style={{
+                                  fontFamily: '"Inter", Helvetica, sans-serif',
+                                  fontSize: '12px',
+                                  color: '#ef4444',
+                                  fontWeight: '400'
+                                }}>
                                   Out of Stock
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          {/* Add to Cart Button */}
+                          {/* Add to Cart and Buy Now Buttons */}
                           {supp.product.inStock && (
-                            <button
-                              onClick={() => handleAddToCart(supp.product.productId, supp.name, supp)}
-                              disabled={addingToCart === supp.product.productId}
-                              style={{
-                                width: '100%',
-                                padding: '12px',
-                                background: '#000',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
-                                opacity: addingToCart === supp.product.productId ? 0.6 : 1,
-                              }}
-                            >
-                              {addingToCart === supp.product.productId ? 'Adding...' : `Add to Cart - $${supp.product.retailPrice.toFixed(2)}`}
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <button
+                                onClick={() => handleAddToCart(supp.product.productId, supp.name, supp)}
+                                disabled={addingToCart === supp.product.productId}
+                                style={{
+                                  flex: 1,
+                                  padding: '12px 16px',
+                                  background: 'rgba(255,255,255,0.04)',
+                                  color: '#e5e5e5',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  fontWeight: '400',
+                                  fontFamily: '"Inter", Helvetica, sans-serif',
+                                  cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
+                                  opacity: addingToCart === supp.product.productId ? 0.6 : 1,
+                                  transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (addingToCart !== supp.product.productId) {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (addingToCart !== supp.product.productId) {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                  }
+                                }}
+                              >
+                                {addingToCart === supp.product.productId ? 'Adding...' : 'Add to Cart'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleAddToCart(supp.product.productId, supp.name, supp);
+                                  setTimeout(() => {
+                                    window.location.href = '/checkout';
+                                  }, 500);
+                                }}
+                                disabled={addingToCart === supp.product.productId}
+                                style={{
+                                  flex: 1,
+                                  padding: '12px 16px',
+                                  background: '#ffffff',
+                                  color: '#1a1a1a',
+                                  border: '1px solid #ffffff',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  fontWeight: '500',
+                                  fontFamily: '"Inter", Helvetica, sans-serif',
+                                  cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
+                                  opacity: addingToCart === supp.product.productId ? 0.6 : 1,
+                                  transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (addingToCart !== supp.product.productId) {
+                                    e.currentTarget.style.background = '#e5e5e5';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (addingToCart !== supp.product.productId) {
+                                    e.currentTarget.style.background = '#ffffff';
+                                  }
+                                }}
+                              >
+                                Buy Now
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
 
                       {/* Recommendation Details */}
-                      <div style={{ fontSize: '14px', marginBottom: '8px' }}>
-                        <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
+                      <div style={{
+                        fontFamily: '"Inter", Helvetica, sans-serif',
+                        fontSize: '14px',
+                        lineHeight: '1.7',
+                        color: '#999',
+                        marginBottom: '8px',
+                        letterSpacing: '0'
+                      }}>
+                        Dosage: {supp.dosage} • Timing: {supp.timing}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
-                        <strong>Why:</strong> {supp.rationale}
+                      <div style={{
+                        fontFamily: '"SF Pro", sans-serif',
+                        fontSize: '15px',
+                        lineHeight: '1.7',
+                        color: '#b3b3b3',
+                        marginBottom: '8px',
+                        letterSpacing: '-0.01em'
+                      }}>
+                        {supp.rationale}
                       </div>
                       {supp.benefits && (
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
-                          <strong>Benefits:</strong> {supp.benefits}
+                        <div style={{
+                          fontFamily: '"Inter", Helvetica, sans-serif',
+                          fontSize: '13px',
+                          color: '#888',
+                          marginTop: '12px',
+                          lineHeight: '1.6'
+                        }}>
+                          {supp.benefits}
                         </div>
                       )}
                       {supp.duration && (
-                        <div style={{ fontSize: '12px', color: '#888' }}>
-                          <strong>Duration:</strong> {supp.duration}
+                        <div style={{
+                          fontFamily: '"Inter", Helvetica, sans-serif',
+                          fontSize: '12px',
+                          color: '#777',
+                          marginTop: '8px'
+                        }}>
+                          Duration: {supp.duration}
                         </div>
                       )}
 
                       {/* No Match Warning */}
                       {supp.matchStatus === 'no_match' && (
                         <div style={{
-                          background: '#fef3c7',
-                          padding: '10px',
+                          marginTop: '16px',
+                          padding: '12px 16px',
+                          background: 'rgba(254, 243, 199, 0.08)',
                           borderRadius: '6px',
-                          marginTop: '10px',
+                          border: '1px solid rgba(254, 243, 199, 0.15)',
+                          fontFamily: '"Inter", Helvetica, sans-serif',
                           fontSize: '13px',
-                          color: '#92400e'
+                          color: '#fbbf24'
                         }}>
-                          ⚠️ Product not available in our store yet. We'll add it soon!
+                          Product not available in our store yet
                         </div>
                       )}
                     </div>
@@ -1258,7 +1583,7 @@ export default function PersonalisedPlanPage() {
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(plan.supplementRecommendations?.optionalSupplements || plan.supplementRecommendations?.optional || []).map((supp: any, idx: number) => (
                   <div key={idx} style={{
-                    background: '#fff',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
                     padding: '15px'
@@ -1269,11 +1594,11 @@ export default function PersonalisedPlanPage() {
                     <div style={{ fontSize: '14px', marginBottom: '8px' }}>
                       <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#555', marginBottom: '6px' }}>
+                    <div style={{ fontSize: '13px', color: '#b3b3b3', marginBottom: '6px' }}>
                       <strong>Why:</strong> {supp.rationale}
                     </div>
                     {supp.benefits && (
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+                      <div style={{ fontSize: '12px', color: '#999', marginTop: '6px' }}>
                         <strong>Benefits:</strong> {supp.benefits}
                       </div>
                     )}

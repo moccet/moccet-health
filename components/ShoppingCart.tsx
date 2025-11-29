@@ -113,10 +113,25 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
       {/* Floating Cart Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 bg-black text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-gray-800 transition-all z-50"
-        style={{ fontSize: '24px' }}
+        className="fixed bg-white text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all z-50 lg:bottom-8 bottom-24"
+        style={{
+          right: typeof window !== 'undefined' && window.innerWidth >= 1025 ? 'calc(100px + 2rem)' : '2rem'
+        }}
       >
-        🛒
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="9" cy="21" r="1"/>
+          <circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
         {cart.itemCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
             {cart.itemCount}
@@ -129,12 +144,12 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[200]"
             onClick={() => setIsOpen(false)}
           />
 
           {/* Drawer */}
-          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-[200] flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-gray-900">
@@ -142,10 +157,12 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
               </h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-                style={{ fontSize: '24px' }}
+                className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center"
               >
-                ✕
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
 
@@ -153,7 +170,11 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
             <div className="flex-1 overflow-y-auto p-6">
               {cart.items.length === 0 ? (
                 <div className="text-center text-gray-500 py-12">
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🛒</div>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-gray-300">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
                   <p>Your cart is empty</p>
                 </div>
               ) : (
@@ -165,7 +186,11 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
                     >
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                        <span style={{ fontSize: '32px' }}>💊</span>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                          <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
                       </div>
 
                       {/* Product Details */}
@@ -180,15 +205,15 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             disabled={loading || item.quantity <= 1}
-                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900"
                           >
                             −
                           </button>
-                          <span className="w-8 text-center">{item.quantity}</span>
+                          <span className="w-8 text-center font-semibold text-gray-900">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             disabled={loading}
-                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-8 h-8 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900"
                           >
                             +
                           </button>
@@ -228,7 +253,7 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
                 {/* Shipping Info */}
                 <div className="text-sm text-gray-500">
                   {cart.subtotal >= 75 ? (
-                    <p className="text-green-600 font-medium">🎉 Free shipping!</p>
+                    <p className="text-green-600 font-medium">Free shipping</p>
                   ) : (
                     <p>Free shipping on orders over $75</p>
                   )}

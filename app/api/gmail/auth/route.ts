@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export async function GET() {
   try {
     const oauth2Client = new google.auth.OAuth2(
@@ -21,12 +27,16 @@ export async function GET() {
       prompt: 'consent'
     });
 
-    return NextResponse.json({ authUrl });
+    return NextResponse.json({ authUrl }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error generating auth URL:', error);
     return NextResponse.json(
       { error: 'Failed to generate auth URL' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }

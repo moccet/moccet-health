@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export async function GET() {
   try {
     const clientId = process.env.MICROSOFT_CLIENT_ID;
@@ -8,7 +14,7 @@ export async function GET() {
     if (!clientId) {
       return NextResponse.json(
         { error: 'Microsoft Client ID not configured' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -41,15 +47,19 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       authUrl: authUrl.toString()
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error initiating Teams auth:', error);
     return NextResponse.json(
       { error: 'Failed to initiate Teams authentication' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 function generateRandomState(): string {

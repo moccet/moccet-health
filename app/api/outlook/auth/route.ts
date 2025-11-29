@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export async function GET() {
   try {
     // Microsoft OAuth 2.0 configuration for Outlook Calendar
@@ -18,15 +24,19 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       authUrl: authUrl.toString()
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error initiating Outlook auth:', error);
     return NextResponse.json(
       { error: 'Failed to initiate Outlook authentication' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 function generateRandomState(): string {

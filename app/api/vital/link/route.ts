@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId, provider } = await request.json();
@@ -142,13 +152,13 @@ export async function POST(request: NextRequest) {
       environment,
       region,
       vitalUserId, // Return this so frontend can store it if needed
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('[Vital] Error creating link token:', error);
     return NextResponse.json(
       { error: 'Failed to create link token' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

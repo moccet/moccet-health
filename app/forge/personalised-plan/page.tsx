@@ -405,8 +405,11 @@ export default function PersonalisedPlanPage() {
         }
 
         // TRANSFORM THE PLAN FIRST before setting state
-        // Check if we have the new comprehensive structure with nested plan
-        if (planData.plan?.plan?.training_protocol || planData.plan?.plan?.nutrition_protocol) {
+        // Check if we have the new comprehensive structure with nested plan OR top-level protocol data
+        if (planData.plan?.plan?.training_protocol || planData.plan?.plan?.nutrition_protocol ||
+            planData.plan?.training_program || planData.plan?.nutrition_program ||
+            planData.plan?.sleep_recovery_protocol || planData.plan?.supplement_protocol ||
+            (planData.plan?.weeklyProgram && !planData.plan?.personalizedGreeting)) {
           console.log('[PLAN TYPE] New comprehensive plan structure detected - transforming to legacy format...');
 
           // Transform the new comprehensive structure to match the old UI expectations
@@ -420,12 +423,12 @@ export default function PersonalisedPlanPage() {
             executiveSummary = planData.plan.notes;
           } else {
             // Build a summary from the protocols if no assessment/notes available
-            const protocols = planData.plan.plan;
+            const protocols = planData.plan.plan || planData.plan;
             const parts = [];
-            if (protocols.training_protocol) {
-              parts.push(`Training: ${protocols.training_protocol.phase ||'Structured training program'}`);
+            if (protocols.training_protocol || protocols.training_program) {
+              parts.push(`Training: ${protocols.training_protocol?.phase || protocols.training_program?.phase || 'Structured training program'}`);
             }
-            if (protocols.nutrition_protocol) {
+            if (protocols.nutrition_protocol || protocols.nutrition_program) {
               parts.push(`Nutrition: Personalized nutrition protocol based on your biomarkers`);
             }
             if (protocols.lipid_management_protocol) {
@@ -441,17 +444,44 @@ export default function PersonalisedPlanPage() {
 
           const transformedPlan = {
             personalizedGreeting: `${userName} Comprehensive Health Plan`,
-            executiveSummary,
+            executiveSummary: (() => {
+              // Try to build from user_profile or prioritized_objectives
+              if (planData.plan.user_profile) {
+                const profile = planData.plan.user_profile;
+                let summary = '';
+                if (profile.age && profile.gender) {
+                  summary += `${profile.age}-year-old ${profile.gender}. `;
+                }
+                if (profile.goals || profile.primary_goals) {
+                  summary += `Primary goals: ${(profile.goals || profile.primary_goals).join(', ')}. `;
+                }
+                if (profile.health_conditions || profile.conditions) {
+                  summary += `Health focus: ${(profile.health_conditions || profile.conditions).join(', ')}. `;
+                }
+                if (summary) return summary;
+              }
+              if (planData.plan.prioritized_objectives) {
+                return `Focus areas: ${planData.plan.prioritized_objectives.slice(0, 3).join(', ')}.`;
+              }
+              return executiveSummary;
+            })(),
 
             // Transform training protocol to trainingPhilosophy
             trainingPhilosophy: {
-              approach: planData.plan.plan.training_protocol?.recommendations?.[0]?.causal_rationale || 'Evidence-based training approach tailored to your biomarkers.',
-              keyPrinciples: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) => ({
-                title: rec.name || '',
-                description: `${rec.intensity || ''}\n${rec.causal_rationale || ''}`.trim()
-              })) || [],
+              approach: planData.plan.plan?.training_protocol?.recommendations?.[0]?.causal_rationale ||
+                        planData.plan.training_protocol?.recommendations?.[0]?.causal_rationale ||
+                        planData.plan.training_program?.approach ||
+                        'Evidence-based training approach tailored to your biomarkers.',
+              keyPrinciples: (planData.plan.plan?.training_protocol?.recommendations ||
+                             planData.plan.training_protocol?.recommendations ||
+                             planData.plan.training_program?.key_principles || []).map((rec: any) => ({
+                title: rec.name || rec.title || '',
+                description: `${rec.intensity || ''}\n${rec.causal_rationale || rec.description || ''}`.trim()
+              })),
               progressionStrategy: (() => {
-                const rules = planData.plan.plan.training_protocol?.progression_rules_week_3_plus;
+                const rules = planData.plan.plan?.training_protocol?.progression_rules_week_3_plus ||
+                             planData.plan.training_protocol?.progression_rules_week_3_plus ||
+                             planData.plan.training_program?.progression_strategy;
                 if (typeof rules === 'string') return rules;
                 if (Array.isArray(rules)) {
                   // Format array of rules as readable text
@@ -471,9 +501,16 @@ export default function PersonalisedPlanPage() {
 
             // Transform to weekly structure
             weeklyStructure: {
-              overview: planData.plan.plan.training_protocol?.phase || 'Structured weekly training program',
-              trainingDays: planData.plan.plan.training_protocol?.recommendations?.[0]?.frequency_per_week || 3,
-              focusAreas: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) => rec.name) || [],
+              overview: planData.plan.plan?.training_protocol?.phase ||
+                       planData.plan.training_protocol?.phase ||
+                       planData.plan.training_program?.overview ||
+                       'Structured weekly training program',
+              trainingDays: planData.plan.plan?.training_protocol?.recommendations?.[0]?.frequency_per_week ||
+                           planData.plan.training_protocol?.recommendations?.[0]?.frequency_per_week ||
+                           planData.plan.training_program?.training_days || 3,
+              focusAreas: (planData.plan.plan?.training_protocol?.recommendations ||
+                          planData.plan.training_protocol?.recommendations ||
+                          planData.plan.training_program?.focus_areas || []).map((rec: any) => rec.name || rec),
               rationale: (() => {
                 const summary = planData.plan.data_summary;
                 if (typeof summary === 'string') return summary;
@@ -497,38 +534,49 @@ export default function PersonalisedPlanPage() {
                 }
                 return 'Data-driven training approach based on your health profile';
               })(),
-              volumeDistribution: planData.plan.plan.training_protocol?.recommendations?.map((rec: any) =>
+              volumeDistribution: (planData.plan.plan?.training_protocol?.recommendations ||
+                                  planData.plan.training_protocol?.recommendations || []).map((rec: any) =>
                 `${rec.name}: ${rec.frequency_per_week || rec.frequency_per_day || ''} sessions`
               ).join('\n') || '',
               intensityFramework: 'Progressive training intensity based on heart rate zones and biomarker data.'
             },
 
-            // Add nutrition guidance from nutrition protocol
-            nutritionGuidance: planData.plan.plan.nutrition_protocol ? {
-              proteinTarget: planData.plan.plan.nutrition_protocol.daily_targets?.protein ||
-                (planData.plan.plan.nutrition_protocol.objectives ? `See nutrition protocol objectives` : undefined),
-              calorieGuidance: planData.plan.plan.nutrition_protocol.daily_targets?.calories ||
-                (planData.plan.plan.nutrition_protocol.objectives ? `See nutrition protocol objectives` : undefined),
-              hydration: planData.plan.plan.nutrition_protocol.daily_targets?.hydration || undefined,
-              timing: typeof planData.plan.plan.nutrition_protocol.meal_timing === 'string'
-                ? planData.plan.plan.nutrition_protocol.meal_timing
-                : (planData.plan.plan.nutrition_protocol.meal_timing ? JSON.stringify(planData.plan.plan.nutrition_protocol.meal_timing) : undefined),
-            } : undefined,
+            // Add nutrition guidance from nutrition protocol or nutrition_program
+            nutritionGuidance: (() => {
+              const nutritionData = planData.plan.nutritionGuidance || planData.plan.nutrition_program || planData.plan.plan?.nutrition_protocol || planData.plan.plan?.nutrition_program;
+              if (!nutritionData) return undefined;
 
-            // Add progress tracking
-            progressTracking: {
-              weeklyMetrics: [
+              return {
+                proteinTarget: nutritionData.proteinTarget || nutritionData.protein_target ||
+                  nutritionData.daily_targets?.protein || nutritionData.targets?.protein ||
+                  (nutritionData.objectives ? `See nutrition protocol objectives` : undefined),
+                calorieGuidance: nutritionData.calorieGuidance || nutritionData.calorie_guidance ||
+                  nutritionData.daily_targets?.calories || nutritionData.targets?.calories ||
+                  (nutritionData.objectives ? `See nutrition protocol objectives` : undefined),
+                mealTiming: nutritionData.mealTiming || nutritionData.meal_timing || nutritionData.timing ||
+                  (typeof nutritionData.meal_timing === 'string' ? nutritionData.meal_timing :
+                  (nutritionData.meal_timing ? JSON.stringify(nutritionData.meal_timing) : undefined)),
+                hydration: nutritionData.hydration || nutritionData.daily_targets?.hydration ||
+                  nutritionData.targets?.hydration || undefined,
+              };
+            })(),
+
+            // Add progress tracking - use existing data or fallbacks
+            progressTracking: planData.plan.progressTracking || {
+              weeklyMetrics: planData.plan.progressTracking?.weeklyMetrics || planData.plan.progressTracking?.metrics || [
                 'Track resting heart rate and HRV daily',
                 'Monitor blood pressure weekly',
                 'Assess energy levels and recovery quality',
                 'Track workout performance and progressive overload',
                 'Monitor sleep quality and duration'
               ],
+              performanceBenchmarks: planData.plan.progressTracking?.performanceBenchmarks || planData.plan.progressTracking?.benchmarks || [],
+              reassessmentSchedule: planData.plan.progressTracking?.reassessmentSchedule || planData.plan.progressTracking?.whenToReassess,
               biomarkerRetesting: planData.plan.monitoring_and_adjustment || 'Retest biomarkers in 12 weeks to assess progress'
             },
 
-            // Add injury prevention
-            injuryPrevention: {
+            // Add injury prevention - use existing data or fallbacks
+            injuryPrevention: planData.plan.injuryPrevention || {
               commonRisks: [
                 'Avoid rapid increases in training volume',
                 'Include adequate warm-up and mobility work',
@@ -548,27 +596,69 @@ export default function PersonalisedPlanPage() {
             },
 
             // Add adaptive features
-            adaptiveFeatures: {
-              highEnergyDay: 'On high energy days with good HRV and recovery scores, you can push intensity slightly higher or add volume within the prescribed ranges.',
-              lowEnergyDay: 'On low energy days or with elevated resting heart rate, reduce intensity by 10-20% or focus on mobility and light aerobic work.',
-              busySchedule: 'For busy days, prioritize compound movements and reduce total session time while maintaining intensity.',
-              travelAdjustments: 'During travel, focus on bodyweight exercises and maintain movement frequency even if volume is reduced.'
-            },
+            adaptiveFeatures: (() => {
+              const features = planData.plan.adaptiveFeatures || {};
+              return {
+                highEnergyDay: features.highEnergyDay || features.high_energy_day || features.highEnergyDayAdjustments ||
+                  'On high energy days with good HRV and recovery scores, you can push intensity slightly higher or add volume within the prescribed ranges.',
+                lowEnergyDay: features.lowEnergyDay || features.low_energy_day || features.lowEnergyDayAdjustments ||
+                  'On low energy days or with elevated resting heart rate, reduce intensity by 10-20% or focus on mobility and light aerobic work.',
+                busySchedule: features.busySchedule || features.busy_schedule || features.travelModifications ||
+                  'For busy days, prioritize compound movements and reduce total session time while maintaining intensity.',
+                travelAdjustments: features.travelAdjustments || features.travel_adjustments || features.injuryModifications ||
+                  'During travel, focus on bodyweight exercises and maintain movement frequency even if volume is reduced.'
+              };
+            })(),
+
+            // Map weeklyProgram to sevenDayProgram
+            sevenDayProgram: planData.plan.weeklyProgram || planData.plan.sevenDayProgram || planData.plan.plan?.next_7_days_schedule,
+
+            // Map training_program to weeklyProgram if needed
+            weeklyProgram: planData.plan.weeklyProgram || planData.plan.training_program || planData.plan.plan?.training_program,
+
+            // Map recovery protocol from API data
+            recoveryProtocol: planData.plan.sleep_recovery_protocol || planData.plan.plan?.sleep_recovery_protocol ? {
+              dailyPractices: planData.plan.sleep_recovery_protocol?.daily_practices || planData.plan.plan?.sleep_recovery_protocol?.daily_practices || [],
+              weeklyPractices: planData.plan.sleep_recovery_protocol?.weekly_practices || planData.plan.plan?.sleep_recovery_protocol?.weekly_practices || [],
+              sleepOptimization: planData.plan.sleep_recovery_protocol?.sleep_optimization || planData.plan.plan?.sleep_recovery_protocol?.sleep_optimization ||
+                (typeof planData.plan.sleep_recovery_protocol === 'string' ? planData.plan.sleep_recovery_protocol : undefined),
+              stressManagement: planData.plan.sleep_recovery_protocol?.stress_management || planData.plan.plan?.sleep_recovery_protocol?.stress_management,
+              mobilityWork: planData.plan.sleep_recovery_protocol?.mobility_work || planData.plan.plan?.sleep_recovery_protocol?.mobility_work,
+            } : undefined,
+
+            // Map supplement recommendations from API data
+            supplementRecommendations: planData.plan.supplement_protocol || planData.plan.plan?.supplement_protocol ? {
+              essentialSupplements: planData.plan.supplement_protocol?.essential || planData.plan.plan?.supplement_protocol?.essential ||
+                planData.plan.supplement_protocol?.essentialSupplements || planData.plan.plan?.supplement_protocol?.essentialSupplements || [],
+              optionalSupplements: planData.plan.supplement_protocol?.optional || planData.plan.plan?.supplement_protocol?.optional ||
+                planData.plan.supplement_protocol?.optionalSupplements || planData.plan.plan?.supplement_protocol?.optionalSupplements || [],
+            } : undefined,
 
             // Keep all the original data
             ...planData.plan,
             ...planData.plan.plan,
 
             // Add nutrition data if available
-            nutritionProtocol: planData.plan.plan.nutrition_protocol,
-            lipidManagement: planData.plan.plan.lipid_management_protocol,
-            sleepRecovery: planData.plan.plan.sleep_and_recovery_protocol,
-            bloodPressureManagement: planData.plan.plan.blood_pressure_management_protocol,
+            nutritionProtocol: planData.plan.plan?.nutrition_protocol || planData.plan.nutrition_protocol,
+            lipidManagement: planData.plan.plan?.lipid_management_protocol || planData.plan.lipid_management_protocol,
+            sleepRecovery: planData.plan.plan?.sleep_recovery_protocol || planData.plan.sleep_recovery_protocol,
+            bloodPressureManagement: planData.plan.plan?.blood_pressure_management_protocol || planData.plan.blood_pressure_management_protocol,
           };
 
           planData.plan = transformedPlan;
           console.log('[PLAN DEBUG] Transformed plan to legacy format');
           console.log('[PLAN DEBUG] Has trainingPhilosophy now:', !!planData.plan.trainingPhilosophy);
+          console.log('[PLAN DEBUG] Has recoveryProtocol:', !!planData.plan.recoveryProtocol);
+          console.log('[PLAN DEBUG] Has nutritionGuidance:', !!planData.plan.nutritionGuidance);
+          console.log('[PLAN DEBUG] Has supplementRecommendations:', !!planData.plan.supplementRecommendations);
+          console.log('[PLAN DEBUG] Has adaptiveFeatures:', !!planData.plan.adaptiveFeatures);
+          console.log('[PLAN DEBUG] Raw plan keys:', Object.keys(planData.plan).slice(0, 20));
+          console.log('[PLAN DEBUG] sleep_recovery_protocol:', planData.plan.sleep_recovery_protocol);
+          console.log('[PLAN DEBUG] supplement_protocol:', planData.plan.supplement_protocol);
+          console.log('[PLAN DEBUG] nutrition_program:', planData.plan.nutrition_program);
+          console.log('[PLAN DEBUG] nutritionGuidance:', planData.plan.nutritionGuidance);
+          console.log('[PLAN DEBUG] adaptiveFeatures:', planData.plan.adaptiveFeatures);
+          console.log('[PLAN DEBUG] weeklyProgram:', planData.plan.weeklyProgram);
         }
 
         // NOW Set plan data after transformation
@@ -922,32 +1012,34 @@ export default function PersonalisedPlanPage() {
           </div>
 
           {/* Training Philosophy */}
-          <section className="plan-section">
-            <h2 className="section-title">Training Philosophy</h2>
+          {plan.trainingPhilosophy && (
+            <section className="plan-section">
+              <h2 className="section-title">Training Philosophy</h2>
 
-            <div style={{ marginBottom: '30px' }}>
-              <h3 className="overview-heading">Approach</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
-                {(plan.trainingPhilosophy.approach || '').split('\n').map((paragraph: string, idx: number) => (
-                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
-                ))}
+              <div style={{ marginBottom: '30px' }}>
+                <h3 className="overview-heading">Approach</h3>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
+                  {(plan.trainingPhilosophy.approach || '').split('\n').map((paragraph: string, idx: number) => (
+                    paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div style={{ marginBottom: '30px' }}>
-              <h3 className="overview-heading">Key Principles</h3>
-              <div style={{
-                overflow: 'hidden'
-              }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '15px',
-                  lineHeight: '1.8'
-                }}>
-                  <tbody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => {
+              {plan.trainingPhilosophy.keyPrinciples && (
+                <div style={{ marginBottom: '30px' }}>
+                  <h3 className="overview-heading">Key Principles</h3>
+                  <div style={{
+                    overflow: 'hidden'
+                  }}>
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: '15px',
+                      lineHeight: '1.8'
+                    }}>
+                      <tbody>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => {
                       // Handle both object format {title, description} and string format
                       let title: string;
                       let description: string;
@@ -992,36 +1084,43 @@ export default function PersonalisedPlanPage() {
                 </table>
               </div>
             </div>
+              )}
 
-            <div>
-              <h3 className="overview-heading">Progression Strategy</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
-                {(plan.trainingPhilosophy.progressionStrategy || '').split('\n').map((paragraph: string, idx: number) => (
-                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
-                ))}
-              </div>
-            </div>
-          </section>
+              {plan.trainingPhilosophy.progressionStrategy && (
+                <div>
+                  <h3 className="overview-heading">Progression Strategy</h3>
+                  <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
+                    {(plan.trainingPhilosophy.progressionStrategy || '').split('\n').map((paragraph: string, idx: number) => (
+                      paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Weekly Structure */}
-          <section className="plan-section">
-            <h2 className="section-title">Weekly Structure</h2>
+          {plan.weeklyStructure && (
+            <section className="plan-section">
+              <h2 className="section-title">Weekly Structure</h2>
 
-            <div style={{ marginBottom: '30px' }}>
-              <h3 className="overview-heading">Overview</h3>
-              <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
-                {(plan.weeklyStructure.overview || '').split('\n').map((paragraph: string, idx: number) => (
-                  paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
-                ))}
+              <div style={{ marginBottom: '30px' }}>
+                <h3 className="overview-heading">Overview</h3>
+                <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#ffffff' }}>
+                  {(plan.weeklyStructure.overview || '').split('\n').map((paragraph: string, idx: number) => (
+                    paragraph.trim() && <p key={idx} style={{ marginBottom: '15px' }}>{paragraph}</p>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', marginBottom: '30px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 className="overview-heading">Training Days Per Week</h3>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#ffffff', marginBottom: '10px' }}>{plan.weeklyStructure.trainingDays}</p>
-              </div>
-            </div>
+              {plan.weeklyStructure.trainingDays && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', marginBottom: '30px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h3 className="overview-heading">Training Days Per Week</h3>
+                    <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#ffffff', marginBottom: '10px' }}>{plan.weeklyStructure.trainingDays}</p>
+                  </div>
+                </div>
+              )}
 
             {plan.weeklyStructure.rationale && (
               <div style={{ marginBottom: '30px' }}>
@@ -1056,20 +1155,21 @@ export default function PersonalisedPlanPage() {
               </div>
             )}
 
-            <div>
-              <h3 className="overview-heading">Daily Focus Areas</h3>
-              <div style={{
-                overflow: 'hidden'
-              }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '15px',
-                  lineHeight: '1.8'
+            {plan.weeklyStructure.focusAreas && plan.weeklyStructure.focusAreas.length > 0 && (
+              <div>
+                <h3 className="overview-heading">Daily Focus Areas</h3>
+                <div style={{
+                  overflow: 'hidden'
                 }}>
-                  <tbody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => {
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '15px',
+                    lineHeight: '1.8'
+                  }}>
+                    <tbody>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {plan.weeklyStructure.focusAreas.map((area: any, idx: number) => {
                       // Split on first colon
                       const colonIndex = area.indexOf(':');
                       const day = colonIndex !== -1 ? area.substring(0, colonIndex).trim() : `Day ${idx + 1}`;
@@ -1098,11 +1198,13 @@ export default function PersonalisedPlanPage() {
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          </section>
+            )}
+            </section>
+          )}
 
           {/* Decorative Image 2 */}
           <div className="plan-image-container">
@@ -1194,40 +1296,44 @@ export default function PersonalisedPlanPage() {
                     </div>
 
                     {/* Warmup */}
-                    <div className="workout-section" style={{ marginBottom: '20px' }}>
-                      <h4 style={{
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase',
-                        color: '#999',
-                        marginBottom: '10px'
-                      }}>
-                        Warmup
-                      </h4>
-                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
-                        {day.warmup.description}
-                      </p>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {day.warmup.exercises?.map((exercise: any, idx: number) => (
-                        <div key={idx} style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '6px',
-                          padding: '10px',
-                          marginBottom: '8px'
+                    {day.warmup && (
+                      <div className="workout-section" style={{ marginBottom: '20px' }}>
+                        <h4 style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          color: '#999',
+                          marginBottom: '10px'
                         }}>
-                          <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
-                          <div style={{ fontSize: '13px', color: '#999' }}>
-                            {exercise.sets} × {exercise.reps}
-                          </div>
-                          {exercise.notes && (
-                            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>
-                              {exercise.notes}
+                          Warmup
+                        </h4>
+                        {day.warmup.description && (
+                          <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
+                            {day.warmup.description}
+                          </p>
+                        )}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {day.warmup.exercises?.map((exercise: any, idx: number) => (
+                          <div key={idx} style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '6px',
+                            padding: '10px',
+                            marginBottom: '8px'
+                          }}>
+                            <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
+                            <div style={{ fontSize: '13px', color: '#999' }}>
+                              {exercise.sets} × {exercise.reps}
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                            {exercise.notes && (
+                              <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>
+                                {exercise.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Main Workout */}
                     <div className="workout-section" style={{ marginBottom: '20px' }}>
@@ -1298,38 +1404,42 @@ export default function PersonalisedPlanPage() {
                     </div>
 
                     {/* Cooldown */}
-                    <div className="workout-section">
-                      <h4 style={{
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase',
-                        color: '#999',
-                        marginBottom: '10px'
-                      }}>
-                        Cooldown
-                      </h4>
-                      <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
-                        {day.cooldown.description}
-                      </p>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {day.cooldown.exercises?.map((exercise: any, idx: number) => (
-                        <div key={idx} style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '6px',
-                          padding: '10px',
-                          marginBottom: '8px'
+                    {day.cooldown && (
+                      <div className="workout-section">
+                        <h4 style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          color: '#999',
+                          marginBottom: '10px'
                         }}>
-                          <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
-                          <div style={{ fontSize: '13px', color: '#999' }}>{exercise.duration}</div>
-                          {exercise.notes && (
-                            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>
-                              {exercise.notes}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                          Cooldown
+                        </h4>
+                        {day.cooldown.description && (
+                          <p style={{ fontSize: '13px', marginBottom: '10px', color: '#b3b3b3' }}>
+                            {day.cooldown.description}
+                          </p>
+                        )}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {day.cooldown.exercises?.map((exercise: any, idx: number) => (
+                          <div key={idx} style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '6px',
+                            padding: '10px',
+                            marginBottom: '8px'
+                          }}>
+                            <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
+                            <div style={{ fontSize: '13px', color: '#999' }}>{exercise.duration}</div>
+                            {exercise.notes && (
+                              <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', fontStyle: 'italic' }}>
+                                {exercise.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               });
@@ -1699,7 +1809,18 @@ export default function PersonalisedPlanPage() {
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(plan.progressTracking.weeklyMetrics || plan.progressTracking.metrics || []).map((metric: any, idx: number) => (
-                    <li key={idx}>{metric}</li>
+                    <li key={idx}>
+                      {typeof metric === 'string' ? metric : (
+                        <div>
+                          <strong>{metric.metric}</strong>
+                          {metric.target && <div style={{ fontSize: '0.9em', color: '#b3b3b3' }}>Target: {metric.target}</div>}
+                          {metric.frequency && <div style={{ fontSize: '0.9em', color: '#b3b3b3' }}>Frequency: {metric.frequency}</div>}
+                          {metric.trackingMethod && <div style={{ fontSize: '0.9em', color: '#a0a0a0' }}>Method: {metric.trackingMethod}</div>}
+                          {metric.measurement && <div style={{ fontSize: '0.9em', color: '#a0a0a0' }}>Measurement: {metric.measurement}</div>}
+                          {metric.rationale && <div style={{ fontSize: '0.85em', color: '#90d9a0', marginTop: '5px' }}><em>{metric.rationale}</em></div>}
+                        </div>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -1708,7 +1829,16 @@ export default function PersonalisedPlanPage() {
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(plan.progressTracking.performanceBenchmarks || plan.progressTracking.benchmarks || []).map((benchmark: any, idx: number) => (
-                    <li key={idx}>{benchmark}</li>
+                    <li key={idx}>
+                      {typeof benchmark === 'string' ? benchmark : (
+                        <div>
+                          <strong>{benchmark.metric || benchmark.name || benchmark.benchmark}</strong>
+                          {benchmark.target && <div style={{ fontSize: '0.9em', color: '#b3b3b3' }}>Target: {benchmark.target}</div>}
+                          {benchmark.frequency && <div style={{ fontSize: '0.9em', color: '#b3b3b3' }}>Frequency: {benchmark.frequency}</div>}
+                          {benchmark.rationale && <div style={{ fontSize: '0.85em', color: '#90d9a0', marginTop: '5px' }}><em>{benchmark.rationale}</em></div>}
+                        </div>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -1726,29 +1856,62 @@ export default function PersonalisedPlanPage() {
             <img src={getImagePath(5)} alt="Injury prevention" className="plan-image" />
           </div>
 
-          <section className="plan-section">
-            <h2 className="section-title">Injury Prevention</h2>
-            <div className="recommendations-grid">
-              <div className="recommendation-card">
-                <h3>Common Risks</h3>
-                <ul>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.injuryPrevention.commonRisks.map((risk: any, idx: number) => (
-                    <li key={idx}>{risk}</li>
-                  ))}
-                </ul>
+          {plan.injuryPrevention && (
+            <section className="plan-section">
+              <h2 className="section-title">Injury Prevention</h2>
+              <div className="recommendations-grid">
+                {plan.injuryPrevention.commonRisks && plan.injuryPrevention.commonRisks.length > 0 && (
+                  <div className="recommendation-card">
+                    <h3>Common Risks</h3>
+                    <ul>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {plan.injuryPrevention.commonRisks.map((risk: any, idx: number) => (
+                        <li key={idx}>
+                          {typeof risk === 'string' ? risk : (
+                            <div>
+                              <strong>{risk.risk || risk.name}</strong>
+                              {risk.description && <div style={{ fontSize: '0.9em', color: '#b3b3b3', marginTop: '5px' }}>{risk.description}</div>}
+                              {risk.severity && <div style={{ fontSize: '0.85em', color: '#ff6b6b', marginTop: '3px' }}>Severity: {risk.severity}</div>}
+                              {risk.prevention && <div style={{ fontSize: '0.9em', color: '#90d9a0', marginTop: '5px' }}>Prevention: {risk.prevention}</div>}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {plan.injuryPrevention.preventionStrategies && plan.injuryPrevention.preventionStrategies.length > 0 && (
+                  <div className="recommendation-card">
+                    <h3>Prevention Strategies</h3>
+                    <ul>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {plan.injuryPrevention.preventionStrategies.map((strategy: any, idx: number) => (
+                        <li key={idx}>
+                          {typeof strategy === 'string' ? strategy : (
+                            <div>
+                              <strong>{strategy.strategy || strategy.name}</strong>
+                              {strategy.rationale && <div style={{ fontSize: '0.9em', color: '#b3b3b3', marginTop: '5px' }}>{strategy.rationale}</div>}
+                              {strategy.implementation && <div style={{ fontSize: '0.9em', color: '#a0a0a0', marginTop: '5px' }}>Implementation: {strategy.implementation}</div>}
+                              {strategy.exercises && Array.isArray(strategy.exercises) && strategy.exercises.length > 0 && (
+                                <div style={{ marginTop: '8px' }}>
+                                  <div style={{ fontSize: '0.85em', fontWeight: 'bold', color: '#90d9a0' }}>Exercises:</div>
+                                  <ul style={{ marginLeft: '20px', marginTop: '5px' }}>
+                                    {strategy.exercises.map((exercise: string, exIdx: number) => (
+                                      <li key={exIdx} style={{ fontSize: '0.85em', color: '#c0c0c0' }}>{exercise}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <div className="recommendation-card">
-                <h3>Prevention Strategies</h3>
-                <ul>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {plan.injuryPrevention.preventionStrategies.map((strategy: any, idx: number) => (
-                    <li key={idx}>{strategy}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Decorative Image 5 */}
           <div className="plan-image-container">
@@ -1853,7 +2016,7 @@ export default function PersonalisedPlanPage() {
         <section className="plan-section">
           <h2 className="section-title">Micronutrient Focus</h2>
 
-          {plan.micronutrientFocus && (
+          {plan.micronutrientFocus && Array.isArray(plan.micronutrientFocus) && plan.micronutrientFocus.length > 0 && (
             <>
               {/* Personalized intro for fallback micronutrients */}
               <p className="micronutrients-intro">
@@ -2191,7 +2354,7 @@ export default function PersonalisedPlanPage() {
           </section>
 
           {/* Preventive & Adaptive Features */}
-          {plan.preventiveFeatures && (
+          {plan.preventiveFeatures && Array.isArray(plan.preventiveFeatures) && plan.preventiveFeatures.length > 0 && (
             <section className="plan-section">
               <h2 className="section-title">Preventive & Adaptive Features</h2>
               <ul className="features-list">

@@ -398,9 +398,39 @@ export default function PersonalisedPlanPage() {
         <div className="executive-summary-container">
           <h2 className="section-title">Personal Summary</h2>
           <div className="executive-summary">
-            {plan.executiveSummary.split('\n').map((paragraph, idx) => (
-              paragraph.trim() && <p key={idx}>{paragraph}</p>
-            ))}
+            {typeof plan.executiveSummary === 'string' ? (
+              plan.executiveSummary.split('\n').map((paragraph, idx) => (
+                paragraph.trim() && <p key={idx}>{paragraph}</p>
+              ))
+            ) : plan.executiveSummary && typeof plan.executiveSummary === 'object' ? (
+              <div>
+                {plan.executiveSummary.mainMotivator && (
+                  <p><strong>Main Goal:</strong> {plan.executiveSummary.mainMotivator}</p>
+                )}
+                {plan.executiveSummary.currentDiet && (
+                  <p><strong>Current Diet:</strong> {plan.executiveSummary.currentDiet}</p>
+                )}
+                {plan.executiveSummary.sleepQuality && (
+                  <p><strong>Sleep Quality:</strong> {plan.executiveSummary.sleepQuality}</p>
+                )}
+                {plan.executiveSummary.stressLevel && (
+                  <p><strong>Stress Management:</strong> {plan.executiveSummary.stressLevel}</p>
+                )}
+                {plan.executiveSummary.activityLevel && (
+                  <p><strong>Activity Level:</strong> {plan.executiveSummary.activityLevel}</p>
+                )}
+                {plan.executiveSummary.concerns && plan.executiveSummary.concerns.length > 0 && (
+                  <div>
+                    <p><strong>Key Focus Areas:</strong></p>
+                    <ul>
+                      {plan.executiveSummary.concerns.map((concern: string, idx: number) => (
+                        <li key={idx}>{concern}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -483,54 +513,141 @@ export default function PersonalisedPlanPage() {
       <section className="plan-section">
         <h2 className="section-title">Daily Recommendations</h2>
         <div className="recommendations-grid">
-          <div className="recommendation-card">
-            <h3>Morning Ritual</h3>
-            <ul>
-              {plan.dailyRecommendations.morningRitual.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="recommendation-card">
-            <h3>Empower the Gut</h3>
-            <ul>
-              {plan.dailyRecommendations.empowerGut.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="recommendation-card">
-            <h3>Afternoon Vitality</h3>
-            <ul>
-              {plan.dailyRecommendations.afternoonVitality.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="recommendation-card">
-            <h3>Energy Optimization</h3>
-            <ul>
-              {plan.dailyRecommendations.energyOptimization.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="recommendation-card">
-            <h3>Midday Mastery</h3>
-            <ul>
-              {plan.dailyRecommendations.middayMastery.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="recommendation-card">
-            <h3>Evening Nourishment</h3>
-            <ul>
-              {plan.dailyRecommendations.eveningNourishment.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
+          {plan.dailyRecommendations.morningRitual && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.morningRitual.title || 'Morning Ritual'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.morningRitual)
+                  ? plan.dailyRecommendations.morningRitual
+                  : plan.dailyRecommendations.morningRitual.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>
+                    {typeof item === 'string' ? item : (
+                      <div>
+                        <strong>{item.time}</strong> - {item.action}
+                        {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.empowerGut && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.empowerGut.title || 'Empower the Gut'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.empowerGut)
+                  ? plan.dailyRecommendations.empowerGut
+                  : plan.dailyRecommendations.empowerGut.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.afternoonVitality && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.afternoonVitality.title || 'Afternoon Vitality'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.afternoonVitality)
+                  ? plan.dailyRecommendations.afternoonVitality
+                  : plan.dailyRecommendations.afternoonVitality.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>
+                    {typeof item === 'string' ? item : (
+                      <div>
+                        <strong>{item.time}</strong> - {item.action}
+                        {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.energyOptimization && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.energyOptimization.title || 'Energy Optimization'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.energyOptimization)
+                  ? plan.dailyRecommendations.energyOptimization
+                  : plan.dailyRecommendations.energyOptimization.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.middayMastery && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.middayMastery.title || 'Midday Mastery'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.middayMastery)
+                  ? plan.dailyRecommendations.middayMastery
+                  : plan.dailyRecommendations.middayMastery.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.eveningNourishment && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.eveningNourishment.title || 'Evening Nourishment'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.eveningNourishment)
+                  ? plan.dailyRecommendations.eveningNourishment
+                  : plan.dailyRecommendations.eveningNourishment.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.eveningWellness && (
+            <div className="recommendation-card">
+              <h3>{plan.dailyRecommendations.eveningWellness.title || 'Evening Wellness'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.eveningWellness)
+                  ? plan.dailyRecommendations.eveningWellness
+                  : plan.dailyRecommendations.eveningWellness.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>
+                    {typeof item === 'string' ? item : (
+                      <div>
+                        <strong>{item.time}</strong> - {item.action}
+                        {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {plan.dailyRecommendations.nutritionGuidelines && (
+            <div className="recommendation-card" style={{ gridColumn: '1 / -1' }}>
+              <h3>{plan.dailyRecommendations.nutritionGuidelines.title || 'Nutrition Guidelines'}</h3>
+              <ul>
+                {(Array.isArray(plan.dailyRecommendations.nutritionGuidelines)
+                  ? plan.dailyRecommendations.nutritionGuidelines
+                  : plan.dailyRecommendations.nutritionGuidelines.items || []
+                ).map((item: any, idx: number) => (
+                  <li key={idx}>
+                    {typeof item === 'string' ? item : (
+                      <div>
+                        <strong>{item.category}:</strong> {item.guideline}
+                        {item.reason && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}><em>Why:</em> {item.reason}</div>}
+                        {item.examples && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#a0a0a0' }}><em>Examples:</em> {item.examples}</div>}
+                        {item.tip && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#90d9a0' }}><em>Tip:</em> {item.tip}</div>}
+                        {item.portion && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#a0a0a0' }}><em>Portion:</em> {item.portion}</div>}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </section>
 
@@ -560,29 +677,95 @@ export default function PersonalisedPlanPage() {
               </p>
             )}
 
-            <div className="table-container">
-              <table className="micronutrient-table">
-                <thead>
-                  <tr>
-                    <th>Nutrient</th>
-                    <th>Daily Goal</th>
-                    <th>Food Sources in Plan</th>
-                    <th>Purpose</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {micronutrients.micronutrients?.map((nutrient: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="nutrient-name">{nutrient.nutrient}</td>
-                      <td className="nutrient-goal">{nutrient.dailyGoal}</td>
-                      <td className="nutrient-sources">{nutrient.foodSources}</td>
-                      <td className="nutrient-purpose">{nutrient.purpose}</td>
+            {/* Display cholesterolFocus section if available */}
+            {micronutrients.cholesterolFocus && (
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{
+                  background: 'rgba(255, 100, 100, 0.1)',
+                  border: '2px solid rgba(255, 100, 100, 0.3)',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  marginBottom: '20px'
+                }}>
+                  <h3 style={{ color: '#ff6b6b', marginBottom: '10px' }}>
+                    ⚠️ Cholesterol Management - {micronutrients.cholesterolFocus.priority} Priority
+                  </h3>
+                  {micronutrients.cholesterolFocus.keyNutrients?.map((nutrient: any, idx: number) => (
+                    <div key={idx} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: idx < micronutrients.cholesterolFocus.keyNutrients.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                      <h4 style={{ color: '#ffffff', marginBottom: '10px' }}>
+                        {nutrient.nutrient} - <span style={{ color: '#ff6b6b' }}>{nutrient.importance}</span>
+                      </h4>
+                      {nutrient.dailyGoal && <p><strong>Daily Goal:</strong> {nutrient.dailyGoal}</p>}
+                      {nutrient.sources && (
+                        <p><strong>Sources:</strong> {Array.isArray(nutrient.sources) ? nutrient.sources.join(', ') : nutrient.sources}</p>
+                      )}
+                      {nutrient.preparationTip && (
+                        <p style={{ color: '#90d9a0' }}><strong>💡 Tip:</strong> {nutrient.preparationTip}</p>
+                      )}
+                      {nutrient.storageNote && (
+                        <p style={{ color: '#ffd93d' }}><strong>📦 Storage:</strong> {nutrient.storageNote}</p>
+                      )}
+                      {nutrient.tip && (
+                        <p style={{ color: '#90d9a0' }}><strong>💡 Tip:</strong> {nutrient.tip}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Display supplementation info if available */}
+            {micronutrients.supplementation && (
+              <div style={{ marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '8px' }}>
+                <h3 style={{ marginBottom: '15px' }}>Supplementation Guidance</h3>
+                <p style={{ marginBottom: '10px' }}><em>{micronutrients.supplementation.philosophy}</em></p>
+                {micronutrients.supplementation.optionalSupport && (
+                  <div style={{ marginTop: '15px', paddingLeft: '20px', borderLeft: '3px solid #90d9a0' }}>
+                    <h4 style={{ color: '#90d9a0', marginBottom: '10px' }}>
+                      Optional: {micronutrients.supplementation.optionalSupport.name}
+                    </h4>
+                    <p><strong>Purpose:</strong> {micronutrients.supplementation.optionalSupport.purpose}</p>
+                    <p><strong>Benefit:</strong> {micronutrients.supplementation.optionalSupport.benefit}</p>
+                    {micronutrients.supplementation.optionalSupport.timing && (
+                      <p><strong>Timing:</strong> {micronutrients.supplementation.optionalSupport.timing}</p>
+                    )}
+                    {micronutrients.supplementation.optionalSupport.when && (
+                      <p><strong>When to use:</strong> {micronutrients.supplementation.optionalSupport.when}</p>
+                    )}
+                    {micronutrients.supplementation.optionalSupport.consultation && (
+                      <p style={{ color: '#ffd93d' }}><strong>⚠️ Note:</strong> {micronutrients.supplementation.optionalSupport.consultation}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Standard micronutrients table */}
+            {micronutrients.micronutrients && micronutrients.micronutrients.length > 0 && (
+              <div className="table-container">
+                <table className="micronutrient-table">
+                  <thead>
+                    <tr>
+                      <th>Nutrient</th>
+                      <th>Daily Goal</th>
+                      <th>Food Sources in Plan</th>
+                      <th>Purpose</th>
                     </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </thead>
+                  <tbody>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {micronutrients.micronutrients.map((nutrient: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="nutrient-name">{nutrient.nutrient}</td>
+                        <td className="nutrient-goal">{nutrient.dailyGoal}</td>
+                        <td className="nutrient-sources">{nutrient.foodSources}</td>
+                        <td className="nutrient-purpose">{nutrient.purpose}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
 
@@ -795,79 +978,181 @@ export default function PersonalisedPlanPage() {
 
             {lifestyleIntegration ? (
               <div className="lifestyle-clean">
-                {/* Sleep Optimization */}
-                {lifestyleIntegration.sleepOptimization && (
+                {/* Sleep Optimization / Sleep */}
+                {(lifestyleIntegration.sleepOptimization || lifestyleIntegration.sleep) && (
                   <div className="lifestyle-section">
-                    <h3 className="lifestyle-title">Sleep Optimization</h3>
-                    {lifestyleIntegration.sleepOptimization.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
+                    <h3 className="lifestyle-title">Sleep{lifestyleIntegration.sleepOptimization ? ' Optimization' : ''}</h3>
+
+                    {/* New format - simple sleep info */}
+                    {lifestyleIntegration.sleep && (
+                      <>
+                        {lifestyleIntegration.sleep.currentQuality && (
+                          <div style={{
+                            background: 'rgba(144, 217, 160, 0.1)',
+                            border: '2px solid rgba(144, 217, 160, 0.3)',
+                            padding: '15px',
+                            borderRadius: '8px',
+                            marginBottom: '20px'
+                          }}>
+                            <p><strong>Current Sleep Quality:</strong> {lifestyleIntegration.sleep.currentQuality}</p>
+                            {lifestyleIntegration.sleep.recommendation && (
+                              <p style={{ marginTop: '10px' }}><strong>Recommendation:</strong> {lifestyleIntegration.sleep.recommendation}</p>
+                            )}
+                          </div>
+                        )}
+                        {lifestyleIntegration.sleep.mealTimingForSleep && (
+                          <div className="lifestyle-text">
+                            <p><strong>Meal Timing:</strong> {lifestyleIntegration.sleep.mealTimingForSleep}</p>
+                          </div>
+                        )}
+                        {lifestyleIntegration.sleep.tip && (
+                          <div className="lifestyle-text">
+                            <p style={{ color: '#90d9a0' }}>💡 {lifestyleIntegration.sleep.tip}</p>
+                          </div>
+                        )}
+                        {lifestyleIntegration.sleep.protectYourSleep && (
+                          <div className="lifestyle-text">
+                            <p>{lifestyleIntegration.sleep.protectYourSleep}</p>
+                          </div>
+                        )}
+                      </>
                     )}
 
-                    {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
-                      <div className="lifestyle-text">
-                        <p><strong>Optimal Sleep Window:</strong> {lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
-                      </div>
-                    )}
+                    {/* Old format - detailed sleep optimization */}
+                    {lifestyleIntegration.sleepOptimization && (
+                      <>
+                        {lifestyleIntegration.sleepOptimization.personalizedIntro && (
+                          <p className="lifestyle-subtitle">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
+                        )}
 
-                    {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
-                      <div className="lifestyle-text">
-                        <p><strong>Pre-Bed Routine:</strong></p>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
-                          <p key={idx}>• {item}</p>
-                        ))}
-                      </div>
-                    )}
+                        {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
+                          <div className="lifestyle-text">
+                            <p><strong>Optimal Sleep Window:</strong> {lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
+                          </div>
+                        )}
 
-                    {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
-                      <div className="lifestyle-text">
-                        <p><strong>Morning Protocol:</strong></p>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
-                          <p key={idx}>• {item}</p>
-                        ))}
-                      </div>
-                    )}
+                        {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
+                          <div className="lifestyle-text">
+                            <p><strong>Pre-Bed Routine:</strong></p>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
+                              <p key={idx}>• {item}</p>
+                            ))}
+                          </div>
+                        )}
 
-                    {lifestyleIntegration.sleepOptimization.whyThisMatters && (
-                      <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
-                      </div>
+                        {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
+                          <div className="lifestyle-text">
+                            <p><strong>Morning Protocol:</strong></p>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
+                              <p key={idx}>• {item}</p>
+                            ))}
+                          </div>
+                        )}
+
+                        {lifestyleIntegration.sleepOptimization.whyThisMatters && (
+                          <div className="lifestyle-text">
+                            <p><strong>Why This Matters:</strong> {lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
 
-                {/* Exercise Protocol */}
-                {lifestyleIntegration.exerciseProtocol && (
+                {/* Exercise Protocol / Exercise */}
+                {(lifestyleIntegration.exerciseProtocol || lifestyleIntegration.exercise) && (
                   <div className="lifestyle-section">
-                    <h3 className="lifestyle-title">Exercise Protocol</h3>
-                    {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
+                    <h3 className="lifestyle-title">Exercise{lifestyleIntegration.exerciseProtocol ? ' Protocol' : ''}</h3>
+
+                    {/* New format - exercise concerns and monitoring */}
+                    {lifestyleIntegration.exercise && (
+                      <>
+                        {lifestyleIntegration.exercise.currentSituation && (
+                          <div style={{
+                            background: 'rgba(255, 200, 100, 0.1)',
+                            border: '2px solid rgba(255, 200, 100, 0.3)',
+                            padding: '15px',
+                            borderRadius: '8px',
+                            marginBottom: '20px'
+                          }}>
+                            {lifestyleIntegration.exercise.currentSituation.recentChange && (
+                              <p><strong>Recent Change:</strong> {lifestyleIntegration.exercise.currentSituation.recentChange}</p>
+                            )}
+                            {lifestyleIntegration.exercise.currentSituation.concern && (
+                              <p style={{ marginTop: '10px' }}><strong>Your Concern:</strong> {lifestyleIntegration.exercise.currentSituation.concern}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {lifestyleIntegration.exercise.approach && (
+                          <div className="lifestyle-text">
+                            <p><strong>Our Approach:</strong> {lifestyleIntegration.exercise.approach}</p>
+                          </div>
+                        )}
+
+                        {lifestyleIntegration.exercise.monitoring && (
+                          <div className="lifestyle-text">
+                            <p><strong>What We'll Monitor:</strong></p>
+                            {lifestyleIntegration.exercise.monitoring.watchFor && lifestyleIntegration.exercise.monitoring.watchFor.length > 0 && (
+                              <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
+                                {lifestyleIntegration.exercise.monitoring.watchFor.map((item: string, idx: number) => (
+                                  <li key={idx} style={{ marginBottom: '5px' }}>{item}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {lifestyleIntegration.exercise.monitoring.action && (
+                              <p style={{ marginTop: '10px', color: '#ffd93d' }}><strong>Action:</strong> {lifestyleIntegration.exercise.monitoring.action}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {lifestyleIntegration.exercise.reassurance && (
+                          <div style={{
+                            background: 'rgba(144, 217, 160, 0.1)',
+                            padding: '15px',
+                            borderRadius: '8px',
+                            marginTop: '20px'
+                          }}>
+                            <p>{lifestyleIntegration.exercise.reassurance}</p>
+                          </div>
+                        )}
+                      </>
                     )}
 
-                    {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
-                      <div className="lifestyle-text">
-                        <p><strong>Weekly Structure:</strong> {lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
-                      </div>
-                    )}
+                    {/* Old format - detailed exercise protocol */}
+                    {lifestyleIntegration.exerciseProtocol && (
+                      <>
+                        {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
+                          <p className="lifestyle-subtitle">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
+                        )}
 
-                    {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
-                      <div className="lifestyle-text">
-                        <p><strong>Workout Split:</strong></p>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
-                          <p key={idx}>
-                            <strong>{workout.day}:</strong> {workout.focus}
-                            {workout.duration && <> • {workout.duration}</>}
-                          </p>
-                        ))}
-                      </div>
-                    )}
+                        {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
+                          <div className="lifestyle-text">
+                            <p><strong>Weekly Structure:</strong> {lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
+                          </div>
+                        )}
 
-                    {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
-                      <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
-                      </div>
+                        {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
+                          <div className="lifestyle-text">
+                            <p><strong>Workout Split:</strong></p>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
+                              <p key={idx}>
+                                <strong>{workout.day}:</strong> {workout.focus}
+                                {workout.duration && <> • {workout.duration}</>}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+
+                        {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
+                          <div className="lifestyle-text">
+                            <p><strong>Why This Matters:</strong> {lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -876,10 +1161,63 @@ export default function PersonalisedPlanPage() {
                 {lifestyleIntegration.stressManagement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Stress Management</h3>
+
+                    {/* Current Level */}
+                    {lifestyleIntegration.stressManagement.currentLevel && (
+                      <div style={{
+                        background: 'rgba(255, 200, 100, 0.1)',
+                        border: '2px solid rgba(255, 200, 100, 0.3)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        marginBottom: '20px'
+                      }}>
+                        <p><strong>Current Status:</strong> {lifestyleIntegration.stressManagement.currentLevel}</p>
+                        {lifestyleIntegration.stressManagement.acknowledgment && (
+                          <p style={{ marginTop: '10px' }}>{lifestyleIntegration.stressManagement.acknowledgment}</p>
+                        )}
+                      </div>
+                    )}
+
                     {lifestyleIntegration.stressManagement.personalizedIntro && (
                       <p className="lifestyle-subtitle">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
                     )}
 
+                    {/* Primary Interventions */}
+                    {lifestyleIntegration.stressManagement.primaryInterventions && lifestyleIntegration.stressManagement.primaryInterventions.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Key Strategies:</strong></p>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {lifestyleIntegration.stressManagement.primaryInterventions.map((intervention: any, idx: number) => (
+                          <div key={idx} style={{ marginBottom: '15px', paddingLeft: '15px', borderLeft: '3px solid #90d9a0' }}>
+                            <p><strong>{intervention.intervention}</strong></p>
+                            <p style={{ fontSize: '0.95em', color: '#b3b3b3' }}>{intervention.description}</p>
+                            {intervention.frequency && (
+                              <p style={{ fontSize: '0.9em', color: '#90d9a0' }}>Frequency: {intervention.frequency}</p>
+                            )}
+                            {intervention.benefit && (
+                              <p style={{ fontSize: '0.9em', color: '#a0a0a0' }}>Benefit: {intervention.benefit}</p>
+                            )}
+                            {intervention.deskBoundAlternatives && intervention.deskBoundAlternatives.length > 0 && (
+                              <div style={{ marginTop: '10px' }}>
+                                <p style={{ fontSize: '0.9em', fontWeight: 'bold' }}>Desk-Bound Alternatives:</p>
+                                <ul style={{ marginLeft: '20px', marginTop: '5px' }}>
+                                  {intervention.deskBoundAlternatives.map((alt: string, altIdx: number) => (
+                                    <li key={altIdx} style={{ fontSize: '0.85em', color: '#c0c0c0' }}>{alt}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {intervention.importantNote && (
+                              <p style={{ fontSize: '0.9em', color: '#ffd93d', marginTop: '10px' }}>
+                                💡 {intervention.importantNote}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Daily Practices (legacy format) */}
                     {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Daily Practices:</strong></p>
@@ -895,9 +1233,62 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
+                    {/* Expected Outcome */}
+                    {lifestyleIntegration.stressManagement.expectedOutcome && (
+                      <div style={{
+                        background: 'rgba(144, 217, 160, 0.1)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        marginTop: '20px'
+                      }}>
+                        <p><strong>Expected Progress:</strong> {lifestyleIntegration.stressManagement.expectedOutcome}</p>
+                      </div>
+                    )}
+
                     {lifestyleIntegration.stressManagement.whyThisMatters && (
                       <div className="lifestyle-text">
                         <p><strong>Why This Matters:</strong> {lifestyleIntegration.stressManagement.whyThisMatters}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Cholesterol Management - New Section */}
+                {lifestyleIntegration.cholesterolManagement && (
+                  <div className="lifestyle-section">
+                    <h3 className="lifestyle-title">Cholesterol Management</h3>
+
+                    {lifestyleIntegration.cholesterolManagement.primaryGoal && (
+                      <div style={{
+                        background: 'rgba(255, 100, 100, 0.1)',
+                        border: '2px solid rgba(255, 100, 100, 0.3)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        marginBottom: '20px'
+                      }}>
+                        <p><strong>Primary Goal:</strong> {lifestyleIntegration.cholesterolManagement.primaryGoal}</p>
+                      </div>
+                    )}
+
+                    {lifestyleIntegration.cholesterolManagement.keyStrategies && lifestyleIntegration.cholesterolManagement.keyStrategies.length > 0 && (
+                      <div className="lifestyle-text">
+                        <p><strong>Key Strategies:</strong></p>
+                        <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
+                          {lifestyleIntegration.cholesterolManagement.keyStrategies.map((strategy: string, idx: number) => (
+                            <li key={idx} style={{ marginBottom: '8px' }}>{strategy}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {lifestyleIntegration.cholesterolManagement.timeline && (
+                      <div style={{
+                        background: 'rgba(144, 217, 160, 0.1)',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        marginTop: '20px'
+                      }}>
+                        <p><strong>Expected Timeline:</strong> {lifestyleIntegration.cholesterolManagement.timeline}</p>
                       </div>
                     )}
                   </div>

@@ -685,12 +685,14 @@ export default function PersonalisedPlanPage() {
             animation: 'spin 1s linear infinite'
           }}></div>
           <h2 style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize: '32px',
             marginBottom: '16px',
             color: '#ffffff',
-            fontWeight: 300
+            fontWeight: 400,
+            letterSpacing: '0.3px'
           }}>
-            Your plan is being generated
+            your plan is being generated.
           </h2>
         </div>
         <style>{`

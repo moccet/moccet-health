@@ -422,18 +422,18 @@ async function handler(request: NextRequest) {
     const unifiedContext = planResult.unifiedContext; // Get the rich ecosystem context
 
     const userProfile = {
-      name: formData.fullName || formData.name,
-      age: formData.age,
-      gender: formData.gender,
-      weight: formData.weight,
-      height: formData.height,
-      fitnessLevel: formData.fitnessLevel || formData.trainingExperience,
-      experienceLevel: formData.trainingExperience,
+      name: formData.fullName || formData.name || 'User',
+      age: parseInt(formData.age) || 30,
+      gender: formData.gender || 'not specified',
+      weight: parseFloat(formData.weight) || 70,
+      height: parseFloat(formData.height) || 170,
+      fitnessLevel: formData.fitnessLevel || formData.trainingExperience || 'intermediate',
+      experienceLevel: formData.trainingExperience || 'intermediate',
       currentActivity: formData.currentActivity || 'Not specified',
-      goals: formData.goals || [formData.primaryGoal],
-      equipment: formData.equipment || [],
-      timeAvailable: formData.sessionLength || 60,
-      sessionsPerWeek: formData.trainingDays || 3,
+      goals: formData.goals || (formData.primaryGoal ? [formData.primaryGoal] : ['general fitness']),
+      equipment: formData.equipment || ['bodyweight'],
+      timeAvailable: parseInt(formData.sessionLength) || 60,
+      sessionsPerWeek: parseInt(formData.trainingDays) || 3,
       injuries: formData.injuries || [],
       preferences: formData.preferences || [],
       activityLevel: formData.activityLevel || 'Moderate',
@@ -444,7 +444,24 @@ async function handler(request: NextRequest) {
     };
 
     const biomarkers = bloodAnalysisData?.biomarkers || {};
-    const recommendations = basePlan?.recommendations || basePlan || {};
+    const recommendations = basePlan?.recommendations || {};
+
+    // Ensure nested recommendation structures exist with defaults
+    if (!recommendations.nutrition_protocol) {
+      recommendations.nutrition_protocol = {
+        objectives: ['Optimize nutrition for health and performance'],
+        specificRecommendations: []
+      };
+    }
+    if (!recommendations.training_protocol) {
+      recommendations.training_protocol = {
+        focus: 'General fitness',
+        intensity: 'Moderate',
+        volume: 'Standard',
+        frequency: `${userProfile.sessionsPerWeek}x per week`,
+        specificRecommendations: []
+      };
+    }
 
     // Call specialized agents IN PARALLEL with FULL UNIFIED CONTEXT
     console.log('[3/7] Calling 4 specialized agents in parallel with unified context...');

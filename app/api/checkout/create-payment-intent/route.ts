@@ -23,7 +23,12 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Checkout API] Creating payment intent for ${email}`);
 
-    // Validate cart
+    // Convert guest identifier to valid email for Stripe
+    const stripeEmail = email.startsWith('guest-')
+      ? `${email}@guest.moccet.ai`
+      : email;
+
+    // Validate cart (use original email/identifier for cart lookup)
     const { valid, issues, cart } = await validateCart(email);
 
     if (!valid || !cart) {
@@ -42,11 +47,12 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Checkout API] Order total: $${total}`);
 
-    // Create payment intent
-    const paymentIntent = await createPaymentIntent(total, email, {
+    // Create payment intent (use stripeEmail for Stripe API)
+    const paymentIntent = await createPaymentIntent(total, stripeEmail, {
       cart_id: cart.id,
       plan_code: planCode || cart.planCode || '',
       item_count: cart.itemCount.toString(),
+      original_identifier: email, // Store original identifier for reference
     });
 
     console.log(`[Checkout API] ✅ Payment intent created: ${paymentIntent.id}`);

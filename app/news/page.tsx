@@ -165,11 +165,13 @@ export default function NewsPage() {
                       className="blog-card"
                     >
                       {post.image && (
-                        <img
-                          src={post.image}
-                          alt={post.title}
-                          className="blog-card-image"
-                        />
+                        <div className="blog-card-image-wrapper">
+                          <img
+                            src={post.image}
+                            alt={post.title}
+                            className="blog-card-image"
+                          />
+                        </div>
                       )}
                       <div className="blog-card-content">
                         <h3 className="blog-card-title">{post.title}</h3>

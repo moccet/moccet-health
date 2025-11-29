@@ -8,7 +8,14 @@ export async function GET() {
     if (!clientId) {
       return NextResponse.json(
         { error: 'Oura client ID not configured' },
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
@@ -21,14 +28,41 @@ export async function GET() {
     authUrl.searchParams.append('scope', 'personal daily'); // Request personal info and daily data
     authUrl.searchParams.append('state', generateRandomState());
 
-    return NextResponse.json({ authUrl: authUrl.toString() });
+    return NextResponse.json(
+      { authUrl: authUrl.toString() },
+      {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
+    );
   } catch (error) {
     console.error('Error generating Oura auth URL:', error);
     return NextResponse.json(
       { error: 'Failed to generate auth URL' },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
 
 function generateRandomState(): string {

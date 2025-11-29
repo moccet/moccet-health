@@ -545,6 +545,12 @@ async function handler(request: NextRequest) {
     console.log(`  Recovery: ${recoveryResult.success ? '✅' : '❌'}`);
     console.log(`  Adaptation: ${adaptationResult.success ? '✅' : '❌'}`);
 
+    // DEBUG: Log what each agent actually returned
+    console.log('[DEBUG] Training agent returned:', JSON.stringify(trainingResult, null, 2).substring(0, 500));
+    console.log('[DEBUG] Nutrition agent returned:', JSON.stringify(nutritionResult, null, 2).substring(0, 500));
+    console.log('[DEBUG] Recovery agent returned:', JSON.stringify(recoveryResult, null, 2).substring(0, 500));
+    console.log('[DEBUG] Adaptation agent returned:', JSON.stringify(adaptationResult, null, 2).substring(0, 500));
+
     // Merge all specialized agent results into the comprehensive plan
     console.log('[4/7] Merging all agent results into comprehensive plan...');
 
@@ -570,6 +576,15 @@ async function handler(request: NextRequest) {
     };
 
     console.log('[OK] Comprehensive plan assembled with all specialized sections');
+
+    // DEBUG: Log what's actually in the enhanced plan
+    console.log('[DEBUG] Enhanced plan top-level keys:', Object.keys(enhancedPlan));
+    console.log('[DEBUG] Has weeklyProgram:', !!enhancedPlan.weeklyProgram);
+    console.log('[DEBUG] Has nutritionGuidance:', !!enhancedPlan.nutritionGuidance);
+    console.log('[DEBUG] Has progressTracking:', !!enhancedPlan.progressTracking);
+    console.log('[DEBUG] Has injuryPrevention:', !!enhancedPlan.injuryPrevention);
+    console.log('[DEBUG] Has adaptiveFeatures:', !!enhancedPlan.adaptiveFeatures);
+    console.log('[DEBUG] Has sleep_recovery_protocol:', !!enhancedPlan.sleep_recovery_protocol);
 
     // Store the generated plan
     console.log('[5/7] Storing comprehensive fitness plan...');

@@ -49,10 +49,10 @@ ${userProfile.injuries ? `- Injuries/Limitations: ${userProfile.injuries.join(',
 ${userProfile.equipment ? `- Available Equipment: ${userProfile.equipment.join(', ')}` : '- Equipment: Assume access to a full gym'}
 
 ## TRAINING PROTOCOL TO IMPLEMENT
-**Phase**: ${trainingProtocol.phase}
+**Phase**: ${trainingProtocol.phase || 'General Fitness'}
 
 **Recommendations**:
-${trainingProtocol.recommendations.map((rec, idx) => `
+${trainingProtocol.recommendations && trainingProtocol.recommendations.length > 0 ? trainingProtocol.recommendations.map((rec, idx) => `
 ${idx + 1}. **${rec.name}**
    - Frequency: ${rec.frequency_per_week ? `${rec.frequency_per_week}x/week` : rec.frequency_per_day ? `${rec.frequency_per_day}x/day` : 'As prescribed'}
    - Duration: ${rec.session_duration_min ? `${rec.session_duration_min} minutes` : 'Variable'}
@@ -61,8 +61,8 @@ ${idx + 1}. **${rec.name}**
    ${rec.structure ? `- Structure: ${rec.structure}` : ''}
    ${rec.instructions ? `- Instructions: ${rec.instructions}` : ''}
    ${rec.safety ? `- Safety: ${rec.safety}` : ''}
-   - Rationale: ${rec.causal_rationale}
-`).join('\n')}
+   - Rationale: ${rec.causal_rationale || 'General fitness improvement'}
+`).join('\n') : 'No specific recommendations provided. Create a balanced, progressive training program based on the user profile.'}
 
 ## INSTRUCTIONS
 

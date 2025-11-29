@@ -81,7 +81,7 @@ ${input.biomarkers.b12 ? `- B12: ${input.biomarkers.b12} pg/mL` : ''}
 ${input.biomarkers.iron ? `- Iron: ${input.biomarkers.iron} μg/dL` : ''}
 
 PROTOCOL RECOMMENDATIONS:
-- Objectives: ${input.recommendations.nutrition_protocol.objectives.join('; ')}
+- Objectives: ${input.recommendations.nutrition_protocol.objectives?.join('; ') || 'Optimize nutrition for health and performance'}
 ${input.recommendations.nutrition_protocol.macronutrientTargets ? `
 - Macronutrient Targets:
   * Protein: ${input.recommendations.nutrition_protocol.macronutrientTargets.protein || 'Not specified'}
@@ -90,7 +90,7 @@ ${input.recommendations.nutrition_protocol.macronutrientTargets ? `
 ${input.recommendations.nutrition_protocol.mealTiming ? `- Meal Timing: ${input.recommendations.nutrition_protocol.mealTiming}` : ''}
 ${input.recommendations.nutrition_protocol.hydration ? `- Hydration: ${input.recommendations.nutrition_protocol.hydration}` : ''}
 ${input.recommendations.nutrition_protocol.supplements && input.recommendations.nutrition_protocol.supplements.length > 0 ? `- Supplements: ${input.recommendations.nutrition_protocol.supplements.join(', ')}` : ''}
-- Specific Recommendations: ${input.recommendations.nutrition_protocol.specificRecommendations.join('; ')}
+- Specific Recommendations: ${input.recommendations.nutrition_protocol.specificRecommendations?.join('; ') || 'Create a balanced nutrition plan based on user profile and biomarkers'}
 
 ${input.trainingProgram ? `
 TRAINING SCHEDULE:

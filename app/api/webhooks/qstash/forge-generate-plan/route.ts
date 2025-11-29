@@ -455,11 +455,19 @@ async function handler(request: NextRequest) {
     }
     if (!recommendations.training_protocol) {
       recommendations.training_protocol = {
-        focus: 'General fitness',
-        intensity: 'Moderate',
-        volume: 'Standard',
-        frequency: `${userProfile.sessionsPerWeek}x per week`,
-        specificRecommendations: []
+        phase: 'General Fitness',
+        recommendations: [
+          {
+            name: 'Balanced Strength Training',
+            frequency_per_week: userProfile.sessionsPerWeek,
+            session_duration_min: userProfile.timeAvailable,
+            intensity: 'Moderate',
+            volume: 'Standard',
+            structure: 'Full body or split routine',
+            instructions: 'Focus on compound movements with progressive overload',
+            causal_rationale: 'Build strength and improve overall fitness based on user goals'
+          }
+        ]
       };
     }
 

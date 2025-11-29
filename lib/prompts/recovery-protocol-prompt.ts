@@ -60,11 +60,11 @@ ${input.biomarkers.crp ? `- CRP (Inflammation): ${input.biomarkers.crp} mg/L` : 
 
 RECOVERY PROTOCOL RECOMMENDATIONS:
 ${input.recommendations.recovery_protocol ? `
-- Objectives: ${input.recommendations.recovery_protocol.objectives.join('; ')}
+- Objectives: ${input.recommendations.recovery_protocol.objectives?.join('; ') || 'Optimize recovery and prevent injury'}
 ${input.recommendations.recovery_protocol.sleepRecommendations ? `- Sleep: ${input.recommendations.recovery_protocol.sleepRecommendations}` : ''}
 ${input.recommendations.recovery_protocol.stressManagement ? `- Stress Management: ${input.recommendations.recovery_protocol.stressManagement.join(', ')}` : ''}
 ${input.recommendations.recovery_protocol.activeRecovery ? `- Active Recovery: ${input.recommendations.recovery_protocol.activeRecovery.join(', ')}` : ''}
-- Specific Recommendations: ${input.recommendations.recovery_protocol.specificRecommendations.join('; ')}
+- Specific Recommendations: ${input.recommendations.recovery_protocol.specificRecommendations?.join('; ') || 'Create recovery protocols based on user profile'}
 ` : 'No specific recovery protocol provided'}
 
 ${input.trainingProgram ? `

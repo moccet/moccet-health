@@ -349,29 +349,55 @@ You have access to this user's complete health ecosystem. Your fitness plan MUST
    - Use exact values from Oura/Whoop/biomarkers
    - Example: "3 training days per week because Oura readiness 62/100 + HRV 45ms indicates inadequate recovery capacity"
 
-2. **RECOVERY-DRIVEN PROGRAMMING:**
+2. **PERSONALIZED SECTION INTRODUCTIONS (REQUIRED):**
+   - EVERY major section MUST begin with a 2-3 line personalized introduction (40-80 words max)
+   - These intros MUST cite specific data from the user's profile (biomarkers, wearables, behavioral patterns, onboarding info)
+   - Only include data citations if the data is available - if no data exists for a particular metric, do not mention it
+   - Priority for citations: Blood biomarkers → Wearable metrics (Oura, CGM) → Behavioral patterns (Gmail/Slack) → Onboarding goals
+   - Add personalized intros to these sections:
+     * executiveSummary - Overview citing key findings and goals (150-250 words total)
+     * trainingPhilosophy.approach - Link approach to biomarkers and recovery data (200-300 words)
+     * weeklyStructure.overview - Reference recovery metrics and work patterns (200-300 words)
+     * nutritionGuidance.personalizedIntro - Cite lipid levels, glucose patterns, sleep data (40-80 words)
+     * recoveryProtocol.personalizedIntro - Reference HRV, sleep debt, stress indicators (40-80 words)
+     * progressTracking.metricsOverview - Mention baseline metrics from data (150-200 words)
+     * injuryPrevention.personalizedRiskAssessment - Note mobility issues, injury history (200-300 words)
+   - Example format: "Your Oura data shows 6.2h average sleep with declining HRV, and blood work indicates elevated LDL at 220 mg/dL. This recovery protocol prioritizes sleep optimization and stress management to improve both metrics."
+
+3. **RECOVERY-DRIVEN PROGRAMMING:**
    - If overtraining risk detected → implement deload week immediately
    - If readiness < 70 → reduce volume by 30-50%
    - If HRV declining → prioritize active recovery over high intensity
    - Reference specific data points for every decision
 
-3. **BIOMARKER-INFORMED TRAINING:**
+4. **BIOMARKER-INFORMED TRAINING:**
    - Low testosterone + high cortisol → reduce training volume, increase rest
    - Vitamin D deficiency → recommend outdoor morning workouts
    - Iron deficiency → limit high-intensity until resolved
    - Explain the physiological mechanism for each adaptation
 
-4. **WORK SCHEDULE INTEGRATION:**
+5. **WORK SCHEDULE INTEGRATION:**
    - Use Gmail/Slack data to schedule workouts around meeting density
    - Avoid high-intensity training on high-stress work days
    - Time workouts when recovery metrics are optimal
 
-5. **CROSS-SOURCE SYNERGY:**
+6. **CROSS-SOURCE SYNERGY:**
    - Sleep debt + high training load = injury risk → address sleep first
    - Glucose spikes + work stress → recommend pre-workout meal timing
    - Explain how multiple data points inform each recommendation
 
-**Output Format:** Return ONLY valid JSON with the expected structure. Reference specific data throughout your plan.
+7. **SIMPLIFIED LANGUAGE FOR PROGRESS TRACKING AND INJURY PREVENTION:**
+   - Use beginner-friendly language with NO jargon
+   - Replace all technical terms with plain explanations:
+     * "sRPE Load" → "Training stress score (session difficulty × time)"
+     * "HRV" → "Heart rate variability (a recovery indicator)"
+     * "RPE 7-8" → "Effort level of 7-8 out of 10"
+     * "1RM" → "One-rep maximum (heaviest weight you can lift once)"
+     * "Tempo notation" → Use descriptive language like "Lower slowly over 3 seconds"
+   - Explain WHY each metric matters in simple terms
+   - Keep all measurements actionable and clear
+
+**Output Format:** Return ONLY valid JSON with the expected structure. Reference specific data throughout your plan. Add 'personalizedIntro' fields to nutritionGuidance and recoveryProtocol sections.
 `.trim();
 
   return prompt;

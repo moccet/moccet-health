@@ -59,12 +59,12 @@ ${JSON.stringify(unifiedContext, null, 2)}
       prompt = basePrompt + contextEnrichment;
     }
 
-    console.log('[RECOVERY-AGENT] Calling GPT-5 with high reasoning...');
+    console.log('[RECOVERY-AGENT] Calling GPT-5 with medium reasoning...');
     const completion = await openai.responses.create({
       model: 'gpt-5',
       input: prompt,
-      reasoning: { effort: 'high' },
-      text: { verbosity: 'high' }
+      reasoning: { effort: 'medium' },  // Reduced from 'high' - mostly template-based with parameters
+      text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
     });
 
     let responseText = completion.output_text || '{}';

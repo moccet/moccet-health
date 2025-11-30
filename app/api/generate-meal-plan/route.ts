@@ -233,13 +233,23 @@ export async function GET(request: NextRequest) {
     console.log(`[4/5] Generating biomarker-optimized 7-day meal plan...`);
     const openai = getOpenAIClient();
 
-    // Extract nutrition targets
+    // Extract nutrition targets with fallbacks for old plan format
     const nutritionTargets = {
-      calories: nutritionPlan.nutritionOverview.nutritionStructure.calories,
-      protein: nutritionPlan.nutritionOverview.nutritionStructure.protein,
-      carbs: nutritionPlan.nutritionOverview.nutritionStructure.carbs,
-      fiber: nutritionPlan.nutritionOverview.nutritionStructure.fiber,
-      fat: nutritionPlan.nutritionOverview.nutritionStructure.fat,
+      calories: nutritionPlan.nutritionOverview?.nutritionStructure?.calories ||
+                nutritionPlan.nutrition_plan?.macro_framework ||
+                '2000-2500 kcal',
+      protein: nutritionPlan.nutritionOverview?.nutritionStructure?.protein ||
+               nutritionPlan.nutrition_plan?.protein_target ||
+               '150-180g',
+      carbs: nutritionPlan.nutritionOverview?.nutritionStructure?.carbs ||
+             nutritionPlan.nutrition_plan?.carb_strategy ||
+             '200-250g',
+      fiber: nutritionPlan.nutritionOverview?.nutritionStructure?.fiber ||
+             nutritionPlan.nutrition_plan?.fiber_target ||
+             '30-40g',
+      fat: nutritionPlan.nutritionOverview?.nutritionStructure?.fat ||
+           nutritionPlan.nutrition_plan?.fat_quality_shift ||
+           '60-80g',
     };
 
     const prompt = unifiedContext
@@ -356,7 +366,7 @@ CRITICAL REMINDERS:
 - AVOID these allergens: ${formData.allergies.join(', ')}
 - AVOID these foods: ${formData.foodDislikes || 'none'}
 - Make meals practical for someone who cooks ${formData.mealsCooked} meals/week
-- Ensure total daily calories align with: ${nutritionPlan.nutritionOverview.nutritionStructure.calories}
+- Ensure total daily calories align with: ${nutritionTargets.calories}
 
 FORMATTING:
 - DO NOT use colons (:) anywhere in the text

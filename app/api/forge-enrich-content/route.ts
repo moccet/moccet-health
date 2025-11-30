@@ -211,12 +211,12 @@ export async function POST(request: NextRequest) {
     const openai = getOpenAIClient();
     const prompt = buildEnrichmentPrompt(plan, issues, userProfile, biomarkers, unifiedContext);
 
-    console.log('[ENRICHMENT-AGENT] Calling GPT-5 with high reasoning...');
+    console.log('[ENRICHMENT-AGENT] Calling GPT-5 with medium reasoning...');
     const completion = await openai.responses.create({
       model: 'gpt-5',
       input: prompt,
-      reasoning: { effort: 'high' },
-      text: { verbosity: 'high' }
+      reasoning: { effort: 'medium' },  // Reduced from 'high' - filling missing sections
+      text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
     });
 
     let responseText = completion.output_text || '{}';

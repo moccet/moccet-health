@@ -62,8 +62,8 @@ ${JSON.stringify(unifiedContext, null, 2)}
     const completion = await openai.responses.create({
       model: 'gpt-5',
       input: prompt,
-      reasoning: { effort: 'high' },
-      text: { verbosity: 'high' }
+      reasoning: { effort: 'high' },  // Keep high - complex exercise selection & personalization
+      text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
     });
 
     let responseText = completion.output_text || '{}';

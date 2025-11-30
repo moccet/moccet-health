@@ -76,7 +76,7 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
     model: 'gpt-5',
     input: `${systemPrompt}\n\n${prompt}`,
     reasoning: { effort: 'high' },
-    text: { verbosity: 'high' }
+    text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
   });
 
   let planContent = completion.output_text || '{}';

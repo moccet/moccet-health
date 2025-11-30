@@ -183,8 +183,200 @@ export default function PersonalisedPlanPage() {
           throw new Error(planData.error || 'Plan not found');
         }
 
+        // Debug: Log the plan structure
+        console.log('[Plan Structure] Full plan:', planData.plan);
+        console.log('[Plan Structure] Plan keys:', Object.keys(planData.plan || {}));
+
+        // Transform old plan structure to new structure if needed
+        let transformedPlan = planData.plan;
+
+        // Check if this is an old plan format (has nutrition_plan instead of nutritionOverview)
+        if (planData.plan && planData.plan.nutrition_plan && !planData.plan.nutritionOverview) {
+          console.log('[Plan Transform] Detected old plan format, transforming...');
+
+          // Helper to ensure array
+          const ensureArray = (val: any) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string') return [val];
+            if (!val) return [];
+            return [];
+          };
+
+          // Extract goals from string format "Main priority — physical — Driving goal — athletic"
+          const extractGoals = (goalsString: string) => {
+            if (!goalsString) return [];
+            // Split by — and clean up
+            return goalsString.split('—').map(g => g.trim()).filter(g => g && !g.startsWith('Main') && !g.startsWith('Driving'));
+          };
+
+          // Map old structure to new structure
+          const firstName = planData.plan.overview?.user?.split(' ')[0] || 'there';
+          const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+          transformedPlan = {
+            personalizedGreeting: `Welcome, ${capitalizedFirstName}`,
+            executiveSummary: planData.plan.overview?.interpretation || planData.plan.overview?.summary || '',
+            biomarkers: null,
+            nutritionOverview: {
+              goals: planData.plan.priority_areas?.map((p: any) => {
+                // Handle different priority area formats
+                if (typeof p === 'string') return p;
+                if (typeof p === 'object') return p.area || p.name || String(p);
+                return String(p);
+              }) || extractGoals(planData.plan.overview?.goals || ''),
+              nutritionStructure: {
+                calories: planData.plan.nutrition_plan?.macro_framework || 'Not specified',
+                protein: planData.plan.nutrition_plan?.protein_target || 'Not specified',
+                carbs: planData.plan.nutrition_plan?.carb_strategy || 'Not specified',
+                fiber: planData.plan.nutrition_plan?.fiber_target || 'Not specified',
+                fat: planData.plan.nutrition_plan?.fat_quality_shift || 'Not specified'
+              }
+            },
+            dailyRecommendations: {
+              morningRitual: planData.plan.nutrition_plan?.feeding_windows?.[0]
+                ? [
+                    planData.plan.nutrition_plan.feeding_windows[0].window,
+                    planData.plan.nutrition_plan.feeding_windows[0].rationale,
+                    planData.plan.nutrition_plan.feeding_windows[0].preworkout_within_window
+                  ].filter(Boolean)
+                : ensureArray(planData.plan.nutrition_plan?.morning_ritual),
+              empowerGut: planData.plan.nutrition_plan?.cholesterol_lowering_foods
+                ? [planData.plan.nutrition_plan.cholesterol_lowering_foods]
+                : ensureArray(planData.plan.nutrition_plan?.gut_health),
+              afternoonVitality: planData.plan.nutrition_plan?.feeding_windows?.[1]
+                ? [
+                    planData.plan.nutrition_plan.feeding_windows[1].rationale,
+                    planData.plan.nutrition_plan.feeding_windows[1].preworkout_within_window
+                  ].filter(Boolean)
+                : ensureArray(planData.plan.nutrition_plan?.afternoon_vitality),
+              energyOptimization: planData.plan.nutrition_plan?.feeding_windows?.[0]?.postworkout_within_window
+                ? [planData.plan.nutrition_plan.feeding_windows[0].postworkout_within_window]
+                : ensureArray(planData.plan.nutrition_plan?.pre_post_workout),
+              middayMastery: planData.plan.nutrition_plan?.macro_framework
+                ? [planData.plan.nutrition_plan.macro_framework]
+                : ensureArray(planData.plan.nutrition_plan?.meal_timing),
+              eveningNourishment: planData.plan.nutrition_plan?.iron_management_in_foods
+                ? [planData.plan.nutrition_plan.iron_management_in_foods]
+                : ensureArray(planData.plan.nutrition_plan?.evening_protocol)
+            },
+            micronutrientFocus: ensureArray(planData.plan.nutrition_plan?.micronutrients || planData.plan.targeted_interventions).map((item: any) => {
+              // Handle different micronutrient formats
+              if (item.nutrient && item.dailyGoal && item.foodSources) {
+                return item; // Already in correct format
+              }
+              // Transform old format from targeted_interventions: {title, actions, biomarker_links}
+              if (item.title && item.biomarker_links) {
+                return {
+                  nutrient: item.title,
+                  dailyGoal: Array.isArray(item.actions) ? item.actions.join('; ') : (item.actions || 'See plan details'),
+                  foodSources: item.biomarker_links
+                };
+              }
+              // Fallback for other formats
+              return {
+                nutrient: item.name || item.nutrient || 'Unknown',
+                dailyGoal: item.targets || item.target || item.dailyGoal || 'Not specified',
+                foodSources: item.evidence || item.sources || item.foodSources || 'Various sources'
+              };
+            }),
+            sampleMealPlan: planData.plan.nutrition_plan?.daily_meal_examples ?
+              // Convert array of meal examples to day-based structure
+              planData.plan.nutrition_plan.daily_meal_examples.reduce((acc: any, mealExample: any, idx: number) => {
+                const dayKey = `day${idx + 1}`;
+                // Parse meal string: "Meal Name — ingredient 1 — ingredient 2 — ..."
+                const mealParts = mealExample.meal?.split('—').map((p: string) => p.trim()) || [];
+                const mealName = mealParts[0] || `Meal ${idx + 1}`;
+                const ingredients = mealParts.slice(1).filter((i: string) => i.length > 0);
+
+                // Transform {meal, time, biomarker_targets} to proper meal structure
+                acc[dayKey] = {
+                  meals: [{
+                    time: mealExample.time || `Meal ${idx + 1}`,
+                    name: mealName,
+                    description: `${mealName} - ${mealExample.biomarker_targets || 'Optimized for your biomarkers'}`,
+                    macros: '', // Macros are embedded in biomarker_targets
+                    ingredients: ingredients.length > 0 ? ingredients : [mealExample.meal],
+                    cookingInstructions: mealExample.biomarker_targets ? [mealExample.biomarker_targets] : []
+                  }]
+                };
+                return acc;
+              }, {}) : {},
+            lifestyleIntegration: {
+              sleepOptimization: planData.plan.training_nutrition?.sleep || planData.plan.training_nutrition?.rest_days || 'Not specified',
+              exerciseProtocol: planData.plan.training_nutrition?.pre_training || planData.plan.training_nutrition?.training || 'Not specified',
+              stressManagement: planData.plan.training_nutrition?.post_training || planData.plan.training_nutrition?.recovery || 'Not specified'
+            },
+            preventiveFeatures: [
+              ...ensureArray(planData.plan.monitoring_plan?.self_tracking),
+              ...ensureArray(planData.plan.monitoring_plan?.biomarker_retests),
+              ...(planData.plan.monitoring_plan?.convergence_checks ? [planData.plan.monitoring_plan.convergence_checks] : [])
+            ],
+            supplementRecommendations: planData.plan.supplement_plan ? {
+              essentialSupplements: ensureArray(planData.plan.supplement_plan)
+                .filter((s: any) => {
+                  // Skip supplements that are "not indicated" or "already optimal"
+                  if (s.supplement?.toLowerCase().includes('not indicated')) return false;
+                  if (s.purpose?.toLowerCase().includes('already optimal')) return false;
+                  // Skip adjunct/optional supplements
+                  const purpose = (s.purpose || '').toLowerCase();
+                  if (purpose.includes('adjunct')) return false;
+                  // Categorize as essential if purpose contains strong action words
+                  return purpose.includes('reduce') || purpose.includes('lower') ||
+                         purpose.includes('raise') || purpose.includes('competitive inhibition');
+                })
+                .map((s: any) => {
+                  // Parse supplement string: "Name — dosage timing"
+                  const parts = s.supplement?.split('—').map((p: string) => p.trim()) || [];
+                  const name = parts[0] || s.supplement || 'Supplement';
+                  const dosageAndTiming = parts.slice(1).join(' ') || 'As directed';
+
+                  return {
+                    name: name,
+                    dosage: dosageAndTiming,
+                    timing: dosageAndTiming.includes('daily') ? dosageAndTiming : 'Daily with food',
+                    rationale: s.purpose || 'As recommended',
+                    benefits: s.biomarker_links || '',
+                    duration: 'Daily ongoing'
+                  };
+                }),
+              optionalSupplements: ensureArray(planData.plan.supplement_plan)
+                .filter((s: any) => {
+                  // Optional if it's adjunct support or curcumin-type supplements
+                  const purpose = (s.purpose || '').toLowerCase();
+                  return purpose.includes('adjunct') || purpose.includes('support');
+                })
+                .map((s: any) => {
+                  const parts = s.supplement?.split('—').map((p: string) => p.trim()) || [];
+                  const name = parts[0] || s.supplement || 'Supplement';
+                  const dosageAndTiming = parts.slice(1).join(' ') || 'As directed';
+
+                  return {
+                    name: name,
+                    dosage: dosageAndTiming,
+                    timing: dosageAndTiming.includes('daily') ? dosageAndTiming : 'Daily with food',
+                    rationale: s.purpose || 'As recommended',
+                    benefits: s.biomarker_links || '',
+                    duration: 'Daily ongoing'
+                  };
+                })
+            } : undefined
+          };
+
+          console.log('[Plan Transform] Transformed plan:', transformedPlan);
+          console.log('[Plan Transform] Transformed goals:', transformedPlan.nutritionOverview?.goals);
+          console.log('[Plan Transform] Transformed micronutrients:', transformedPlan.micronutrientFocus);
+          console.log('[Plan Transform] Transformed supplements:', transformedPlan.supplementRecommendations);
+          console.log('[Plan Transform] Essential supplements count:', transformedPlan.supplementRecommendations?.essentialSupplements?.length);
+          console.log('[Plan Transform] Optional supplements count:', transformedPlan.supplementRecommendations?.optionalSupplements?.length);
+          console.log('[Plan Transform] Original overview:', planData.plan.overview);
+          console.log('[Plan Transform] Original nutrition_plan:', planData.plan.nutrition_plan);
+          console.log('[Plan Transform] Original priority_areas:', planData.plan.priority_areas);
+          console.log('[Plan Transform] Original targeted_interventions:', planData.plan.targeted_interventions);
+          console.log('[Plan Transform] Original supplement_plan:', planData.plan.supplement_plan);
+        }
+
         // Set plan data
-        setPlan(planData.plan);
+        setPlan(transformedPlan);
         setPlanStatus(planData.status || 'completed');
 
         // Set blood analysis if available
@@ -214,10 +406,14 @@ export default function PersonalisedPlanPage() {
         }
         setLoadingLifestyle(false);
 
-        // Enrich supplements with product data if they exist
-        if (planData.plan?.supplementRecommendations) {
-          const essential = planData.plan.supplementRecommendations.essentialSupplements || [];
-          const optional = planData.plan.supplementRecommendations.optionalSupplements || [];
+        // Enrich supplements with product data if they exist (use transformedPlan for old format)
+        const planToCheck = transformedPlan.supplementRecommendations || planData.plan?.supplementRecommendations;
+        if (planToCheck) {
+          const essential = planToCheck.essentialSupplements || [];
+          const optional = planToCheck.optionalSupplements || [];
+
+          console.log('[Supplement Enrichment] Essential count:', essential.length);
+          console.log('[Supplement Enrichment] Optional count:', optional.length);
 
           if (essential.length > 0) {
             enrichSupplements(essential, 'essential');
@@ -357,38 +553,37 @@ export default function PersonalisedPlanPage() {
     return (
       <div className="plan-loading" style={{
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         minHeight: '100vh',
         background: '#f8f8f8',
-        padding: '20px'
+        padding: '80px 20px 20px'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '24px'
-          }}>
-            ⏳
-          </div>
           <h2 style={{
             fontSize: '32px',
             marginBottom: '16px',
-            color: '#2d3a2d',
-            fontWeight: 300
+            color: '#1a1a1a',
+            fontWeight: 400,
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+            letterSpacing: '-0.5px'
           }}>
             Your plan is being generated
           </h2>
           <p style={{
             fontSize: '18px',
             marginBottom: '12px',
-            color: '#666'
+            color: '#666',
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
           }}>
             We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
           </p>
           <p style={{
             fontSize: '16px',
             color: '#999',
-            marginTop: '24px'
+            marginTop: '24px',
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email when your plan is ready.
           </p>
@@ -396,7 +591,8 @@ export default function PersonalisedPlanPage() {
             fontSize: '14px',
             color: '#999',
             marginTop: '16px',
-            fontStyle: 'italic'
+            fontStyle: 'italic',
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
           }}>
             Feel free to close this page - we&apos;ll email you when it&apos;s complete!
           </p>
@@ -595,29 +791,31 @@ export default function PersonalisedPlanPage() {
       )}
 
       {/* Nutrition Plan Overview */}
-      <section className="plan-section">
-        <h2 className="section-title">Nutrition Plan Overview</h2>
-        <div className="overview-grid">
-          <div className="overview-column">
-            <h3 className="overview-heading">Goals</h3>
-            <ul className="goals-list">
-              {plan.nutritionOverview.goals.map((goal, idx) => (
-                <li key={idx}>{goal}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="overview-column">
-            <h3 className="overview-heading">Nutrition Structure</h3>
-            <div className="nutrition-structure">
-              <p><strong>Total Daily Calories:</strong> {plan.nutritionOverview.nutritionStructure.calories}</p>
-              <p><strong>Protein:</strong> {plan.nutritionOverview.nutritionStructure.protein}</p>
-              <p><strong>Carbs:</strong> {plan.nutritionOverview.nutritionStructure.carbs}</p>
-              <p><strong>Total Fiber:</strong> {plan.nutritionOverview.nutritionStructure.fiber}</p>
-              <p><strong>Fat:</strong> {plan.nutritionOverview.nutritionStructure.fat}</p>
+      {plan.nutritionOverview && (
+        <section className="plan-section">
+          <h2 className="section-title">Nutrition Plan Overview</h2>
+          <div className="overview-grid">
+            <div className="overview-column">
+              <h3 className="overview-heading">Goals</h3>
+              <ul className="goals-list">
+                {plan.nutritionOverview.goals?.map((goal, idx) => (
+                  <li key={idx}>{goal}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="overview-column">
+              <h3 className="overview-heading">Nutrition Structure</h3>
+              <div className="nutrition-structure">
+                <p><strong>Total Daily Calories:</strong> {plan.nutritionOverview.nutritionStructure?.calories}</p>
+                <p><strong>Protein:</strong> {plan.nutritionOverview.nutritionStructure?.protein}</p>
+                <p><strong>Carbs:</strong> {plan.nutritionOverview.nutritionStructure?.carbs}</p>
+                <p><strong>Total Fiber:</strong> {plan.nutritionOverview.nutritionStructure?.fiber}</p>
+                <p><strong>Fat:</strong> {plan.nutritionOverview.nutritionStructure?.fat}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Nutrition Divider Image */}
       <div className="nutrition-divider">
@@ -638,10 +836,11 @@ export default function PersonalisedPlanPage() {
       </div>
 
       {/* Daily Recommendations */}
-      <section className="plan-section">
-        <h2 className="section-title">Daily Recommendations</h2>
-        <div className="recommendations-grid">
-          {plan.dailyRecommendations.morningRitual && (
+      {plan.dailyRecommendations && (
+        <section className="plan-section">
+          <h2 className="section-title">Daily Recommendations</h2>
+          <div className="recommendations-grid">
+            {plan.dailyRecommendations.morningRitual && (
             <div className="recommendation-card">
               <h3>{plan.dailyRecommendations.morningRitual.title || 'Morning Ritual'}</h3>
               <ul>
@@ -778,6 +977,7 @@ export default function PersonalisedPlanPage() {
           )}
         </div>
       </section>
+      )}
 
       {/* Micronutrient Focus */}
       <section className="plan-section">
@@ -905,7 +1105,7 @@ export default function PersonalisedPlanPage() {
                 bloodAnalysis && bloodAnalysis.concerns?.length > 0
                   ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
                   : ''
-              }, your ${plan?.nutritionOverview?.goals?.[0]?.toLowerCase() || 'health goals'}, and your ${
+              }, your ${typeof plan?.nutritionOverview?.goals?.[0] === 'string' ? plan.nutritionOverview.goals[0].toLowerCase() : 'health goals'}, and your ${
                 plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
               }, these micronutrients are specifically chosen to support your optimal health and performance.`}
             </p>
@@ -922,9 +1122,9 @@ export default function PersonalisedPlanPage() {
                 <tbody>
                 {plan.micronutrientFocus.map((nutrient, idx) => (
                   <tr key={idx}>
-                    <td className="nutrient-name">{nutrient.nutrient}</td>
-                    <td className="nutrient-goal">{nutrient.dailyGoal}</td>
-                    <td className="nutrient-sources">{nutrient.foodSources}</td>
+                    <td className="nutrient-name">{typeof nutrient.nutrient === 'string' ? nutrient.nutrient : JSON.stringify(nutrient.nutrient)}</td>
+                    <td className="nutrient-goal">{typeof nutrient.dailyGoal === 'string' ? nutrient.dailyGoal : JSON.stringify(nutrient.dailyGoal)}</td>
+                    <td className="nutrient-sources">{typeof nutrient.foodSources === 'string' ? nutrient.foodSources : JSON.stringify(nutrient.foodSources)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1312,7 +1512,7 @@ export default function PersonalisedPlanPage() {
                       ? `, specifically targeting ${bloodAnalysis.concerns[0]?.toLowerCase()}`
                       : ''
                   }. Each meal is designed to meet your daily nutrition targets${
-                    plan?.nutritionOverview?.goals?.[0]
+                    plan?.nutritionOverview?.goals?.[0] && typeof plan.nutritionOverview.goals[0] === 'string'
                       ? ` and ${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, 'support ')}`
                       : ''
                   }, while respecting your ${plan?.lifestyleIntegration?.exerciseProtocol ? 'training schedule' : 'lifestyle preferences'} and eating window.`
@@ -1418,7 +1618,7 @@ export default function PersonalisedPlanPage() {
               <p className="lifestyle-intro">
                 {lifestyleIntegration?.personalizedIntro ||
                   `Your lifestyle plan is tailored to ${
-                    plan?.nutritionOverview?.goals?.[0]
+                    plan?.nutritionOverview?.goals?.[0] && typeof plan.nutritionOverview.goals[0] === 'string'
                       ? `${plan.nutritionOverview.goals[0].toLowerCase().replace(/^(improve|enhance|boost|increase|optimize)\s+/i, '')}`
                       : 'your health goals'
                   }${
@@ -1801,7 +2001,7 @@ export default function PersonalisedPlanPage() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : plan.lifestyleIntegration ? (
               <div className="lifestyle-content">
                 <div className="lifestyle-item">
                   <h3>Sleep Optimization Protocol:</h3>
@@ -1822,18 +2022,20 @@ export default function PersonalisedPlanPage() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </section>
 
           {/* Preventive & Adaptive Features */}
-          <section className="plan-section">
-            <h2 className="section-title">Preventive & Adaptive Features</h2>
-            <ul className="features-list">
-              {plan.preventiveFeatures.map((feature, idx) => (
-                <li key={idx}>{feature}</li>
-              ))}
-            </ul>
-          </section>
+          {plan.preventiveFeatures && (
+            <section className="plan-section">
+              <h2 className="section-title">Preventive & Adaptive Features</h2>
+              <ul className="features-list">
+                {plan.preventiveFeatures.map((feature, idx) => (
+                  <li key={idx}>{feature}</li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
 

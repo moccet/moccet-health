@@ -137,6 +137,7 @@ interface FitnessPlan {
     };
   };
   recoveryProtocol?: {
+    personalizedIntro?: string;
     dailyPractices?: string[];
     weeklyPractices?: string[];
     sleepOptimization?: string;
@@ -178,6 +179,7 @@ interface FitnessPlan {
     personalizedNotes?: string;
   };
   nutritionGuidance: {
+    personalizedIntro?: string;
     proteinTarget: string;
     calorieGuidance: string;
     mealTiming: string;
@@ -1798,6 +1800,19 @@ export default function PersonalisedPlanPage() {
           {/* Recovery Protocol */}
           <section className="plan-section">
             <h2 className="section-title">Recovery Protocol</h2>
+
+            {plan.recoveryProtocol?.personalizedIntro && (
+              <div className="personalized-intro" style={{
+                backgroundColor: '#f8f9fa',
+                padding: '15px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                borderLeft: '4px solid #007bff'
+              }}>
+                <p style={{ margin: 0, lineHeight: '1.6' }}>{plan.recoveryProtocol.personalizedIntro}</p>
+              </div>
+            )}
+
             <div className="recommendations-grid">
               <div className="recommendation-card">
                 <h3>Daily Practices</h3>
@@ -1837,6 +1852,19 @@ export default function PersonalisedPlanPage() {
           {/* Nutrition Guidance */}
           <section className="plan-section">
             <h2 className="section-title">Nutrition Guidance</h2>
+
+            {plan.nutritionGuidance.personalizedIntro && (
+              <div className="personalized-intro" style={{
+                backgroundColor: '#f8f9fa',
+                padding: '15px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                borderLeft: '4px solid #007bff'
+              }}>
+                <p style={{ margin: 0, lineHeight: '1.6' }}>{plan.nutritionGuidance.personalizedIntro}</p>
+              </div>
+            )}
+
             <div className="overview-grid">
               <div className="overview-column">
                 <h3 className="overview-heading">Protein Target</h3>

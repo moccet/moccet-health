@@ -639,7 +639,7 @@ export default function PersonalisedPlanPage() {
                         <strong>{item.category}:</strong> {item.guideline}
                         {item.reason && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}><em>Why:</em> {item.reason}</div>}
                         {item.examples && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#a0a0a0' }}><em>Examples:</em> {item.examples}</div>}
-                        {item.tip && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#90d9a0' }}><em>Tip:</em> {item.tip}</div>}
+                        {item.tip && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#000000' }}><em>Tip:</em> {item.tip}</div>}
                         {item.portion && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#a0a0a0' }}><em>Portion:</em> {item.portion}</div>}
                       </div>
                     )}
@@ -681,32 +681,32 @@ export default function PersonalisedPlanPage() {
             {micronutrients.cholesterolFocus && (
               <div style={{ marginBottom: '30px' }}>
                 <div style={{
-                  background: 'rgba(255, 100, 100, 0.1)',
-                  border: '2px solid rgba(255, 100, 100, 0.3)',
+                  background: 'rgba(0, 0, 0, 0.02)',
+                  border: '1px solid #e5e5e5',
                   padding: '20px',
                   borderRadius: '8px',
                   marginBottom: '20px'
                 }}>
-                  <h3 style={{ color: '#ff6b6b', marginBottom: '10px' }}>
-                    ⚠️ Cholesterol Management - {micronutrients.cholesterolFocus.priority} Priority
+                  <h3 style={{ color: '#000000', marginBottom: '10px', fontWeight: 'bold' }}>
+                    Cholesterol Management
                   </h3>
                   {micronutrients.cholesterolFocus.keyNutrients?.map((nutrient: any, idx: number) => (
                     <div key={idx} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: idx < micronutrients.cholesterolFocus.keyNutrients.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                      <h4 style={{ color: '#ffffff', marginBottom: '10px' }}>
-                        {nutrient.nutrient} - <span style={{ color: '#ff6b6b' }}>{nutrient.importance}</span>
+                      <h4 style={{ color: '#000000', marginBottom: '10px', fontWeight: '600' }}>
+                        {nutrient.nutrient} - {nutrient.importance}
                       </h4>
                       {nutrient.dailyGoal && <p><strong>Daily Goal:</strong> {nutrient.dailyGoal}</p>}
                       {nutrient.sources && (
                         <p><strong>Sources:</strong> {Array.isArray(nutrient.sources) ? nutrient.sources.join(', ') : nutrient.sources}</p>
                       )}
                       {nutrient.preparationTip && (
-                        <p style={{ color: '#90d9a0' }}><strong>💡 Tip:</strong> {nutrient.preparationTip}</p>
+                        <p style={{ color: '#000000' }}><strong>Tip:</strong> {nutrient.preparationTip}</p>
                       )}
                       {nutrient.storageNote && (
-                        <p style={{ color: '#ffd93d' }}><strong>📦 Storage:</strong> {nutrient.storageNote}</p>
+                        <p style={{ color: '#000000' }}><strong>Storage:</strong> {nutrient.storageNote}</p>
                       )}
                       {nutrient.tip && (
-                        <p style={{ color: '#90d9a0' }}><strong>💡 Tip:</strong> {nutrient.tip}</p>
+                        <p style={{ color: '#000000' }}><strong>Tip:</strong> {nutrient.tip}</p>
                       )}
                     </div>
                   ))}
@@ -720,8 +720,8 @@ export default function PersonalisedPlanPage() {
                 <h3 style={{ marginBottom: '15px' }}>Supplementation Guidance</h3>
                 <p style={{ marginBottom: '10px' }}><em>{micronutrients.supplementation.philosophy}</em></p>
                 {micronutrients.supplementation.optionalSupport && (
-                  <div style={{ marginTop: '15px', paddingLeft: '20px', borderLeft: '3px solid #90d9a0' }}>
-                    <h4 style={{ color: '#90d9a0', marginBottom: '10px' }}>
+                  <div style={{ marginTop: '15px', paddingLeft: '20px', borderLeft: '3px solid #e5e5e5' }}>
+                    <h4 style={{ color: '#000000', marginBottom: '10px', fontWeight: '600' }}>
                       Optional: {micronutrients.supplementation.optionalSupport.name}
                     </h4>
                     <p><strong>Purpose:</strong> {micronutrients.supplementation.optionalSupport.purpose}</p>
@@ -733,7 +733,7 @@ export default function PersonalisedPlanPage() {
                       <p><strong>When to use:</strong> {micronutrients.supplementation.optionalSupport.when}</p>
                     )}
                     {micronutrients.supplementation.optionalSupport.consultation && (
-                      <p style={{ color: '#ffd93d' }}><strong>⚠️ Note:</strong> {micronutrients.supplementation.optionalSupport.consultation}</p>
+                      <p style={{ color: '#000000' }}><strong>Note:</strong> {micronutrients.supplementation.optionalSupport.consultation}</p>
                     )}
                   </div>
                 )}
@@ -872,12 +872,21 @@ export default function PersonalisedPlanPage() {
                 <p>Generating biomarker-optimized meal plan...</p>
               </div>
             )}
-            <div className="meal-plan-grid">
-              {Object.keys(detailedMealPlan || plan.sampleMealPlan)
-                .filter(key => key !== 'profileSummary') // Skip the profile summary object
-                .map((dayKey, dayIdx) => {
-                const day = detailedMealPlan ? detailedMealPlan[dayKey] : plan.sampleMealPlan[dayKey];
-                if (!day || !day.meals) return null; // Safety check
+            {(() => {
+              // Use detailedMealPlan only if it has day data, otherwise fall back to plan.sampleMealPlan
+              const mealPlanData = (detailedMealPlan && Object.keys(detailedMealPlan).some(key => key.startsWith('day')))
+                ? detailedMealPlan
+                : plan?.sampleMealPlan;
+
+              if (!mealPlanData) return null;
+
+              return (
+                <div className="meal-plan-grid">
+                  {Object.keys(mealPlanData)
+                    .filter(key => key !== 'profileSummary' && key !== 'importantNotes') // Skip metadata
+                    .map((dayKey, dayIdx) => {
+                    const day = mealPlanData[dayKey];
+                    if (!day || !day.meals) return null; // Safety check
                 return (
                   <div key={dayKey} className="day-column">
                     <h3 className="day-title">Day {dayIdx + 1}</h3>
@@ -941,7 +950,9 @@ export default function PersonalisedPlanPage() {
                   </div>
                 );
               })}
-            </div>
+                </div>
+              );
+            })()}
           </section>
 
           {/* Lifestyle Integration */}
@@ -988,8 +999,8 @@ export default function PersonalisedPlanPage() {
                       <>
                         {lifestyleIntegration.sleep.currentQuality && (
                           <div style={{
-                            background: 'rgba(144, 217, 160, 0.1)',
-                            border: '2px solid rgba(144, 217, 160, 0.3)',
+                            background: 'rgba(0, 0, 0, 0.02)',
+                            border: '1px solid #e5e5e5',
                             padding: '15px',
                             borderRadius: '8px',
                             marginBottom: '20px'
@@ -1007,7 +1018,7 @@ export default function PersonalisedPlanPage() {
                         )}
                         {lifestyleIntegration.sleep.tip && (
                           <div className="lifestyle-text">
-                            <p style={{ color: '#90d9a0' }}>💡 {lifestyleIntegration.sleep.tip}</p>
+                            <p style={{ color: '#000000' }}>{lifestyleIntegration.sleep.tip}</p>
                           </div>
                         )}
                         {lifestyleIntegration.sleep.protectYourSleep && (
@@ -1071,8 +1082,8 @@ export default function PersonalisedPlanPage() {
                       <>
                         {lifestyleIntegration.exercise.currentSituation && (
                           <div style={{
-                            background: 'rgba(255, 200, 100, 0.1)',
-                            border: '2px solid rgba(255, 200, 100, 0.3)',
+                            background: 'rgba(0, 0, 0, 0.02)',
+                            border: '1px solid #e5e5e5',
                             padding: '15px',
                             borderRadius: '8px',
                             marginBottom: '20px'
@@ -1103,7 +1114,7 @@ export default function PersonalisedPlanPage() {
                               </ul>
                             )}
                             {lifestyleIntegration.exercise.monitoring.action && (
-                              <p style={{ marginTop: '10px', color: '#ffd93d' }}><strong>Action:</strong> {lifestyleIntegration.exercise.monitoring.action}</p>
+                              <p style={{ marginTop: '10px', color: '#000000' }}><strong>Action:</strong> {lifestyleIntegration.exercise.monitoring.action}</p>
                             )}
                           </div>
                         )}
@@ -1165,8 +1176,8 @@ export default function PersonalisedPlanPage() {
                     {/* Current Level */}
                     {lifestyleIntegration.stressManagement.currentLevel && (
                       <div style={{
-                        background: 'rgba(255, 200, 100, 0.1)',
-                        border: '2px solid rgba(255, 200, 100, 0.3)',
+                        background: 'rgba(0, 0, 0, 0.02)',
+                        border: '1px solid #e5e5e5',
                         padding: '15px',
                         borderRadius: '8px',
                         marginBottom: '20px'
@@ -1188,28 +1199,28 @@ export default function PersonalisedPlanPage() {
                         <p><strong>Key Strategies:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {lifestyleIntegration.stressManagement.primaryInterventions.map((intervention: any, idx: number) => (
-                          <div key={idx} style={{ marginBottom: '15px', paddingLeft: '15px', borderLeft: '3px solid #90d9a0' }}>
+                          <div key={idx} style={{ marginBottom: '15px', paddingLeft: '15px', borderLeft: '3px solid #e5e5e5' }}>
                             <p><strong>{intervention.intervention}</strong></p>
-                            <p style={{ fontSize: '0.95em', color: '#b3b3b3' }}>{intervention.description}</p>
+                            <p style={{ fontSize: '0.95em', color: '#666666' }}>{intervention.description}</p>
                             {intervention.frequency && (
-                              <p style={{ fontSize: '0.9em', color: '#90d9a0' }}>Frequency: {intervention.frequency}</p>
+                              <p style={{ fontSize: '0.9em', color: '#000000' }}>Frequency: {intervention.frequency}</p>
                             )}
                             {intervention.benefit && (
-                              <p style={{ fontSize: '0.9em', color: '#a0a0a0' }}>Benefit: {intervention.benefit}</p>
+                              <p style={{ fontSize: '0.9em', color: '#666666' }}>Benefit: {intervention.benefit}</p>
                             )}
                             {intervention.deskBoundAlternatives && intervention.deskBoundAlternatives.length > 0 && (
                               <div style={{ marginTop: '10px' }}>
                                 <p style={{ fontSize: '0.9em', fontWeight: 'bold' }}>Desk-Bound Alternatives:</p>
                                 <ul style={{ marginLeft: '20px', marginTop: '5px' }}>
                                   {intervention.deskBoundAlternatives.map((alt: string, altIdx: number) => (
-                                    <li key={altIdx} style={{ fontSize: '0.85em', color: '#c0c0c0' }}>{alt}</li>
+                                    <li key={altIdx} style={{ fontSize: '0.85em', color: '#666666' }}>{alt}</li>
                                   ))}
                                 </ul>
                               </div>
                             )}
                             {intervention.importantNote && (
-                              <p style={{ fontSize: '0.9em', color: '#ffd93d', marginTop: '10px' }}>
-                                💡 {intervention.importantNote}
+                              <p style={{ fontSize: '0.9em', color: '#000000', marginTop: '10px' }}>
+                                {intervention.importantNote}
                               </p>
                             )}
                           </div>
@@ -1260,8 +1271,8 @@ export default function PersonalisedPlanPage() {
 
                     {lifestyleIntegration.cholesterolManagement.primaryGoal && (
                       <div style={{
-                        background: 'rgba(255, 100, 100, 0.1)',
-                        border: '2px solid rgba(255, 100, 100, 0.3)',
+                        background: 'rgba(0, 0, 0, 0.02)',
+                        border: '1px solid #e5e5e5',
                         padding: '15px',
                         borderRadius: '8px',
                         marginBottom: '20px'

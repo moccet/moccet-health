@@ -455,6 +455,13 @@ CRITICAL REQUIREMENTS:
 5. When multiple data sources agree, explicitly state the convergence
 6. Never make generic recommendations - everything must be tied to their actual measurements
 
+FORMATTING REQUIREMENTS:
+- DO NOT use emojis (⚠️, 🔥, 💡, 🧊, etc.) anywhere in your output
+- DO NOT use colored text, HTML tags, or markdown color formatting
+- DO NOT use priority labels like "HIGH Priority", "CRITICAL", "URGENT", etc.
+- Use professional, clean, plain text only
+- All content must be simple and readable without visual embellishments
+
 Your output will be reviewed for:
 - Data citation density (every recommendation should have 2-3 supporting data points)
 - Cross-source integration (using multiple data sources together)

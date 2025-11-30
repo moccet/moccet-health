@@ -1,9 +1,9 @@
 /* Plan Container */
 .plan-container {
   min-height: 100vh;
-  background: #1a1a1a;
+  background: #ffffff;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
-  color: #e5e5e5;
+  color: #1a1a1a;
 }
 
 /* Mobile: Add padding to bottom for bottom bar */
@@ -80,7 +80,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 72px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   letter-spacing: -2px;
   margin-bottom: 16px;
   line-height: 1.1;
@@ -89,7 +89,7 @@
 .plan-subtitle {
   font-size: 24px;
   font-weight: 400;
-  color: #b3b3b3;
+  color: #000000;
   margin: 0;
 }
 
@@ -113,7 +113,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 48px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
   line-height: 1.2;
   letter-spacing: -0.5px;
@@ -124,14 +124,14 @@
   font-size: 28px;
   font-weight: 400;
   font-style: italic;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   line-height: 1.3;
 }
 
 .intro-text {
   font-size: 16px;
-  color: #ffffff;
+  color: #1a1a1a;
   line-height: 1.7;
   max-width: 900px;
   margin-bottom: 0;
@@ -141,7 +141,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 42px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   letter-spacing: -0.5px;
   line-height: 1.2;
@@ -154,7 +154,7 @@
 
 .insights-subtitle {
   font-size: 16px;
-  color: #999;
+  color: #000000;
   margin-bottom: 32px;
   line-height: 1.6;
 }
@@ -175,7 +175,7 @@
 }
 
 .insights-loading p {
-  color: #999;
+  color: #000000;
   font-size: 14px;
   font-style: italic;
 }
@@ -192,21 +192,21 @@
   display: inline-block;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
 }
 
 .insight-title {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   line-height: 1.4;
 }
 
 .insight-text {
   font-size: 15px;
-  color: #b3b3b3;
+  color: #000000;
   line-height: 1.7;
   margin-bottom: 12px;
   line-height: 1.5;
@@ -220,7 +220,7 @@
 .executive-summary p {
   font-size: 16px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -237,14 +237,22 @@
   font-size: 28px;
   font-weight: 400;
   margin-bottom: 32px;
-  color: #ffffff;
+  color: #1a1a1a;
   letter-spacing: -0.5px;
+}
+
+.overview-column p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  margin-bottom: 16px;
 }
 
 .overview-heading {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
+  color: #1a1a1a;
 }
 
 .goals-list {
@@ -256,7 +264,7 @@
 .goals-list li {
   font-size: 16px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 20px;
   padding-left: 0;
   position: relative;
@@ -269,7 +277,7 @@
 .nutrition-structure p {
   font-size: 16px;
   line-height: 1.8;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -309,14 +317,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   border: 1px solid #1a1a1a;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
 }
 
 .recommendation-card {
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   padding: 32px;
-  border-right: 1px solid #1a1a1a;
-  border-bottom: 1px solid #1a1a1a;
+  border-right: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e5e5;
   min-height: 200px;
 }
 
@@ -339,7 +347,7 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 20px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 20px;
   line-height: 1.3;
 }
@@ -353,7 +361,7 @@
 .recommendation-card li {
   font-size: 14px;
   line-height: 1.7;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   padding-left: 20px;
   position: relative;
@@ -363,7 +371,7 @@
   content: '•';
   position: absolute;
   left: 0;
-  color: #ffffff;
+  color: #1a1a1a;
   font-size: 16px;
 }
 
@@ -380,20 +388,20 @@
 }
 
 .micronutrient-table thead {
-  background: rgba(255,255,255,0.02);
+  background: rgba(0,0,0,0.015);
 }
 
 .micronutrient-table th {
   text-align: left;
   padding: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   border-bottom: 2px solid #e0e0e0;
 }
 
 .micronutrient-table td {
   padding: 16px;
-  color: #2d2d2d;
+  color: #000000;
   border-bottom: 1px solid #e5e5e5;
 }
 
@@ -438,6 +446,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 32px;
   margin-top: 32px;
+  align-items: start;
 }
 
 /* First 3 days in first row, remaining 4 days in second row */
@@ -446,7 +455,7 @@
 }
 
 .day-column {
-  background: rgba(255,255,255,0.02);
+  background: rgba(0,0,0,0.015);
   padding: 24px;
   border-radius: 6px;
   border: 1px solid #e5e5e5;
@@ -456,7 +465,7 @@
   font-family: "Inter", sans-serif;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 24px;
   text-align: center;
 }
@@ -468,7 +477,7 @@
 }
 
 .meal-card {
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   padding: 16px;
   border-radius: 4px;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -492,7 +501,7 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #999;
+  color: #000000;
   margin-bottom: 8px;
 }
 
@@ -506,27 +515,27 @@
 .meal-name {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 8px;
 }
 
 .meal-description {
   font-size: 13px;
   line-height: 1.5;
-  color: #b3b3b3;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .meal-macros {
   font-size: 11px;
-  color: #999;
+  color: #000000;
   font-weight: 500;
   margin-bottom: 8px;
 }
 
 .meal-meta {
   font-size: 11px;
-  color: #999;
+  color: #000000;
   margin-bottom: 6px;
 }
 
@@ -555,7 +564,7 @@
     font-size: 14px;
     padding: 16px 20px;
     margin: -12px -18px 0 -18px;
-    background: rgba(255,255,255,0.02);
+    background: rgba(0,0,0,0.015);
   }
 
   .meal-details summary:active {
@@ -564,7 +573,7 @@
 
   .meal-details[open] summary {
     background: #2d3a2d;
-    color: #ffffff;
+    color: #1a1a1a;
     border-radius: 4px 4px 0 0;
   }
 }
@@ -595,7 +604,7 @@
     font-size: 14px;
     padding: 16px 20px;
     margin: 0 -18px;
-    background: rgba(255,255,255,0.03);
+    background: rgba(0,0,0,0.02);
     border: 1px solid #e5e5e5;
     border-top: none;
     border-radius: 0 0 4px 4px;
@@ -606,7 +615,7 @@
   font-size: 12px;
   font-weight: 600;
   margin: 12px 0 8px;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Mobile: Larger recipe headings */
@@ -625,7 +634,7 @@
 .instructions-list {
   margin: 0;
   padding-left: 20px;
-  color: #b3b3b3;
+  color: #000000;
   line-height: 1.6;
 }
 
@@ -652,7 +661,7 @@
 .meal-plan-loading {
   text-align: center;
   padding: 20px;
-  color: #999;
+  color: #000000;
   font-size: 14px;
   font-style: italic;
 }
@@ -667,14 +676,14 @@
 .lifestyle-item h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
 }
 
 .lifestyle-item p {
   font-size: 15px;
   line-height: 1.8;
-  color: #b3b3b3;
+  color: #000000;
 }
 
 /* Features List */
@@ -687,7 +696,7 @@
 .features-list li {
   font-size: 15px;
   line-height: 1.8;
-  color: #2d2d2d;
+  color: #000000;
   margin-bottom: 16px;
   padding-left: 28px;
   position: relative;
@@ -711,14 +720,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
   line-height: 1.3;
 }
 
 .waitlist-subtitle {
   font-size: 18px;
-  color: #b3b3b3;
+  color: #000000;
   margin-bottom: 40px;
 }
 
@@ -730,7 +739,7 @@
 
 .qr-box {
   padding: 20px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -749,13 +758,13 @@
 .plan-footer p {
   font-size: 12px;
   line-height: 1.6;
-  color: #999;
+  color: #000000;
   margin-bottom: 16px;
 }
 
 .footer-brand {
   font-size: 11px;
-  color: #999;
+  color: #000000;
   font-style: italic;
 }
 
@@ -805,7 +814,7 @@
   font-size: 18px;
   font-weight: 500;
   font-stretch: expanded;
-  color: #999;
+  color: #000000;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
@@ -862,7 +871,7 @@
 /* Error State */
 .plan-error {
   min-height: 100vh;
-  background: #1a1a1a;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -875,20 +884,20 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
 .plan-error p {
   font-size: 16px;
-  color: #999;
+  color: #000000;
   margin-bottom: 32px;
 }
 
 .plan-error button {
   padding: 12px 32px;
   background: #2d3a2d;
-  color: #ffffff;
+  color: #1a1a1a;
   border: none;
   border-radius: 4px;
   font-size: 15px;
@@ -952,7 +961,7 @@
   /* Reset all borders for single column */
   .recommendation-card {
     border-right: none;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid #e5e5e5;
   }
 
   .recommendation-card:last-child {
@@ -1025,7 +1034,7 @@
 .blood-summary {
   margin-bottom: 40px;
   padding: 24px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 12px;
   border-left: 4px solid #2563eb;
 }
@@ -1034,14 +1043,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 28px;
   font-weight: 500;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
 .summary-text {
   font-size: 16px;
   line-height: 1.7;
-  color: #b3b3b3;
+  color: #000000;
 }
 
 /* Biomarkers Grid */
@@ -1096,7 +1105,7 @@
 .biomarker-name {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin: 0;
 }
 
@@ -1140,7 +1149,7 @@
 .biomarker-value .value {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .biomarker-value .reference-range {
@@ -1152,7 +1161,7 @@
 .biomarker-implications {
   font-size: 14px;
   line-height: 1.6;
-  color: #b3b3b3;
+  color: #000000;
   margin: 8px 0;
 }
 
@@ -1214,7 +1223,7 @@
 
 /* Recommendations Section */
 .recommendations-section {
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   padding: 32px;
   border-radius: 12px;
   margin-bottom: 32px;
@@ -1231,7 +1240,7 @@
 .recommendation-group h4 {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
 }
 
@@ -1245,7 +1254,7 @@
   padding: 10px 0 10px 24px;
   font-size: 15px;
   line-height: 1.6;
-  color: #b3b3b3;
+  color: #000000;
   position: relative;
 }
 
@@ -1263,7 +1272,7 @@
   background: transparent;
   border-radius: 8px;
   font-size: 15px;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Personalized Notes */
@@ -1324,14 +1333,14 @@
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
   font-size: 36px;
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
 
 .blood-metrics-section .section-subtitle {
   font-size: 16px;
-  color: #b3b3b3;
+  color: #000000;
   margin-bottom: 40px;
   font-weight: 400;
 }
@@ -1344,7 +1353,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 18px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(0,0,0,0.015);
 }
 
 .biomarkers-table thead {
@@ -1355,7 +1364,7 @@
   text-align: left;
   padding: 12px 24px;
   font-weight: 400;
-  color: #999;
+  color: #000000;
   font-size: 16px;
   background: transparent;
 }
@@ -1370,13 +1379,13 @@
 
 .biomarkers-table td {
   padding: 12px 24px;
-  color: #ffffff;
+  color: #1a1a1a;
   font-weight: 400;
 }
 
 .biomarker-name {
   font-weight: 400;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .biomarker-value {
@@ -1384,7 +1393,7 @@
 }
 
 .biomarker-range {
-  color: #999;
+  color: #000000;
 }
 
 .biomarker-status {
@@ -1442,7 +1451,7 @@
 
 /* Profile Summary Card */
 .profile-summary-card {
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
@@ -1451,7 +1460,7 @@
 .profile-summary-title {
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 16px;
 }
 
@@ -1470,14 +1479,14 @@
 .profile-summary-label {
   font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: #000000;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .profile-summary-value {
   font-size: 15px;
-  color: #ffffff;
+  color: #1a1a1a;
   line-height: 1.5;
 }
 
@@ -1527,7 +1536,7 @@
 
 .meal-tag {
   padding: 3px 8px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   color: #374151;
   border-radius: 12px;
   font-size: 11px;
@@ -1560,10 +1569,10 @@
 .lifestyle-intro {
   font-size: 16px;
   line-height: 1.7;
-  color: #b3b3b3;
+  color: #000000;
   margin-bottom: 32px;
   padding: 20px 24px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 4px;
   max-width: 900px;
 }
@@ -1582,7 +1591,7 @@
 /* Micronutrient Table Enhancements */
 .nutrient-name {
   font-weight: 500;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .nutrient-goal {
@@ -1632,7 +1641,7 @@
 /* Lifestyle Integration Section */
 .lifestyle-section {
   padding: 60px 24px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
 }
 
 .lifestyle-loading {
@@ -1659,7 +1668,7 @@
   font-family: "Playfair Display", Georgia, serif;
   font-size: 32px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   margin-bottom: 12px;
   line-height: 1.3;
 }
@@ -1669,7 +1678,7 @@
   font-size: 18px;
   font-weight: 400;
   font-style: italic;
-  color: #999;
+  color: #000000;
   margin-bottom: 24px;
   line-height: 1.5;
 }
@@ -1692,7 +1701,7 @@
 
 .lifestyle-text strong {
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 /* Workout Split */
@@ -1705,7 +1714,7 @@
 
 .workout-day {
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 6px;
   font-size: 14px;
   color: #374151;
@@ -1726,7 +1735,7 @@
 
 .practice-item {
   padding: 12px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.02);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -1806,7 +1815,7 @@
   top: 0;
   height: 100vh;
   width: 100px;
-  background: rgba(0,0,0,0.4);
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
@@ -1814,12 +1823,13 @@
   justify-content: center;
   gap: 32px;
   z-index: 100;
-  border-left: 1px solid rgba(255,255,255,0.1);
+  border-left: 1px solid rgba(0,0,0,0.1);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar-icon-button {
   background: transparent;
-  color: #e5e5e5;
+  color: #1a1a1a;
   border: none;
   padding: 12px;
   cursor: pointer;
@@ -1833,8 +1843,8 @@
 }
 
 .sidebar-icon-button:hover {
-  background: rgba(255,255,255,0.08);
-  color: #ffffff;
+  background: rgba(0,0,0,0.05);
+  color: #000000;
 }
 
 .sidebar-icon-button svg {
@@ -1857,10 +1867,10 @@
     justify-content: center;
     gap: 0;
     border-left: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: rgba(0,0,0,0.6);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     padding: 8px 0;
   }
 
@@ -1871,7 +1881,7 @@
   }
 
   .sidebar-icon-button:active {
-    background: rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.08);
   }
 
   .sidebar-icon-button svg {
@@ -1894,10 +1904,10 @@
     justify-content: center;
     gap: 16px;
     border-left: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    background: rgba(0,0,0,0.6);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     padding: 12px 0;
   }
 
@@ -1944,7 +1954,7 @@
 
   /* Make first column (titles) stand out on mobile */
   table tbody tr td:first-child {
-    background: #1a1a1a;
+    background: #ffffff;
     font-weight: 600;
     font-size: 14px;
   }

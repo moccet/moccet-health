@@ -108,6 +108,13 @@ INSTRUCTIONS:
 7. Explain biomarker rationale for each recommendation
 8. Account for dietary preferences, allergies, and restrictions
 
+FORMATTING REQUIREMENTS:
+- DO NOT use emojis (⚠️, 🔥, 💡, etc.) anywhere in the output
+- DO NOT use colored text or HTML/markdown color formatting
+- DO NOT use priority labels like "HIGH Priority", "CRITICAL", etc.
+- Use professional, clean text only
+- Keep all content simple and readable
+
 BIOMARKER OPTIMIZATION GUIDELINES:
 - High LDL/Total Cholesterol → Emphasize soluble fiber, omega-3s, plant sterols; reduce saturated fat
 - High Triglycerides → Reduce refined carbs, increase omega-3s, moderate alcohol

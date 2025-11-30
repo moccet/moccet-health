@@ -90,8 +90,22 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
   }
   planContent = planContent.trim();
 
-  const plan = JSON.parse(planContent);
-  console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
+  // Additional JSON sanitization to handle common GPT formatting issues
+  // Remove any trailing commas before closing braces/brackets
+  planContent = planContent.replace(/,(\s*[}\]])/g, '$1');
+  // Remove JavaScript-style comments (// and /* */)
+  planContent = planContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  let plan;
+  try {
+    plan = JSON.parse(planContent);
+    console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
+  } catch (parseError) {
+    console.error('[FORGE-PLAN] ❌ Failed to parse GPT-5 response as JSON:', parseError);
+    console.error('[FORGE-PLAN] First 500 chars of response:', planContent.substring(0, 500));
+    console.error('[FORGE-PLAN] Last 200 chars of response:', planContent.substring(Math.max(0, planContent.length - 200)));
+    throw new Error(`Failed to parse fitness plan from GPT-5: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+  }
 
   return {
     success: true,
@@ -554,25 +568,53 @@ async function handler(request: NextRequest) {
     // Merge all specialized agent results into the comprehensive plan
     console.log('[4/7] Merging all agent results into comprehensive plan...');
 
+    // IMPORTANT: Prioritize specialized agent outputs over base plan
+    // Only keep metadata from base plan (profile, insights, safety flags)
     const enhancedPlan = {
-      ...basePlan,
-      // Training program from specialized agent
-      ...(trainingResult.success && trainingResult.weeklyProgram && {
-        weeklyProgram: trainingResult.weeklyProgram
-      }),
-      // Nutrition guidance from specialized agent
-      ...(nutritionResult.success && nutritionResult.nutritionGuidance && {
-        nutritionGuidance: nutritionResult.nutritionGuidance
-      }),
-      // Progress tracking and injury prevention from recovery agent
-      ...(recoveryResult.success && {
-        ...(recoveryResult.progressTracking && { progressTracking: recoveryResult.progressTracking }),
-        ...(recoveryResult.injuryPrevention && { injuryPrevention: recoveryResult.injuryPrevention })
-      }),
-      // Adaptive features from adaptation agent
-      ...(adaptationResult.success && adaptationResult.adaptiveFeatures && {
-        adaptiveFeatures: adaptationResult.adaptiveFeatures
-      })
+      // Keep base plan metadata and context
+      profile: basePlan.profile,
+      insights: basePlan.insights,
+      assumptions: basePlan.assumptions,
+      safety_flags: basePlan.safety_flags,
+      contingencies: basePlan.contingencies,
+      data_status: basePlan.data_status,
+      data_gaps_and_requests: basePlan.data_gaps_and_requests,
+      cross_source_integration_notes: basePlan.cross_source_integration_notes,
+      next_steps_week_0: basePlan.next_steps_week_0,
+      derived_metrics: basePlan.derived_metrics,
+
+      // Use specialized agent outputs (these are properly structured for frontend)
+      weeklyProgram: trainingResult.success && trainingResult.weeklyProgram ?
+        (trainingResult.weeklyProgram.weeklyProgram || trainingResult.weeklyProgram) : undefined,
+
+      nutritionGuidance: nutritionResult.success && nutritionResult.nutritionGuidance ?
+        (nutritionResult.nutritionGuidance.nutritionGuidance || nutritionResult.nutritionGuidance) : undefined,
+
+      progressTracking: recoveryResult.success && recoveryResult.progressTracking ?
+        recoveryResult.progressTracking : undefined,
+
+      injuryPrevention: recoveryResult.success && recoveryResult.injuryPrevention ?
+        recoveryResult.injuryPrevention : undefined,
+
+      adaptiveFeatures: adaptationResult.success && adaptationResult.adaptiveFeatures ?
+        (adaptationResult.adaptiveFeatures.adaptiveFeatures || adaptationResult.adaptiveFeatures) : undefined,
+
+      // Map supplements from nutrition agent (properly structured)
+      supplementRecommendations: nutritionResult.success && nutritionResult.nutritionGuidance?.supplements ? {
+        essentialSupplements: nutritionResult.nutritionGuidance.supplements.filter((s: any) =>
+          ['Omega-3', 'EPA/DHA', 'Fish Oil', 'Vitamin D', 'Vitamin D3', 'Magnesium'].some(name =>
+            s.name.includes(name)
+          )
+        ),
+        optionalSupplements: nutritionResult.nutritionGuidance.supplements.filter((s: any) =>
+          !['Omega-3', 'EPA/DHA', 'Fish Oil', 'Vitamin D', 'Vitamin D3', 'Magnesium'].some(name =>
+            s.name.includes(name)
+          )
+        )
+      } : undefined,
+
+      // Keep the raw base plan data for reference (nested under 'plan')
+      plan: basePlan.plan
     };
 
     console.log('[OK] Comprehensive plan assembled with all specialized sections');
@@ -585,6 +627,57 @@ async function handler(request: NextRequest) {
     console.log('[DEBUG] Has injuryPrevention:', !!enhancedPlan.injuryPrevention);
     console.log('[DEBUG] Has adaptiveFeatures:', !!enhancedPlan.adaptiveFeatures);
     console.log('[DEBUG] Has sleep_recovery_protocol:', !!enhancedPlan.sleep_recovery_protocol);
+
+    // Call content enrichment agent to fill empty/placeholder sections
+    console.log('[4.5/7] Running content enrichment agent to fill empty sections...');
+    try {
+      const enrichmentResult = await fetch(`${baseUrl}/api/forge-enrich-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: enhancedPlan,
+          userProfile,
+          biomarkers,
+          unifiedContext
+        })
+      }).then(res => res.json()).catch(err => {
+        console.error('[ENRICHMENT-AGENT] Error:', err);
+        return { success: false };
+      });
+
+      if (enrichmentResult.success && enrichmentResult.enrichedSections) {
+        console.log(`[ENRICHMENT-AGENT] ✅ Enriched ${enrichmentResult.issuesFound} sections`);
+
+        // Merge enriched content into the plan
+        if (enrichmentResult.enrichedSections.trainingPhilosophy) {
+          enhancedPlan.trainingPhilosophy = {
+            ...enhancedPlan.trainingPhilosophy,
+            ...enrichmentResult.enrichedSections.trainingPhilosophy
+          };
+        }
+
+        if (enrichmentResult.enrichedSections.weeklyStructure) {
+          enhancedPlan.weeklyStructure = {
+            ...enhancedPlan.weeklyStructure,
+            ...enrichmentResult.enrichedSections.weeklyStructure
+          };
+        }
+
+        if (enrichmentResult.enrichedSections.nutritionGuidance) {
+          enhancedPlan.nutritionGuidance = {
+            ...enhancedPlan.nutritionGuidance,
+            ...enrichmentResult.enrichedSections.nutritionGuidance
+          };
+        }
+
+        console.log('[ENRICHMENT-AGENT] Merged enriched content into plan');
+      } else {
+        console.log('[ENRICHMENT-AGENT] No enrichment needed or agent failed');
+      }
+    } catch (error) {
+      console.error('[ENRICHMENT-AGENT] Non-fatal error during enrichment:', error);
+      // Continue even if enrichment fails - it's not critical
+    }
 
     // Store the generated plan
     console.log('[5/7] Storing comprehensive fitness plan...');

@@ -27,13 +27,19 @@ interface Cart {
 interface ShoppingCartProps {
   userEmail: string;
   planCode?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps) {
+export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIsOpen, onClose }: ShoppingCartProps) {
   const router = useRouter();
   const [cart, setCart] = useState<Cart | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = onClose ? onClose : setInternalIsOpen;
 
   // Fetch cart
   const fetchCart = async () => {
@@ -110,35 +116,6 @@ export default function ShoppingCart({ userEmail, planCode }: ShoppingCartProps)
 
   return (
     <>
-      {/* Floating Cart Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bg-white text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all z-50 lg:bottom-8 bottom-24"
-        style={{
-          right: typeof window !== 'undefined' && window.innerWidth >= 1025 ? 'calc(100px + 2rem)' : '2rem'
-        }}
-      >
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="9" cy="21" r="1"/>
-          <circle cx="20" cy="21" r="1"/>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-        </svg>
-        {cart.itemCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {cart.itemCount}
-          </span>
-        )}
-      </button>
-
       {/* Cart Drawer */}
       {isOpen && (
         <>

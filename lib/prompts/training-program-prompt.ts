@@ -134,5 +134,50 @@ Return ONLY valid JSON matching this exact structure:
 - **Practical**: Exercises should be executable with available equipment
 - **Form Cues**: Include brief form reminders to prevent injury
 
-Generate the complete 7-day program now.`;
+## CRITICAL: USE PLAIN LANGUAGE - NO JARGON
+
+**AVOID** technical fitness terminology that laypeople won't understand:
+- ❌ DON'T use: "RPE 7-8", "RPE", "Rate of Perceived Exertion"
+- ✅ DO use: "Moderately hard - you should be able to do 2-3 more reps if you had to"
+
+- ❌ DON'T use: "Tempo 3-1-1", "2-0-2", tempo codes
+- ✅ DO use: "Lower slowly for 3 seconds, pause 1 second, lift in 1 second" (write it out)
+
+- ❌ DON'T use: "HRV", "rmSSD", "lnRMSSD"
+- ✅ DO use: "Heart Rate Variability (a measure of recovery)" - explain abbreviations
+
+- ❌ DON'T use: "DOMS"
+- ✅ DO use: "Muscle soreness"
+
+- ❌ DON'T use: "NEAT"
+- ✅ DO use: "Daily movement and activity"
+
+- ❌ DON'T use: "Zone 2", "HRmax", "60-70% HRmax"
+- ✅ DO use: "Easy cardio pace - you should be able to hold a conversation comfortably"
+
+- ❌ DON'T use: "sRPE", "session RPE"
+- ✅ DO use: "How hard the workout felt (on a scale of 1-10)"
+
+- ❌ DON'T use: "Eccentric", "Concentric"
+- ✅ DO use: "Lowering phase", "Lifting phase"
+
+- ❌ DON'T use: "Sympathetic tone", "parasympathetic"
+- ✅ DO use: "Stress response", "relaxation response"
+
+**For intensity levels**, use these plain descriptions:
+- "Easy - barely challenging, could do many more reps"
+- "Moderate - somewhat challenging, could do 5-6 more reps"
+- "Moderately hard - challenging, could do 2-3 more reps if pushed"
+- "Hard - very challenging, could maybe do 1 more rep"
+- "Maximum - couldn't do another rep"
+
+**For tempo**, write it out in full:
+- Instead of "3-1-1": "Lower for 3 seconds, pause 1 second at the bottom, lift in 1 second"
+- Instead of "2-0-2": "Lower for 2 seconds, no pause, lift for 2 seconds"
+
+**For metrics**, explain what they mean:
+- "Heart Rate Variability (HRV) - a measure of how well your body is recovering"
+- "Resting Heart Rate - your pulse when you first wake up, before getting out of bed"
+
+Generate the complete 7-day program now using ONLY plain, accessible language that any beginner can understand.`;
 }

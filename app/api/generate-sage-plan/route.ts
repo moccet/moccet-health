@@ -306,6 +306,28 @@ Generate a JSON response with the following structure:
     "stressManagement": "Stress management paragraph",
     "skinImprovement": "Skin health paragraph if relevant to their goals"
   },
+  "supplementRecommendations": {
+    "essentialSupplements": [
+      {
+        "name": "Supplement name (e.g., Omega-3 Fish Oil, Vitamin D3, Magnesium Glycinate)",
+        "dosage": "Specific dosage with units (e.g., 2000mg EPA/DHA, 5000 IU, 400mg)",
+        "timing": "When to take it (e.g., With breakfast, Before bed, Post-workout)",
+        "rationale": "Why this supplement is essential for this user based on their biomarkers, goals, or deficiencies",
+        "benefits": "Expected benefits specific to their health priorities",
+        "duration": "How long to supplement (e.g., Daily ongoing, 8-12 weeks then retest, Seasonal support)"
+      }
+    ],
+    "optionalSupplements": [
+      {
+        "name": "Optional supplement name",
+        "dosage": "Specific dosage with units",
+        "timing": "When to take it",
+        "rationale": "Why this could be beneficial but is not essential",
+        "benefits": "Potential additional benefits",
+        "duration": "Recommended duration"
+      }
+    ]
+  },
   "preventiveFeatures": [
     "Calendar-integrated meal reminders description",
     "Water/sleep/training tracking description",
@@ -321,6 +343,17 @@ IMPORTANT:
 - Align with their eating style (${formData.eatingStyle})
 - Time meals around their first meal preference (${formData.firstMeal})
 - Address their main health priority: ${formData.mainPriority}
+
+SUPPLEMENT RECOMMENDATIONS REQUIREMENTS:
+- Provide 2-4 essential supplements that are foundational for this user's health profile
+- Essential supplements should target verified deficiencies (from biomarkers) OR core foundational needs (Omega-3, Vitamin D, Magnesium)
+- Provide 1-3 optional supplements that could enhance their specific goals but aren't critical
+- Each supplement MUST have: specific name, precise dosage with units, timing recommendation, clear rationale tied to their data/goals, expected benefits, and duration guidance
+- Focus on supplements that complement their nutrition plan, not replace whole food nutrition
+- If they have uploaded lab results showing specific deficiencies, prioritize those
+- Common essential supplements to consider: Omega-3 (EPA/DHA), Vitamin D3, Magnesium Glycinate, Methylated B-Complex
+- Optional supplements based on goals: Creatine (performance), Ashwagandha (stress), Rhodiola (energy), Curcumin (inflammation)
+- Be conservative — only recommend what's truly beneficial for THEIR specific situation
 
 FORMATTING:
 - DO NOT use colons (:) ANYWHERE in the plan - not for labels, titles, or in sentences

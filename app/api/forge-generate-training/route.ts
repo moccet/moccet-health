@@ -58,12 +58,12 @@ ${JSON.stringify(unifiedContext, null, 2)}
       prompt = basePrompt + contextEnrichment;
     }
 
-    console.log('[TRAINING-AGENT] Calling GPT-5 with high reasoning...');
+    console.log('[TRAINING-AGENT] Calling GPT-5 with medium reasoning...');
     const completion = await openai.responses.create({
       model: 'gpt-5',
       input: prompt,
-      reasoning: { effort: 'high' },  // Keep high - complex exercise selection & personalization
-      text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
+      reasoning: { effort: 'medium' },  // Medium to prevent timeout - training is complex but structured
+      text: { verbosity: 'medium' }
     });
 
     let responseText = completion.output_text || '{}';
@@ -77,16 +77,37 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const weeklyProgram = JSON.parse(responseText);
+    const aiResponse = JSON.parse(responseText);
+
+    // Extract all training sections from AI response
+    const executiveSummary = aiResponse.executiveSummary;
+    const weeklyProgram = aiResponse.weeklyProgram || aiResponse;
+    const trainingPhilosophy = aiResponse.trainingPhilosophy;
+    const weeklyStructure = aiResponse.weeklyStructure;
+
     console.log('[TRAINING-AGENT] ✅ Training program generated successfully');
+    console.log('[TRAINING-AGENT] Has executiveSummary:', !!executiveSummary);
+    console.log('[TRAINING-AGENT] Has weeklyProgram:', !!weeklyProgram);
+    console.log('[TRAINING-AGENT] Has trainingPhilosophy:', !!trainingPhilosophy);
+    console.log('[TRAINING-AGENT] Has weeklyStructure:', !!weeklyStructure);
 
     return NextResponse.json({
       success: true,
-      weeklyProgram
+      executiveSummary,
+      weeklyProgram,
+      trainingPhilosophy,
+      weeklyStructure
     });
 
   } catch (error) {
     console.error('[TRAINING-AGENT] ❌ Error generating training program:', error);
+    console.error('[TRAINING-AGENT] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+    // Log more details about the error
+    if (error && typeof error === 'object') {
+      console.error('[TRAINING-AGENT] Error details:', JSON.stringify(error, null, 2));
+    }
+
     return NextResponse.json(
       {
         success: false,

@@ -72,7 +72,7 @@ export default function SagePage() {
       <section
         className="first-page"
         style={{
-          backgroundImage: "url('https://c.animaapp.com/ArhZSyxG/img/frank-sepulveda-st9ymbaqqg4-unsplash.jpg')"
+          backgroundImage: "url('/images/sage-hero-optimized.jpg')"
         }}
       >
         <Link href="/" className="logo" role="img" aria-label="Moccet logo">

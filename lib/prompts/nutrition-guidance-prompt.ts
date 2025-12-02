@@ -70,20 +70,20 @@ ${input.userProfile.restrictions && input.userProfile.restrictions.length > 0 ? 
 
 BIOMARKERS:
 ${input.biomarkers.glucose ? `- Fasting Glucose: ${input.biomarkers.glucose} mg/dL` : ''}
-${input.biomarkers.hba1c ? `- HbA1c: ${input.biomarkers.hba1c}%` : ''}
+${input.biomarkers.hba1c ? `- Average blood sugar over 3 months (HbA1c): ${input.biomarkers.hba1c}%` : ''}
 ${input.biomarkers.cholesterol?.total ? `- Total Cholesterol: ${input.biomarkers.cholesterol.total} mg/dL` : ''}
-${input.biomarkers.cholesterol?.ldl ? `- LDL: ${input.biomarkers.cholesterol.ldl} mg/dL` : ''}
-${input.biomarkers.cholesterol?.hdl ? `- HDL: ${input.biomarkers.cholesterol.hdl} mg/dL` : ''}
+${input.biomarkers.cholesterol?.ldl ? `- Bad cholesterol (LDL): ${input.biomarkers.cholesterol.ldl} mg/dL` : ''}
+${input.biomarkers.cholesterol?.hdl ? `- Good cholesterol (HDL): ${input.biomarkers.cholesterol.hdl} mg/dL` : ''}
 ${input.biomarkers.cholesterol?.triglycerides ? `- Triglycerides: ${input.biomarkers.cholesterol.triglycerides} mg/dL` : ''}
-${input.biomarkers.crp ? `- CRP (Inflammation): ${input.biomarkers.crp} mg/L` : ''}
+${input.biomarkers.crp ? `- Inflammation marker (CRP): ${input.biomarkers.crp} mg/L` : ''}
 ${input.biomarkers.vitaminD ? `- Vitamin D: ${input.biomarkers.vitaminD} ng/mL` : ''}
 ${input.biomarkers.b12 ? `- B12: ${input.biomarkers.b12} pg/mL` : ''}
-${input.biomarkers.iron ? `- Iron: ${input.biomarkers.iron} μg/dL` : ''}
+${input.biomarkers.iron ? `- Iron storage (Ferritin): ${input.biomarkers.iron} μg/dL` : ''}
 
 PROTOCOL RECOMMENDATIONS:
 - Objectives: ${input.recommendations.nutrition_protocol.objectives?.join('; ') || 'Optimize nutrition for health and performance'}
 ${input.recommendations.nutrition_protocol.macronutrientTargets ? `
-- Macronutrient Targets:
+- Protein, Carbs, and Fats Targets:
   * Protein: ${input.recommendations.nutrition_protocol.macronutrientTargets.protein || 'Not specified'}
   * Carbs: ${input.recommendations.nutrition_protocol.macronutrientTargets.carbs || 'Not specified'}
   * Fats: ${input.recommendations.nutrition_protocol.macronutrientTargets.fats || 'Not specified'}` : ''}
@@ -100,10 +100,15 @@ TRAINING SCHEDULE:
 
 INSTRUCTIONS:
 1. Calculate daily calorie needs based on weight, activity level, and goals
-2. Provide specific macronutrient targets (grams per day)
+2. Provide specific protein, carbs, and fats targets (grams per day)
 3. Create meal timing recommendations that support training and biomarker optimization
 4. Suggest specific foods to emphasize/avoid based on biomarkers
-5. Provide hydration guidelines with specific amounts
+5. Provide hydration guidelines using WEIGHT-BASED calculation:
+   - Formula: 30-35ml per kg bodyweight for baseline daily hydration
+   - Example: 84kg person = 2.5-3L baseline per day
+   - Add 500-750ml per hour of exercise (on top of baseline)
+   - NEVER recommend more than 4L total daily unless medical supervision
+   - Adjust for climate (add 0.5L in hot weather)
 6. Include supplement recommendations with dosing and timing
 7. Explain biomarker rationale for each recommendation
 8. Account for dietary preferences, allergies, and restrictions
@@ -115,20 +120,32 @@ FORMATTING REQUIREMENTS:
 - Use professional, clean text only
 - Keep all content simple and readable
 
+WORD LIMITS (CRITICAL):
+- calorieGuidance: EXACTLY 30-50 words total (this is the MAIN calorie summary)
+- dailyCalories.rationale: MAX 20-30 words (1 sentence)
+- macronutrients.protein.rationale: MAX 20-30 words (1 sentence)
+- macronutrients.carbohydrates.rationale: MAX 20-30 words (1 sentence)
+- macronutrients.fats.rationale: MAX 20-30 words (1 sentence)
+- mealTiming rationales: MAX 30-40 words each
+- DO NOT write long paragraphs or walls of text
+- BE CONCISE - get straight to the point
+- NEVER exceed word limits - this is non-negotiable
+
 BIOMARKER OPTIMIZATION GUIDELINES:
-- High LDL/Total Cholesterol → Emphasize soluble fiber, omega-3s, plant sterols; reduce saturated fat
-- High Triglycerides → Reduce refined carbs, increase omega-3s, moderate alcohol
-- High Glucose/HbA1c → Lower glycemic index foods, fiber, meal timing, portion control
-- High CRP (Inflammation) → Anti-inflammatory foods (berries, fatty fish, turmeric), reduce processed foods
+- High Bad Cholesterol (LDL)/Total Cholesterol → Emphasize soluble fiber, omega-3 fatty acids (from fish), plant sterols; reduce saturated fat
+- High Triglycerides → Reduce refined carbs, increase omega-3 fatty acids (from fish), moderate alcohol
+- High Blood Sugar (Glucose/HbA1c) → Lower glycemic index foods, fiber, meal timing, portion control
+- High Inflammation Marker (CRP) → Anti-inflammatory foods (berries, fatty fish, turmeric), reduce processed foods
 - Low Vitamin D → Fortified foods, fatty fish, supplementation
 - Low B12 → Animal products or fortified foods/supplements (especially for vegetarians)
-- Low Iron → Red meat, leafy greens, vitamin C for absorption
+- Low Iron Storage → Red meat, leafy greens, vitamin C for absorption
 
 OUTPUT FORMAT:
 Return a JSON object with this exact structure:
 
 {
   "nutritionGuidance": {
+    "calorieGuidance": "Concise 30-50 word summary explaining daily calorie target and why. Example: 'Based on your 185lb bodyweight and 3x/week training, target 2800-3000 calories daily to maintain weight and support performance. Slightly higher on training days (3000), lower on rest days (2800).'",
     "dailyCalories": {
       "target": 2500,
       "range": "2400-2600",
@@ -143,12 +160,12 @@ Return a JSON object with this exact structure:
       "carbohydrates": {
         "grams": 280,
         "percentage": 45,
-        "rationale": "Adequate for training performance and glycogen replenishment"
+        "rationale": "Adequate for training performance and stored carbohydrates in muscles replenishment"
       },
       "fats": {
         "grams": 70,
         "percentage": 25,
-        "rationale": "Support hormone production and reduce LDL cholesterol"
+        "rationale": "Support hormone production and reduce bad cholesterol (LDL)"
       }
     },
     "mealTiming": {
@@ -168,22 +185,23 @@ Return a JSON object with this exact structure:
       "generalGuidance": "Distribute remaining calories across breakfast and dinner, with focus on whole foods"
     },
     "hydration": {
-      "baselineDaily": "3 liters",
-      "duringTraining": "500-750ml per hour of exercise",
+      "baselineDaily": "2.5-3 liters (based on 30-35ml per kg bodyweight for 84kg person)",
+      "duringTraining": "500-750ml per hour of exercise (additional to baseline)",
       "electrolyteNeeds": "Add electrolytes for sessions >60 minutes or high sweat rate",
-      "monitoringTips": ["Urine color should be pale yellow", "Weight before/after training (replace 150% of fluid lost)"]
+      "monitoringTips": ["Urine color should be pale yellow", "Weight before/after training (replace 150% of fluid lost)"],
+      "safetyNote": "Total daily intake should not exceed 4 liters unless under medical supervision"
     },
     "foodRecommendations": {
       "emphasize": [
         {
           "food": "Fatty Fish (salmon, mackerel, sardines)",
           "frequency": "3-4x per week",
-          "reason": "Omega-3s to reduce triglycerides and inflammation (high CRP)"
+          "reason": "Omega-3 fatty acids (from fish) to reduce triglycerides and inflammation marker (high CRP)"
         },
         {
           "food": "Oats and Barley",
           "frequency": "Daily",
-          "reason": "Soluble fiber (beta-glucan) to lower LDL cholesterol"
+          "reason": "Soluble fiber (beta-glucan) to lower bad cholesterol (LDL)"
         }
       ],
       "minimize": [
@@ -193,13 +211,13 @@ Return a JSON object with this exact structure:
         },
         {
           "food": "Saturated fats (butter, fatty red meat)",
-          "reason": "Contribute to elevated LDL cholesterol"
+          "reason": "Contribute to elevated bad cholesterol (LDL)"
         }
       ],
       "avoid": [
         {
           "food": "Trans fats (fried foods, certain baked goods)",
-          "reason": "Increase LDL and decrease HDL cholesterol"
+          "reason": "Increase bad cholesterol (LDL) and decrease good cholesterol (HDL)"
         }
       ]
     },
@@ -212,21 +230,21 @@ Return a JSON object with this exact structure:
         "duration": "Ongoing; retest in 3 months"
       },
       {
-        "name": "Omega-3 (EPA/DHA)",
-        "dosage": "2g combined EPA+DHA daily",
+        "name": "Omega-3 fatty acids (from fish)",
+        "dosage": "2g combined omega-3 daily",
         "timing": "With meals",
-        "rationale": "High triglycerides and CRP; anti-inflammatory and cardioprotective",
+        "rationale": "High triglycerides and inflammation marker (CRP); anti-inflammatory and heart-protective",
         "duration": "Ongoing"
       }
     ],
     "biomarkerOptimization": {
       "cholesterol": {
         "strategies": ["Increase soluble fiber to 10-15g/day", "Replace saturated fats with unsaturated fats", "Add plant sterols (2g/day from fortified foods)"],
-        "expectedImpact": "10-15% reduction in LDL cholesterol over 3 months"
+        "expectedImpact": "10-15% reduction in bad cholesterol (LDL) over 3 months"
       },
       "inflammation": {
-        "strategies": ["Omega-3 supplementation", "Colorful fruits/vegetables (5+ servings daily)", "Minimize processed foods and added sugars"],
-        "expectedImpact": "CRP reduction to <3 mg/L within 2-3 months"
+        "strategies": ["Omega-3 fatty acids (from fish) supplementation", "Colorful fruits/vegetables (5+ servings daily)", "Minimize processed foods and added sugars"],
+        "expectedImpact": "Inflammation marker (CRP) reduction to <3 mg/L within 2-3 months"
       }
     },
     "practicalTips": [

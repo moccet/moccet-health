@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { devOnboardingStorage } from '@/lib/dev-storage';
 import { buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
+import { createClient } from '@/lib/supabase/server';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -54,6 +55,44 @@ export async function GET(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onboardingData = devOnboardingStorage.get(email) as any;
       lookupEmail = email;
+    }
+
+    // If not found in dev storage, check Supabase
+    if (!onboardingData) {
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+
+          if (code) {
+            // Search by uniqueCode in the form_data JSON field
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('form_data->>uniqueCode', code)
+              .single();
+
+            if (data) {
+              onboardingData = data;
+              lookupEmail = data.email;
+            }
+          } else if (email) {
+            // Search by email
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('email', email)
+              .single();
+
+            if (data) {
+              onboardingData = data;
+              lookupEmail = email;
+            }
+          }
+        } catch (error) {
+          console.error('[ERROR] Supabase query failed:', error);
+        }
+      }
     }
 
     if (!onboardingData) {
@@ -109,6 +148,9 @@ export async function GET(req: NextRequest) {
 
     if (lookupEmail) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
         const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -117,7 +159,10 @@ export async function GET(req: NextRequest) {
             contextType: 'sage',
             forceRefresh: false,
           }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (contextResponse.ok) {
           const contextData = await contextResponse.json();
@@ -174,9 +219,9 @@ Energy Crash Times: ${formData.energyCrash || 'none reported'}
 Alcohol Consumption: ${formData.alcoholConsumption || 'not specified'}
 
 HEALTH CONTEXT:
-Medical Conditions: ${formData.medicalConditions?.join(', ') || 'none'}
-Medications: ${formData.medications?.join(', ') || 'none'}
-Supplements: ${formData.supplements?.join(', ') || 'none'}
+Medical Conditions: ${Array.isArray(formData.medicalConditions) ? formData.medicalConditions.join(', ') : formData.medicalConditions || 'none'}
+Medications: ${Array.isArray(formData.medications) ? formData.medications.join(', ') : formData.medications || 'none'}
+Supplements: ${Array.isArray(formData.supplements) ? formData.supplements.join(', ') : formData.supplements || 'none'}
 ${biomarkerContext}
 ${nutritionContext}
 

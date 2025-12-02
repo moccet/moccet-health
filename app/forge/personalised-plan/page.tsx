@@ -57,7 +57,7 @@ interface FitnessPlan {
   executiveSummary: string;
   trainingPhilosophy: {
     approach: string;
-    keyPrinciples: string[];
+    keyPrinciples: Array<{principle: string; description: string}>;
     progressionStrategy: string;
   };
   weeklyStructure: {
@@ -432,32 +432,7 @@ export default function PersonalisedPlanPage() {
           // Transform the new comprehensive structure to match the old UI expectations
           const userName = planData.plan.user?.name || 'Your';
 
-          // Create executive summary from the actual plan assessment/notes
-          let executiveSummary = '';
-          if (planData.plan.assessment && typeof planData.plan.assessment === 'string') {
-            executiveSummary = planData.plan.assessment;
-          } else if (planData.plan.notes && typeof planData.plan.notes === 'string') {
-            executiveSummary = planData.plan.notes;
-          } else {
-            // Build a summary from the protocols if no assessment/notes available
-            const protocols = planData.plan.plan || planData.plan;
-            const parts = [];
-            if (protocols.training_protocol || protocols.training_program) {
-              parts.push(`Training: ${protocols.training_protocol?.phase || protocols.training_program?.phase || 'Structured training program'}`);
-            }
-            if (protocols.nutrition_protocol || protocols.nutrition_program) {
-              parts.push(`Nutrition: Personalized nutrition protocol based on your biomarkers`);
-            }
-            if (protocols.lipid_management_protocol) {
-              parts.push(`Focus on lipid optimization for cardiovascular health`);
-            }
-            if (protocols.blood_pressure_management_protocol) {
-              parts.push(`Blood pressure management through lifestyle modifications`);
-            }
-            executiveSummary = parts.length > 0
-              ? parts.join('. ') + '.'
-              : 'Comprehensive health and fitness plan tailored to your biomarkers and health data.';
-          }
+          // Executive summary will be set inline in transformedPlan object below
 
           // First spread all the original data as a base
           const baseData = {
@@ -469,8 +444,9 @@ export default function PersonalisedPlanPage() {
             ...baseData, // Include all original data first
 
             personalizedGreeting: `${userName} Comprehensive Health Plan`,
-            executiveSummary: (() => {
-              // Try to build from user_profile or prioritized_objectives
+            // Use executiveSummary from specialized agent first, fallback to building from profile
+            executiveSummary: planData.plan.executiveSummary || (() => {
+              // Fallback: Try to build from user_profile or prioritized_objectives
               if (planData.plan.user_profile) {
                 const profile = planData.plan.user_profile;
                 let summary = '';
@@ -488,19 +464,20 @@ export default function PersonalisedPlanPage() {
               if (planData.plan.prioritized_objectives) {
                 return `Focus areas: ${planData.plan.prioritized_objectives.slice(0, 3).join(', ')}.`;
               }
-              return executiveSummary;
+              // Final fallback if no data available
+              return 'Comprehensive health and fitness plan tailored to your biomarkers and health data.';
             })(),
 
-            // Transform training protocol to trainingPhilosophy
-            trainingPhilosophy: {
+            // Use trainingPhilosophy from specialized agent first, fallback to base plan transformation
+            trainingPhilosophy: planData.plan.trainingPhilosophy || {
               approach: planData.plan.plan?.training_protocol?.recommendations?.[0]?.causal_rationale ||
                         planData.plan.training_protocol?.recommendations?.[0]?.causal_rationale ||
                         planData.plan.training_program?.approach ||
-                        'Evidence-based training approach tailored to your biomarkers.',
+                        undefined,
               keyPrinciples: (planData.plan.plan?.training_protocol?.recommendations ||
                              planData.plan.training_protocol?.recommendations ||
                              planData.plan.training_program?.key_principles || []).map((rec: any) => ({
-                title: rec.name || rec.title || '',
+                principle: rec.name || rec.title || '',
                 description: `${rec.intensity || ''}\n${rec.causal_rationale || rec.description || ''}`.trim()
               })),
               progressionStrategy: (() => {
@@ -520,16 +497,16 @@ export default function PersonalisedPlanPage() {
                     `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`
                   ).join('\n\n');
                 }
-                return 'Progressive overload based on recovery metrics and performance.';
+                return undefined;
               })()
             },
 
-            // Transform to weekly structure
-            weeklyStructure: {
+            // Use weeklyStructure from specialized agent first, fallback to base plan transformation
+            weeklyStructure: planData.plan.weeklyStructure || {
               overview: planData.plan.plan?.training_protocol?.phase ||
                        planData.plan.training_protocol?.phase ||
                        planData.plan.training_program?.overview ||
-                       'Structured weekly training program',
+                       undefined,
               trainingDays: planData.plan.plan?.training_protocol?.recommendations?.[0]?.frequency_per_week ||
                            planData.plan.training_protocol?.recommendations?.[0]?.frequency_per_week ||
                            planData.plan.training_program?.training_days || 3,
@@ -555,15 +532,15 @@ export default function PersonalisedPlanPage() {
                     text += `Data not available: ${Object.keys(notAvailable).join(', ')}`;
                   }
 
-                  return text.trim() || 'Data-driven training approach based on your health profile';
+                  return text.trim() || undefined;
                 }
-                return 'Data-driven training approach based on your health profile';
+                return undefined;
               })(),
               volumeDistribution: (planData.plan.plan?.training_protocol?.recommendations ||
                                   planData.plan.training_protocol?.recommendations || []).map((rec: any) =>
                 `${rec.name}: ${rec.frequency_per_week || rec.frequency_per_day || ''} sessions`
               ).join('\n') || '',
-              intensityFramework: 'Progressive training intensity based on heart rate zones and biomarker data.'
+              intensityFramework: undefined
             },
 
             // Use nutrition guidance from specialized agent, with field transformations for display
@@ -652,6 +629,9 @@ export default function PersonalisedPlanPage() {
         console.log('[PLAN DEBUG] Plan has executiveSummary:', !!planData.plan?.executiveSummary);
         console.log('[PLAN DEBUG] Plan has trainingPhilosophy:', !!planData.plan?.trainingPhilosophy);
         console.log('[PLAN DEBUG] isFitnessPlan result:', isFitnessPlan(planData.plan));
+        console.log('[NUTRITION CHECK]', planData.plan?.nutritionGuidance);
+        console.log('[WEEKLY PROGRAM CHECK]', planData.plan?.weeklyProgram);
+        console.log('[PLAN KEYS]', Object.keys(planData.plan || {}));
         setPlan(planData.plan);
         setPlanStatus(planData.status || 'completed');
         setGender(planData.gender || null);
@@ -1041,11 +1021,15 @@ export default function PersonalisedPlanPage() {
                       <tbody>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {plan.trainingPhilosophy.keyPrinciples.map((principle: any, idx: number) => {
-                      // Handle both object format {title, description} and string format
+                      // Handle both object format {principle, description} and string format
                       let title: string;
                       let description: string;
 
-                      if (typeof principle === 'object' && principle.title) {
+                      if (typeof principle === 'object' && principle.principle) {
+                        title = principle.principle;
+                        description = principle.description || '';
+                      } else if (typeof principle === 'object' && principle.title) {
+                        // Legacy format fallback
                         title = principle.title;
                         description = principle.description || '';
                       } else if (typeof principle === 'string') {
@@ -1806,8 +1790,7 @@ export default function PersonalisedPlanPage() {
                 backgroundColor: '#f8f9fa',
                 padding: '15px',
                 borderRadius: '8px',
-                marginBottom: '20px',
-                borderLeft: '4px solid #007bff'
+                marginBottom: '20px'
               }}>
                 <p style={{ margin: 0, lineHeight: '1.6' }}>{plan.recoveryProtocol.personalizedIntro}</p>
               </div>
@@ -1836,15 +1819,33 @@ export default function PersonalisedPlanPage() {
             <div className="recommendations-grid" style={{ marginTop: '20px' }}>
               <div className="recommendation-card">
                 <h3>Sleep Optimization</h3>
-                <p>{plan.recoveryProtocol?.sleepOptimization || 'Not available'}</p>
+                {plan.recoveryProtocol?.sleepOptimization ? (
+                  plan.recoveryProtocol.sleepOptimization.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} style={{ marginBottom: '12px' }}>{paragraph.trim()}</p>
+                  ))
+                ) : (
+                  <p>Not available</p>
+                )}
               </div>
               <div className="recommendation-card">
                 <h3>Stress Management</h3>
-                <p>{plan.recoveryProtocol?.stressManagement || 'Not available'}</p>
+                {plan.recoveryProtocol?.stressManagement ? (
+                  plan.recoveryProtocol.stressManagement.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} style={{ marginBottom: '12px' }}>{paragraph.trim()}</p>
+                  ))
+                ) : (
+                  <p>Not available</p>
+                )}
               </div>
               <div className="recommendation-card">
                 <h3>Mobility Work</h3>
-                <p>{plan.recoveryProtocol?.mobilityWork || 'Not available'}</p>
+                {plan.recoveryProtocol?.mobilityWork ? (
+                  plan.recoveryProtocol.mobilityWork.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} style={{ marginBottom: '12px' }}>{paragraph.trim()}</p>
+                  ))
+                ) : (
+                  <p>Not available</p>
+                )}
               </div>
             </div>
           </section>

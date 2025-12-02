@@ -206,7 +206,11 @@ export async function GET(request: NextRequest) {
     let unifiedContext = null;
 
     try {
-      const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const contextResponse = await fetch(baseUrl + '/api/aggregate-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,13 +218,16 @@ export async function GET(request: NextRequest) {
           contextType: 'sage',
           forceRefresh: false,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (contextResponse.ok) {
         const contextData = await contextResponse.json();
         unifiedContext = contextData.context;
         console.log('[OK] Unified context aggregated successfully');
-        console.log(`[OK] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+        console.log('[OK] Data Quality:', contextData.qualityMessage?.split('\n')[0] || 'Unknown');
       } else {
         console.log('[WARN] Failed to aggregate context, proceeding with standard approach');
       }

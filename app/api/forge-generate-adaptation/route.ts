@@ -77,8 +77,14 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const adaptiveFeatures = JSON.parse(responseText);
+    const aiResponse = JSON.parse(responseText);
+
+    // Extract the adaptiveFeatures - AI may return {adaptiveFeatures: {...}} or just {...}
+    // We want the inner structure to prevent double-nesting
+    const adaptiveFeatures = aiResponse.adaptiveFeatures || aiResponse;
+
     console.log('[ADAPTATION-AGENT] ✅ Adaptive features generated successfully');
+    console.log('[ADAPTATION-AGENT] Structure check:', Object.keys(adaptiveFeatures).slice(0, 5));
 
     return NextResponse.json({
       success: true,

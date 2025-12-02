@@ -30,7 +30,7 @@ export interface AdaptationInput {
 }
 
 export function generateAdaptationPrompt(input: AdaptationInput): string {
-  return `You are a sports scientist specializing in autoregulated training and HRV-based programming.
+  return `You are a sports scientist specializing in training that adjusts based on how you feel and recovery score-based programming.
 
 TASK: Generate adaptive training protocols that allow the user to adjust their training based on daily readiness, energy levels, and life circumstances.
 
@@ -43,8 +43,8 @@ USER PROFILE:
 - Goals: ${input.userProfile.goals.join(', ')}
 
 BIOMARKERS & READINESS INDICATORS:
-${input.biomarkers.hrv ? `- Baseline HRV: ${input.biomarkers.hrv} ms` : ''}
-${input.biomarkers.restingHeartRate ? `- Baseline RHR: ${input.biomarkers.restingHeartRate} bpm` : ''}
+${input.biomarkers.hrv ? `- Baseline Recovery Score (a measure of how well-rested you are): ${input.biomarkers.hrv} ms` : ''}
+${input.biomarkers.restingHeartRate ? `- Baseline Resting Heart Rate: ${input.biomarkers.restingHeartRate} bpm` : ''}
 ${input.biomarkers.sleepQuality ? `- Typical Sleep Quality: ${input.biomarkers.sleepQuality}` : ''}
 ${input.biomarkers.stressLevel ? `- Typical Stress Level: ${input.biomarkers.stressLevel}` : ''}
 
@@ -55,14 +55,14 @@ ${Object.entries(input.trainingProgram.weeklyProgram).map(([day, workout]) => `
 
 INSTRUCTIONS:
 1. Create decision trees for high-energy vs. low-energy days
-2. Provide workout modifications for poor HRV/sleep
+2. Provide workout modifications for poor recovery score/sleep
 3. Design quick workout alternatives for time-constrained days
 4. Create travel-friendly bodyweight modifications
-5. Include RPE-based autoregulation guidance
+5. Include guidance on adjusting based on how hard it feels (on a scale of 1-10, where 10 is maximum effort)
 6. Provide clear decision criteria (when to push vs. when to back off)
 
 ADAPTATION PRINCIPLES:
-- HRV-Based: If HRV is >10% below baseline → reduce volume or intensity
+- Recovery Score-Based: If recovery score is >10% below baseline → reduce volume or intensity
 - Sleep-Based: <6 hours sleep → prioritize recovery or low-intensity work
 - Stress-Based: High work stress + training stress = overtraining risk
 - Time-Based: Provide 15-min, 30-min, and 45-min versions of key sessions
@@ -77,7 +77,7 @@ Return a JSON object with this exact structure:
       "description": "Simple daily readiness assessment to guide training decisions",
       "scoringCriteria": [
         {
-          "factor": "HRV",
+          "factor": "Recovery Score (a measure of how well-rested you are)",
           "green": ">95% of baseline",
           "yellow": "85-95% of baseline",
           "red": "<85% of baseline"
@@ -95,10 +95,10 @@ Return a JSON object with this exact structure:
           "red": "1-4"
         },
         {
-          "factor": "Muscle Soreness",
+          "factor": "Muscle Soreness After Workouts",
           "green": "Minimal or none",
           "yellow": "Moderate, manageable",
-          "red": "Severe or limiting range of motion"
+          "red": "Severe or limiting how far you can move a joint"
         },
         {
           "factor": "Stress Level",
@@ -109,12 +109,12 @@ Return a JSON object with this exact structure:
       ],
       "decisionLogic": {
         "allGreen": "Proceed with planned training as written",
-        "1-2Yellow": "Reduce volume by 20% OR reduce intensity by 1 RPE point",
+        "1-2Yellow": "Reduce volume by 20% OR reduce intensity by 1 point (on a scale of 1-10, where 10 is maximum effort)",
         "3+YellowOr1+Red": "Switch to recovery day or low-intensity active recovery"
       }
     },
     "highEnergyDay": {
-      "description": "When HRV is high, sleep was great, and you feel energized - capitalize on readiness",
+      "description": "When recovery score is high, sleep was great, and you feel energized - capitalize on readiness",
       "modifications": [
         {
           "aspect": "Volume",
@@ -123,7 +123,7 @@ Return a JSON object with this exact structure:
         },
         {
           "aspect": "Intensity",
-          "adjustment": "Push to RPE 9 instead of RPE 8",
+          "adjustment": "Push to 9 out of 10 (where 10 is maximum effort) instead of 8 out of 10",
           "example": "Top set of deadlifts: Go for a new rep PR at current weight"
         },
         {
@@ -133,12 +133,12 @@ Return a JSON object with this exact structure:
         }
       ],
       "exampleWorkout": {
-        "original": "Squat 4x6 @ RPE 8, Romanian Deadlift 3x10, Leg Press 3x12",
-        "highEnergy": "Squat 5x6 @ RPE 9, Romanian Deadlift 4x10, Leg Press 3x12, Leg Curls 3x12"
+        "original": "Squat 4x6 at 8 out of 10 effort (where 10 is maximum), Romanian Deadlift 3x10, Leg Press 3x12",
+        "highEnergy": "Squat 5x6 at 9 out of 10 effort (where 10 is maximum), Romanian Deadlift 4x10, Leg Press 3x12, Leg Curls 3x12"
       }
     },
     "lowEnergyDay": {
-      "description": "When HRV is low, sleep was poor, or stress is high - prioritize recovery while maintaining movement",
+      "description": "When recovery score is low, sleep was poor, or stress is high - prioritize recovery while maintaining movement",
       "modifications": [
         {
           "aspect": "Volume",
@@ -147,7 +147,7 @@ Return a JSON object with this exact structure:
         },
         {
           "aspect": "Intensity",
-          "adjustment": "Reduce load to RPE 6-7 (leave 3-4 reps in reserve)",
+          "adjustment": "Reduce load to 6-7 out of 10 effort, where 10 is maximum (leave 3-4 reps in reserve)",
           "example": "Use 70-80% of planned weight"
         },
         {
@@ -162,8 +162,8 @@ Return a JSON object with this exact structure:
         }
       ],
       "exampleWorkout": {
-        "original": "Squat 4x6 @ RPE 8, Romanian Deadlift 3x10, Leg Press 3x12",
-        "lowEnergy": "Goblet Squat 3x8 @ RPE 6, Walking Lunges 2x10 each leg, Light bike 15 minutes"
+        "original": "Squat 4x6 at 8 out of 10 effort (where 10 is maximum), Romanian Deadlift 3x10, Leg Press 3x12",
+        "lowEnergy": "Goblet Squat 3x8 at 6 out of 10 effort (where 10 is maximum), Walking Lunges 2x10 each leg, Light bike 15 minutes"
       },
       "recoveryAlternative": {
         "description": "Full recovery session when readiness is very low",
@@ -195,11 +195,11 @@ Return a JSON object with this exact structure:
         "examples": [
           {
             "focus": "Leg Day",
-            "workout": "Squat 3x6 @ RPE 8 (2min rest), Romanian Deadlift 3x8 (90s rest)"
+            "workout": "Squat 3x6 at 8 out of 10 effort (where 10 is maximum) (2min rest), Romanian Deadlift 3x8 (90s rest)"
           },
           {
             "focus": "Upper Body",
-            "workout": "Bench Press 3x6 @ RPE 8 (2min rest), Rows 3x8 (90s rest)"
+            "workout": "Bench Press 3x6 at 8 out of 10 effort (where 10 is maximum) (2min rest), Rows 3x8 (90s rest)"
           }
         ]
       }
@@ -252,13 +252,13 @@ Return a JSON object with this exact structure:
     },
     "autoregulationGuidance": {
       "description": "How to adjust training based on in-workout feel",
-      "rpeBasedAdjustments": [
+      "adjustmentsBasedOnHowHardItFeels": [
         {
-          "scenario": "Set feels easier than expected (target RPE 8, feels like RPE 6)",
+          "scenario": "Set feels easier than expected (target 8 out of 10 effort where 10 is maximum, but feels like 6 out of 10)",
           "action": "Increase weight by 5-10% for next set or add extra set"
         },
         {
-          "scenario": "Set feels much harder than expected (target RPE 8, feels like RPE 9.5)",
+          "scenario": "Set feels much harder than expected (target 8 out of 10 effort where 10 is maximum, but feels like 9.5 out of 10)",
           "action": "Reduce weight by 10% or end session early"
         },
         {
@@ -281,7 +281,7 @@ IMPORTANT CONSTRAINTS:
 - Provide clear, actionable decision criteria (not vague "listen to your body")
 - Travel workouts should be genuinely feasible in small spaces
 - Quick sessions should focus on highest-ROI exercises (compound movements)
-- RPE-based autoregulation is the primary tool (accessible to everyone)
+- Adjusting based on how hard it feels (on a scale of 1-10, where 10 is maximum effort) is the primary tool (accessible to everyone)
 
 RETURN ONLY THE JSON OBJECT. NO ADDITIONAL TEXT.`;
 }

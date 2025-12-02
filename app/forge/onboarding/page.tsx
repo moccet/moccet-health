@@ -134,7 +134,7 @@ export default function ForgeOnboarding() {
       weight: '185',
       weightUnit: 'lbs' as 'lbs' | 'kg',
       height: '5\'11"',
-      email: 'dev-test@forge.local',
+      email: 'youssefsb97@gmail.com',
       primaryGoal: 'Build muscle',
       timeHorizon: '6-12 months',
       trainingDays: '4',
@@ -198,53 +198,34 @@ export default function ForgeOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = mockData.fullName.split(' ')[0];
 
-      // Upload mock lab file first (simulating real user flow)
-      const mockPdfContent = '%PDF-1.4\nMock lab results PDF for testing';
-      const blob = new Blob([mockPdfContent], { type: 'application/pdf' });
-      const mockLabFile = new File([blob], 'mock-lab-results.pdf', { type: 'application/pdf' });
-
-      console.log('Uploading mock lab file...');
-      const labFormData = new FormData();
-      labFormData.append('bloodTest', mockLabFile);
-      labFormData.append('email', mockData.email);
-
-      try {
-        await fetch('/api/forge-analyze-blood-results', {
-          method: 'POST',
-          body: labFormData,
-        });
-        console.log('✅ Mock lab file uploaded');
-      } catch (err) {
-        console.error('Error uploading mock lab file:', err);
-      }
+      // Skip lab file upload in dev mode - plan generation works without it
+      console.log('⏭️  [DEV] Skipping mock lab file upload - generating plan without biomarkers');
 
       // Start plan generation
-      console.log('Starting plan generation (this will take a few minutes)...');
+      console.log('🚀 [DEV] Starting plan generation - bypassing QStash and calling webhook directly...');
 
-      const planFormData = new FormData();
-      planFormData.append('email', mockData.email);
-      planFormData.append('uniqueCode', uniqueCode);
-      planFormData.append('fullName', userFirstName);
-
-      // Start the async call (don't await yet)
-      const planPromise = fetch('/api/forge-generate-plan-async', {
+      // In dev mode, bypass QStash queue and call webhook endpoint directly
+      // This avoids issues with QStash requiring a public URL (ngrok)
+      const planResponse = await fetch('/api/webhooks/qstash/forge-generate-plan', {
         method: 'POST',
-        body: planFormData,
+        headers: {
+          'Content-Type': 'application/json',
+          // Skip QStash signature verification in dev mode
+          'X-Dev-Mode': 'true',
+        },
+        body: JSON.stringify({
+          email: mockData.email,
+          uniqueCode: uniqueCode,
+          fullName: userFirstName,
+        }),
       });
 
-      // Mark that async generation has started - user can close window now
-      setAsyncGenerationStarted(true);
-      console.log('✅ Async generation started - safe to close window');
-
-      // Now await the completion
-      const planResponse = await planPromise;
-
       if (!planResponse.ok) {
-        console.error('Plan generation failed');
+        const errorText = await planResponse.text();
+        console.error('Plan generation failed:', errorText);
         clearInterval(progressInterval);
         setIsLoading(false);
-        setAsyncGenerationStarted(false);
-        alert('Plan generation failed - please try again');
+        alert('Plan generation failed - check console for details');
         return;
       }
 

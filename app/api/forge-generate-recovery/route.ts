@@ -78,13 +78,21 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const recoveryData = JSON.parse(responseText);
+    const aiResponse = JSON.parse(responseText);
+
+    // Extract each section - AI may nest or not, we want consistent structure
+    const progressTracking = aiResponse.progressTracking || aiResponse;
+    const injuryPrevention = aiResponse.injuryPrevention;
+    const recoveryProtocol = aiResponse.recoveryProtocol;
+
     console.log('[RECOVERY-AGENT] ✅ Recovery protocol generated successfully');
+    console.log('[RECOVERY-AGENT] Structure check - has recoveryProtocol:', !!recoveryProtocol);
 
     return NextResponse.json({
       success: true,
-      progressTracking: recoveryData.progressTracking,
-      injuryPrevention: recoveryData.injuryPrevention
+      progressTracking,
+      injuryPrevention,
+      recoveryProtocol
     });
 
   } catch (error) {

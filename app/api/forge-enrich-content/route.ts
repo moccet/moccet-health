@@ -66,7 +66,9 @@ function detectEmptyOrPlaceholderSections(plan: any): string[] {
       issues.push('Nutrition Guidance > Overview is too brief or empty');
     }
 
-    if (!ng.calorieGuidance || ng.calorieGuidance.length < 30) {
+    // Check word count (not character count) - should be 30-50 words
+    const wordCount = ng.calorieGuidance?.split(/\s+/).filter(w => w.length > 0).length || 0;
+    if (!ng.calorieGuidance || wordCount < 20) {
       issues.push('Nutrition Guidance > Calorie Guidance is missing or too brief');
     }
   }
@@ -167,7 +169,7 @@ Return a JSON object with ONLY the enriched sections. Use this exact structure:
   },
   "nutritionGuidance": {
     "overview": "string (2-3 paragraphs)",
-    "calorieGuidance": "string (detailed guidance)"
+    "calorieGuidance": "string (EXACTLY 30-50 words - concise summary of daily calorie target and why. DO NOT write multiple paragraphs.)"
   }
 }
 

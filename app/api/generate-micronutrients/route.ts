@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { devOnboardingStorage } from '@/lib/dev-storage';
 import { buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
+import { createClient } from '@/lib/supabase/server';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -54,6 +55,44 @@ export async function GET(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onboardingData = devOnboardingStorage.get(email) as any;
       lookupEmail = email;
+    }
+
+    // If not found in dev storage, check Supabase
+    if (!onboardingData) {
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+
+          if (code) {
+            // Search by uniqueCode in the form_data JSON field
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('form_data->>uniqueCode', code)
+              .single();
+
+            if (data) {
+              onboardingData = data;
+              lookupEmail = data.email;
+            }
+          } else if (email) {
+            // Search by email
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('email', email)
+              .single();
+
+            if (data) {
+              onboardingData = data;
+              lookupEmail = email;
+            }
+          }
+        } catch (error) {
+          console.error('[ERROR] Supabase query failed:', error);
+        }
+      }
     }
 
     if (!onboardingData) {
@@ -112,7 +151,11 @@ export async function GET(req: NextRequest) {
 
     if (lookupEmail) {
       try {
-        const contextResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/aggregate-context`, {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const contextResponse = await fetch(baseUrl + '/api/aggregate-context', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -120,13 +163,16 @@ export async function GET(req: NextRequest) {
             contextType: 'sage',
             forceRefresh: false,
           }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (contextResponse.ok) {
           const contextData = await contextResponse.json();
           unifiedContext = contextData.context;
           console.log('[OK] Unified context aggregated successfully');
-          console.log(`[OK] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
+          console.log('[OK] Data Quality:', contextData.qualityMessage?.split('\n')[0] || 'Unknown');
         } else {
           console.log('[WARN] Failed to aggregate context, proceeding with standard approach');
         }

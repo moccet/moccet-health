@@ -72,7 +72,7 @@ export default function ForgePage() {
       <section
         className="first-page"
         style={{
-          backgroundImage: "url('https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg')"
+          backgroundImage: "url('/images/forge-hero-optimized.jpg')"
         }}
       >
         <Link href="/" className="logo" role="img" aria-label="Moccet logo">

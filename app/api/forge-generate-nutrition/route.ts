@@ -78,8 +78,14 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const nutritionGuidance = JSON.parse(responseText);
+    const aiResponse = JSON.parse(responseText);
+
+    // Extract the nutritionGuidance - AI may return {nutritionGuidance: {...}} or just {...}
+    // We want the inner structure to prevent double-nesting
+    const nutritionGuidance = aiResponse.nutritionGuidance || aiResponse;
+
     console.log('[NUTRITION-AGENT] ✅ Nutrition guidance generated successfully');
+    console.log('[NUTRITION-AGENT] Structure check:', Object.keys(nutritionGuidance).slice(0, 5));
 
     return NextResponse.json({
       success: true,

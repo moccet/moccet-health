@@ -278,8 +278,11 @@ export async function POST(request: NextRequest) {
     } as unknown as NextRequest;
 
     const mealPlanResponse = await generateMealPlan(mockMealRequest);
+    let mealPlanData = null;
     if (mealPlanResponse.status === 200) {
       console.log('[OK] Meal plan generated');
+      const mealJson = await mealPlanResponse.json();
+      mealPlanData = mealJson.mealPlan;
     } else {
       console.log('[WARN] Meal plan generation failed, continuing...');
     }
@@ -291,8 +294,11 @@ export async function POST(request: NextRequest) {
     } as unknown as NextRequest;
 
     const microResponse = await generateMicronutrients(mockMicroRequest);
+    let micronutrientsData = null;
     if (microResponse.status === 200) {
       console.log('[OK] Micronutrients generated');
+      const microJson = await microResponse.json();
+      micronutrientsData = microJson.micronutrients;
     } else {
       console.log('[WARN] Micronutrients generation failed, continuing...');
     }
@@ -304,10 +310,35 @@ export async function POST(request: NextRequest) {
     } as unknown as NextRequest;
 
     const lifestyleResponse = await generateLifestyle(mockLifestyleRequest);
+    let lifestyleData = null;
     if (lifestyleResponse.status === 200) {
       console.log('[OK] Lifestyle integration generated');
+      const lifestyleJson = await lifestyleResponse.json();
+      lifestyleData = lifestyleJson.lifestyle; // Corrected from lifestyleIntegration
     } else {
       console.log('[WARN] Lifestyle integration failed, continuing...');
+    }
+
+    // Save all generated data to Supabase
+    console.log('[4.5/5] Saving all specialized agent data to database...');
+    const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+      try {
+        const supabase = await createClient();
+        await supabase
+          .from('sage_onboarding_data')
+          .update({
+            meal_plan: mealPlanData,
+            micronutrients: micronutrientsData,
+            lifestyle_integration: lifestyleData,
+            plan_generation_status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', email);
+        console.log('[OK] All specialized agent data saved to Supabase');
+      } catch (error) {
+        console.error('[ERROR] Failed to save specialized agent data:', error);
+      }
     }
 
     // Send email notification

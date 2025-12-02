@@ -352,11 +352,15 @@ FORMATTING.
 
     console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
 
+    const systemPrompt = unifiedContext
+      ? buildSystemPrompt()
+      : 'You are an expert longevity coach creating personalized lifestyle plans. Always respond with valid JSON only.';
+
     const completion = await openai.responses.create({
       model: 'gpt-5',
-      input: prompt,
+      input: `${systemPrompt}\n\n${prompt}`,
       reasoning: { effort: 'medium' },
-      text: { verbosity: 'high' }
+      text: { verbosity: 'medium' }
     });
 
     let responseText = completion.output_text || '{}';
@@ -380,6 +384,12 @@ FORMATTING.
         responseText = responseText.substring(start, end + 1);
       }
     }
+
+    // Additional JSON sanitization (like Forge does)
+    // Remove trailing commas before closing braces/brackets
+    responseText = responseText.replace(/,(\s*[}\]])/g, '$1');
+    // Remove JavaScript-style comments
+    responseText = responseText.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
     const lifestyleData = JSON.parse(responseText);
     console.log('[OK] Lifestyle integration plan generated successfully\n');

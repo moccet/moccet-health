@@ -54,12 +54,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Determine the actual status for forge
-      let status = forgeResult.data.plan_generation_status || 'unknown';
-
-      // If no status is set but plan exists, mark as completed
-      if (!forgeResult.data.plan_generation_status && forgeResult.data.forge_plan) {
-        status = 'completed';
-      }
+      // If plan exists, status should be completed regardless of the status field
+      let status = forgeResult.data.forge_plan ? 'completed' : (forgeResult.data.plan_generation_status || 'unknown');
 
       return NextResponse.json({
         status,
@@ -70,12 +66,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine the actual status for sage
-    let status = data.plan_generation_status || 'unknown';
-
-    // If no status is set but plan exists, mark as completed
-    if (!data.plan_generation_status && data.sage_plan) {
-      status = 'completed';
-    }
+    // If plan exists, status should be completed regardless of the status field
+    let status = data.sage_plan ? 'completed' : (data.plan_generation_status || 'unknown');
 
     return NextResponse.json({
       status,

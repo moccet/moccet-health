@@ -2069,7 +2069,7 @@ export default function SageOnboarding() {
                 {vitalConnected && (
                   <div className="integration-item">
                     <div className="integration-logo">
-                      <img src="/images/vital.png" alt="Vital Health" />
+                      <img src="/images/vital.jpg" alt="Vital Health" />
                     </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Vital Health</h3>
@@ -2253,7 +2253,7 @@ export default function SageOnboarding() {
             {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-logo">
-                  <img src="/images/vital.png" alt="Vital Health" />
+                  <img src="/images/vital.jpg" alt="Vital Health" />
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>
@@ -2268,7 +2268,7 @@ export default function SageOnboarding() {
             {vitalConnected && (
               <div className="integration-item connected">
                 <div className="integration-logo">
-                  <img src="/images/vital.png" alt="Vital Health" />
+                  <img src="/images/vital.jpg" alt="Vital Health" />
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Vital Health</h3>

@@ -189,10 +189,10 @@ UNIFIED ECOSYSTEM CONTEXT:
 ${JSON.stringify(unifiedContext.unifiedProfile, null, 2)}
 
 KEY INSIGHTS:
-${unifiedContext.keyInsights.map((i: { insight: string; sources: string[] }) => `- ${i.insight} (${i.sources.join(', ')})`).join('\n')}
+${(unifiedContext.keyInsights || []).map((i: { insight: string; sources: string[] }) => `- ${i.insight} (${i.sources.join(', ')})`).join('\n') || 'No key insights available yet'}
 
 PRIORITY AREAS:
-${unifiedContext.priorityAreas.map((p: { area: string; severity: string }) => `- ${p.area} (${p.severity})`).join('\n')}
+${(unifiedContext.priorityAreas || []).map((p: { area: string; severity: string }) => `- ${p.area} (${p.severity})`).join('\n') || 'No priority areas identified yet'}
 
 USER PROFILE:
 Name: ${formData.fullName || 'User'}

@@ -307,10 +307,8 @@ async function handler(request: NextRequest) {
 
     // Import the generation functions directly
     const generateSagePlan = (await import('../../../generate-sage-plan/route')).GET;
-    const generateMealPlan = (await import('../../../generate-meal-plan/route')).GET;
-    const generateMicronutrients = (await import('../../../generate-micronutrients/route')).GET;
 
-    console.log('[1/5] Generating main sage plan (with blood analysis data)...');
+    console.log('[1/3] Generating main sage plan (with blood analysis data)...');
 
     // Create mock request objects for API calls
     const mockRequest = {
@@ -324,59 +322,51 @@ async function handler(request: NextRequest) {
     }
     console.log('[OK] Main sage plan generated');
 
-    console.log('[2/5] Generating detailed meal plan...');
-    const mockMealRequest = {
-      url: `${baseUrl}/api/generate-meal-plan?code=${uniqueCode}`,
-      nextUrl: new URL(`${baseUrl}/api/generate-meal-plan?code=${uniqueCode}`)
-    } as unknown as NextRequest;
+    console.log('[2/3] Queueing additional plan generation jobs...');
 
-    const mealPlanResponse = await generateMealPlan(mockMealRequest);
-    if (mealPlanResponse.status === 200) {
-      console.log('[OK] Meal plan generated');
-    } else {
-      console.log('[WARN] Meal plan generation failed, continuing...');
-    }
-
-    console.log('[3/5] Generating micronutrient recommendations...');
-    const mockMicroRequest = {
-      url: `${baseUrl}/api/generate-micronutrients?code=${uniqueCode}`,
-      nextUrl: new URL(`${baseUrl}/api/generate-micronutrients?code=${uniqueCode}`)
-    } as unknown as NextRequest;
-
-    const microResponse = await generateMicronutrients(mockMicroRequest);
-    if (microResponse.status === 200) {
-      console.log('[OK] Micronutrients generated');
-    } else {
-      console.log('[WARN] Micronutrients generation failed, continuing...');
-    }
-
-    console.log('[4/5] Queueing lifestyle integration generation...');
-
-    // Queue lifestyle generation as a separate job to avoid timeout
-    try {
-      const qstashToken = process.env.QSTASH_TOKEN;
-      if (qstashToken) {
+    // Queue all additional generation jobs to run in parallel
+    const qstashToken = process.env.QSTASH_TOKEN;
+    if (qstashToken) {
+      try {
         const { Client } = await import('@upstash/qstash');
         const client = new Client({ token: qstashToken });
 
+        // Queue meal plan generation
+        const mealPlanWebhookUrl = `${baseUrl}/api/webhooks/qstash/generate-meal-plan`;
+        const mealPlanResult = await client.publishJSON({
+          url: mealPlanWebhookUrl,
+          body: { email, uniqueCode },
+          retries: 2,
+        });
+        console.log(`[OK] Meal plan generation job queued (messageId: ${mealPlanResult.messageId})`);
+
+        // Queue micronutrients generation
+        const microWebhookUrl = `${baseUrl}/api/webhooks/qstash/generate-micronutrients`;
+        const microResult = await client.publishJSON({
+          url: microWebhookUrl,
+          body: { email, uniqueCode },
+          retries: 2,
+        });
+        console.log(`[OK] Micronutrients generation job queued (messageId: ${microResult.messageId})`);
+
+        // Queue lifestyle generation
         const lifestyleWebhookUrl = `${baseUrl}/api/webhooks/qstash/generate-lifestyle`;
-        const result = await client.publishJSON({
+        const lifestyleResult = await client.publishJSON({
           url: lifestyleWebhookUrl,
           body: { email, uniqueCode },
           retries: 2,
         });
-
-        console.log(`[OK] Lifestyle generation job queued (messageId: ${result.messageId})`);
-      } else {
-        console.log('[WARN] QSTASH_TOKEN not configured, skipping lifestyle generation');
+        console.log(`[OK] Lifestyle generation job queued (messageId: ${lifestyleResult.messageId})`);
+      } catch (error) {
+        console.error('[WARN] Failed to queue background jobs:', error);
+        // Continue anyway - jobs are not critical for initial email
       }
-    } catch (error) {
-      console.error('[WARN] Failed to queue lifestyle generation:', error);
-      // Continue anyway - lifestyle is not critical for initial email
+    } else {
+      console.log('[WARN] QSTASH_TOKEN not configured, skipping background jobs');
     }
 
     // Send email notification
-    console.log('[5/5] Sending plan ready email...');
+    console.log('[3/3] Sending plan ready email...');
     console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
     const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 

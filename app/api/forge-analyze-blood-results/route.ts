@@ -293,7 +293,7 @@ IMPORTANT:
         devData = { form_data: { email } };
       }
 
-      devData.blood_analysis = analysis;
+      devData.lab_file_analysis = analysis;
       devOnboardingStorage.set(email, devData);
       console.log('[OK] Blood analysis cached for user\n');
 

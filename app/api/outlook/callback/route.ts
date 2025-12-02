@@ -7,9 +7,17 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    const errorUri = searchParams.get('error_uri');
 
     if (error) {
-      throw new Error(`OAuth error: ${error}`);
+      console.error('[Outlook] OAuth Error Details:', {
+        error,
+        error_description: errorDescription,
+        error_uri: errorUri,
+        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/outlook/callback`
+      });
+      throw new Error(`OAuth error: ${error}${errorDescription ? ` - ${errorDescription}` : ''}`);
     }
 
     if (!code) {
@@ -82,6 +90,14 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
+            // Send message to parent window
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'outlook_connected',
+                email: '${userEmail}'
+              }, window.location.origin);
+            }
+
             // Close the popup after a short delay
             setTimeout(() => {
               window.close();

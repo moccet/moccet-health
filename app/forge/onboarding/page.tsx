@@ -648,15 +648,15 @@ export default function ForgeOnboarding() {
           return;
         }
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const outlookEmailCookie = cookies.find(c => c.trim().startsWith('outlook_email='));
+        // Listen for postMessage from the popup
+        const handleMessage = (event: MessageEvent) => {
+          // Verify origin for security
+          if (event.origin !== window.location.origin) return;
 
-          if (outlookEmailCookie) {
-            const email = outlookEmailCookie.split('=')[1];
+          if (event.data.type === 'outlook_connected') {
+            const email = event.data.email;
             setOutlookConnected(true);
-            setOutlookEmail(decodeURIComponent(email));
+            setOutlookEmail(email);
             // Add outlook to integrations if not already present
             setFormData(prev => ({
               ...prev,
@@ -664,12 +664,17 @@ export default function ForgeOnboarding() {
                 ? prev.integrations
                 : [...prev.integrations, 'outlook']
             }));
-            clearInterval(pollInterval);
+            // Remove listener after successful connection
+            window.removeEventListener('message', handleMessage);
           }
-        }, 1000);
+        };
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+        window.addEventListener('message', handleMessage);
+
+        // Cleanup listener after 5 minutes (timeout)
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+        }, 300000);
       }
     } catch (err) {
       console.error('Error connecting Outlook:', err);
@@ -966,15 +971,15 @@ export default function ForgeOnboarding() {
           return;
         }
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const teamsEmailCookie = cookies.find(c => c.trim().startsWith('teams_user_email='));
+        // Listen for postMessage from the popup
+        const handleMessage = (event: MessageEvent) => {
+          // Verify origin for security
+          if (event.origin !== window.location.origin) return;
 
-          if (teamsEmailCookie) {
-            const email = teamsEmailCookie.split('=')[1];
+          if (event.data.type === 'teams_connected') {
+            const email = event.data.email;
             setTeamsConnected(true);
-            setTeamsEmail(decodeURIComponent(email));
+            setTeamsEmail(email);
             // Add teams to integrations if not already present
             setFormData(prev => ({
               ...prev,
@@ -982,12 +987,17 @@ export default function ForgeOnboarding() {
                 ? prev.integrations
                 : [...prev.integrations, 'teams']
             }));
-            clearInterval(pollInterval);
+            // Remove listener after successful connection
+            window.removeEventListener('message', handleMessage);
           }
-        }, 1000);
+        };
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+        window.addEventListener('message', handleMessage);
+
+        // Cleanup listener after 5 minutes (timeout)
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+        }, 300000);
       }
     } catch (err) {
       console.error('Error connecting Teams:', err);

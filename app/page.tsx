@@ -226,11 +226,11 @@ export default function LandingPage() {
               </svg>
             </a>
             <div className="social-link-2">
-              <a href="/privacy-policy" className="text-wrapper-5" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <a href="/privacy-policy" className="text-wrapper-5" style={{ textDecoration: 'none', color: '#ffffff' }}>
                 Privacy Policy
               </a>
               <span className="text-wrapper-5" style={{ margin: '0 8px' }}>·</span>
-              <a href="/terms-of-use" className="text-wrapper-5" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <a href="/terms-of-use" className="text-wrapper-5" style={{ textDecoration: 'none', color: '#ffffff' }}>
                 Terms
               </a>
               <span className="text-wrapper-5" style={{ margin: '0 8px' }}>·</span>

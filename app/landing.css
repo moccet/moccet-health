@@ -597,6 +597,9 @@ a {
 }
 
 .landing-page-moccet .social-link-2 {
+  display: flex;
+  align-items: center;
+  gap: 0;
   width: auto;
   min-width: 110px;
   overflow: visible;
@@ -605,12 +608,9 @@ a {
 }
 
 .landing-page-moccet .text-wrapper-5 {
-  position: absolute;
+  position: relative;
   width: auto;
   white-space: nowrap;
-  height: calc(100% - 11px);
-  top: 5px;
-  left: 0;
   font-family: "Inter", Helvetica;
   font-weight: 300;
   color: #ffffff;

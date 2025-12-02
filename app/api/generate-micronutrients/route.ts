@@ -113,8 +113,8 @@ export async function GET(req: NextRequest) {
     let bloodAnalysis = null;
     let biomarkerContext = '';
 
-    if (onboardingData.blood_analysis) {
-      bloodAnalysis = onboardingData.blood_analysis;
+    if (onboardingData.lab_file_analysis) {
+      bloodAnalysis = onboardingData.lab_file_analysis;
       console.log('[OK] Blood analysis found - recommendations will be optimized for biomarkers\n');
 
       const concerns = bloodAnalysis.concerns || [];

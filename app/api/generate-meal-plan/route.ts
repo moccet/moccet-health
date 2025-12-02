@@ -179,8 +179,8 @@ export async function GET(request: NextRequest) {
     // Check dev storage for blood analysis using the lookupEmail
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const bloodData = devOnboardingStorage.get(lookupEmail) as any;
-    if (bloodData?.blood_analysis) {
-      bloodAnalysis = bloodData.blood_analysis;
+    if (bloodData?.lab_file_analysis) {
+      bloodAnalysis = bloodData.lab_file_analysis;
       console.log('[OK] Blood analysis found - meals will be optimized for biomarkers\n');
 
       // Extract key biomarkers for meal targeting

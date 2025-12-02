@@ -563,15 +563,16 @@ export default function PersonalisedPlanPage() {
         paddingRight: '20px',
         paddingBottom: '20px'
       }}>
-        <div style={{ textAlign: 'center', maxWidth: '600px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '600px', width: '100%' }}>
           <h2 style={{
-            fontSize: '32px',
+            fontSize: '32px !important',
             marginBottom: '16px',
-            color: '#1a1a1a',
-            fontWeight: 500,
-            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            letterSpacing: '-0.5px'
-          }}>
+            color: '#1a1a1a !important',
+            fontWeight: '500 !important',
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important',
+            letterSpacing: '-0.5px',
+            textAlign: 'center !important'
+          } as React.CSSProperties}>
             Your plan is being generated
           </h2>
           <p style={{

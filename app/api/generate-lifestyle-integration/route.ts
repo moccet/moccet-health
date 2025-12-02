@@ -359,7 +359,28 @@ FORMATTING.
       text: { verbosity: 'high' }
     });
 
-    const responseText = completion.output_text || '{}';
+    let responseText = completion.output_text || '{}';
+
+    // Extract JSON from potential markdown code blocks or surrounding text
+    if (responseText.includes('```json')) {
+      const match = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (match) responseText = match[1];
+    } else if (responseText.includes('```')) {
+      const match = responseText.match(/```\s*([\s\S]*?)\s*```/);
+      if (match) responseText = match[1];
+    }
+
+    // Remove any leading/trailing non-JSON text
+    responseText = responseText.trim();
+    if (!responseText.startsWith('{')) {
+      // Find first { and last }
+      const start = responseText.indexOf('{');
+      const end = responseText.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+        responseText = responseText.substring(start, end + 1);
+      }
+    }
+
     const lifestyleData = JSON.parse(responseText);
     console.log('[OK] Lifestyle integration plan generated successfully\n');
 

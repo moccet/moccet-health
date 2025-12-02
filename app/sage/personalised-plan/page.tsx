@@ -555,18 +555,18 @@ export default function PersonalisedPlanPage() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
         minHeight: '100vh',
         background: '#f8f8f8',
-        padding: '80px 20px 20px'
+        padding: '40px 20px 20px'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
           <h2 style={{
             fontSize: '32px',
             marginBottom: '16px',
             color: '#1a1a1a',
-            fontWeight: 400,
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+            fontWeight: 500,
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             letterSpacing: '-0.5px'
           }}>
             Your plan is being generated
@@ -575,7 +575,7 @@ export default function PersonalisedPlanPage() {
             fontSize: '18px',
             marginBottom: '12px',
             color: '#666',
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}>
             We&apos;re analyzing your unique biology, health data, and goals to create your personalized nutrition plan.
           </p>
@@ -583,7 +583,7 @@ export default function PersonalisedPlanPage() {
             fontSize: '16px',
             color: '#999',
             marginTop: '24px',
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email when your plan is ready.
           </p>
@@ -592,7 +592,7 @@ export default function PersonalisedPlanPage() {
             color: '#999',
             marginTop: '16px',
             fontStyle: 'italic',
-            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}>
             Feel free to close this page - we&apos;ll email you when it&apos;s complete!
           </p>

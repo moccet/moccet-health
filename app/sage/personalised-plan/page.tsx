@@ -551,14 +551,17 @@ export default function PersonalisedPlanPage() {
   // Show waiting message if plan is still being generated
   if (planStatus === 'queued' || planStatus === 'processing') {
     return (
-      <div className="plan-loading" style={{
+      <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         minHeight: '100vh',
         background: '#f8f8f8',
-        padding: '40px 20px 20px'
+        paddingTop: '120px',
+        paddingLeft: '20px',
+        paddingRight: '20px',
+        paddingBottom: '20px'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
           <h2 style={{

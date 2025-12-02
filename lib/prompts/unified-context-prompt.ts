@@ -327,6 +327,95 @@ REQUIRED:
 - Pure JSON object starting with { and ending with }
 - All recommendations must cite specific data points with exact values
 - Every protocol must reference biomarkers, wearables, or behavioral data
+
+## EXPECTED JSON STRUCTURE
+
+Generate a JSON response with the following structure:
+{
+  "personalizedGreeting": "A warm, personalized greeting using their first name",
+  "executiveSummary": "2-3 paragraphs analyzing their unique situation, health priorities, and what this plan will achieve. Be specific to their data. If no lab data, focus on their goals and lifestyle patterns.",
+  "biomarkers": null,
+  "nutritionOverview": {
+    "goals": ["3-4 specific, measurable nutrition goals based on their priorities"],
+    "nutritionStructure": {
+      "calories": "Daily calorie range with rationale",
+      "protein": "Protein target in grams with rationale",
+      "carbs": "Carb target/approach with timing suggestions",
+      "fiber": "Fiber target in grams",
+      "fat": "Fat target in grams with omega-3 emphasis"
+    }
+  },
+  "dailyRecommendations": {
+    "morningRitual": ["3-4 specific morning nutrition habits with their preferences in mind"],
+    "empowerGut": ["3-4 gut health strategies (resistant starch, fermented foods, etc.)"],
+    "afternoonVitality": ["3-4 afternoon nutrition strategies to prevent energy crashes"],
+    "energyOptimization": ["3-4 carb/protein timing strategies around their workout schedule"],
+    "middayMastery": ["3-4 lunch-focused strategies emphasizing their protein preferences"],
+    "eveningNourishment": ["3-4 dinner and evening nutrition strategies"]
+  },
+  "micronutrientFocus": [
+    {
+      "nutrient": "Nutrient name",
+      "dailyGoal": "Target amount",
+      "foodSources": "Specific foods from their preferred sources"
+    }
+  ],
+  "sampleMealPlan": {
+    "day1": {
+      "meals": [
+        {
+          "time": "7:45 am",
+          "name": "Breakfast name",
+          "description": "Brief one-line description of the meal",
+          "macros": "calories | protein | carbs | fiber",
+          "ingredients": ["Exact amount ingredient 1 (e.g., 150g chicken breast)"],
+          "cookingInstructions": ["Step 1: Detailed cooking step"]
+        }
+      ]
+    },
+    "day2": { "meals": [...] },
+    "day3": { "meals": [...] },
+    "day4": { "meals": [...] },
+    "day5": { "meals": [...] },
+    "day6": { "meals": [...] },
+    "day7": { "meals": [...] }
+  },
+  "lifestyleIntegration": {
+    "sleepOptimization": "Sleep protocol paragraph citing specific data",
+    "exerciseProtocol": "Exercise nutrition paragraph based on their workout schedule",
+    "stressManagement": "Stress management paragraph citing behavioral data",
+    "skinImprovement": "Skin health paragraph if relevant to their goals"
+  },
+  "supplementRecommendations": {
+    "essentialSupplements": [
+      {
+        "name": "Supplement name",
+        "dosage": "Specific dosage with units",
+        "timing": "When to take it",
+        "rationale": "Why essential based on their data",
+        "benefits": "Expected benefits specific to their health priorities",
+        "duration": "How long to supplement"
+      }
+    ],
+    "optionalSupplements": [
+      {
+        "name": "Optional supplement name",
+        "dosage": "Specific dosage with units",
+        "timing": "When to take it",
+        "rationale": "Why beneficial but not essential",
+        "benefits": "Potential additional benefits",
+        "duration": "Recommended duration"
+      }
+    ]
+  },
+  "preventiveFeatures": [
+    "Calendar-integrated meal reminders description",
+    "Water/sleep/training tracking description",
+    "Biomarker recheck plan (10-12 weeks)"
+  ]
+}
+
+CRITICAL: Use this EXACT structure. Do not create alternative formats like "protocols" or "client_profile".
 `.trim();
 
   return prompt;

@@ -555,10 +555,10 @@ export default function PersonalisedPlanPage() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
         minHeight: '100vh',
         background: '#f8f8f8',
-        paddingTop: '120px',
+        paddingTop: '20px',
         paddingLeft: '20px',
         paddingRight: '20px',
         paddingBottom: '20px'

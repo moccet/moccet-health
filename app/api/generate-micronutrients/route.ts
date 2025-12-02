@@ -187,7 +187,7 @@ export async function GET(req: NextRequest) {
     const openai = getOpenAIClient();
 
     const prompt = unifiedContext
-      ? `You are an expert nutritionist and longevity medicine specialist creating personalized micronutrient recommendations.
+      ? `Create personalized micronutrient recommendations for ${formData.fullName}.
 
 UNIFIED HEALTH CONTEXT:
 ${JSON.stringify(unifiedContext.unifiedProfile, null, 2)}
@@ -202,7 +202,7 @@ ${(unifiedContext.priorityAreas || []).map((p: { area: string; severity: string;
   `- ${p.area} (${p.severity}): ${p.dataPoints?.join('; ') || 'N/A'}`
 ).join('\n') || 'No priority areas identified yet'}
 
-USER PROFILE:
+CLIENT PROFILE:
 Name: ${formData.fullName || 'User'}
 Age: ${formData.age}, Gender: ${formData.gender}
 Main Priority: ${formData.mainPriority}
@@ -281,7 +281,7 @@ ECOSYSTEM-ENRICHED REQUIREMENTS:
 ` : ''}
 `;
 
-    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'You are an expert nutritionist creating personalized micronutrient recommendations. Always respond with valid JSON only.';
+    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'Generate valid JSON micronutrient recommendations. Output must be parseable JSON only with no conversational text.';
 
     console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
 

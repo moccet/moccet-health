@@ -261,9 +261,9 @@ export async function GET(request: NextRequest) {
 
     const prompt = unifiedContext
       ? buildMealPlanPrompt(unifiedContext, formData, nutritionTargets)
-      : `You are an elite nutritionist and longevity medicine expert creating a biomarker-optimized, personalized 7-day meal plan.
+      : `Create a biomarker-optimized, personalized 7-day meal plan for ${formData.fullName}.
 
-User Profile:
+CLIENT PROFILE:
 - Name: ${formData.fullName}
 - Age: ${formData.age}
 - Gender: ${formData.gender}
@@ -382,7 +382,7 @@ FORMATTING:
 
 Return ONLY valid JSON. Be specific, creative, and delicious!`;
 
-    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'You are an elite nutritionist specializing in personalized meal planning. You create detailed, practical meal plans with recipes. You MUST respond with valid JSON only.';
+    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'Generate a valid JSON 7-day meal plan with detailed recipes. Output must be parseable JSON only with no conversational text.';
 
     console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
 

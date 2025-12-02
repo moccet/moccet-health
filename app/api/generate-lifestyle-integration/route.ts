@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
     const openai = getOpenAIClient();
 
     const prompt = unifiedContext
-      ? `You are an expert longevity coach, exercise physiologist, and sleep specialist creating a hyper-personalized lifestyle integration plan.
+      ? `Create a hyper-personalized lifestyle integration plan for ${formData.fullName}.
 
 UNIFIED ECOSYSTEM CONTEXT:
 ${JSON.stringify(unifiedContext.unifiedProfile, null, 2)}
@@ -194,15 +194,15 @@ ${(unifiedContext.keyInsights || []).map((i: { insight: string; sources: string[
 PRIORITY AREAS:
 ${(unifiedContext.priorityAreas || []).map((p: { area: string; severity: string }) => `- ${p.area} (${p.severity})`).join('\n') || 'No priority areas identified yet'}
 
-USER PROFILE:
+CLIENT PROFILE:
 Name: ${formData.fullName || 'User'}
 Age: ${formData.age}, Gender: ${formData.gender}
 Main Priority: ${formData.mainPriority}
 Driving Goal: ${formData.drivingGoal}
 Eating Style: ${formData.eatingStyle}`
-      : `You are an expert longevity coach, exercise physiologist, and sleep specialist creating a hyper-personalized lifestyle integration plan.
+      : `Create a hyper-personalized lifestyle integration plan for ${formData.fullName}.
 
-USER PROFILE:
+CLIENT PROFILE:
 Name: ${formData.fullName || 'User'}
 Age: ${formData.age}, Gender: ${formData.gender}
 Weight: ${formData.weight} ${formData.weightUnit || 'lbs'}
@@ -354,7 +354,7 @@ FORMATTING.
 
     const systemPrompt = unifiedContext
       ? buildSystemPrompt()
-      : 'You are an expert longevity coach creating personalized lifestyle plans. Always respond with valid JSON only.';
+      : 'Generate a valid JSON lifestyle integration plan. Output must be parseable JSON only with no conversational text.';
 
     const completion = await openai.responses.create({
       model: 'gpt-5',

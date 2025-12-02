@@ -204,9 +204,9 @@ export async function GET(request: NextRequest) {
     // Build comprehensive prompt with unified context
     const prompt = unifiedContext
       ? buildNutritionPlanPrompt(unifiedContext, formData)
-      : `You are an elite nutritionist, longevity expert, and personalized health consultant. Generate a comprehensive, personalized Sage Nutrition Plan for this individual.
+      : `Create a comprehensive, personalized Sage Nutrition Plan for ${formData.fullName}.
 
-User Profile:
+CLIENT PROFILE:
 - Name: ${formData.fullName}
 - Age: ${formData.age}
 - Gender: ${formData.gender}
@@ -235,7 +235,7 @@ Nutrition Profile (The Fuel):
 Connected Integrations: ${formData.integrations.join(', ') || 'None yet'}
 ${formData.hasLabFile ? 'Lab results: Uploaded (analysis pending)' : 'Lab results: Not uploaded'}
 
-Your task is to create a complete nutrition plan that addresses their specific goals, health conditions, lifestyle, and preferences. The plan should be:
+Generate a complete nutrition plan that addresses their specific goals, health conditions, lifestyle, and preferences. The plan should be:
 1. Evidence-based and scientifically sound
 2. Practical and tailored to their cooking habits and schedule
 3. Respectful of their allergies, medical conditions, and food preferences
@@ -426,7 +426,7 @@ EXAMPLE OF CORRECT MEAL FORMAT:
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
-    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'You are an elite nutritionist and personalized health consultant. You create evidence-based, highly personalized nutrition plans. You MUST respond with valid JSON only.';
+    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'Generate a valid JSON nutrition plan. Output must be parseable JSON only. Do not include any conversational text, greetings, or explanations outside the JSON structure.';
 
     console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
 

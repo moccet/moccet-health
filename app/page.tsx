@@ -229,8 +229,6 @@ export default function LandingPage() {
               <Link href="/privacy-policy" className="text-wrapper-4">Privacy Policy</Link>
             </div>
             <div className="social-link-2">
-              <span className="text-wrapper-5">moccet Inc © 2025</span>
-              <span className="text-wrapper-5" style={{ margin: '0 8px' }}>·</span>
               <a href="/privacy-policy" className="text-wrapper-5" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Privacy Policy
               </a>
@@ -238,6 +236,8 @@ export default function LandingPage() {
               <a href="/terms-of-use" className="text-wrapper-5" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Terms
               </a>
+              <span className="text-wrapper-5" style={{ margin: '0 8px' }}>·</span>
+              <span className="text-wrapper-5">moccet Inc © 2025</span>
             </div>
           </nav>
         </div>

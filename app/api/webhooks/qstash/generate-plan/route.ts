@@ -309,7 +309,6 @@ async function handler(request: NextRequest) {
     const generateSagePlan = (await import('../../../generate-sage-plan/route')).GET;
     const generateMealPlan = (await import('../../../generate-meal-plan/route')).GET;
     const generateMicronutrients = (await import('../../../generate-micronutrients/route')).GET;
-    const generateLifestyle = (await import('../../../generate-lifestyle-integration/route')).GET;
 
     console.log('[1/5] Generating main sage plan (with blood analysis data)...');
 
@@ -351,17 +350,29 @@ async function handler(request: NextRequest) {
       console.log('[WARN] Micronutrients generation failed, continuing...');
     }
 
-    console.log('[4/5] Generating lifestyle integration...');
-    const mockLifestyleRequest = {
-      url: `${baseUrl}/api/generate-lifestyle-integration?code=${uniqueCode}`,
-      nextUrl: new URL(`${baseUrl}/api/generate-lifestyle-integration?code=${uniqueCode}`)
-    } as unknown as NextRequest;
+    console.log('[4/5] Queueing lifestyle integration generation...');
 
-    const lifestyleResponse = await generateLifestyle(mockLifestyleRequest);
-    if (lifestyleResponse.status === 200) {
-      console.log('[OK] Lifestyle integration generated');
-    } else {
-      console.log('[WARN] Lifestyle integration failed, continuing...');
+    // Queue lifestyle generation as a separate job to avoid timeout
+    try {
+      const qstashToken = process.env.QSTASH_TOKEN;
+      if (qstashToken) {
+        const { Client } = await import('@upstash/qstash');
+        const client = new Client({ token: qstashToken });
+
+        const lifestyleWebhookUrl = `${baseUrl}/api/webhooks/qstash/generate-lifestyle`;
+        const result = await client.publishJSON({
+          url: lifestyleWebhookUrl,
+          body: { email, uniqueCode },
+          retries: 2,
+        });
+
+        console.log(`[OK] Lifestyle generation job queued (messageId: ${result.messageId})`);
+      } else {
+        console.log('[WARN] QSTASH_TOKEN not configured, skipping lifestyle generation');
+      }
+    } catch (error) {
+      console.error('[WARN] Failed to queue lifestyle generation:', error);
+      // Continue anyway - lifestyle is not critical for initial email
     }
 
     // Send email notification

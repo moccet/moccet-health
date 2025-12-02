@@ -32,6 +32,7 @@ export async function GET() {
       'openid',
       'profile',
       'email',
+      'User.Read',           // Read user profile (required for /v1.0/me endpoint)
       'offline_access',
       'Chat.Read',           // Read user's chats
       'Chat.ReadWrite',      // Read and send messages in chats

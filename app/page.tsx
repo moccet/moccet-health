@@ -225,9 +225,6 @@ export default function LandingPage() {
                 />
               </svg>
             </a>
-            <div className="div-wrapper">
-              <Link href="/privacy-policy" className="text-wrapper-4">Privacy Policy</Link>
-            </div>
             <div className="social-link-2">
               <a href="/privacy-policy" className="text-wrapper-5" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Privacy Policy

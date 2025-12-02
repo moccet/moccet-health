@@ -18,7 +18,7 @@ export async function GET() {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('response_mode', 'query');
-    authUrl.searchParams.append('scope', 'openid profile email Calendars.Read Calendars.ReadWrite offline_access');
+    authUrl.searchParams.append('scope', 'openid profile email User.Read Calendars.Read Calendars.ReadWrite offline_access');
     authUrl.searchParams.append('state', generateRandomState());
 
     return NextResponse.json({

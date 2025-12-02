@@ -193,14 +193,14 @@ UNIFIED HEALTH CONTEXT:
 ${JSON.stringify(unifiedContext.unifiedProfile, null, 2)}
 
 KEY INSIGHTS FROM ECOSYSTEM:
-${unifiedContext.keyInsights.map((i: { insight: string; sources: string[]; dataPoints: string[] }) =>
-  `- ${i.insight} (Sources: ${i.sources.join(', ')})\n  Data: ${i.dataPoints.join('; ')}`
-).join('\n')}
+${(unifiedContext.keyInsights || []).map((i: { insight: string; sources: string[]; dataPoints: string[] }) =>
+  `- ${i.insight} (Sources: ${i.sources.join(', ')})\n  Data: ${i.dataPoints?.join('; ') || 'N/A'}`
+).join('\n') || 'No key insights available yet'}
 
 PRIORITY AREAS:
-${unifiedContext.priorityAreas.map((p: { area: string; severity: string; dataPoints: string[] }) =>
-  `- ${p.area} (${p.severity}): ${p.dataPoints.join('; ')}`
-).join('\n')}
+${(unifiedContext.priorityAreas || []).map((p: { area: string; severity: string; dataPoints: string[] }) =>
+  `- ${p.area} (${p.severity}): ${p.dataPoints?.join('; ') || 'N/A'}`
+).join('\n') || 'No priority areas identified yet'}
 
 USER PROFILE:
 Name: ${formData.fullName || 'User'}

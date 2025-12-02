@@ -56,7 +56,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!profileResponse.ok) {
-      throw new Error('Failed to fetch user profile');
+      const errorText = await profileResponse.text();
+      console.error('[Teams] Profile fetch failed:', profileResponse.status, errorText);
+      throw new Error(`Failed to fetch user profile: ${profileResponse.status} - ${errorText}`);
     }
 
     const profile = await profileResponse.json();

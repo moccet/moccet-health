@@ -324,11 +324,27 @@ ECOSYSTEM-ENRICHED REQUIREMENTS:
     console.log('[OK] Micronutrient recommendations generated successfully\n');
 
     // Store in cache
-    console.log('[5/5] Storing micronutrient recommendations in cache...');
+    console.log('[5/5] Storing micronutrient recommendations...');
     onboardingData.micronutrient_recommendations = micronutrientData;
     if (lookupEmail) {
       devOnboardingStorage.set(lookupEmail, onboardingData);
-      console.log('[OK] Recommendations cached successfully\n');
+      console.log('[OK] Cached in dev storage');
+    }
+
+    // Save to database
+    const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (hasSupabase && lookupEmail) {
+      const supabase = await createClient();
+      const { error: updateError } = await supabase
+        .from('sage_onboarding_data')
+        .update({ micronutrients: micronutrientData })
+        .eq('email', lookupEmail);
+
+      if (updateError) {
+        console.error('[ERROR] Failed to save micronutrients to database:', updateError);
+      } else {
+        console.log('[OK] Micronutrients saved to database');
+      }
     }
 
     console.log('================================================================================');

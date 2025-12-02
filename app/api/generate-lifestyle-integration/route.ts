@@ -395,11 +395,27 @@ FORMATTING.
     console.log('[OK] Lifestyle integration plan generated successfully\n');
 
     // Store in cache
-    console.log('[5/5] Storing lifestyle integration plan in cache...');
+    console.log('[5/5] Storing lifestyle integration plan...');
     onboardingData.lifestyle_integration = lifestyleData;
     if (lookupEmail) {
       devOnboardingStorage.set(lookupEmail, onboardingData);
-      console.log('[OK] Plan cached successfully\n');
+      console.log('[OK] Cached in dev storage');
+    }
+
+    // Save to database
+    const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (hasSupabase && lookupEmail) {
+      const supabase = await createClient();
+      const { error: updateError } = await supabase
+        .from('sage_onboarding_data')
+        .update({ lifestyle_integration: lifestyleData })
+        .eq('email', lookupEmail);
+
+      if (updateError) {
+        console.error('[ERROR] Failed to save lifestyle to database:', updateError);
+      } else {
+        console.log('[OK] Lifestyle integration saved to database');
+      }
     }
 
     console.log('================================================================================');

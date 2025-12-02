@@ -418,6 +418,22 @@ Return ONLY valid JSON. Be specific, creative, and delicious!`;
 
     console.log('[OK] Detailed meal plan generated successfully\n');
 
+    // Save to database
+    const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (hasSupabase && lookupEmail) {
+      const supabase = await createClient();
+      const { error: updateError } = await supabase
+        .from('sage_onboarding_data')
+        .update({ meal_plan: mealPlanData })
+        .eq('email', lookupEmail);
+
+      if (updateError) {
+        console.error('[ERROR] Failed to save meal plan to database:', updateError);
+      } else {
+        console.log('[OK] Meal plan saved to database');
+      }
+    }
+
     console.log('='.repeat(80));
     console.log('[COMPLETE] 7-DAY MEAL PLAN READY');
     console.log('='.repeat(80) + '\n');

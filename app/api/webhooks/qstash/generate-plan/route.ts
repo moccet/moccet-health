@@ -365,8 +365,45 @@ async function handler(request: NextRequest) {
       console.log('[WARN] QSTASH_TOKEN not configured, skipping background jobs');
     }
 
+    // Wait for background jobs to complete before sending email
+    console.log('[3/3] Waiting for all components to complete...');
+    const supabase = await createClient();
+    const maxWaitTime = 15 * 60 * 1000; // 15 minutes
+    const pollInterval = 15000; // 15 seconds
+    const startTime = Date.now();
+    let allComplete = false;
+
+    while (Date.now() - startTime < maxWaitTime) {
+      const { data: checkData, error: checkError } = await supabase
+        .from('sage_onboarding_data')
+        .select('micronutrients, meal_plan, lifestyle_integration')
+        .eq('email', email)
+        .single();
+
+      if (!checkError && checkData) {
+        const hasMicronutrients = !!checkData.micronutrients;
+        const hasMealPlan = !!checkData.meal_plan;
+        const hasLifestyle = !!checkData.lifestyle_integration;
+
+        console.log(`[POLL] Micronutrients: ${hasMicronutrients ? '✓' : '✗'}, Meal Plan: ${hasMealPlan ? '✓' : '✗'}, Lifestyle: ${hasLifestyle ? '✓' : '✗'}`);
+
+        if (hasMicronutrients && hasMealPlan && hasLifestyle) {
+          allComplete = true;
+          console.log('[OK] All components complete!');
+          break;
+        }
+      }
+
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    if (!allComplete) {
+      console.warn('[WARN] Timeout waiting for components, sending email anyway');
+    }
+
     // Send email notification
-    console.log('[3/3] Sending plan ready email...');
+    console.log('[4/4] Sending plan ready email...');
     console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
     const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 

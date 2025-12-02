@@ -58,7 +58,7 @@ interface OnboardingData {
  */
 function buildUserProfileSection(onboardingData: OnboardingData): string {
   return `
-## USER PROFILE
+## CLIENT PROFILE
 
 **Demographics:**
 - Name: ${onboardingData.fullName}
@@ -312,7 +312,21 @@ You have access to this user's complete health ecosystem. Your nutrition plan MU
    - When sleep debt combines with overtraining, prioritize recovery nutrition
    - Explain causal relationships between data points
 
-**Output Format:** Return ONLY valid JSON with the expected structure. Do NOT use colons (:) anywhere in text content - use em dashes (—) instead.
+## OUTPUT REQUIREMENTS
+
+You MUST return ONLY valid JSON with the expected structure.
+
+FORBIDDEN:
+- NO conversational text, greetings, or explanations outside the JSON structure
+- NO "Sofian, I..." or "Hi, I..." type responses
+- NO markdown formatting around the JSON (no \`\`\`json blocks)
+- NO explanatory text before or after the JSON
+- NO colons (:) in text content - use em dashes (—) instead
+
+REQUIRED:
+- Pure JSON object starting with { and ending with }
+- All recommendations must cite specific data points with exact values
+- Every protocol must reference biomarkers, wearables, or behavioral data
 `.trim();
 
   return prompt;
@@ -397,7 +411,21 @@ You have access to this user's complete health ecosystem. Your fitness plan MUST
    - Explain WHY each metric matters in simple terms
    - Keep all measurements actionable and clear
 
-**Output Format:** Return ONLY valid JSON with the expected structure. Reference specific data throughout your plan. Add 'personalizedIntro' fields to nutritionGuidance and recoveryProtocol sections.
+## OUTPUT REQUIREMENTS
+
+You MUST return ONLY valid JSON with the expected structure.
+
+FORBIDDEN:
+- NO conversational text, greetings, or explanations outside the JSON structure
+- NO "Sofian, I..." or "Hi, I..." type responses
+- NO markdown formatting around the JSON (no \`\`\`json blocks)
+- NO explanatory text before or after the JSON
+
+REQUIRED:
+- Pure JSON object starting with { and ending with }
+- Reference specific data throughout the plan
+- Add 'personalizedIntro' fields to nutritionGuidance and recoveryProtocol sections
+- All recommendations must cite exact biomarker values and wearable metrics
 `.trim();
 
   return prompt;
@@ -461,7 +489,21 @@ ${buildBehavioralPatternsSection(context)}
       return `- Work stress level: ${stressLevel}\n   - ${stressLevel === 'high' ? 'Prioritize quick-prep meals (15-20 min) on high-stress days' : 'Can include more complex recipes'}`;
     })()}
 
-**Output Format:** Return JSON with 7-day meal plan. Include biomarker optimization notes for each meal.
+## OUTPUT REQUIREMENTS
+
+You MUST return ONLY valid JSON with the expected structure.
+
+FORBIDDEN:
+- NO conversational text, greetings, or explanations outside the JSON structure
+- NO "Sofian, I..." or "Hi, I..." type responses
+- NO markdown formatting around the JSON (no \`\`\`json blocks)
+- NO explanatory text before or after the JSON
+
+REQUIRED:
+- Pure JSON object with complete 7-day meal plan
+- Include biomarker optimization notes for each meal
+- All meal timing must reference Gmail/Slack optimal windows
+- All ingredient choices must cite specific biomarker deficiencies
 `.trim();
 
   return prompt;
@@ -471,7 +513,7 @@ ${buildBehavioralPatternsSection(context)}
  * Build system prompt with data citation requirements
  */
 export function buildSystemPrompt(): string {
-  return `You are an elite health optimization expert with access to the user's complete health ecosystem including biomarkers, wearable data, and behavioral patterns.
+  return `ROLE: Elite health optimization system with access to complete health ecosystem data including biomarkers, wearable data, and behavioral patterns.
 
 CRITICAL REQUIREMENTS:
 1. Every recommendation MUST reference specific data points from the user's profile
@@ -481,6 +523,13 @@ CRITICAL REQUIREMENTS:
 5. When multiple data sources agree, explicitly state the convergence
 6. Never make generic recommendations - everything must be tied to their actual measurements
 
+OUTPUT REQUIREMENTS:
+- Return ONLY valid JSON with the expected structure
+- DO NOT include conversational text, greetings, or explanations outside JSON
+- DO NOT start responses with "Sofian, I..." or "Hi, I..." or any conversational framing
+- DO NOT use markdown code blocks around JSON (no \`\`\`json)
+- Start response with { and end with }
+
 FORMATTING REQUIREMENTS:
 - DO NOT use emojis (⚠️, 🔥, 💡, 🧊, etc.) anywhere in your output
 - DO NOT use colored text, HTML tags, or markdown color formatting
@@ -488,9 +537,9 @@ FORMATTING REQUIREMENTS:
 - Use professional, clean, plain text only
 - All content must be simple and readable without visual embellishments
 
-Your output will be reviewed for:
-- Data citation density (every recommendation should have 2-3 supporting data points)
-- Cross-source integration (using multiple data sources together)
-- Specificity (exact values, not qualitative descriptions)
-- Actionability (clear protocols, not vague advice)`;
+DATA CITATION STANDARDS:
+- Data citation density: every recommendation should have 2-3 supporting data points
+- Cross-source integration: use multiple data sources together
+- Specificity: exact values, not qualitative descriptions
+- Actionability: clear protocols, not vague advice`;
 }

@@ -619,11 +619,18 @@ export default function SageOnboarding() {
         const left = (window.screen.width - width) / 2;
         const top = (window.screen.height - height) / 2;
 
-        window.open(
+        const popup = window.open(
           data.authUrl,
           'outlook-auth',
           `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
         );
+
+        // Check if popup was blocked
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+          window.location.href = data.authUrl;
+          return;
+        }
 
         // Poll for connection status
         const pollInterval = setInterval(async () => {
@@ -902,11 +909,18 @@ export default function SageOnboarding() {
         const left = (window.screen.width - width) / 2;
         const top = (window.screen.height - height) / 2;
 
-        window.open(
+        const popup = window.open(
           data.authUrl,
           'teams-auth',
           `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
         );
+
+        // Check if popup was blocked
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+          window.location.href = data.authUrl;
+          return;
+        }
 
         // Poll for connection status
         const pollInterval = setInterval(async () => {

@@ -1041,8 +1041,24 @@ export default function SageOnboarding() {
     setCurrentScreen('name');
   };
 
+  const [clickingOption, setClickingOption] = useState<string | null>(null);
+
   const handleInputChange = (field: keyof typeof formData, value: string | string[] | File | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle option click with Typeform-style flicker animation
+  const handleOptionClick = (field: keyof typeof formData, value: string, optionKey: string) => {
+    // Trigger the clicking animation
+    setClickingOption(optionKey);
+
+    // Update the form data
+    handleInputChange(field, value);
+
+    // Remove the clicking class after animation completes
+    setTimeout(() => {
+      setClickingOption(null);
+    }, 400);
   };
 
   const handleLabFileUpload = async (file: File) => {
@@ -1114,6 +1130,15 @@ export default function SageOnboarding() {
     });
   };
 
+  // Toggle array value with clicking animation
+  const handleCheckboxClick = (field: 'allergies' | 'medicalConditions' | 'proteinSources' | 'integrations', value: string, optionKey: string) => {
+    setClickingOption(optionKey);
+    toggleArrayValue(field, value);
+    setTimeout(() => {
+      setClickingOption(null);
+    }, 400);
+  };
+
   const handleContinue = (nextScreen: Screen) => {
     setCurrentScreen(nextScreen);
   };
@@ -1124,18 +1149,167 @@ export default function SageOnboarding() {
     }
   };
 
+  // Global Enter key handler for all screens
+  useEffect(() => {
+    const handleGlobalEnter = (e: KeyboardEvent) => {
+      // Only handle Enter key
+      if (e.key !== 'Enter') return;
+
+      // Don't handle if typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        // Allow Enter to work normally in text inputs
+        return;
+      }
+
+      // Determine next screen and if Continue is disabled based on current screen
+      let nextScreen: Screen | null = null;
+      let isDisabled = false;
+
+      // Check validation for each screen
+      switch (currentScreen) {
+        case 'name':
+          isDisabled = !formData.fullName?.trim();
+          nextScreen = 'age';
+          break;
+        case 'age':
+          isDisabled = !formData.age || parseInt(formData.age) < 18 || parseInt(formData.age) > 120;
+          nextScreen = 'gender';
+          break;
+        case 'gender':
+          isDisabled = !formData.gender;
+          nextScreen = 'weight';
+          break;
+        case 'weight':
+          isDisabled = !formData.weight;
+          nextScreen = 'height';
+          break;
+        case 'height':
+          isDisabled = !formData.height;
+          nextScreen = 'email';
+          break;
+        case 'email':
+          isDisabled = !formData.email?.includes('@');
+          nextScreen = 'ikigai-intro';
+          break;
+        case 'main-priority':
+          isDisabled = !formData.mainPriority;
+          nextScreen = 'driving-goal';
+          break;
+        case 'driving-goal':
+          isDisabled = !formData.drivingGoal;
+          nextScreen = 'baseline-intro';
+          break;
+        case 'eating-style':
+          isDisabled = !formData.eatingStyle;
+          nextScreen = 'first-meal';
+          break;
+        case 'first-meal':
+          isDisabled = !formData.firstMeal;
+          nextScreen = 'energy-crash';
+          break;
+        case 'energy-crash':
+          isDisabled = !formData.energyCrash;
+          nextScreen = 'protein-sources';
+          break;
+        // Intro screens don't need validation
+        case 'intro':
+          nextScreen = 'welcome';
+          break;
+        case 'welcome':
+          nextScreen = 'name';
+          break;
+        case 'ikigai-intro':
+          nextScreen = 'main-priority';
+          break;
+        case 'baseline-intro':
+          nextScreen = 'allergies';
+          break;
+        case 'fuel-intro':
+          nextScreen = 'eating-style';
+          break;
+        case 'final-step-intro':
+          nextScreen = 'ecosystem-integration';
+          break;
+        // Multi-select screens can always continue
+        case 'allergies':
+          nextScreen = 'medications';
+          break;
+        case 'medications':
+          nextScreen = 'supplements';
+          break;
+        case 'supplements':
+          nextScreen = 'medical-conditions';
+          break;
+        case 'medical-conditions':
+          nextScreen = 'fuel-intro';
+          break;
+        case 'protein-sources':
+          nextScreen = 'food-dislikes';
+          break;
+        case 'food-dislikes':
+          nextScreen = 'meals-cooked';
+          break;
+        case 'meals-cooked':
+          nextScreen = 'alcohol-consumption';
+          break;
+        case 'alcohol-consumption':
+          nextScreen = 'completion';
+          break;
+        case 'completion':
+          nextScreen = 'final-step-intro';
+          break;
+        case 'ecosystem-integration':
+          nextScreen = 'lab-upload';
+          break;
+        // Lab upload should not auto-advance
+        case 'lab-upload':
+          return;
+        default:
+          return;
+      }
+
+      if (nextScreen && !isDisabled) {
+        e.preventDefault();
+        handleContinue(nextScreen);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalEnter);
+    return () => window.removeEventListener('keydown', handleGlobalEnter);
+  }, [currentScreen, formData]);
+
+  // Screen order for navigation
+  const screenOrder: Screen[] = [
+    'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
+    'email', 'ikigai-intro', 'main-priority', 'driving-goal',
+    'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
+    'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
+    'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+  ];
+
   const handleBack = () => {
-    const screens: Screen[] = [
-      'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
-      'email', 'ikigai-intro', 'main-priority', 'driving-goal',
-      'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
-      'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-      'meals-cooked', 'alcohol-consumption', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
-    ];
-    const currentIndex = screens.indexOf(currentScreen);
+    const currentIndex = screenOrder.indexOf(currentScreen);
     if (currentIndex > 1) {
-      setCurrentScreen(screens[currentIndex - 1]);
+      setCurrentScreen(screenOrder[currentIndex - 1]);
     }
+  };
+
+  const handleForward = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    if (currentIndex < screenOrder.length - 1) {
+      setCurrentScreen(screenOrder[currentIndex + 1]);
+    }
+  };
+
+  const canGoBack = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    return currentIndex > 1;
+  };
+
+  const canGoForward = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    return currentIndex < screenOrder.length - 1 && currentIndex >= 0;
   };
 
   const handleSubmit = async () => {
@@ -1265,6 +1439,120 @@ export default function SageOnboarding() {
         </div>
       )}
 
+      {/* Fixed Navigation Arrows - Bottom Right */}
+      {!['intro', 'welcome'].includes(currentScreen) && !isLoading && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'clamp(16px, 4vw, 30px)',
+          right: 'clamp(16px, 4vw, 30px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'clamp(8px, 2vw, 10px)',
+          zIndex: 9999
+        }}>
+          <button
+            onClick={handleForward}
+            disabled={!canGoForward()}
+            style={{
+              width: 'clamp(44px, 12vw, 48px)',
+              height: 'clamp(44px, 12vw, 48px)',
+              minWidth: '44px',
+              minHeight: '44px',
+              borderRadius: '50%',
+              border: '2px solid #a8b8a0',
+              background: canGoForward() ? '#ffffff' : '#f5f5f5',
+              color: canGoForward() ? '#2d3a2d' : '#cccccc',
+              cursor: canGoForward() ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(18px, 5vw, 20px)',
+              transition: 'all 0.2s ease',
+              opacity: canGoForward() ? 1 : 0.5,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#e8ede6';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+            onTouchStart={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.background = '#e8ede6';
+                e.currentTarget.style.transform = 'scale(0.95)';
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            ↑
+          </button>
+          <button
+            onClick={handleBack}
+            disabled={!canGoBack()}
+            style={{
+              width: 'clamp(44px, 12vw, 48px)',
+              height: 'clamp(44px, 12vw, 48px)',
+              minWidth: '44px',
+              minHeight: '44px',
+              borderRadius: '50%',
+              border: '2px solid #a8b8a0',
+              background: canGoBack() ? '#ffffff' : '#f5f5f5',
+              color: canGoBack() ? '#2d3a2d' : '#cccccc',
+              cursor: canGoBack() ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(18px, 5vw, 20px)',
+              transition: 'all 0.2s ease',
+              opacity: canGoBack() ? 1 : 0.5,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (canGoBack() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#e8ede6';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canGoBack() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+            onTouchStart={(e) => {
+              if (canGoBack()) {
+                e.currentTarget.style.background = '#e8ede6';
+                e.currentTarget.style.transform = 'scale(0.95)';
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (canGoBack()) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            ↓
+          </button>
+        </div>
+      )}
+
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
         <video
@@ -1374,28 +1662,26 @@ export default function SageOnboarding() {
       {/* Name Screen */}
       <div className={`typeform-screen ${currentScreen === 'name' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="typeform-title">What&apos;s your full name?</h1>
+          <h1 className="typeform-title">What is your name?</h1>
           <p className="typeform-subtitle">We&apos;ll use this to personalize your sage experience and keep your profile secure.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim())} autoFocus />
             <svg className={`microphone-icon ${isListening && activeField === 'fullName' ? 'listening' : ''}`} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => startDictation('fullName')} style={{cursor: 'pointer'}}>
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M10 16V18" stroke="#c9d5c0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {formData.fullName.trim() && formData.fullName.trim().split(/\s+/).length < 2 && (
-            <p className="validation-error">Please enter your full name (first and last name)</p>
-          )}
           <div className="button-container">
             <button
               className="typeform-button"
               onClick={() => handleContinue('age')}
-              disabled={!formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2}
+              disabled={!formData.fullName.trim()}
             >
               Continue
             </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1416,7 +1702,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('gender')} disabled={!formData.age.trim()}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1429,7 +1716,11 @@ export default function SageOnboarding() {
           <p className="typeform-subtitle">Understanding your biology helps us provide more accurate nutritional guidance.</p>
           <div className="options-container">
             {['male', 'female', 'non-binary', 'prefer-not-to-say'].map((option) => (
-              <button key={option} className={`option-button ${formData.gender === option ? 'selected' : ''}`} onClick={() => handleInputChange('gender', option)}>
+              <button
+                key={option}
+                className={`option-button ${formData.gender === option ? 'selected' : ''} ${clickingOption === `gender-${option}` ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('gender', option, `gender-${option}`)}
+              >
                 {option === 'male' && 'Male'}
                 {option === 'female' && 'Female'}
                 {option === 'non-binary' && 'Non-Binary'}
@@ -1439,7 +1730,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('weight')} disabled={!formData.gender}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1478,7 +1769,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('height')} disabled={!formData.weight.trim()}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1578,7 +1870,8 @@ export default function SageOnboarding() {
             >
               Continue
             </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1594,7 +1887,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ikigai-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1606,7 +1900,7 @@ export default function SageOnboarding() {
           <h1 className="section-title">1 The Ikigai</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('main-priority')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1618,30 +1912,30 @@ export default function SageOnboarding() {
           <p className="section-label">1 The Ikigai</p>
           <h1 className="typeform-title">What is your main priority?</h1>
           <div className="options-container">
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'longevity' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'longevity')}>
+            <button className={`option-button with-subtitle ${formData.mainPriority === 'longevity' ? 'selected' : ''} ${clickingOption === 'mainPriority-longevity' ? 'clicking' : ''}`} onClick={() => handleOptionClick('mainPriority', 'longevity', 'mainPriority-longevity')}>
               <div className="option-main">Longevity and Aging</div>
               <div className="option-sub">Preventing disease & increasing long-term health</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'cognitive' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'cognitive')}>
+            <button className={`option-button with-subtitle ${formData.mainPriority === 'cognitive' ? 'selected' : ''} ${clickingOption === 'mainPriority-cognitive' ? 'clicking' : ''}`} onClick={() => handleOptionClick('mainPriority', 'cognitive', 'mainPriority-cognitive')}>
               <div className="option-main">Cognitive Performance</div>
               <div className="option-sub">Better focus & mental clarity</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'physical' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'physical')}>
+            <button className={`option-button with-subtitle ${formData.mainPriority === 'physical' ? 'selected' : ''} ${clickingOption === 'mainPriority-physical' ? 'clicking' : ''}`} onClick={() => handleOptionClick('mainPriority', 'physical', 'mainPriority-physical')}>
               <div className="option-main">Physical performance</div>
               <div className="option-sub">More stamina & less fatigue</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'body-composition' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'body-composition')}>
+            <button className={`option-button with-subtitle ${formData.mainPriority === 'body-composition' ? 'selected' : ''} ${clickingOption === 'mainPriority-body-composition' ? 'clicking' : ''}`} onClick={() => handleOptionClick('mainPriority', 'body-composition', 'mainPriority-body-composition')}>
               <div className="option-main">Body composition</div>
               <div className="option-sub">Losing fat & building muscle</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.mainPriority === 'emotional' ? 'selected' : ''}`} onClick={() => handleInputChange('mainPriority', 'emotional')}>
+            <button className={`option-button with-subtitle ${formData.mainPriority === 'emotional' ? 'selected' : ''} ${clickingOption === 'mainPriority-emotional' ? 'clicking' : ''}`} onClick={() => handleOptionClick('mainPriority', 'emotional', 'mainPriority-emotional')}>
               <div className="option-main">Emotional Balance</div>
               <div className="option-sub">Reducing stress & improving mood</div>
             </button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('driving-goal')} disabled={!formData.mainPriority}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1653,15 +1947,30 @@ export default function SageOnboarding() {
           <p className="section-label">1 The Ikigai</p>
           <h1 className="typeform-title">What is driving this goal?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.drivingGoal === 'career' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'career')}>Career & Performance</button>
-            <button className={`option-button ${formData.drivingGoal === 'family' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'family')}>Family & Relationships</button>
-            <button className={`option-button ${formData.drivingGoal === 'athletic' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'athletic')}>An Athletic or Personal Goal</button>
-            <button className={`option-button ${formData.drivingGoal === 'health' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'health')}>General Health & Well-being</button>
-            <button className={`option-button ${formData.drivingGoal === 'condition' ? 'selected' : ''}`} onClick={() => handleInputChange('drivingGoal', 'condition')}>Managing a Health Condition</button>
+            <button
+              className={`option-button ${formData.drivingGoal === 'career' ? 'selected' : ''} ${clickingOption === 'goal-career' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('drivingGoal', 'career', 'goal-career')}
+            >Career & Performance</button>
+            <button
+              className={`option-button ${formData.drivingGoal === 'family' ? 'selected' : ''} ${clickingOption === 'goal-family' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('drivingGoal', 'family', 'goal-family')}
+            >Family & Relationships</button>
+            <button
+              className={`option-button ${formData.drivingGoal === 'athletic' ? 'selected' : ''} ${clickingOption === 'goal-athletic' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('drivingGoal', 'athletic', 'goal-athletic')}
+            >An Athletic or Personal Goal</button>
+            <button
+              className={`option-button ${formData.drivingGoal === 'health' ? 'selected' : ''} ${clickingOption === 'goal-health' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('drivingGoal', 'health', 'goal-health')}
+            >General Health & Well-being</button>
+            <button
+              className={`option-button ${formData.drivingGoal === 'condition' ? 'selected' : ''} ${clickingOption === 'goal-condition' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('drivingGoal', 'condition', 'goal-condition')}
+            >Managing a Health Condition</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('baseline-intro')} disabled={!formData.drivingGoal}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1673,7 +1982,7 @@ export default function SageOnboarding() {
           <h1 className="section-title">2 The Baseline</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('allergies')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1686,7 +1995,11 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Any allergies or intolerances?</h1>
           <div className="options-container">
             {['peanuts', 'tree-nuts', 'dairy', 'gluten', 'soy', 'shellfish', 'none'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.allergies.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('allergies', option)}>
+              <button
+                key={option}
+                className={`option-button checkbox ${formData.allergies.includes(option) ? 'selected' : ''} ${clickingOption === `allergy-${option}` ? 'clicking' : ''}`}
+                onClick={() => handleCheckboxClick('allergies', option, `allergy-${option}`)}
+              >
                 {option === 'peanuts' && 'Peanuts'}
                 {option === 'tree-nuts' && 'Tree nuts'}
                 {option === 'dairy' && 'Dairy'}
@@ -1703,7 +2016,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('medications')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1725,7 +2038,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('supplements')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1747,7 +2061,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('medical-conditions')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1760,7 +2075,11 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Do you have any diagnosed medical conditions?</h1>
           <div className="options-container">
             {['high-blood-pressure', 'high-cholesterol', 'diabetes', 'hypothyroidism', 'pcos', 'ibs-ibd', 'none'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.medicalConditions.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('medicalConditions', option)}>
+              <button
+                key={option}
+                className={`option-button checkbox ${formData.medicalConditions.includes(option) ? 'selected' : ''} ${clickingOption === `condition-${option}` ? 'clicking' : ''}`}
+                onClick={() => handleCheckboxClick('medicalConditions', option, `condition-${option}`)}
+              >
                 {option === 'high-blood-pressure' && 'High Blood Pressure'}
                 {option === 'high-cholesterol' && 'High cholesterol'}
                 {option === 'diabetes' && 'Type 2 Diabetes / Pre-Diabetes'}
@@ -1777,7 +2096,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('fuel-intro')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1789,7 +2108,7 @@ export default function SageOnboarding() {
           <h1 className="section-title">3 The Fuel</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('eating-style')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1802,19 +2121,31 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">Which best describes your typical eating style?</h1>
           <div className="scrollable-options-wrapper">
             <div className="options-container image-cards">
-              <button className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', '3-meals')}>
+              <button
+                className={`option-button image-card ${formData.eatingStyle === '3-meals' ? 'selected' : ''} ${clickingOption === 'eating-3meals' ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('eatingStyle', '3-meals', 'eating-3meals')}
+              >
                 <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/3-meals.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
                 <div className="image-card-label">3 meals a day</div>
               </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'intermittent-fasting' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'intermittent-fasting')}>
+              <button
+                className={`option-button image-card ${formData.eatingStyle === 'intermittent-fasting' ? 'selected' : ''} ${clickingOption === 'eating-fasting' ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('eatingStyle', 'intermittent-fasting', 'eating-fasting')}
+              >
                 <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/intermittent-fasting.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
                 <div className="image-card-label">Intermittent Fasting</div>
               </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'snacking-grazing' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'snacking-grazing')}>
+              <button
+                className={`option-button image-card ${formData.eatingStyle === 'snacking-grazing' ? 'selected' : ''} ${clickingOption === 'eating-snacking' ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('eatingStyle', 'snacking-grazing', 'eating-snacking')}
+              >
                 <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/snacking.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
                 <div className="image-card-label">Snacking / Grazing</div>
               </button>
-              <button className={`option-button image-card ${formData.eatingStyle === 'no-pattern' ? 'selected' : ''}`} onClick={() => handleInputChange('eatingStyle', 'no-pattern')}>
+              <button
+                className={`option-button image-card ${formData.eatingStyle === 'no-pattern' ? 'selected' : ''} ${clickingOption === 'eating-nopattern' ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('eatingStyle', 'no-pattern', 'eating-nopattern')}
+              >
                 <div className="image-placeholder" style={{backgroundImage: 'url(/images/eating-styles/no-pattern.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}></div>
                 <div className="image-card-label">no set pattern</div>
               </button>
@@ -1822,7 +2153,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('first-meal')} disabled={!formData.eatingStyle}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1834,15 +2165,30 @@ export default function SageOnboarding() {
           <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">When do you typically eat your first meal?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.firstMeal === 'before-7am' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', 'before-7am')}>before 7 am</button>
-            <button className={`option-button ${formData.firstMeal === '7-9am' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', '7-9am')}>between 7-9 am</button>
-            <button className={`option-button ${formData.firstMeal === '9-11am' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', '9-11am')}>between 9-11 am</button>
-            <button className={`option-button ${formData.firstMeal === 'after-11am' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', 'after-11am')}>after 11 am</button>
-            <button className={`option-button ${formData.firstMeal === 'varies' ? 'selected' : ''}`} onClick={() => handleInputChange('firstMeal', 'varies')}>varies</button>
+            <button
+              className={`option-button ${formData.firstMeal === 'before-7am' ? 'selected' : ''} ${clickingOption === 'meal-before7' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('firstMeal', 'before-7am', 'meal-before7')}
+            >before 7 am</button>
+            <button
+              className={`option-button ${formData.firstMeal === '7-9am' ? 'selected' : ''} ${clickingOption === 'meal-79' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('firstMeal', '7-9am', 'meal-79')}
+            >between 7-9 am</button>
+            <button
+              className={`option-button ${formData.firstMeal === '9-11am' ? 'selected' : ''} ${clickingOption === 'meal-911' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('firstMeal', '9-11am', 'meal-911')}
+            >between 9-11 am</button>
+            <button
+              className={`option-button ${formData.firstMeal === 'after-11am' ? 'selected' : ''} ${clickingOption === 'meal-after11' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('firstMeal', 'after-11am', 'meal-after11')}
+            >after 11 am</button>
+            <button
+              className={`option-button ${formData.firstMeal === 'varies' ? 'selected' : ''} ${clickingOption === 'meal-varies' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('firstMeal', 'varies', 'meal-varies')}
+            >varies</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('energy-crash')} disabled={!formData.firstMeal}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1854,14 +2200,26 @@ export default function SageOnboarding() {
           <p className="section-label">3 The Fuel</p>
           <h1 className="typeform-title">When you feel an energy crash, what&apos;s your go-to?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.energyCrash === 'caffeine' ? 'selected' : ''}`} onClick={() => handleInputChange('energyCrash', 'caffeine')}>Caffeine (coffee, tea, energy drink)</button>
-            <button className={`option-button ${formData.energyCrash === 'snack' ? 'selected' : ''}`} onClick={() => handleInputChange('energyCrash', 'snack')}>A quick snack</button>
-            <button className={`option-button ${formData.energyCrash === 'break' ? 'selected' : ''}`} onClick={() => handleInputChange('energyCrash', 'break')}>Take a break / move / stretch</button>
-            <button className={`option-button ${formData.energyCrash === 'push-through' ? 'selected' : ''}`} onClick={() => handleInputChange('energyCrash', 'push-through')}>Push through</button>
+            <button
+              className={`option-button ${formData.energyCrash === 'caffeine' ? 'selected' : ''} ${clickingOption === 'energy-caffeine' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('energyCrash', 'caffeine', 'energy-caffeine')}
+            >Caffeine (coffee, tea, energy drink)</button>
+            <button
+              className={`option-button ${formData.energyCrash === 'snack' ? 'selected' : ''} ${clickingOption === 'energy-snack' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('energyCrash', 'snack', 'energy-snack')}
+            >A quick snack</button>
+            <button
+              className={`option-button ${formData.energyCrash === 'break' ? 'selected' : ''} ${clickingOption === 'energy-break' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('energyCrash', 'break', 'energy-break')}
+            >Take a break / move / stretch</button>
+            <button
+              className={`option-button ${formData.energyCrash === 'push-through' ? 'selected' : ''} ${clickingOption === 'energy-push' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('energyCrash', 'push-through', 'energy-push')}
+            >Push through</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('protein-sources')} disabled={!formData.energyCrash}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1874,7 +2232,11 @@ export default function SageOnboarding() {
           <h1 className="typeform-title">What are your preferred protein sources?</h1>
           <div className="options-container">
             {['chicken', 'red-meat', 'fish-seafood', 'eggs', 'dairy', 'plant-based', 'protein-powder'].map((protein) => (
-              <button key={protein} className={`option-button checkbox ${formData.proteinSources.includes(protein) ? 'selected' : ''}`} onClick={() => toggleArrayValue('proteinSources', protein)}>
+              <button
+                key={protein}
+                className={`option-button checkbox ${formData.proteinSources.includes(protein) ? 'selected' : ''} ${clickingOption === `protein-${protein}` ? 'clicking' : ''}`}
+                onClick={() => handleCheckboxClick('proteinSources', protein, `protein-${protein}`)}
+              >
                 {protein === 'chicken' && 'chicken'}
                 {protein === 'red-meat' && 'Red meat'}
                 {protein === 'fish-seafood' && 'Fish / Seafood'}
@@ -1891,7 +2253,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('food-dislikes')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1913,7 +2275,8 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('meals-cooked')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1935,7 +2298,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('alcohol-consumption')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1957,7 +2320,7 @@ export default function SageOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('completion')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1973,7 +2336,7 @@ export default function SageOnboarding() {
           </p>
           <div className="button-container" style={{justifyContent: 'center', paddingLeft: '0'}}>
             <button className="typeform-button" onClick={() => handleContinue('final-step-intro')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -1985,7 +2348,7 @@ export default function SageOnboarding() {
           <h1 className="section-title">4 The Final Step</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ecosystem-integration')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -2316,7 +2679,7 @@ export default function SageOnboarding() {
 
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>
@@ -2379,7 +2742,7 @@ export default function SageOnboarding() {
           </p> */}
           <div className="button-container">
             <button className="typeform-button" onClick={handleSubmit}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">sage</div>
         </div>

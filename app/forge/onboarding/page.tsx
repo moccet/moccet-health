@@ -42,6 +42,7 @@ export default function ForgeOnboarding() {
   const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [clickingOption, setClickingOption] = useState<string | null>(null);
 
   // Video sound controls
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
@@ -1089,6 +1090,14 @@ export default function ForgeOnboarding() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleOptionClick = (field: keyof typeof formData, value: string, optionKey: string) => {
+    setClickingOption(optionKey);
+    handleInputChange(field, value);
+    setTimeout(() => {
+      setClickingOption(null);
+    }, 400);
+  };
+
   const handleLabFileUpload = async (file: File) => {
     setLabFileUploading(true);
     setLabFileError('');
@@ -1294,20 +1303,39 @@ export default function ForgeOnboarding() {
     return () => window.removeEventListener('keydown', handleGlobalEnter);
   }, [currentScreen, formData, getNextScreen, isContinueDisabled]);
 
+  // Screen order for navigation
+  const screenOrder: Screen[] = [
+    'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
+    'email', 'objective-intro', 'primary-goal', 'time-horizon', 'training-days',
+    'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
+    'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
+    'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
+    'current-bests', 'conditioning-preferences', 'soreness-preference',
+    'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+  ];
+
   const handleBack = () => {
-    const screens: Screen[] = [
-      'intro', 'welcome', 'name', 'age', 'gender', 'weight', 'height',
-      'email', 'objective-intro', 'primary-goal', 'time-horizon', 'training-days',
-      'baseline-intro', 'injuries', 'movement-restrictions', 'medical-conditions',
-      'environment-intro', 'equipment', 'training-location', 'session-length', 'exercise-time',
-      'sleep-quality', 'stress-level', 'forge-intake-intro', 'training-experience', 'skills-priority',
-      'current-bests', 'conditioning-preferences', 'soreness-preference',
-      'daily-activity', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
-    ];
-    const currentIndex = screens.indexOf(currentScreen);
+    const currentIndex = screenOrder.indexOf(currentScreen);
     if (currentIndex > 1) {
-      setCurrentScreen(screens[currentIndex - 1]);
+      setCurrentScreen(screenOrder[currentIndex - 1]);
     }
+  };
+
+  const handleForward = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    if (currentIndex < screenOrder.length - 1) {
+      setCurrentScreen(screenOrder[currentIndex + 1]);
+    }
+  };
+
+  const canGoBack = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    return currentIndex > 1;
+  };
+
+  const canGoForward = () => {
+    const currentIndex = screenOrder.indexOf(currentScreen);
+    return currentIndex < screenOrder.length - 1 && currentIndex >= 0;
   };
 
   const handleSubmit = async () => {
@@ -1437,6 +1465,120 @@ export default function ForgeOnboarding() {
         </div>
       )}
 
+      {/* Fixed Navigation Arrows - Bottom Right */}
+      {!['intro', 'welcome'].includes(currentScreen) && !isLoading && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'clamp(16px, 4vw, 30px)',
+          right: 'clamp(16px, 4vw, 30px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'clamp(8px, 2vw, 10px)',
+          zIndex: 9999
+        }}>
+          <button
+            onClick={handleForward}
+            disabled={!canGoForward()}
+            style={{
+              width: 'clamp(44px, 12vw, 48px)',
+              height: 'clamp(44px, 12vw, 48px)',
+              minWidth: '44px',
+              minHeight: '44px',
+              borderRadius: '50%',
+              border: '2px solid #D4A59A',
+              background: canGoForward() ? '#ffffff' : '#f5f5f5',
+              color: canGoForward() ? '#2d3a2d' : '#cccccc',
+              cursor: canGoForward() ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(18px, 5vw, 20px)',
+              transition: 'all 0.2s ease',
+              opacity: canGoForward() ? 1 : 0.5,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#F5E6E3';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+            onTouchStart={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.background = '#F5E6E3';
+                e.currentTarget.style.transform = 'scale(0.95)';
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            ↑
+          </button>
+          <button
+            onClick={handleBack}
+            disabled={!canGoBack()}
+            style={{
+              width: 'clamp(44px, 12vw, 48px)',
+              height: 'clamp(44px, 12vw, 48px)',
+              minWidth: '44px',
+              minHeight: '44px',
+              borderRadius: '50%',
+              border: '2px solid #D4A59A',
+              background: canGoBack() ? '#ffffff' : '#f5f5f5',
+              color: canGoBack() ? '#2d3a2d' : '#cccccc',
+              cursor: canGoBack() ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(18px, 5vw, 20px)',
+              transition: 'all 0.2s ease',
+              opacity: canGoBack() ? 1 : 0.5,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+            onMouseEnter={(e) => {
+              if (canGoBack() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#F5E6E3';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canGoBack() && window.innerWidth > 768) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+            onTouchStart={(e) => {
+              if (canGoBack()) {
+                e.currentTarget.style.background = '#F5E6E3';
+                e.currentTarget.style.transform = 'scale(0.95)';
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (canGoBack()) {
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            ↓
+          </button>
+        </div>
+      )}
+
       {/* Intro Screen */}
       <div className={`intro-screen ${currentScreen === 'intro' ? 'active' : 'hidden'}`}>
         <video
@@ -1546,28 +1688,26 @@ export default function ForgeOnboarding() {
       {/* Name Screen */}
       <div className={`typeform-screen ${currentScreen === 'name' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
-          <h1 className="typeform-title">What&apos;s your full name?</h1>
+          <h1 className="typeform-title">What is your name?</h1>
           <p className="typeform-subtitle">We&apos;ll use this to personalize your forge experience and keep your profile secure.</p>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2)} autoFocus />
+            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim())} autoFocus />
             <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {formData.fullName.trim() && formData.fullName.trim().split(/\s+/).length < 2 && (
-            <p className="validation-error">Please enter your full name (first and last name)</p>
-          )}
           <div className="button-container">
             <button
               className="typeform-button"
               onClick={() => handleContinue('age')}
-              disabled={!formData.fullName.trim() || formData.fullName.trim().split(/\s+/).length < 2}
+              disabled={!formData.fullName.trim()}
             >
               Continue
             </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1588,7 +1728,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('gender')} disabled={!formData.age.trim()}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1601,7 +1742,11 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle">Understanding your biology helps us provide more accurate nutritional guidance.</p>
           <div className="options-container">
             {['male', 'female', 'non-binary', 'prefer-not-to-say'].map((option) => (
-              <button key={option} className={`option-button ${formData.gender === option ? 'selected' : ''}`} onClick={() => handleInputChange('gender', option)}>
+              <button
+                key={option}
+                className={`option-button ${formData.gender === option ? 'selected' : ''} ${clickingOption === `gender-${option}` ? 'clicking' : ''}`}
+                onClick={() => handleOptionClick('gender', option, `gender-${option}`)}
+              >
                 {option === 'male' && 'Male'}
                 {option === 'female' && 'Female'}
                 {option === 'non-binary' && 'Non-Binary'}
@@ -1611,7 +1756,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('weight')} disabled={!formData.gender}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1650,7 +1796,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('height')} disabled={!formData.weight.trim()}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1750,7 +1897,8 @@ export default function ForgeOnboarding() {
             >
               Continue
             </button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1766,7 +1914,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('objective-intro')} disabled={!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1778,7 +1927,7 @@ export default function ForgeOnboarding() {
           <h1 className="section-title">1 The Objective</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('primary-goal')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1790,30 +1939,46 @@ export default function ForgeOnboarding() {
           <p className="section-label">1 The Objective</p>
           <h1 className="typeform-title">What is your primary goal right now?</h1>
           <div className="options-container">
-            <button className={`option-button with-subtitle ${formData.primaryGoal === 'longevity' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'longevity')}>
+            <button
+              className={`option-button with-subtitle ${formData.primaryGoal === 'longevity' ? 'selected' : ''} ${clickingOption === 'primary-longevity' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('primaryGoal', 'longevity', 'primary-longevity')}
+            >
               <div className="option-main">Longevity and Aging</div>
               <div className="option-sub">Preventing disease & increasing long-term health</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.primaryGoal === 'rehabilitation' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'rehabilitation')}>
+            <button
+              className={`option-button with-subtitle ${formData.primaryGoal === 'rehabilitation' ? 'selected' : ''} ${clickingOption === 'primary-rehabilitation' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('primaryGoal', 'rehabilitation', 'primary-rehabilitation')}
+            >
               <div className="option-main">Rehabilitation</div>
               <div className="option-sub">Recover from injury</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.primaryGoal === 'physical-performance' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'physical-performance')}>
+            <button
+              className={`option-button with-subtitle ${formData.primaryGoal === 'physical-performance' ? 'selected' : ''} ${clickingOption === 'primary-performance' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('primaryGoal', 'physical-performance', 'primary-performance')}
+            >
               <div className="option-main">Physical performance</div>
               <div className="option-sub">More stamina & less fatigue</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.primaryGoal === 'build-up' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'build-up')}>
+            <button
+              className={`option-button with-subtitle ${formData.primaryGoal === 'build-up' ? 'selected' : ''} ${clickingOption === 'primary-build' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('primaryGoal', 'build-up', 'primary-build')}
+            >
               <div className="option-main">Build up</div>
               <div className="option-sub">Building muscle and strength</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.primaryGoal === 'slim-down' ? 'selected' : ''}`} onClick={() => handleInputChange('primaryGoal', 'slim-down')}>
+            <button
+              className={`option-button with-subtitle ${formData.primaryGoal === 'slim-down' ? 'selected' : ''} ${clickingOption === 'primary-slim' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('primaryGoal', 'slim-down', 'primary-slim')}
+            >
               <div className="option-main">Slim down</div>
               <div className="option-sub">Losing fat and general weight loss</div>
             </button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('time-horizon')} disabled={!formData.primaryGoal}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1825,13 +1990,23 @@ export default function ForgeOnboarding() {
           <p className="section-label">1 The Objective</p>
           <h1 className="typeform-title">What time horizon are you planning for?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.timeHorizon === 'short-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'short-term')}>Short-term (up to 12 weeks)</button>
-            <button className={`option-button ${formData.timeHorizon === 'medium-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'medium-term')}>Medium term (3-12 months)</button>
-            <button className={`option-button ${formData.timeHorizon === 'long-term' ? 'selected' : ''}`} onClick={() => handleInputChange('timeHorizon', 'long-term')}>Long-term (more than one year)</button>
+            <button
+              className={`option-button ${formData.timeHorizon === 'short-term' ? 'selected' : ''} ${clickingOption === 'time-short' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('timeHorizon', 'short-term', 'time-short')}
+            >Short-term (up to 12 weeks)</button>
+            <button
+              className={`option-button ${formData.timeHorizon === 'medium-term' ? 'selected' : ''} ${clickingOption === 'time-medium' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('timeHorizon', 'medium-term', 'time-medium')}
+            >Medium term (3-12 months)</button>
+            <button
+              className={`option-button ${formData.timeHorizon === 'long-term' ? 'selected' : ''} ${clickingOption === 'time-long' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('timeHorizon', 'long-term', 'time-long')}
+            >Long-term (more than one year)</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('training-days')} disabled={!formData.timeHorizon}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1844,15 +2019,36 @@ export default function ForgeOnboarding() {
           <h1 className="typeform-title">How many days per week can you train?</h1>
           <p className="typeform-subtitle">Reflect on your weekly time for exercise.<br />The best plan is the one that works with your schedule.</p>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px'}}>
-            <button className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '1')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>1</button>
-            <button className={`option-button ${formData.trainingDays === '2' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '2')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>2</button>
-            <button className={`option-button ${formData.trainingDays === '3' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '3')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>3</button>
-            <button className={`option-button ${formData.trainingDays === '4' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '4')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>4</button>
-            <button className={`option-button ${formData.trainingDays === '5+' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingDays', '5+')} style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}>5+</button>
+            <button
+              className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''} ${clickingOption === 'days-1' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingDays', '1', 'days-1')}
+              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+            >1</button>
+            <button
+              className={`option-button ${formData.trainingDays === '2' ? 'selected' : ''} ${clickingOption === 'days-2' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingDays', '2', 'days-2')}
+              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+            >2</button>
+            <button
+              className={`option-button ${formData.trainingDays === '3' ? 'selected' : ''} ${clickingOption === 'days-3' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingDays', '3', 'days-3')}
+              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+            >3</button>
+            <button
+              className={`option-button ${formData.trainingDays === '4' ? 'selected' : ''} ${clickingOption === 'days-4' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingDays', '4', 'days-4')}
+              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+            >4</button>
+            <button
+              className={`option-button ${formData.trainingDays === '5+' ? 'selected' : ''} ${clickingOption === 'days-5' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingDays', '5+', 'days-5')}
+              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+            >5+</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('baseline-intro')} disabled={!formData.trainingDays}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1870,7 +2066,7 @@ export default function ForgeOnboarding() {
           }}>We want to make your training safer and more effective. Help us understand your starting point.</p>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('injuries')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1900,7 +2096,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')} disabled={formData.injuries.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1922,7 +2118,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('medical-conditions')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1944,7 +2141,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('supplements')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1966,7 +2164,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('medical-conditions')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -1996,7 +2195,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('environment-intro')} disabled={formData.medicalConditions.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2009,7 +2208,7 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle-brand">Let&apos;s explore the resources and setting you have for training, so your plan fits your actual environment.</p>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('equipment')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2036,7 +2235,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('training-location')} disabled={formData.equipment.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2048,14 +2247,27 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">Where do you usually train?</h1>
           <div className="options-container">
-            <button className={`option-button ${formData.trainingLocation === 'gym' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'gym')}>Gym</button>
-            <button className={`option-button ${formData.trainingLocation === 'home' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'home')}>Home</button>
-            <button className={`option-button ${formData.trainingLocation === 'outdoors' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'outdoors')}>Outdoors</button>
-            <button className={`option-button ${formData.trainingLocation === 'mix' ? 'selected' : ''}`} onClick={() => handleInputChange('trainingLocation', 'mix')}>Mix of these</button>
+            <button
+              className={`option-button ${formData.trainingLocation === 'gym' ? 'selected' : ''} ${clickingOption === 'location-gym' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingLocation', 'gym', 'location-gym')}
+            >Gym</button>
+            <button
+              className={`option-button ${formData.trainingLocation === 'home' ? 'selected' : ''} ${clickingOption === 'location-home' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingLocation', 'home', 'location-home')}
+            >Home</button>
+            <button
+              className={`option-button ${formData.trainingLocation === 'outdoors' ? 'selected' : ''} ${clickingOption === 'location-outdoors' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingLocation', 'outdoors', 'location-outdoors')}
+            >Outdoors</button>
+            <button
+              className={`option-button ${formData.trainingLocation === 'mix' ? 'selected' : ''} ${clickingOption === 'location-mix' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('trainingLocation', 'mix', 'location-mix')}
+            >Mix of these</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('session-length')} disabled={!formData.trainingLocation}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2077,7 +2289,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('exercise-time')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2089,14 +2302,31 @@ export default function ForgeOnboarding() {
           <p className="section-label">3 The Environment</p>
           <h1 className="typeform-title">When do you usually exercise?</h1>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
-            <button className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'morning')} style={{minWidth: '150px'}}>Morning</button>
-            <button className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'midday')} style={{minWidth: '150px'}}>Midday</button>
-            <button className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'evening')} style={{minWidth: '150px'}}>Evening</button>
-            <button className={`option-button ${formData.exerciseTime === 'it varies' ? 'selected' : ''}`} onClick={() => handleInputChange('exerciseTime', 'it varies')} style={{minWidth: '150px'}}>It varies</button>
+            <button
+              className={`option-button ${formData.exerciseTime === 'morning' ? 'selected' : ''} ${clickingOption === 'time-morning' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('exerciseTime', 'morning', 'time-morning')}
+              style={{minWidth: '150px'}}
+            >Morning</button>
+            <button
+              className={`option-button ${formData.exerciseTime === 'midday' ? 'selected' : ''} ${clickingOption === 'time-midday' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('exerciseTime', 'midday', 'time-midday')}
+              style={{minWidth: '150px'}}
+            >Midday</button>
+            <button
+              className={`option-button ${formData.exerciseTime === 'evening' ? 'selected' : ''} ${clickingOption === 'time-evening' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('exerciseTime', 'evening', 'time-evening')}
+              style={{minWidth: '150px'}}
+            >Evening</button>
+            <button
+              className={`option-button ${formData.exerciseTime === 'it varies' ? 'selected' : ''} ${clickingOption === 'time-varies' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('exerciseTime', 'it varies', 'time-varies')}
+              style={{minWidth: '150px'}}
+            >It varies</button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2115,7 +2345,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('stress-level')} disabled={!formData.sleepQuality}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2134,7 +2364,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('forge-intake-intro')} disabled={!formData.stressLevel}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2146,7 +2376,7 @@ export default function ForgeOnboarding() {
           <h1 className="section-title">4 The Forge Intake</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('training-experience')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2168,7 +2398,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('skills-priority')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2198,7 +2429,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={formData.skillsPriority.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2220,7 +2451,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('conditioning-preferences')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2248,7 +2480,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('soreness-preference')} disabled={formData.conditioningPreferences.length === 0}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2267,7 +2499,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('daily-activity')} disabled={!formData.sorenessPreference}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2279,22 +2511,32 @@ export default function ForgeOnboarding() {
           <p className="section-label">4 The Forge Intake</p>
           <h1 className="typeform-title">How active are you during the day?</h1>
           <div className="options-container">
-            <button className={`option-button with-subtitle ${formData.dailyActivity === 'sedentary' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'sedentary')}>
+            <button
+              className={`option-button with-subtitle ${formData.dailyActivity === 'sedentary' ? 'selected' : ''} ${clickingOption === 'activity-sedentary' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('dailyActivity', 'sedentary', 'activity-sedentary')}
+            >
               <div className="option-main">Mostly Sedentary</div>
               <div className="option-sub">You&apos;re seated for most of the day (desk job, driving, watching TV)</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.dailyActivity === 'mixed' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'mixed')}>
+            <button
+              className={`option-button with-subtitle ${formData.dailyActivity === 'mixed' ? 'selected' : ''} ${clickingOption === 'activity-mixed' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('dailyActivity', 'mixed', 'activity-mixed')}
+            >
               <div className="option-main">Mixed Activity</div>
               <div className="option-sub">You&apos;re on your feet for part of the day with light movement (teaching, shopping, light housework)</div>
             </button>
-            <button className={`option-button with-subtitle ${formData.dailyActivity === 'active' ? 'selected' : ''}`} onClick={() => handleInputChange('dailyActivity', 'active')}>
+            <button
+              className={`option-button with-subtitle ${formData.dailyActivity === 'active' ? 'selected' : ''} ${clickingOption === 'activity-active' ? 'clicking' : ''}`}
+              onClick={() => handleOptionClick('dailyActivity', 'active', 'activity-active')}
+            >
               <div className="option-main">Active</div>
               <div className="option-sub">You&apos;re moving most of the day and doing physical tasks (construction work, physical labor, constant walking)</div>
             </button>
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('completion')} disabled={!formData.dailyActivity}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2314,7 +2556,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('energy-crash')} disabled={!formData.firstMeal}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2333,7 +2575,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('protein-sources')} disabled={!formData.energyCrash}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2363,7 +2605,7 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('food-dislikes')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2385,7 +2627,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('meals-cooked')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2407,7 +2650,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('alcohol-consumption')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2429,7 +2673,8 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('completion')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2445,7 +2690,7 @@ export default function ForgeOnboarding() {
           </p>
           <div className="button-container" style={{justifyContent: 'center', paddingLeft: '0'}}>
             <button className="typeform-button" onClick={() => handleContinue('final-step-intro')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2457,7 +2702,7 @@ export default function ForgeOnboarding() {
           <h1 className="section-title">5 The Final Step</h1>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('ecosystem-integration')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2773,7 +3018,7 @@ export default function ForgeOnboarding() {
 
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2836,7 +3081,7 @@ export default function ForgeOnboarding() {
           </p> */}
           <div className="button-container">
             <button className="typeform-button" onClick={handleSubmit}>Continue</button>
-            <button className="back-button" onClick={handleBack}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 6V10C14 10.5304 13.7893 11.0391 13.4142 11.4142C13.0391 11.7893 12.5304 12 12 12H6M6 12L9 9M6 12L9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            
           </div>
           <div className="typeform-brand">forge</div>
         </div>

@@ -497,7 +497,8 @@ export default function PersonalisedPlanPage() {
       const response = await fetch(`/api/cart?email=${encodeURIComponent(userIdentifier)}`);
       if (response.ok) {
         const data = await response.json();
-        setCartItemCount(data.itemCount || 0);
+        console.log('[Cart Badge] API Response:', data);
+        setCartItemCount(data.cart?.itemCount || 0);
       }
     } catch (error) {
       console.error('Error fetching cart count:', error);
@@ -1217,8 +1218,9 @@ export default function PersonalisedPlanPage() {
                         }
                       }
                       // Redirect to checkout after a short delay
+                      const userIdentifier = email || `guest-${planCode}`;
                       setTimeout(() => {
-                        window.location.href = '/checkout';
+                        window.location.href = `/checkout?email=${encodeURIComponent(userIdentifier)}${planCode ? `&planCode=${planCode}` : ''}`;
                       }, 800);
                     }}
                     style={{
@@ -1327,8 +1329,9 @@ export default function PersonalisedPlanPage() {
                                 <button
                                   onClick={() => {
                                     handleAddToCart(supp.product.productId, supp.name, supp);
+                                    const userIdentifier = email || `guest-${planCode}`;
                                     setTimeout(() => {
-                                      window.location.href = '/checkout';
+                                      window.location.href = `/checkout?email=${encodeURIComponent(userIdentifier)}${planCode ? `&planCode=${planCode}` : ''}`;
                                     }, 500);
                                   }}
                                   disabled={addingToCart === supp.product.productId}

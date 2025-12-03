@@ -374,8 +374,13 @@ function CheckoutPageContent() {
   const planCode = searchParams.get('planCode');
   const [clientSecret, setClientSecret] = useState('');
 
+  console.log('[Checkout] URL Params - email:', email, 'planCode:', planCode);
+  console.log('[Checkout] Full search string:', searchParams.toString());
+
   useEffect(() => {
     if (!email) {
+      console.error('[Checkout] ERROR: No email found in URL params');
+      console.error('[Checkout] Available params:', Object.fromEntries(searchParams.entries()));
       alert('Email required for checkout');
       return;
     }

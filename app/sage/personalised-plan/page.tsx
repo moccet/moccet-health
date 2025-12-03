@@ -119,6 +119,7 @@ export default function PersonalisedPlanPage() {
   const [enrichedEssentialSupplements, setEnrichedEssentialSupplements] = useState<any[]>([]);
   const [enrichedOptionalSupplements, setEnrichedOptionalSupplements] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
     // Get code or email from URL params
@@ -444,6 +445,23 @@ export default function PersonalisedPlanPage() {
     fetchAllData();
   }, []);
 
+  // Fetch cart count on mount and when cart updates
+  useEffect(() => {
+    if (email || planCode) {
+      fetchCartCount();
+    }
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, [email, planCode]);
+
   // Enrich supplements with product data
   const enrichSupplements = async (supplements: any[], type: 'essential' | 'optional') => {
     if (!supplements || supplements.length === 0) return;
@@ -468,6 +486,21 @@ export default function PersonalisedPlanPage() {
       console.error('Error enriching supplements:', error);
     } finally {
       setLoadingProducts(false);
+    }
+  };
+
+  const fetchCartCount = async () => {
+    const userIdentifier = email || `guest-${planCode}`;
+    if (!userIdentifier) return;
+
+    try {
+      const response = await fetch(`/api/cart?email=${encodeURIComponent(userIdentifier)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCartItemCount(data.itemCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
     }
   };
 
@@ -496,15 +529,13 @@ export default function PersonalisedPlanPage() {
 
       const data = await response.json();
       if (data.success) {
-        alert(`Added ${supplementName} to cart`);
         // Trigger cart refresh
         window.dispatchEvent(new Event('cartUpdated'));
       } else {
-        alert(`Error: ${data.error}`);
+        console.error('Error adding to cart:', data.error);
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
     } finally {
       setAddingToCart(null);
     }
@@ -687,12 +718,33 @@ export default function PersonalisedPlanPage() {
           className="sidebar-icon-button"
           onClick={() => setCartOpen(true)}
           title="View Cart"
+          style={{ position: 'relative' }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" xmlns="http://www.w3.org/2000/svg">
             <circle cx="9" cy="21" r="1"/>
             <circle cx="20" cy="21" r="1"/>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
           </svg>
+          {cartItemCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              border: '2px solid white'
+            }}>
+              {cartItemCount}
+            </span>
+          )}
         </button>
       </div>
 

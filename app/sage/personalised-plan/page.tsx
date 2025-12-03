@@ -379,6 +379,12 @@ export default function PersonalisedPlanPage() {
         setPlan(transformedPlan);
         setPlanStatus(planData.status || 'completed');
 
+        // Extract and set email from API response if not already set
+        if (!email && planData.email) {
+          setEmail(planData.email);
+          console.log('[Email] Extracted from plan data:', planData.email);
+        }
+
         // Set blood analysis if available
         if (planData.bloodAnalysis) {
           setBloodAnalysis(planData.bloodAnalysis);

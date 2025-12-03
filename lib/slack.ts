@@ -221,3 +221,62 @@ export async function notifyOrderShipped(
 
   return sendSlackNotification(payload);
 }
+
+/**
+ * Sends plan generation queued notification to Slack
+ */
+export async function notifyPlanQueued(
+  email: string,
+  planType: 'Sage' | 'Forge',
+  uniqueCode: string,
+  fullName?: string
+): Promise<boolean> {
+  const planEmoji = planType === 'Sage' ? '🥗' : '💪';
+  const planTypeLabel = planType === 'Sage' ? 'Nutrition Plan' : 'Fitness Plan';
+
+  const payload = {
+    text: `${planEmoji} ${planType} Plan Generation Queued`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `${planEmoji} ${planType} Plan Queued for Generation`,
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*User:*\n${fullName || email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n${email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Plan Type:*\n${planTypeLabel}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Plan Code:*\n\`${uniqueCode}\``,
+          },
+        ],
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Plan queued: <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return sendSlackNotification(payload);
+}

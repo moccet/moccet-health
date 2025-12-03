@@ -636,6 +636,13 @@ export default function PersonalisedPlanPage() {
         setPlanStatus(planData.status || 'completed');
         setGender(planData.gender || null);
         setPlanCode(code || null);
+
+        // Extract and set email from API response if not already set
+        if (!email && planData.email) {
+          setEmail(planData.email);
+          console.log('[Email] Extracted from plan data:', planData.email);
+        }
+
         console.log('[PLAN DEBUG] All state set');
 
         // Enrich supplements with product data if this is a fitness plan

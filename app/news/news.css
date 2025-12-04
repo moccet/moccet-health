@@ -278,21 +278,22 @@ body {
 
 .featured-post-content {
   flex: 1;
-  padding: 20px 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 12px;
+  gap: 0;
+  min-height: 420px;
 }
 
 .featured-post-title {
   font-family: "Playfair Display", Georgia, serif;
   font-weight: 400;
   color: #1a1a1a;
-  font-size: 36px;
+  font-size: 42px;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  margin: 0 0 12px 0;
+  margin: 0 0 20px 0;
+  flex-shrink: 0;
 }
 
 .featured-post-description {
@@ -301,7 +302,9 @@ body {
   color: #4a4a4a;
   font-size: 16px;
   line-height: 1.6;
-  margin: 0 0 16px 0;
+  margin: 0 0 20px 0;
+  flex: 1;
+  overflow: auto;
 }
 
 .featured-post-button {
@@ -318,6 +321,8 @@ body {
   align-self: flex-start;
   text-transform: uppercase;
   transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .featured-post-button:hover {
@@ -488,14 +493,16 @@ body {
 
   .featured-post-image {
     min-height: 350px;
+    max-height: 350px;
   }
 
   .featured-post-content {
-    padding: 40px 30px 40px 0;
+    padding: 0;
+    min-height: 350px;
   }
 
   .featured-post-title {
-    font-size: 30px;
+    font-size: 36px;
   }
 }
 
@@ -553,14 +560,16 @@ body {
 
   .featured-post-image {
     min-height: 280px;
+    max-height: 280px;
   }
 
   .featured-post-content {
     padding: 32px 24px;
+    min-height: auto;
   }
 
   .featured-post-title {
-    font-size: 26px;
+    font-size: 28px;
   }
 
   .featured-post-description {
@@ -626,15 +635,17 @@ body {
 
   .featured-post-image {
     min-height: 240px;
+    max-height: 240px;
   }
 
   .featured-post-content {
     padding: 28px 20px;
     gap: 16px;
+    min-height: auto;
   }
 
   .featured-post-title {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .featured-post-description {

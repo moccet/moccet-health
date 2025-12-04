@@ -208,6 +208,31 @@
   transform: translateY(0);
 }
 
+.welcome-button.clicking {
+  animation: welcome-button-flicker 0.4s ease-in-out;
+}
+
+@keyframes welcome-button-flicker {
+  0% {
+    background: #c9d5c0;
+  }
+  20% {
+    background: #b8c7af;
+  }
+  40% {
+    background: #c9d5c0;
+  }
+  60% {
+    background: #b8c7af;
+  }
+  80% {
+    background: #c9d5c0;
+  }
+  100% {
+    background: #b8c7af;
+  }
+}
+
 .arrow-icon {
   width: 20px;
   height: 20px;

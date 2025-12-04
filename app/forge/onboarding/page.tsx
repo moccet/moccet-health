@@ -129,7 +129,9 @@ export default function ForgeOnboarding() {
   // Dev mode: Skip to plan with mock data
   const handleDevSkipToPlan = async () => {
     const mockData = {
-      fullName: 'Dev Test User',
+      firstName: 'Dev',
+      lastName: 'User',
+      fullName: 'Dev User',
       age: '32',
       gender: 'male',
       weight: '185',
@@ -254,6 +256,8 @@ export default function ForgeOnboarding() {
   };
 
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     fullName: '',
     age: '',
     gender: '',
@@ -872,7 +876,9 @@ export default function ForgeOnboarding() {
       if (data.linkToken) {
         // Open Vital Link Widget using the URL provided by Vital API
         // Fallback to constructing URL if linkUrl is not provided
-        const linkUrl = data.linkUrl || `https://link.tryvital.io/${data.linkToken}`;
+        const linkUrl = data.linkUrl || (data.environment === 'sandbox'
+          ? `https://sandbox.link.tryvital.io/${data.linkToken}`
+          : `https://link.tryvital.io/${data.linkToken}`);
         console.log('[Vital] Opening link URL:', linkUrl);
 
         const width = 600;
@@ -1082,8 +1088,14 @@ export default function ForgeOnboarding() {
     }
   };
 
+  const [clickingGetStarted, setClickingGetStarted] = useState(false);
+
   const handleGetStarted = () => {
-    setCurrentScreen('name');
+    setClickingGetStarted(true);
+    setTimeout(() => {
+      setClickingGetStarted(false);
+      setCurrentScreen('name');
+    }, 400);
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string | string[] | File | null) => {
@@ -1115,6 +1127,16 @@ export default function ForgeOnboarding() {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -1586,7 +1608,6 @@ export default function ForgeOnboarding() {
           playsInline
           autoPlay
           muted
-          loop
           className="intro-video"
           preload="auto"
         >
@@ -1650,7 +1671,7 @@ export default function ForgeOnboarding() {
             Your fitness journey is uniquely yours.<br />
             forge builds fitness intelligence from your unique biology.
           </p>
-          <button className="welcome-button" onClick={handleGetStarted}>
+          <button className={`welcome-button ${clickingGetStarted ? 'clicking' : ''}`} onClick={handleGetStarted}>
             <span>Let&apos;s get started</span>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="arrow-icon">
               <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1690,9 +1711,46 @@ export default function ForgeOnboarding() {
         <div className="typeform-content">
           <h1 className="typeform-title">What is your name?</h1>
           <p className="typeform-subtitle">We&apos;ll use this to personalize your forge experience and keep your profile secure.</p>
+          <div className="input-container" style={{ marginBottom: '16px' }}>
+            <input
+              type="text"
+              className="typeform-input"
+              placeholder="First name"
+              value={formData.firstName}
+              onChange={(e) => {
+                handleInputChange('firstName', e.target.value);
+                setFormData(prev => ({ ...prev, fullName: `${e.target.value} ${prev.lastName}`.trim() }));
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && formData.firstName.trim() && formData.lastName.trim()) {
+                  handleContinue('age');
+                }
+              }}
+              autoFocus
+            />
+            <svg className={`microphone-icon ${isListening && activeField === 'firstName' ? 'listening' : ''}`} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => startDictation('firstName')} style={{cursor: 'pointer'}}>
+              <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <div className="input-container">
-            <input type="text" className="typeform-input" placeholder="Type your answer here" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'age', !formData.fullName.trim())} autoFocus />
-            <svg className="microphone-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <input
+              type="text"
+              className="typeform-input"
+              placeholder="Last name"
+              value={formData.lastName}
+              onChange={(e) => {
+                handleInputChange('lastName', e.target.value);
+                setFormData(prev => ({ ...prev, fullName: `${prev.firstName} ${e.target.value}`.trim() }));
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && formData.firstName.trim() && formData.lastName.trim()) {
+                  handleContinue('age');
+                }
+              }}
+            />
+            <svg className={`microphone-icon ${isListening && activeField === 'lastName' ? 'listening' : ''}`} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => startDictation('lastName')} style={{cursor: 'pointer'}}>
               <path d="M10 13C11.6569 13 13 11.6569 13 10V5C13 3.34315 11.6569 2 10 2C8.34315 2 7 3.34315 7 5V10C7 11.6569 8.34315 13 10 13Z" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M10 16V18" stroke="#D4A59A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1702,12 +1760,12 @@ export default function ForgeOnboarding() {
             <button
               className="typeform-button"
               onClick={() => handleContinue('age')}
-              disabled={!formData.fullName.trim()}
+              disabled={!formData.firstName.trim() || !formData.lastName.trim()}
             >
               Continue
             </button>
             <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
+
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2775,7 +2833,7 @@ export default function ForgeOnboarding() {
                     </div>
                     <div className="integration-info">
                       <h3 className="integration-name">Slack</h3>
-                      <p className="integration-description">Receive daily meal plans and reminders</p>
+                      <p className="integration-description">Learn your work habits</p>
                     </div>
                     <button className="connect-button connected" onClick={handleDisconnectSlack}>
                       ✓ Connected
@@ -2899,7 +2957,7 @@ export default function ForgeOnboarding() {
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Slack</h3>
-                  <p className="integration-description">Receive daily meal plans and reminders</p>
+                  <p className="integration-description">Learn your work habits</p>
                 </div>
                 <button className="connect-button" onClick={handleConnectSlack}>
                   Connect
@@ -3035,6 +3093,8 @@ export default function ForgeOnboarding() {
               className="upload-box"
               style={{cursor: labFileUploading ? 'not-allowed' : 'pointer', opacity: labFileUploading ? 0.6 : 1}}
               onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => !labFileUploading && document.getElementById('lab-upload-input')?.click()}
             >
@@ -3042,6 +3102,14 @@ export default function ForgeOnboarding() {
                 <>
                   <div style={{fontSize: '16px', marginBottom: '8px'}}>Analyzing your lab results...</div>
                   <div style={{fontSize: '14px', color: '#666'}}>This may take a moment</div>
+                </>
+              ) : formData.labFile && !labFileError ? (
+                <>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom: '16px', color: '#2e7d32'}}>
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div style={{fontWeight: 500, marginBottom: '8px', color: '#2e7d32'}}>✓ {formData.labFile.name}</div>
+                  <div style={{fontSize: '14px', color: '#666'}}>Click to upload a different file</div>
                 </>
               ) : (
                 <>
@@ -3068,11 +3136,6 @@ export default function ForgeOnboarding() {
             {labFileError && (
               <div style={{marginTop: '16px', padding: '12px', background: '#ffebee', borderRadius: '8px', fontSize: '14px', color: '#c62828'}}>
                 Error: {labFileError}
-              </div>
-            )}
-            {formData.labFile && !labFileError && (
-              <div style={{marginTop: '16px', padding: '12px', background: '#e8f5e9', borderRadius: '8px', fontSize: '14px', color: '#2e7d32'}}>
-                ✓ Lab results uploaded and analyzed: {formData.labFile.name}
               </div>
             )}
           </div>

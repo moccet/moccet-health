@@ -73,7 +73,7 @@ function parseRSSFeed(xmlText: string): BlogPost[] {
         title: cleanTitle,
         link: cleanHTML(link),
         pubDate: pubDate || '',
-        description: stripHTML(description).substring(0, 200) + '...',
+        description: stripHTML(description),
         content: cleanHTML(contentWithoutFirstImage),
         image
       });

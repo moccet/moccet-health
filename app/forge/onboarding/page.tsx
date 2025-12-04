@@ -30,6 +30,7 @@ export default function ForgeOnboarding() {
   const [outlookEmail, setOutlookEmail] = useState('');
   const [ouraConnected, setOuraConnected] = useState(false);
   const [dexcomConnected, setDexcomConnected] = useState(false);
+  const [fitbitConnected, setFitbitConnected] = useState(false);
   const [vitalConnected, setVitalConnected] = useState(false);
   const [vitalUserId, setVitalUserId] = useState('');
   const [teamsConnected, setTeamsConnected] = useState(false);
@@ -272,6 +273,7 @@ export default function ForgeOnboarding() {
     timeHorizon: '',
     trainingDays: '',
     injuries: [] as string[],
+    otherInjury: '',
     movementRestrictions: '',
     medicalConditions: [] as string[],
     otherCondition: '',
@@ -283,9 +285,11 @@ export default function ForgeOnboarding() {
     stressLevel: '',
     trainingExperience: '',
     skillsPriority: [] as string[],
+    otherSkill: '',
     effortFamiliarity: '',
     currentBests: '',
     conditioningPreferences: [] as string[],
+    otherConditioning: '',
     sorenessPreference: '',
     dailyActivity: '',
     // Legacy nutrition fields (to be replaced with fitness screens)
@@ -844,6 +848,33 @@ export default function ForgeOnboarding() {
     }
   };
 
+  const handleConnectFitbit = async () => {
+    try {
+      const response = await fetch('/api/fitbit/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      }
+    } catch (err) {
+      console.error('Error connecting to Fitbit:', err);
+    }
+  };
+
+  const handleDisconnectFitbit = async () => {
+    try {
+      await fetch('/api/fitbit/disconnect', { method: 'POST' });
+      setFitbitConnected(false);
+      // Remove fitbit from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'fitbit')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Fitbit:', err);
+    }
+  };
+
   const handleConnectVital = async () => {
     try {
       console.log('[Vital] Starting connection...');
@@ -1108,6 +1139,35 @@ export default function ForgeOnboarding() {
     setTimeout(() => {
       setClickingOption(null);
     }, 400);
+  };
+
+  const handleArrayOptionClick = (field: 'injuries' | 'allergies' | 'medicalConditions' | 'equipment' | 'skillsPriority' | 'conditioningPreferences' | 'proteinSources' | 'integrations', value: string, optionKey: string) => {
+    setClickingOption(optionKey);
+    toggleArrayValue(field, value);
+    setTimeout(() => {
+      setClickingOption(null);
+    }, 400);
+  };
+
+  const handleOtherInputChange = (arrayField: 'injuries' | 'medicalConditions' | 'skillsPriority' | 'conditioningPreferences' | 'proteinSources', otherField: keyof typeof formData, value: string) => {
+    // Update the other field value
+    handleInputChange(otherField, value);
+
+    // Automatically add 'other' to the array if text is entered and it's not already there
+    if (value.trim() && !formData[arrayField].includes('other')) {
+      setFormData(prev => ({
+        ...prev,
+        [arrayField]: [...prev[arrayField].filter((v: string) => v !== 'none' && v !== 'minimal-none'), 'other']
+      }));
+    }
+
+    // Remove 'other' from the array if text is cleared
+    if (!value.trim() && formData[arrayField].includes('other')) {
+      setFormData(prev => ({
+        ...prev,
+        [arrayField]: prev[arrayField].filter((v: string) => v !== 'other')
+      }));
+    }
   };
 
   const handleLabFileUpload = async (file: File) => {
@@ -1814,8 +1874,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('weight')} disabled={!formData.gender}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2035,8 +2093,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('time-horizon')} disabled={!formData.primaryGoal}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2063,8 +2119,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('training-days')} disabled={!formData.timeHorizon}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2105,8 +2159,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('baseline-intro')} disabled={!formData.trainingDays}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2137,7 +2189,7 @@ export default function ForgeOnboarding() {
           <h1 className="typeform-title">Do you have any current or recent injuries?</h1>
           <div className="options-container">
             {['shoulder', 'elbow-wrist', 'lower-back', 'hip', 'knee', 'ankle-foot', 'none'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.injuries.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('injuries', option)}>
+              <button key={option} className={`option-button checkbox ${formData.injuries.includes(option) ? 'selected' : ''} ${clickingOption === `injury-${option}` ? 'clicking' : ''}`} onClick={() => handleArrayOptionClick('injuries', option, `injury-${option}`)}>
                 {option === 'shoulder' && 'Shoulder'}
                 {option === 'elbow-wrist' && 'Elbow / wrist'}
                 {option === 'lower-back' && 'Lower back'}
@@ -2149,11 +2201,16 @@ export default function ForgeOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." />
+              <input
+                type="text"
+                placeholder="Please specify ...."
+                value={formData.otherInjury}
+                onChange={(e) => handleOtherInputChange('injuries', 'otherInjury', e.target.value)}
+              />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')} disabled={formData.injuries.length === 0}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('movement-restrictions')} disabled={formData.injuries.length === 0 && !formData.otherInjury.trim()}>Continue</button>
             
           </div>
           <div className="typeform-brand">forge</div>
@@ -2236,7 +2293,7 @@ export default function ForgeOnboarding() {
           <h1 className="typeform-title">Any diagnosed conditions we should consider?</h1>
           <div className="options-container">
             {['high-blood-pressure', 'high-cholesterol', 'diabetes', 'thyroid', 'pcos', 'ibs-ibd', 'none'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.medicalConditions.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('medicalConditions', option)}>
+              <button key={option} className={`option-button checkbox ${formData.medicalConditions.includes(option) ? 'selected' : ''} ${clickingOption === `medical-${option}` ? 'clicking' : ''}`} onClick={() => handleArrayOptionClick('medicalConditions', option, `medical-${option}`)}>
                 {option === 'high-blood-pressure' && 'High Blood Pressure'}
                 {option === 'high-cholesterol' && 'High cholesterol'}
                 {option === 'diabetes' && 'Type 2 Diabetes / Pre-Diabetes'}
@@ -2248,11 +2305,16 @@ export default function ForgeOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherCondition} onChange={(e) => handleInputChange('otherCondition', e.target.value)} />
+              <input
+                type="text"
+                placeholder="Please specify ...."
+                value={formData.otherCondition}
+                onChange={(e) => handleOtherInputChange('medicalConditions', 'otherCondition', e.target.value)}
+              />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('environment-intro')} disabled={formData.medicalConditions.length === 0}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('environment-intro')} disabled={formData.medicalConditions.length === 0 && !formData.otherCondition.trim()}>Continue</button>
             
           </div>
           <div className="typeform-brand">forge</div>
@@ -2279,7 +2341,7 @@ export default function ForgeOnboarding() {
           <h1 className="typeform-title">What equipment do you have regular access to?</h1>
           <div className="options-container">
             {['commercial-gym', 'power-rack-barbell-plates', 'dumbbells', 'kettlebells', 'cables-machines', 'resistance-bands', 'bodyweight-only', 'cardio-machines'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.equipment.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('equipment', option)}>
+              <button key={option} className={`option-button checkbox ${formData.equipment.includes(option) ? 'selected' : ''} ${clickingOption === `equipment-${option}` ? 'clicking' : ''}`} onClick={() => handleArrayOptionClick('equipment', option, `equipment-${option}`)}>
                 {option === 'commercial-gym' && 'Commercial Gym'}
                 {option === 'power-rack-barbell-plates' && 'Power Rack + Barbell + Plates'}
                 {option === 'dumbbells' && 'Dumbbells'}
@@ -2324,8 +2386,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('session-length')} disabled={!formData.trainingLocation}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2383,8 +2443,6 @@ export default function ForgeOnboarding() {
           </div>
           <div className="button-container">
             <button className="typeform-button" onClick={() => handleContinue('sleep-quality')} disabled={!formData.exerciseTime}>Continue</button>
-            <span className="enter-hint">press <strong>Enter</strong> ↵</span>
-            
           </div>
           <div className="typeform-brand">forge</div>
         </div>
@@ -2398,7 +2456,7 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle">Reflect on your sleep quality and select a number that you feel describes it best, with 1 being poor and 10 being excellent.</p>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
-              <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''}`} onClick={() => handleInputChange('sleepQuality', num)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
+              <button key={num} className={`option-button ${formData.sleepQuality === num ? 'selected' : ''} ${clickingOption === `sleep-${num}` ? 'clicking' : ''}`} onClick={() => handleOptionClick('sleepQuality', num, `sleep-${num}`)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
             ))}
           </div>
           <div className="button-container">
@@ -2417,7 +2475,7 @@ export default function ForgeOnboarding() {
           <p className="typeform-subtitle">Reflect on your daily stress and select a number that you feel describes it best, with 1 being little to no stress and 10 being the maximum amount of stress.</p>
           <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', maxHeight: '250px', overflowY: 'auto'}}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((num) => (
-              <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''}`} onClick={() => handleInputChange('stressLevel', num)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
+              <button key={num} className={`option-button ${formData.stressLevel === num ? 'selected' : ''} ${clickingOption === `stress-${num}` ? 'clicking' : ''}`} onClick={() => handleOptionClick('stressLevel', num, `stress-${num}`)} style={{minWidth: '60px', fontSize: '20px', padding: '10px 15px'}}>{num}</button>
             ))}
           </div>
           <div className="button-container">
@@ -2482,11 +2540,16 @@ export default function ForgeOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." />
+              <input
+                type="text"
+                placeholder="Please specify ...."
+                value={formData.otherSkill}
+                onChange={(e) => handleOtherInputChange('skillsPriority', 'otherSkill', e.target.value)}
+              />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={formData.skillsPriority.length === 0}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('current-bests')} disabled={formData.skillsPriority.length === 0 && !formData.otherSkill.trim()}>Continue</button>
             
           </div>
           <div className="typeform-brand">forge</div>
@@ -2533,11 +2596,16 @@ export default function ForgeOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." />
+              <input
+                type="text"
+                placeholder="Please specify ...."
+                value={formData.otherConditioning}
+                onChange={(e) => handleOtherInputChange('conditioningPreferences', 'otherConditioning', e.target.value)}
+              />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('soreness-preference')} disabled={formData.conditioningPreferences.length === 0}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('soreness-preference')} disabled={formData.conditioningPreferences.length === 0 && !formData.otherConditioning.trim()}>Continue</button>
             
           </div>
           <div className="typeform-brand">forge</div>
@@ -2658,11 +2726,16 @@ export default function ForgeOnboarding() {
             ))}
             <div className="option-button-other">
               <span>Other</span>
-              <input type="text" placeholder="Please specify ...." value={formData.otherProtein} onChange={(e) => handleInputChange('otherProtein', e.target.value)} />
+              <input
+                type="text"
+                placeholder="Please specify ...."
+                value={formData.otherProtein}
+                onChange={(e) => handleOtherInputChange('proteinSources', 'otherProtein', e.target.value)}
+              />
             </div>
           </div>
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('food-dislikes')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('food-dislikes')} disabled={formData.proteinSources.length === 0 && !formData.otherProtein.trim()}>Continue</button>
             
           </div>
           <div className="typeform-brand">forge</div>
@@ -2886,6 +2959,21 @@ export default function ForgeOnboarding() {
                   </div>
                 )}
 
+                {fitbitConnected && (
+                  <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/fitbit.png" alt="Fitbit" />
+                    </div>
+                    <div className="integration-info">
+                      <h3 className="integration-name">Fitbit</h3>
+                      <p className="integration-description">Connected</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectFitbit}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
                 {formData.integrations.includes('whoop') && (
                   <div className="integration-item">
                     <div className="integration-info">
@@ -2980,6 +3068,21 @@ export default function ForgeOnboarding() {
               </div>
             )}
 
+            {!fitbitConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/fitbit.png" alt="Fitbit" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Fitbit</h3>
+                  <p className="integration-description">Sync your activity, sleep, and heart rate data</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectFitbit}>
+                  Connect
+                </button>
+              </div>
+            )}
+
             {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-logo">
@@ -3032,7 +3135,7 @@ export default function ForgeOnboarding() {
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Microsoft Teams</h3>
-                  <p className="integration-description">Search and send messages in Teams</p>
+                  <p className="integration-description">Sync your Teams to learn from your work patterns and meetings</p>
                 </div>
                 <button className="connect-button" onClick={handleConnectTeams}>
                   Connect

@@ -27,6 +27,7 @@ export default function SageOnboarding() {
   const [outlookEmail, setOutlookEmail] = useState('');
   const [ouraConnected, setOuraConnected] = useState(false);
   const [dexcomConnected, setDexcomConnected] = useState(false);
+  const [fitbitConnected, setFitbitConnected] = useState(false);
   const [vitalConnected, setVitalConnected] = useState(false);
   const [vitalUserId, setVitalUserId] = useState('');
   const [teamsConnected, setTeamsConnected] = useState(false);
@@ -800,6 +801,33 @@ export default function SageOnboarding() {
       }));
     } catch (err) {
       console.error('Error disconnecting Dexcom:', err);
+    }
+  };
+
+  const handleConnectFitbit = async () => {
+    try {
+      const response = await fetch('/api/fitbit/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      }
+    } catch (err) {
+      console.error('Error connecting to Fitbit:', err);
+    }
+  };
+
+  const handleDisconnectFitbit = async () => {
+    try {
+      await fetch('/api/fitbit/disconnect', { method: 'POST' });
+      setFitbitConnected(false);
+      // Remove fitbit from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'fitbit')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Fitbit:', err);
     }
   };
 
@@ -2601,6 +2629,36 @@ export default function SageOnboarding() {
               </div>
             )}
 
+            {!fitbitConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/fitbit.png" alt="Fitbit" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Fitbit</h3>
+                  <p className="integration-description">Sync your activity, sleep, and heart rate data</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectFitbit}>
+                  Connect
+                </button>
+              </div>
+            )}
+
+            {fitbitConnected && (
+              <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/fitbit.png" alt="Fitbit" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Fitbit</h3>
+                  <p className="integration-description">Connected</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectFitbit}>
+                  Disconnect
+                </button>
+              </div>
+            )}
+
             {ouraConnected && (
               <div className="integration-item connected">
                 <div className="integration-logo">
@@ -2668,7 +2726,7 @@ export default function SageOnboarding() {
                 </div>
                 <div className="integration-info">
                   <h3 className="integration-name">Microsoft Teams</h3>
-                  <p className="integration-description">Search and send messages in Teams</p>
+                  <p className="integration-description">Sync your Teams to learn from your work patterns and meetings</p>
                 </div>
                 <button className="connect-button" onClick={handleConnectTeams}>
                   Connect

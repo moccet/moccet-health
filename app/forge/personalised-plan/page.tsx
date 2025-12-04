@@ -180,10 +180,10 @@ interface FitnessPlan {
   };
   nutritionGuidance: {
     personalizedIntro?: string;
-    proteinTarget: string;
-    calorieGuidance: string;
-    mealTiming: string;
-    hydration: string;
+    proteinTarget: string | { target?: string; range?: string; rationale?: string };
+    calorieGuidance: string | { target?: string; range?: string; rationale?: string };
+    mealTiming: string | { mealsPerDay?: string | number; preworkout?: any; postworkout?: any; generalGuidance?: string };
+    hydration: string | { dailyTarget?: string; timing?: string };
     macroBreakdown?: string;
     mealFrequency?: string;
     supplementTiming?: string;
@@ -210,9 +210,9 @@ interface FitnessPlan {
   };
   adaptiveFeatures: {
     energyBasedAdjustments?: string;
-    highEnergyDay: string;
+    highEnergyDay: string | { description?: string; modifications?: any; exampleWorkout?: any };
     normalEnergyDay?: string;
-    lowEnergyDay: string;
+    lowEnergyDay: string | { description?: string; modifications?: any; exampleWorkout?: any };
     travelAdjustments: string;
     busyScheduleAdjustments?: string;
     scheduleAdaptations?: string;
@@ -766,7 +766,8 @@ export default function PersonalisedPlanPage() {
         minHeight: '100vh',
         background: '#1a1a1a',
         padding: '20px',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'hidden'
       }}>
         <div style={{ textAlign: 'center', maxWidth: '600px' }}>
           <div style={{
@@ -779,10 +780,10 @@ export default function PersonalisedPlanPage() {
             animation: 'spin 1s linear infinite'
           }}></div>
           <h2 style={{
-            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important',
             fontSize: '32px',
             marginBottom: '16px',
-            color: '#000000',
+            color: '#ffffff',
             fontWeight: 400,
             letterSpacing: '0.3px'
           }}>
@@ -793,6 +794,17 @@ export default function PersonalisedPlanPage() {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+
+          /* Hide any scroll indicators or navigation arrows on loading screen */
+          .plan-loading::after,
+          .plan-loading::before {
+            display: none !important;
+          }
+
+          /* Hide scroll indicators */
+          .plan-loading::-webkit-scrollbar {
+            display: none !important;
           }
         `}</style>
 
@@ -806,7 +818,7 @@ export default function PersonalisedPlanPage() {
           fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
           fontSize: '16px',
           fontWeight: 400,
-          color: '#000000',
+          color: '#ffffff',
           letterSpacing: '0.3px'
         }}>
           This typically takes 5-15 minutes. You&apos;ll receive an email at {email || 'your email'} when your plan is ready.
@@ -822,7 +834,7 @@ export default function PersonalisedPlanPage() {
           fontSize: '18px',
           fontWeight: 500,
           fontStretch: 'expanded',
-          color: '#000000',
+          color: '#ffffff',
           letterSpacing: '0.5px'
         }}>
           forge
@@ -843,8 +855,8 @@ export default function PersonalisedPlanPage() {
         textAlign: 'center',
         background: '#1a1a1a'
       }}>
-        <h1 style={{ fontSize: '32px', marginBottom: '16px', color: '#000000' }}>Unable to Load Plan</h1>
-        <p style={{ fontSize: '18px', marginBottom: '24px', color: '#000000', maxWidth: '600px' }}>
+        <h1 style={{ fontSize: '32px', marginBottom: '16px', color: '#ffffff' }}>Unable to Load Plan</h1>
+        <p style={{ fontSize: '18px', marginBottom: '24px', color: '#ffffff', maxWidth: '600px', margin: '0 auto 24px' }}>
           {error.includes('No plan found') || error.includes('Failed to fetch plan')
             ? 'Your plan is currently being generated. This typically takes 5-15 minutes. Please check your email for a notification when your plan is ready, or try refreshing this page in a few minutes.'
             : error
@@ -855,8 +867,8 @@ export default function PersonalisedPlanPage() {
           style={{
             padding: '12px 24px',
             fontSize: '16px',
-            background: '#2d3a2d',
-            color: '#000000',
+            background: '#D4A59A',
+            color: '#3a2d2d',
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer'
@@ -2247,45 +2259,6 @@ export default function PersonalisedPlanPage() {
                             )}
                             {plan.adaptiveFeatures.lowEnergyDay.exampleWorkout.lowEnergy && (
                               <p><strong>Low Energy:</strong> {plan.adaptiveFeatures.lowEnergyDay.exampleWorkout.lowEnergy}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-              <div className="lifestyle-item mb-6">
-                <h3>Travel Adjustments</h3>
-                {typeof plan.adaptiveFeatures.travelAdjustments === 'string' ? (
-                  <p>{plan.adaptiveFeatures.travelAdjustments}</p>
-                ) : plan.adaptiveFeatures.travelAdjustments ? (
-                  <div>
-                    {plan.adaptiveFeatures.travelAdjustments.description && <p>{plan.adaptiveFeatures.travelAdjustments.description}</p>}
-                    {plan.adaptiveFeatures.travelAdjustments.modifications && (
-                      <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#000000' }}>
-                        <strong>Modifications:</strong>
-                        {typeof plan.adaptiveFeatures.travelAdjustments.modifications === 'string' ? <p>{plan.adaptiveFeatures.travelAdjustments.modifications}</p> :
-                         Array.isArray(plan.adaptiveFeatures.travelAdjustments.modifications) ? (
-                          <ul style={{ marginLeft: '20px', marginTop: '5px' }}>
-                            {plan.adaptiveFeatures.travelAdjustments.modifications.map((mod: any, i: number) => (
-                              <li key={i}>{typeof mod === 'string' ? mod : `${mod.aspect}: ${mod.adjustment}`}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </div>
-                    )}
-                    {plan.adaptiveFeatures.travelAdjustments.exampleWorkout && (
-                      <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#0d7a3d' }}>
-                        {typeof plan.adaptiveFeatures.travelAdjustments.exampleWorkout === 'string' ? (
-                          <p><strong>Example:</strong> {plan.adaptiveFeatures.travelAdjustments.exampleWorkout}</p>
-                        ) : (
-                          <div>
-                            {plan.adaptiveFeatures.travelAdjustments.exampleWorkout.original && (
-                              <p><strong>Original:</strong> {plan.adaptiveFeatures.travelAdjustments.exampleWorkout.original}</p>
-                            )}
-                            {plan.adaptiveFeatures.travelAdjustments.exampleWorkout.travel && (
-                              <p><strong>Travel:</strong> {plan.adaptiveFeatures.travelAdjustments.exampleWorkout.travel}</p>
                             )}
                           </div>
                         )}

@@ -30,7 +30,9 @@ export async function updateSession(request: NextRequest) {
   );
 
   // This will refresh the session if expired - required for Server Components
-  const { data: { user } } = await supabase.auth.getUser();
+  // DISABLED FOR NOW - causing build to hang
+  const user = null;
+  // const { data: { user } } = await supabase.auth.getUser();
 
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {

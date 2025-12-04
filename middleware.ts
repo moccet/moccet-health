@@ -1,7 +1,11 @@
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware during build to prevent hanging
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+    return NextResponse.next();
+  }
   return await updateSession(request);
 }
 

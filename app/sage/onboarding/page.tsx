@@ -2403,21 +2403,6 @@ export default function SageOnboarding() {
                   <p className="integration-section-description">These integrations are active and providing data</p>
                 </div>
                 <div className="integrations-grid connected-grid">
-                {gmailConnected && (
-                  <div className="integration-item">
-                    <div className="integration-logo">
-                      <img src="/images/google.png" alt="Google Calendar" />
-                    </div>
-                    <div className="integration-info">
-                      <h3 className="integration-name">Google Calendar</h3>
-                      <p className="integration-description">Sync your schedule for meal timing optimization</p>
-                    </div>
-                    <button className="connect-button connected" onClick={handleDisconnectGmail}>
-                      ✓ Connected
-                    </button>
-                  </div>
-                )}
-
                 {appleHealthConnected && (
                   <div className="integration-item">
                     <div className="integration-info">
@@ -2472,6 +2457,36 @@ export default function SageOnboarding() {
                       <p className="integration-description">Connect Fitbit, Apple Health, WHOOP, Libre & more</p>
                     </div>
                     <button className="connect-button connected" onClick={handleDisconnectVital}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {gmailConnected && (
+                  <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/google.png" alt="Gmail with Google Calendar" />
+                    </div>
+                    <div className="integration-info">
+                      <h3 className="integration-name">Gmail with Google Calendar</h3>
+                      <p className="integration-description">Sync your schedule and email for meal timing optimization</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectGmail}>
+                      ✓ Connected
+                    </button>
+                  </div>
+                )}
+
+                {teamsConnected && (
+                  <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/teams.png" alt="Microsoft Teams" />
+                    </div>
+                    <div className="integration-info">
+                      <h3 className="integration-name">Microsoft Teams</h3>
+                      <p className="integration-description">Connected: {teamsEmail}</p>
+                    </div>
+                    <button className="connect-button connected" onClick={handleDisconnectTeams}>
                       ✓ Connected
                     </button>
                   </div>
@@ -2537,21 +2552,6 @@ export default function SageOnboarding() {
             <p className="integration-section-description">Connect your tools to provide Sage with richer data</p>
           </div>
           <div className="integrations-grid">
-            {!gmailConnected && (
-              <div className="integration-item">
-                <div className="integration-logo">
-                  <img src="/images/google.png" alt="Google Calendar" />
-                </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">Google Calendar</h3>
-                  <p className="integration-description">Sync your schedule for meal timing optimization</p>
-                </div>
-                <button className="connect-button" onClick={handleConnectGmail}>
-                  Connect
-                </button>
-              </div>
-            )}
-
             {/* Apple Health removed - users can use Oura Ring or WHOOP instead */}
             {/* Apple Calendar: Not available - Apple doesn't provide public calendar API for web */}
             {/* Users should use Google Calendar instead, which is already included via Gmail OAuth */}
@@ -2616,36 +2616,6 @@ export default function SageOnboarding() {
               </div>
             )}
 
-            {!teamsConnected && (
-              <div className="integration-item">
-                <div className="integration-logo">
-                  <img src="/images/teams.png" alt="Microsoft Teams" />
-                </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">Microsoft Teams</h3>
-                  <p className="integration-description">Search and send messages in Teams</p>
-                </div>
-                <button className="connect-button" onClick={handleConnectTeams}>
-                  Connect
-                </button>
-              </div>
-            )}
-
-            {teamsConnected && (
-              <div className="integration-item connected">
-                <div className="integration-logo">
-                  <img src="/images/teams.png" alt="Microsoft Teams" />
-                </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">Microsoft Teams</h3>
-                  <p className="integration-description">Connected: {teamsEmail}</p>
-                </div>
-                <button className="disconnect-button" onClick={handleDisconnectTeams}>
-                  Disconnect
-                </button>
-              </div>
-            )}
-
             {!vitalConnected && (
               <div className="integration-item">
                 <div className="integration-logo">
@@ -2672,6 +2642,36 @@ export default function SageOnboarding() {
                 </div>
                 <button className="disconnect-button" onClick={handleDisconnectVital}>
                   Disconnect
+                </button>
+              </div>
+            )}
+
+            {!gmailConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/google.png" alt="Gmail with Google Calendar" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Gmail with Google Calendar</h3>
+                  <p className="integration-description">Sync your schedule and email for meal timing optimization</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectGmail}>
+                  Connect
+                </button>
+              </div>
+            )}
+
+            {!teamsConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/teams.png" alt="Microsoft Teams" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Microsoft Teams</h3>
+                  <p className="integration-description">Search and send messages in Teams</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectTeams}>
+                  Connect
                 </button>
               </div>
             )}

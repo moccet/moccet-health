@@ -725,7 +725,7 @@ export default function PersonalisedPlanPage() {
           <div style={{
             fontSize: '24px',
             fontWeight: 300,
-            color: '#000000',
+            color: '#ffffff',
             marginBottom: '20px',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
           }}>

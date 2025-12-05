@@ -82,8 +82,9 @@ ${JSON.stringify(unifiedContext, null, 2)}
     responseText = responseText.replace(/,(\s*[}\]])/g, '$1');
     // Remove JavaScript-style comments (// and /* */)
     responseText = responseText.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    // Remove any control characters that might cause issues
-    responseText = responseText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+    // Remove control characters EXCEPT newlines (\n = 0x0A) and carriage returns (\r = 0x0D) which are valid in JSON strings
+    // This removes null bytes, tabs in wrong places, etc. while preserving line breaks
+    responseText = responseText.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
 
     let aiResponse;
     try {

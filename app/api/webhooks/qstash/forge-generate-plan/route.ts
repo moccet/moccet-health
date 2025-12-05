@@ -21,6 +21,36 @@ function getOpenAIClient() {
   });
 }
 
+/**
+ * Attempt to fix common JSON formatting issues
+ */
+function attemptJsonFix(jsonString: string): string {
+  let fixed = jsonString;
+
+  // Fix unescaped quotes in strings (common GPT issue)
+  // This is a simple heuristic - look for quotes that aren't properly escaped
+  // Only do this if the string doesn't parse
+  try {
+    JSON.parse(fixed);
+    return fixed; // Already valid, return as-is
+  } catch {
+    // Continue with fixes
+  }
+
+  // Fix common issues:
+  // 1. Remove any stray commas before closing braces/brackets (already done above but let's be thorough)
+  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+
+  // 2. Remove trailing commas at end of arrays/objects
+  fixed = fixed.replace(/,(\s*)\]/g, '$1]');
+  fixed = fixed.replace(/,(\s*)\}/g, '$1}');
+
+  // 3. Fix missing commas between array/object elements (very aggressive, may cause issues)
+  // Skip this for now as it's too risky
+
+  return fixed;
+}
+
 // Inline fitness plan generation to avoid timeout issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, baseUrl: string) {
@@ -96,6 +126,12 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
   planContent = planContent.replace(/,(\s*[}\]])/g, '$1');
   // Remove JavaScript-style comments (// and /* */)
   planContent = planContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove control characters EXCEPT newlines (\n = 0x0A) and carriage returns (\r = 0x0D) which are valid in JSON strings
+  // This removes null bytes, tabs in wrong places, etc. while preserving line breaks
+  planContent = planContent.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+
+  // Attempt to fix common JSON issues
+  planContent = attemptJsonFix(planContent);
 
   let plan;
   try {
@@ -103,7 +139,19 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
     console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
   } catch (parseError) {
     console.error('[FORGE-PLAN] ❌ Failed to parse GPT-5 response as JSON:', parseError);
+    console.error('[FORGE-PLAN] Error at position:', parseError instanceof SyntaxError ? (parseError as any).message : 'Unknown');
+    console.error('[FORGE-PLAN] Response length:', planContent.length);
     console.error('[FORGE-PLAN] First 500 chars of response:', planContent.substring(0, 500));
+
+    // Log the area around the error position (11731 in this case)
+    if (parseError instanceof SyntaxError && (parseError as any).message.includes('position')) {
+      const match = (parseError as any).message.match(/position (\d+)/);
+      if (match) {
+        const errorPos = parseInt(match[1]);
+        console.error('[FORGE-PLAN] Chars around error position:', planContent.substring(Math.max(0, errorPos - 100), Math.min(planContent.length, errorPos + 100)));
+      }
+    }
+
     console.error('[FORGE-PLAN] Last 200 chars of response:', planContent.substring(Math.max(0, planContent.length - 200)));
     throw new Error(`Failed to parse fitness plan from GPT-5: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
   }

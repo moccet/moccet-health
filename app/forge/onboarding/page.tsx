@@ -2205,10 +2205,11 @@ export default function ForgeOnboarding() {
           <div className="options-container" style={{
             display: 'flex',
             flexDirection: 'row',
-            justifyContent: 'center',
-            gap: '12px',
+            justifyContent: 'space-evenly',
+            gap: '20px',
             flexWrap: 'wrap',
-            maxWidth: '100%'
+            maxWidth: '600px',
+            margin: '0 auto'
           }}>
             <button
               className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''} ${clickingOption === 'days-1' ? 'clicking' : ''}`}
@@ -3423,7 +3424,7 @@ export default function ForgeOnboarding() {
                     borderRadius: '8px',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     background: 'rgba(255, 255, 255, 0.05)',
-                    color: '#ffffff'
+                    color: '#000000'
                   }}
                 />
               </div>

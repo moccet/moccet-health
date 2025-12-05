@@ -3152,15 +3152,16 @@ export default function SageOnboarding() {
         <div className="typeform-content">
           <h1 style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '48px',
+            fontSize: 'clamp(32px, 6vw, 48px)',
             fontWeight: 500,
             fontStretch: 'expanded',
             color: '#ffffff',
             lineHeight: '1.15',
             letterSpacing: '0.5px',
-            marginBottom: '32px',
+            marginBottom: 'clamp(20px, 4vw, 32px)',
             textAlign: 'left',
-            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            padding: '0 20px'
           }}>
             Your plan is being generated.
           </h1>
@@ -3173,17 +3174,22 @@ export default function SageOnboarding() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          paddingBottom: '40px'
+          paddingBottom: 'clamp(24px, 5vw, 40px)',
+          paddingLeft: '20px',
+          paddingRight: '20px'
         }}>
           <p style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '18px',
+            fontSize: 'clamp(14px, 3vw, 18px)',
             fontWeight: 500,
             fontStretch: 'expanded',
             color: '#ffffff',
-            marginBottom: '40px',
+            marginBottom: 'clamp(24px, 4vw, 40px)',
             textAlign: 'center',
-            letterSpacing: '0.5px'
+            letterSpacing: '0.5px',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            maxWidth: '90%',
+            lineHeight: '1.5'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>

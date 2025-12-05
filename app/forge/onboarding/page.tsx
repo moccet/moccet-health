@@ -2206,64 +2206,79 @@ export default function ForgeOnboarding() {
             display: 'flex',
             flexDirection: 'row',
             justifyContent: 'space-evenly',
-            gap: '20px',
-            flexWrap: 'wrap',
-            maxWidth: '600px',
+            gap: '10px',
+            flexWrap: 'nowrap',
+            maxWidth: '100%',
             margin: '0 auto'
           }}>
             <button
               className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''} ${clickingOption === 'days-1' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '1', 'days-1')}
               style={{
-                minWidth: '60px',
-                width: '60px',
-                fontSize: '24px',
-                padding: '20px 10px',
-                flex: '0 0 auto'
+                minWidth: '50px',
+                width: '50px',
+                fontSize: '20px',
+                padding: '16px 0',
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >1</button>
             <button
               className={`option-button ${formData.trainingDays === '2' ? 'selected' : ''} ${clickingOption === 'days-2' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '2', 'days-2')}
               style={{
-                minWidth: '60px',
-                width: '60px',
-                fontSize: '24px',
-                padding: '20px 10px',
-                flex: '0 0 auto'
+                minWidth: '50px',
+                width: '50px',
+                fontSize: '20px',
+                padding: '16px 0',
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >2</button>
             <button
               className={`option-button ${formData.trainingDays === '3' ? 'selected' : ''} ${clickingOption === 'days-3' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '3', 'days-3')}
               style={{
-                minWidth: '60px',
-                width: '60px',
-                fontSize: '24px',
-                padding: '20px 10px',
-                flex: '0 0 auto'
+                minWidth: '50px',
+                width: '50px',
+                fontSize: '20px',
+                padding: '16px 0',
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >3</button>
             <button
               className={`option-button ${formData.trainingDays === '4' ? 'selected' : ''} ${clickingOption === 'days-4' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '4', 'days-4')}
               style={{
-                minWidth: '60px',
-                width: '60px',
-                fontSize: '24px',
-                padding: '20px 10px',
-                flex: '0 0 auto'
+                minWidth: '50px',
+                width: '50px',
+                fontSize: '20px',
+                padding: '16px 0',
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >4</button>
             <button
               className={`option-button ${formData.trainingDays === '5+' ? 'selected' : ''} ${clickingOption === 'days-5' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '5+', 'days-5')}
               style={{
-                minWidth: '60px',
-                width: '60px',
-                fontSize: '24px',
-                padding: '20px 10px',
-                flex: '0 0 auto'
+                minWidth: '50px',
+                width: '50px',
+                fontSize: '20px',
+                padding: '16px 0',
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >5+</button>
           </div>
@@ -3583,15 +3598,16 @@ export default function ForgeOnboarding() {
         }}>
           <h1 style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '48px',
+            fontSize: 'clamp(32px, 6vw, 48px)',
             fontWeight: 500,
             fontStretch: 'expanded',
             color: '#ffffff',
             lineHeight: '1.15',
             letterSpacing: '0.5px',
-            marginBottom: '32px',
+            marginBottom: 'clamp(20px, 4vw, 32px)',
             textAlign: 'center',
-            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            padding: '0 20px'
           }}>
             Your plan is being generated.
           </h1>
@@ -3604,18 +3620,22 @@ export default function ForgeOnboarding() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          paddingBottom: '40px'
+          paddingBottom: 'clamp(24px, 5vw, 40px)',
+          paddingLeft: '20px',
+          paddingRight: '20px'
         }}>
           <p style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
-            fontSize: '18px',
+            fontSize: 'clamp(14px, 3vw, 18px)',
             fontWeight: 500,
             fontStretch: 'expanded',
             color: '#ffffff',
-            marginBottom: '40px',
+            marginBottom: 'clamp(24px, 4vw, 40px)',
             textAlign: 'center',
             letterSpacing: '0.5px',
-            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            maxWidth: '90%',
+            lineHeight: '1.5'
           }}>
             This typically takes 5-15 minutes. You&apos;ll receive an email at <strong>{formData.email}</strong> when your plan is ready.
           </p>

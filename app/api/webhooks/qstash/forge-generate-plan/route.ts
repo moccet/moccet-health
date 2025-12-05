@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
+import { Client } from '@upstash/qstash';
 import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
@@ -650,56 +651,8 @@ async function handler(request: NextRequest) {
     console.log('[DEBUG] Has adaptiveFeatures:', !!enhancedPlan.adaptiveFeatures);
     console.log('[DEBUG] Has sleep_recovery_protocol:', !!enhancedPlan.sleep_recovery_protocol);
 
-    // Call content enrichment agent to fill empty/placeholder sections
-    console.log('[4.5/7] Running content enrichment agent to fill empty sections...');
-    try {
-      const enrichmentResult = await fetch(`${baseUrl}/api/forge-enrich-content`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: enhancedPlan,
-          userProfile,
-          biomarkers,
-          unifiedContext
-        })
-      }).then(res => res.json()).catch(err => {
-        console.error('[ENRICHMENT-AGENT] Error:', err);
-        return { success: false };
-      });
-
-      if (enrichmentResult.success && enrichmentResult.enrichedSections) {
-        console.log(`[ENRICHMENT-AGENT] ✅ Enriched ${enrichmentResult.issuesFound} sections`);
-
-        // Merge enriched content into the plan
-        if (enrichmentResult.enrichedSections.trainingPhilosophy) {
-          enhancedPlan.trainingPhilosophy = {
-            ...enhancedPlan.trainingPhilosophy,
-            ...enrichmentResult.enrichedSections.trainingPhilosophy
-          };
-        }
-
-        if (enrichmentResult.enrichedSections.weeklyStructure) {
-          enhancedPlan.weeklyStructure = {
-            ...enhancedPlan.weeklyStructure,
-            ...enrichmentResult.enrichedSections.weeklyStructure
-          };
-        }
-
-        if (enrichmentResult.enrichedSections.nutritionGuidance) {
-          enhancedPlan.nutritionGuidance = {
-            ...enhancedPlan.nutritionGuidance,
-            ...enrichmentResult.enrichedSections.nutritionGuidance
-          };
-        }
-
-        console.log('[ENRICHMENT-AGENT] Merged enriched content into plan');
-      } else {
-        console.log('[ENRICHMENT-AGENT] No enrichment needed or agent failed');
-      }
-    } catch (error) {
-      console.error('[ENRICHMENT-AGENT] Non-fatal error during enrichment:', error);
-      // Continue even if enrichment fails - it's not critical
-    }
+    // Content enrichment will be handled as a separate background job after plan delivery
+    console.log('[4.5/7] Skipping inline enrichment - will queue as separate job after email...');
 
     // Store the generated plan
     console.log('[5/7] Storing comprehensive fitness plan...');
@@ -735,21 +688,44 @@ async function handler(request: NextRequest) {
 
     console.log('[OK] Fitness plan stored successfully');
 
-    // Send email notification
-    console.log('[6/7] Sending plan ready email...');
-    console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
-    const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
+    // Queue enrichment job as a separate QStash task which will send email after enrichment
+    console.log('[6/7] Queuing content enrichment job (will send email after enrichment)...');
+    try {
+      const qstashClient = new Client({
+        token: process.env.QSTASH_TOKEN!,
+      });
 
-    // Update status to completed
-    console.log('[7/7] Finalizing...');
-    await updateJobStatus(email, 'completed');
+      await qstashClient.publishJSON({
+        url: `${baseUrl}/api/webhooks/qstash/forge-enrich-plan`,
+        body: {
+          email,
+          uniqueCode,
+          fullName,
+          planUrl
+        },
+      });
 
-    if (emailSent) {
-      console.log(`\n✅ [QSTASH] Complete fitness plan generation finished with specialized agents and email sent to ${email}`);
-    } else {
-      console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
-      console.error('Check: 1) SENDGRID_API_KEY is set, 2) SENDGRID_FROM_EMAIL is verified in SendGrid dashboard');
+      console.log('[OK] Content enrichment job queued - will enrich plan and then send email');
+    } catch (enrichQueueError) {
+      console.error('[ERROR] Failed to queue enrichment job - falling back to direct email:', enrichQueueError);
+
+      // Fallback: send email directly if queueing fails
+      await updateJobStatus(email, 'completed');
+      const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
+
+      if (emailSent) {
+        console.log(`\n✅ [QSTASH] Plan generated and email sent (enrichment skipped due to queue error) to ${email}`);
+      } else {
+        console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Fitness plan generation completed (enrichment skipped)',
+      });
     }
+
+    console.log(`\n✅ [QSTASH] Fitness plan generation completed - enrichment and email will be handled by next job for ${email}`);
 
     return NextResponse.json({
       success: true,

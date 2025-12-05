@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import MultiFileUpload from '@/components/MultiFileUpload';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './onboarding.css';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type Screen =
   | 'intro' | 'welcome' | 'name' | 'age' | 'gender' | 'weight' | 'height'
@@ -13,6 +17,80 @@ type Screen =
   | 'current-bests' | 'conditioning-preferences' | 'soreness-preference'
   | 'daily-activity' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes' | 'meals-cooked' | 'alcohol-consumption'
   | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'payment' | 'final-completion';
+
+// Stripe Payment Form Component
+function ForgePaymentForm({
+  email,
+  fullName,
+  onSuccess,
+  onError
+}: {
+  email: string;
+  fullName: string;
+  onSuccess: () => void;
+  onError: (error: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+    onError('');
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/forge/onboarding`,
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        onError(error.message || 'Payment failed');
+        setProcessing(false);
+      } else {
+        // Payment succeeded - trigger plan generation via webhook
+        // The webhook will handle plan generation automatically
+        onSuccess();
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      onError('An unexpected error occurred');
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ marginBottom: '24px' }}>
+        <PaymentElement />
+      </div>
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="typeform-button"
+        style={{
+          width: '100%',
+          padding: '16px',
+          fontSize: '18px',
+          fontWeight: 600,
+          opacity: !stripe || processing ? 0.6 : 1,
+          cursor: !stripe || processing ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {processing ? 'Processing...' : 'Complete Payment'}
+      </button>
+    </form>
+  );
+}
 
 export default function ForgeOnboarding() {
   // Skip intro video in development mode
@@ -424,46 +502,187 @@ export default function ForgeOnboarding() {
     }
   }, []);
 
-  const handleConnectGmail = async () => {
-    try {
-      const response = await fetch('/api/gmail/auth');
-      const data = await response.json();
+  // Restore onboarding state after OAuth redirect (mobile)
+  useEffect(() => {
+    const savedState = localStorage.getItem('forge_onboarding_state');
+    const pendingIntegration = localStorage.getItem('forge_onboarding_pending_integration');
 
-      if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+    if (savedState && pendingIntegration) {
+      try {
+        const state = JSON.parse(savedState);
+        // Check if state is less than 30 minutes old
+        if (Date.now() - state.timestamp < 30 * 60 * 1000) {
+          // Restore all state
+          setFormData(state.formData);
+          setCurrentScreen(state.currentScreen);
+          setStravaConnected(state.stravaConnected);
+          setFitbitConnected(state.fitbitConnected);
+          setOuraConnected(state.ouraConnected);
+          setSlackConnected(state.slackConnected);
+          setTeamsConnected(state.teamsConnected);
+          setOutlookConnected(state.outlookConnected);
+          setGmailConnected(state.gmailConnected);
+          setVitalConnected(state.vitalConnected);
+          setDexcomConnected(state.dexcomConnected);
+          setAppleHealthConnected(state.appleHealthConnected);
+          setAppleCalendarConnected(state.appleCalendarConnected);
 
-        window.open(
-          data.authUrl,
-          'gmail-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
-
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
-
-          if (gmailEmailCookie) {
-            const email = gmailEmailCookie.split('=')[1];
+          // Mark the integration as connected
+          if (pendingIntegration === 'strava') {
+            setStravaConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('strava')
+                ? prev.integrations
+                : [...prev.integrations, 'strava']
+            }));
+          } else if (pendingIntegration === 'fitbit') {
+            setFitbitConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('fitbit')
+                ? prev.integrations
+                : [...prev.integrations, 'fitbit']
+            }));
+          } else if (pendingIntegration === 'oura') {
+            setOuraConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('oura-ring')
+                ? prev.integrations
+                : [...prev.integrations, 'oura-ring']
+            }));
+          } else if (pendingIntegration === 'dexcom') {
+            setDexcomConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('dexcom')
+                ? prev.integrations
+                : [...prev.integrations, 'dexcom']
+            }));
+          } else if (pendingIntegration === 'vital') {
+            setVitalConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('vital')
+                ? prev.integrations
+                : [...prev.integrations, 'vital']
+            }));
+          } else if (pendingIntegration === 'gmail') {
             setGmailConnected(true);
-            setGmailEmail(decodeURIComponent(email));
-            // Add google-calendar to integrations if not already present
             setFormData(prev => ({
               ...prev,
               integrations: prev.integrations.includes('google-calendar')
                 ? prev.integrations
                 : [...prev.integrations, 'google-calendar']
             }));
-            clearInterval(pollInterval);
+          } else if (pendingIntegration === 'slack') {
+            setSlackConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('slack')
+                ? prev.integrations
+                : [...prev.integrations, 'slack']
+            }));
+          } else if (pendingIntegration === 'apple-calendar') {
+            setAppleCalendarConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('apple-calendar')
+                ? prev.integrations
+                : [...prev.integrations, 'apple-calendar']
+            }));
+          } else if (pendingIntegration === 'outlook') {
+            setOutlookConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('outlook')
+                ? prev.integrations
+                : [...prev.integrations, 'outlook']
+            }));
+          } else if (pendingIntegration === 'teams') {
+            setTeamsConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('teams')
+                ? prev.integrations
+                : [...prev.integrations, 'teams']
+            }));
           }
-        }, 1000);
+        }
+      } catch (err) {
+        console.error('Error restoring onboarding state:', err);
+      }
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+      // Clear saved state
+      localStorage.removeItem('forge_onboarding_state');
+      localStorage.removeItem('forge_onboarding_pending_integration');
+    }
+  }, []);
+
+  const handleConnectGmail = async () => {
+    try {
+      const response = await fetch('/api/gmail/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'gmail');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
+
+          window.open(
+            data.authUrl,
+            'gmail-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
+
+          // Poll for connection status
+          const pollInterval = setInterval(async () => {
+            const cookies = document.cookie.split(';');
+            const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
+
+            if (gmailEmailCookie) {
+              const email = gmailEmailCookie.split('=')[1];
+              setGmailConnected(true);
+              setGmailEmail(decodeURIComponent(email));
+              // Add google-calendar to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('google-calendar')
+                  ? prev.integrations
+                  : [...prev.integrations, 'google-calendar']
+              }));
+              clearInterval(pollInterval);
+            }
+          }, 1000);
+
+          // Stop polling after 5 minutes
+          setTimeout(() => clearInterval(pollInterval), 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Gmail:', err);
@@ -492,40 +711,63 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'slack-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'slack');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const slackTeamCookie = cookies.find(c => c.trim().startsWith('slack_team='));
+          window.open(
+            data.authUrl,
+            'slack-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-          if (slackTeamCookie) {
-            const team = slackTeamCookie.split('=')[1];
-            setSlackConnected(true);
-            setSlackTeam(decodeURIComponent(team));
-            // Add slack to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('slack')
-                ? prev.integrations
-                : [...prev.integrations, 'slack']
-            }));
-            clearInterval(pollInterval);
-          }
-        }, 1000);
+          // Poll for connection status
+          const pollInterval = setInterval(async () => {
+            const cookies = document.cookie.split(';');
+            const slackTeamCookie = cookies.find(c => c.trim().startsWith('slack_team='));
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+            if (slackTeamCookie) {
+              const team = slackTeamCookie.split('=')[1];
+              setSlackConnected(true);
+              setSlackTeam(decodeURIComponent(team));
+              // Add slack to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('slack')
+                  ? prev.integrations
+                  : [...prev.integrations, 'slack']
+              }));
+              clearInterval(pollInterval);
+            }
+          }, 1000);
+
+          // Stop polling after 5 minutes
+          setTimeout(() => clearInterval(pollInterval), 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Slack:', err);
@@ -612,38 +854,61 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'apple-calendar-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'apple-calendar');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const appleCalendarCookie = cookies.find(c => c.trim().startsWith('apple_calendar_connected='));
+          window.open(
+            data.authUrl,
+            'apple-calendar-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-          if (appleCalendarCookie) {
-            setAppleCalendarConnected(true);
-            // Add apple-calendar to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('apple-calendar')
-                ? prev.integrations
-                : [...prev.integrations, 'apple-calendar']
-            }));
-            clearInterval(pollInterval);
-          }
-        }, 1000);
+          // Poll for connection status
+          const pollInterval = setInterval(async () => {
+            const cookies = document.cookie.split(';');
+            const appleCalendarCookie = cookies.find(c => c.trim().startsWith('apple_calendar_connected='));
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+            if (appleCalendarCookie) {
+              setAppleCalendarConnected(true);
+              // Add apple-calendar to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('apple-calendar')
+                  ? prev.integrations
+                  : [...prev.integrations, 'apple-calendar']
+              }));
+              clearInterval(pollInterval);
+            }
+          }, 1000);
+
+          // Stop polling after 5 minutes
+          setTimeout(() => clearInterval(pollInterval), 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Apple Calendar:', err);
@@ -671,52 +936,75 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        const popup = window.open(
-          data.authUrl,
-          'outlook-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
-
-        // Check if popup was blocked
-        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'outlook');
           window.location.href = data.authUrl;
-          return;
-        }
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Listen for postMessage from the popup
-        const handleMessage = (event: MessageEvent) => {
-          // Verify origin for security
-          if (event.origin !== window.location.origin) return;
+          const popup = window.open(
+            data.authUrl,
+            'outlook-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-          if (event.data.type === 'outlook_connected') {
-            const email = event.data.email;
-            setOutlookConnected(true);
-            setOutlookEmail(email);
-            // Add outlook to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('outlook')
-                ? prev.integrations
-                : [...prev.integrations, 'outlook']
-            }));
-            // Remove listener after successful connection
-            window.removeEventListener('message', handleMessage);
+          // Check if popup was blocked
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+            window.location.href = data.authUrl;
+            return;
           }
-        };
 
-        window.addEventListener('message', handleMessage);
+          // Listen for postMessage from the popup
+          const handleMessage = (event: MessageEvent) => {
+            // Verify origin for security
+            if (event.origin !== window.location.origin) return;
 
-        // Cleanup listener after 5 minutes (timeout)
-        setTimeout(() => {
-          window.removeEventListener('message', handleMessage);
-        }, 300000);
+            if (event.data.type === 'outlook_connected') {
+              const email = event.data.email;
+              setOutlookConnected(true);
+              setOutlookEmail(email);
+              // Add outlook to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('outlook')
+                  ? prev.integrations
+                  : [...prev.integrations, 'outlook']
+              }));
+              // Remove listener after successful connection
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+
+          // Cleanup listener after 5 minutes (timeout)
+          setTimeout(() => {
+            window.removeEventListener('message', handleMessage);
+          }, 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Outlook:', err);
@@ -745,62 +1033,85 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'oura-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'oura');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Listen for messages from popup
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'oura-connected') {
-            console.log('[Oura] Connection confirmed via message');
-            setOuraConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('oura-ring')
-                ? prev.integrations
-                : [...prev.integrations, 'oura-ring']
-            }));
-            window.removeEventListener('message', handleMessage);
-          } else if (event.data.type === 'oura-error') {
-            console.error('[Oura] Connection failed');
-            window.removeEventListener('message', handleMessage);
-          }
-        };
+          window.open(
+            data.authUrl,
+            'oura-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-        window.addEventListener('message', handleMessage);
+          // Listen for messages from popup
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === 'oura-connected') {
+              console.log('[Oura] Connection confirmed via message');
+              setOuraConnected(true);
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('oura-ring')
+                  ? prev.integrations
+                  : [...prev.integrations, 'oura-ring']
+              }));
+              window.removeEventListener('message', handleMessage);
+            } else if (event.data.type === 'oura-error') {
+              console.error('[Oura] Connection failed');
+              window.removeEventListener('message', handleMessage);
+            }
+          };
 
-        // Poll for connection status (backup mechanism)
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
+          window.addEventListener('message', handleMessage);
 
-          if (ouraUserIdCookie) {
-            setOuraConnected(true);
-            // Add oura-ring to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('oura-ring')
-                ? prev.integrations
-                : [...prev.integrations, 'oura-ring']
-            }));
+          // Poll for connection status (backup mechanism)
+          const pollInterval = setInterval(async () => {
+            const cookies = document.cookie.split(';');
+            const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
+
+            if (ouraUserIdCookie) {
+              setOuraConnected(true);
+              // Add oura-ring to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('oura-ring')
+                  ? prev.integrations
+                  : [...prev.integrations, 'oura-ring']
+              }));
+              clearInterval(pollInterval);
+              window.removeEventListener('message', handleMessage);
+            }
+          }, 1000);
+
+          // Stop polling after 5 minutes
+          setTimeout(() => {
             clearInterval(pollInterval);
             window.removeEventListener('message', handleMessage);
-          }
-        }, 1000);
-
-        // Stop polling after 5 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          window.removeEventListener('message', handleMessage);
-        }, 300000);
+          }, 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Oura:', err);
@@ -828,38 +1139,61 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'dexcom-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'dexcom');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Poll for connection status
-        const pollInterval = setInterval(async () => {
-          const cookies = document.cookie.split(';');
-          const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
+          window.open(
+            data.authUrl,
+            'dexcom-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-          if (dexcomConnectedCookie) {
-            setDexcomConnected(true);
-            // Add dexcom to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('dexcom')
-                ? prev.integrations
-                : [...prev.integrations, 'dexcom']
-            }));
-            clearInterval(pollInterval);
-          }
-        }, 1000);
+          // Poll for connection status
+          const pollInterval = setInterval(async () => {
+            const cookies = document.cookie.split(';');
+            const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+            if (dexcomConnectedCookie) {
+              setDexcomConnected(true);
+              // Add dexcom to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('dexcom')
+                  ? prev.integrations
+                  : [...prev.integrations, 'dexcom']
+              }));
+              clearInterval(pollInterval);
+            }
+          }, 1000);
+
+          // Stop polling after 5 minutes
+          setTimeout(() => clearInterval(pollInterval), 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Dexcom:', err);
@@ -887,31 +1221,54 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'fitbit-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'fitbit');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Listen for messages from popup
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'fitbit-connected') {
-            setFitbitConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: [...prev.integrations, 'fitbit']
-            }));
-            window.removeEventListener('message', handleMessage);
-          }
-        };
+          window.open(
+            data.authUrl,
+            'fitbit-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-        window.addEventListener('message', handleMessage);
+          // Listen for messages from popup
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === 'fitbit-connected') {
+              setFitbitConnected(true);
+              setFormData(prev => ({
+                ...prev,
+                integrations: [...prev.integrations, 'fitbit']
+              }));
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+        }
       }
     } catch (err) {
       console.error('Error connecting to Fitbit:', err);
@@ -938,31 +1295,54 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        window.open(
-          data.authUrl,
-          'strava-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'strava');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Listen for messages from popup
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'strava-connected') {
-            setStravaConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: [...prev.integrations, 'strava']
-            }));
-            window.removeEventListener('message', handleMessage);
-          }
-        };
+          window.open(
+            data.authUrl,
+            'strava-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-        window.addEventListener('message', handleMessage);
+          // Listen for messages from popup
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === 'strava-connected') {
+              setStravaConnected(true);
+              setFormData(prev => ({
+                ...prev,
+                integrations: [...prev.integrations, 'strava']
+              }));
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+        }
       }
     } catch (err) {
       console.error('Error connecting to Strava:', err);
@@ -1020,29 +1400,65 @@ export default function ForgeOnboarding() {
           : `https://link.tryvital.io/${data.linkToken}`);
         console.log('[Vital] Opening link URL:', linkUrl);
 
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        const popup = window.open(
-          linkUrl,
-          'vital-link',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'vital');
+          window.location.href = linkUrl;
+        } else {
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        if (!popup) {
-          alert('Please allow popups for this site to connect Vital');
-          return;
-        }
+          const popup = window.open(
+            linkUrl,
+            'vital-link',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-        // Store userId for later use
-        setVitalUserId(userId);
+          if (!popup) {
+            alert('Please allow popups for this site to connect Vital');
+            return;
+          }
 
-        // Listen for messages from popup
-        window.addEventListener('message', (event) => {
-          if (event.data.type === 'vital-connected') {
-            console.log('[Vital] Connection confirmed via message');
+          // Store userId for later use
+          setVitalUserId(userId);
+
+          // Listen for messages from popup
+          window.addEventListener('message', (event) => {
+            if (event.data.type === 'vital-connected') {
+              console.log('[Vital] Connection confirmed via message');
+              setVitalConnected(true);
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('vital')
+                  ? prev.integrations
+                  : [...prev.integrations, 'vital']
+              }));
+            }
+          });
+
+          // For demo purposes, mark as connected after opening
+          // In production, you'd use webhooks to confirm connection
+          setTimeout(() => {
+            console.log('[Vital] Auto-marking as connected');
             setVitalConnected(true);
             setFormData(prev => ({
               ...prev,
@@ -1050,21 +1466,8 @@ export default function ForgeOnboarding() {
                 ? prev.integrations
                 : [...prev.integrations, 'vital']
             }));
-          }
-        });
-
-        // For demo purposes, mark as connected after opening
-        // In production, you'd use webhooks to confirm connection
-        setTimeout(() => {
-          console.log('[Vital] Auto-marking as connected');
-          setVitalConnected(true);
-          setFormData(prev => ({
-            ...prev,
-            integrations: prev.integrations.includes('vital')
-              ? prev.integrations
-              : [...prev.integrations, 'vital']
-          }));
-        }, 3000);
+          }, 3000);
+        }
       } else {
         throw new Error('No link token received from API');
       }
@@ -1098,52 +1501,75 @@ export default function ForgeOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Open in a new window
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width - width) / 2;
-        const top = (window.screen.height - height) / 2;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        const popup = window.open(
-          data.authUrl,
-          'teams-auth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-        );
-
-        // Check if popup was blocked
-        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'teams');
           window.location.href = data.authUrl;
-          return;
-        }
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
 
-        // Listen for postMessage from the popup
-        const handleMessage = (event: MessageEvent) => {
-          // Verify origin for security
-          if (event.origin !== window.location.origin) return;
+          const popup = window.open(
+            data.authUrl,
+            'teams-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
 
-          if (event.data.type === 'teams_connected') {
-            const email = event.data.email;
-            setTeamsConnected(true);
-            setTeamsEmail(email);
-            // Add teams to integrations if not already present
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('teams')
-                ? prev.integrations
-                : [...prev.integrations, 'teams']
-            }));
-            // Remove listener after successful connection
-            window.removeEventListener('message', handleMessage);
+          // Check if popup was blocked
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            alert('Popup was blocked. Please allow popups for this site and try again, or click OK to redirect to the authentication page.');
+            window.location.href = data.authUrl;
+            return;
           }
-        };
 
-        window.addEventListener('message', handleMessage);
+          // Listen for postMessage from the popup
+          const handleMessage = (event: MessageEvent) => {
+            // Verify origin for security
+            if (event.origin !== window.location.origin) return;
 
-        // Cleanup listener after 5 minutes (timeout)
-        setTimeout(() => {
-          window.removeEventListener('message', handleMessage);
-        }, 300000);
+            if (event.data.type === 'teams_connected') {
+              const email = event.data.email;
+              setTeamsConnected(true);
+              setTeamsEmail(email);
+              // Add teams to integrations if not already present
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('teams')
+                  ? prev.integrations
+                  : [...prev.integrations, 'teams']
+              }));
+              // Remove listener after successful connection
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+
+          // Cleanup listener after 5 minutes (timeout)
+          setTimeout(() => {
+            window.removeEventListener('message', handleMessage);
+          }, 300000);
+        }
       }
     } catch (err) {
       console.error('Error connecting Teams:', err);
@@ -3419,151 +3845,166 @@ export default function ForgeOnboarding() {
               <span style={{fontSize: '24px', fontWeight: 600}}>$18</span>
             </div>
 
-            <div style={{marginBottom: '24px'}}>
-              <label style={{display: 'block', marginBottom: '8px', fontSize: '14px'}}>
-                Referral Code (Optional)
-              </label>
-              <div style={{display: 'flex', gap: '8px'}}>
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={(e) => {
-                    setPromoCode(e.target.value.toUpperCase());
-                    setPromoCodeError('');
-                  }}
-                  placeholder="Enter referral code"
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    fontSize: '16px',
+            {!clientSecret ? (
+              <>
+                <div style={{marginBottom: '24px'}}>
+                  <label style={{display: 'block', marginBottom: '8px', fontSize: '14px'}}>
+                    Referral Code (Optional)
+                  </label>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase());
+                        setPromoCodeError('');
+                      }}
+                      placeholder="Enter referral code"
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        fontSize: '16px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: '#000000'
+                      }}
+                    />
+                  </div>
+                  {promoCodeError && (
+                    <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
+                  )}
+                </div>
+
+                {paymentError && (
+                  <div style={{
+                    padding: '16px',
+                    marginBottom: '24px',
+                    background: 'rgba(255, 107, 107, 0.1)',
+                    border: '1px solid rgba(255, 107, 107, 0.3)',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    color: '#000000'
-                  }}
-                />
-              </div>
-              {promoCodeError && (
-                <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
-              )}
-            </div>
+                    color: '#ff6b6b',
+                    fontSize: '14px'
+                  }}>
+                    {paymentError}
+                  </div>
+                )}
 
-            {paymentError && (
-              <div style={{
-                padding: '16px',
-                marginBottom: '24px',
-                background: 'rgba(255, 107, 107, 0.1)',
-                border: '1px solid rgba(255, 107, 107, 0.3)',
-                borderRadius: '8px',
-                color: '#ff6b6b',
-                fontSize: '14px'
-              }}>
-                {paymentError}
-              </div>
-            )}
-
-            <button
-              className="typeform-button"
-              onClick={async () => {
-                setPaymentProcessing(true);
-                setPaymentError('');
-
-                try {
-                  // Submit onboarding data first
-                  const onboardingData = {
-                    ...formData,
-                    timestamp: new Date().toISOString(),
-                    completed: true
-                  };
-
-                  const onboardingResponse = await fetch('/api/forge-onboarding', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(onboardingData),
-                  });
-
-                  if (!onboardingResponse.ok) {
-                    throw new Error('Failed to save onboarding data');
-                  }
-
-                  const onboardingResult = await onboardingResponse.json();
-                  const uniqueCode = onboardingResult.data?.uniqueCode;
-
-                  // If lab files uploaded, analyze them
-                  if (formData.labFiles.length > 0) {
-                    const labFormData = new FormData();
-                    formData.labFiles.forEach((file) => {
-                      labFormData.append('bloodTests', file);
-                    });
-                    labFormData.append('email', formData.email);
+                <button
+                  className="typeform-button"
+                  onClick={async () => {
+                    setPaymentProcessing(true);
+                    setPaymentError('');
 
                     try {
-                      await fetch('/api/forge-analyze-blood-results', {
+                      // Submit onboarding data first
+                      const onboardingData = {
+                        ...formData,
+                        timestamp: new Date().toISOString(),
+                        completed: true
+                      };
+
+                      const onboardingResponse = await fetch('/api/forge-onboarding', {
                         method: 'POST',
-                        body: labFormData,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(onboardingData),
                       });
-                    } catch (err) {
-                      console.error('Error analyzing lab files:', err);
+
+                      if (!onboardingResponse.ok) {
+                        throw new Error('Failed to save onboarding data');
+                      }
+
+                      const onboardingResult = await onboardingResponse.json();
+                      const uniqueCode = onboardingResult.data?.uniqueCode;
+
+                      // If lab files uploaded, analyze them
+                      if (formData.labFiles.length > 0) {
+                        const labFormData = new FormData();
+                        formData.labFiles.forEach((file) => {
+                          labFormData.append('bloodTests', file);
+                        });
+                        labFormData.append('email', formData.email);
+
+                        try {
+                          await fetch('/api/forge-analyze-blood-results', {
+                            method: 'POST',
+                            body: labFormData,
+                          });
+                        } catch (err) {
+                          console.error('Error analyzing lab files:', err);
+                        }
+                      }
+
+                      // Create payment intent
+                      const paymentResponse = await fetch('/api/checkout/create-plan-payment-intent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          email: formData.email,
+                          fullName: formData.fullName,
+                          planType: 'Forge',
+                          promoCode: promoCode || undefined,
+                        }),
+                      });
+
+                      if (!paymentResponse.ok) {
+                        const errorData = await paymentResponse.json();
+                        throw new Error(errorData.error || 'Failed to create payment');
+                      }
+
+                      const paymentData = await paymentResponse.json();
+
+                      // If referral code made it free, proceed with plan generation
+                      if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
+                        // Queue plan generation directly
+                        const planFormData = new FormData();
+                        planFormData.append('email', formData.email);
+                        planFormData.append('uniqueCode', uniqueCode);
+                        planFormData.append('fullName', formData.fullName.split(' ')[0]);
+                        planFormData.append('referralCode', paymentData.referralCode);
+
+                        await fetch('/api/forge-generate-plan-async', {
+                          method: 'POST',
+                          body: planFormData,
+                        });
+
+                        setCurrentScreen('final-completion');
+                      } else if (paymentData.clientSecret) {
+                        // Show Stripe payment form
+                        setClientSecret(paymentData.clientSecret);
+                      } else {
+                        throw new Error('No client secret received from payment API');
+                      }
+                    } catch (error) {
+                      console.error('Payment error:', error);
+                      setPaymentError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+                    } finally {
+                      setPaymentProcessing(false);
                     }
-                  }
-
-                  // Create payment intent
-                  const paymentResponse = await fetch('/api/checkout/create-plan-payment-intent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      email: formData.email,
-                      fullName: formData.fullName,
-                      planType: 'Forge',
-                      promoCode: promoCode || undefined,
-                    }),
-                  });
-
-                  if (!paymentResponse.ok) {
-                    throw new Error('Failed to create payment');
-                  }
-
-                  const paymentData = await paymentResponse.json();
-
-                  // If referral code made it free, proceed with plan generation
-                  if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
-                    // Queue plan generation directly
-                    const planFormData = new FormData();
-                    planFormData.append('email', formData.email);
-                    planFormData.append('uniqueCode', uniqueCode);
-                    planFormData.append('fullName', formData.fullName.split(' ')[0]);
-                    planFormData.append('referralCode', paymentData.referralCode);
-
-                    await fetch('/api/forge-generate-plan-async', {
-                      method: 'POST',
-                      body: planFormData,
-                    });
-
-                    setCurrentScreen('final-completion');
-                  } else {
-                    // For now, show error that Stripe Elements integration is needed
-                    // In production, you'd integrate Stripe Elements here
-                    setPaymentError('Please enter a valid referral code to proceed. Full payment integration is not yet available.');
-                  }
-                } catch (error) {
-                  console.error('Payment error:', error);
-                  setPaymentError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
-                } finally {
-                  setPaymentProcessing(false);
-                }
-              }}
-              disabled={paymentProcessing}
-              style={{
-                width: '100%',
-                padding: '16px',
-                fontSize: '18px',
-                fontWeight: 600,
-                opacity: paymentProcessing ? 0.6 : 1,
-                cursor: paymentProcessing ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {paymentProcessing ? 'Processing...' : 'Complete Payment'}
-            </button>
+                  }}
+                  disabled={paymentProcessing}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    opacity: paymentProcessing ? 0.6 : 1,
+                    cursor: paymentProcessing ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {paymentProcessing ? 'Processing...' : 'Continue to Payment'}
+                </button>
+              </>
+            ) : (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <ForgePaymentForm
+                  email={formData.email}
+                  fullName={formData.fullName}
+                  onSuccess={() => setCurrentScreen('final-completion')}
+                  onError={(error) => setPaymentError(error)}
+                />
+              </Elements>
+            )}
 
             <p style={{
               marginTop: '16px',

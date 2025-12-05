@@ -108,10 +108,37 @@ export async function getAccessToken(
     const supabase = await createClient();
 
     // Get active token using stored procedure
-    const { data, error } = await supabase.rpc('get_active_token', {
-      p_user_email: userEmail,
-      p_provider: provider,
-    });
+    // Fallback to direct query if RPC is not available
+    let data, error;
+    try {
+      const result = await supabase.rpc('get_active_token', {
+        p_user_email: userEmail,
+        p_provider: provider,
+      });
+      data = result.data;
+      error = result.error;
+    } catch (rpcError) {
+      // Fallback: use direct query if stored procedure doesn't exist
+      console.warn('[TokenManager] RPC get_active_token not available, using direct query');
+      const result = await supabase
+        .from('integration_tokens')
+        .select('id, access_token, refresh_token, expires_at, provider_user_id')
+        .eq('user_email', userEmail)
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (result.data && result.data.length > 0) {
+        // Manually add is_expired field
+        const token = result.data[0];
+        const isExpired = token.expires_at ? new Date(token.expires_at) < new Date() : false;
+        data = [{ ...token, is_expired: isExpired }];
+      } else {
+        data = result.data;
+      }
+      error = result.error;
+    }
 
     if (error) {
       console.error('[TokenManager] Error retrieving token:', error);
@@ -350,11 +377,28 @@ export async function revokeToken(
   try {
     const supabase = await createClient();
 
-    // Use stored procedure for safe revocation
-    const { error } = await supabase.rpc('revoke_integration_token', {
-      p_user_email: userEmail,
-      p_provider: provider,
-    });
+    // Use stored procedure for safe revocation with fallback
+    let error;
+    try {
+      const result = await supabase.rpc('revoke_integration_token', {
+        p_user_email: userEmail,
+        p_provider: provider,
+      });
+      error = result.error;
+    } catch (rpcError) {
+      // Fallback: use direct update if stored procedure doesn't exist
+      console.warn('[TokenManager] RPC revoke_integration_token not available, using direct update');
+      const result = await supabase
+        .from('integration_tokens')
+        .update({
+          is_active: false,
+          revoked_at: new Date().toISOString(),
+        })
+        .eq('user_email', userEmail)
+        .eq('provider', provider)
+        .eq('is_active', true);
+      error = result.error;
+    }
 
     if (error) {
       console.error('[TokenManager] Error revoking token:', error);

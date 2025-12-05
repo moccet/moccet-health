@@ -77,7 +77,28 @@ ${JSON.stringify(unifiedContext, null, 2)}
     }
     responseText = responseText.trim();
 
-    const aiResponse = JSON.parse(responseText);
+    // Additional JSON sanitization to handle common GPT formatting issues
+    // Remove any trailing commas before closing braces/brackets
+    responseText = responseText.replace(/,(\s*[}\]])/g, '$1');
+    // Remove JavaScript-style comments (// and /* */)
+    responseText = responseText.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    // Remove any control characters that might cause issues
+    responseText = responseText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+
+    let aiResponse;
+    try {
+      aiResponse = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[TRAINING-AGENT] ❌ Failed to parse GPT-5 response as JSON:', parseError);
+      console.error('[TRAINING-AGENT] Error at position:', parseError instanceof SyntaxError ? (parseError as any).message : 'Unknown');
+      console.error('[TRAINING-AGENT] Response length:', responseText.length);
+      console.error('[TRAINING-AGENT] First 1000 chars:', responseText.substring(0, 1000));
+      console.error('[TRAINING-AGENT] Chars around error position 28540:', responseText.substring(28500, 28600));
+      console.error('[TRAINING-AGENT] Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)));
+
+      // Re-throw with more context
+      throw new Error(`Failed to parse training program response: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
+    }
 
     // Extract all training sections from AI response
     const executiveSummary = aiResponse.executiveSummary;
@@ -102,16 +123,22 @@ ${JSON.stringify(unifiedContext, null, 2)}
   } catch (error) {
     console.error('[TRAINING-AGENT] ❌ Error generating training program:', error);
     console.error('[TRAINING-AGENT] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('[TRAINING-AGENT] Error message:', error instanceof Error ? error.message : 'No message');
 
-    // Log more details about the error
+    // Log more details about the error with proper serialization
     if (error && typeof error === 'object') {
-      console.error('[TRAINING-AGENT] Error details:', JSON.stringify(error, null, 2));
+      try {
+        console.error('[TRAINING-AGENT] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      } catch (serializationError) {
+        console.error('[TRAINING-AGENT] Could not serialize error:', serializationError);
+      }
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: error?.constructor?.name || 'Unknown'
       },
       { status: 500 }
     );

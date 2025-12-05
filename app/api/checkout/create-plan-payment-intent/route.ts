@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateReferralCode } from '@/lib/referral-codes';
+import { createPaymentIntent } from '@/lib/stripe';
 
 const PLAN_PRICE = 18.00; // $18 for plan generation
 
@@ -48,7 +49,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[Plan Payment API] ✅ Payment intent created (amount: $${finalAmount})`);
+    // If free with referral code, return without creating payment intent
+    if (finalAmount === 0 && referralCodeValid) {
+      console.log(`[Plan Payment API] ✅ Free plan with referral code (amount: $${finalAmount})`);
+      return NextResponse.json({
+        success: true,
+        amount: finalAmount,
+        originalPrice: PLAN_PRICE,
+        discount: discount,
+        referralCodeApplied: referralCodeValid,
+        referralCode: promoCode || '',
+      });
+    }
+
+    // Create Stripe payment intent for paid plans
+    const paymentIntent = await createPaymentIntent(finalAmount, email, {
+      plan_type: planType,
+      full_name: fullName || '',
+      promo_code: promoCode || '',
+    });
+
+    console.log(`[Plan Payment API] ✅ Payment intent created: ${paymentIntent.id} (amount: $${finalAmount})`);
 
     return NextResponse.json({
       success: true,
@@ -57,6 +78,8 @@ export async function POST(request: NextRequest) {
       discount: discount,
       referralCodeApplied: referralCodeValid,
       referralCode: promoCode || '',
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.error('[Plan Payment API] Error:', error);

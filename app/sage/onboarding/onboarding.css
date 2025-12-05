@@ -1816,6 +1816,16 @@
   cursor: not-allowed;
 }
 
+/* Desktop: Wider buttons for training days */
+@media (min-width: 769px) {
+  .options-container button[style*="min-width: 50px"] {
+    min-width: 80px !important;
+    width: 80px !important;
+    padding: 20px 0 !important;
+    font-size: 24px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .integration-item {
     flex-direction: column;

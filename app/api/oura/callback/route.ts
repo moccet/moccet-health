@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in; // seconds
 
     // Fetch user personal info from Oura API
     const userInfoResponse = await fetch('https://api.ouraring.com/v2/usercollection/personal_info', {
@@ -65,13 +67,41 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Oura] Connected: User ID ${userId}`);
 
-    // Set cookies with tokens and user info
+    // Get user email from cookies (set during onboarding)
     const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+
+    if (!userEmail) {
+      console.warn('[Oura] No user email found in cookies, storing tokens with state parameter');
+      // Fallback: try to get email from state parameter (if encoded there)
+      // For now, we'll still set cookies as backup
+    }
+
+    // Store tokens in database (new secure method)
+    if (userEmail) {
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+
+      const storeResult = await storeToken(userEmail, 'oura', {
+        accessToken,
+        refreshToken,
+        expiresAt,
+        providerUserId: userId,
+        scopes: ['daily', 'heartrate', 'workout', 'sleep'], // Oura scopes
+      });
+
+      if (storeResult.success) {
+        console.log(`[Oura] Tokens stored in database for ${userEmail}`);
+      } else {
+        console.error(`[Oura] Failed to store tokens in database:`, storeResult.error);
+      }
+    }
+
+    // Keep cookies for backward compatibility and session validation
     cookieStore.set('oura_access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365
     });
 
     if (refreshToken) {
@@ -79,7 +109,7 @@ export async function GET(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365 // 1 year
+        maxAge: 60 * 60 * 24 * 365
       });
     }
 
@@ -87,11 +117,8 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365
     });
-
-    // TODO: Store tokens in database for future API calls
-    // For now, we just verify the connection works
 
     // Return HTML to close the popup and signal success to parent window
     return new NextResponse(

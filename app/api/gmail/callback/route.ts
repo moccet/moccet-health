@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +42,49 @@ export async function GET(request: NextRequest) {
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const userInfo = await oauth2.userinfo.get();
     const userEmail = userInfo.data.email || '';
+
+    // Store tokens in database
+    if (userEmail && tokens.access_token) {
+      const expiresAt = tokens.expiry_date ? new Date(tokens.expiry_date) : undefined;
+      const storeResult = await storeToken(userEmail, 'gmail', {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt,
+        scopes: tokens.scope?.split(' '),
+        providerUserId: userEmail,
+      });
+
+      if (storeResult.success) {
+        console.log(`[Gmail] Tokens stored in database for ${userEmail}`);
+      } else {
+        console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Store in cookies for backward compatibility
+    const cookieStore = await cookies();
+    if (tokens.access_token) {
+      cookieStore.set('gmail_access_token', tokens.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365
+      });
+    }
+    if (tokens.refresh_token) {
+      cookieStore.set('gmail_refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365
+      });
+    }
+    cookieStore.set('gmail_email', userEmail, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365
+    });
 
     // Return HTML that closes the popup window
     const html = `

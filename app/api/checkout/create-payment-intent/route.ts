@@ -68,10 +68,16 @@ export async function POST(request: NextRequest) {
         total,
         itemCount: cart.itemCount,
         items: cart.items.map((item) => ({
-          name: `${item.brand} ${item.name}`,
+          id: item.id,
+          productId: item.productId,
+          sku: item.sku,
+          name: item.name,
+          brand: item.brand,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           lineTotal: item.lineTotal,
+          imageUrl: item.imageUrl,
+          imageLoading: item.imageLoading,
         })),
       },
     });

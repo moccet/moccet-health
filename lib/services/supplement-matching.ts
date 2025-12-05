@@ -7,6 +7,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { fetchProductImage } from './product-image-fetcher';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -570,6 +571,11 @@ async function createSupplementProduct(
     const wholesaleCost = isProtein ? 35.00 : 15.00; // Higher wholesale for protein
     const retailPrice = wholesaleCost + 30.00; // Always $30 margin
 
+    // Fetch product image automatically
+    console.log(`[Supplement Matching] Fetching image for: ${supplementName}`);
+    const imageUrl = await fetchProductImage('Premium Select', supplementName);
+    console.log(`[Supplement Matching] Image URL: ${imageUrl}`);
+
     // Create product
     const { data: product, error } = await supabase
       .from('supplement_products')
@@ -584,6 +590,7 @@ async function createSupplementProduct(
         wholesale_cost: wholesaleCost,
         retail_price: retailPrice,
         description: `High-quality ${supplementName} supplement`,
+        image_url: imageUrl, // Add fetched image
         stock_level: 1000, // Start with good stock
         reorder_point: 100,
         is_active: true,

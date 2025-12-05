@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +51,8 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in;
 
     // Fetch user profile from Microsoft Graph
     const profileResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
@@ -69,8 +72,50 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Outlook] Connected: ${userEmail}`);
 
-    // Set cookie with actual user email
+    // Store tokens in database
     const cookieStore = await cookies();
+    const appUserEmail = cookieStore.get('user_email')?.value || userEmail;
+
+    if (appUserEmail && accessToken) {
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+      const storeResult = await storeToken(appUserEmail, 'outlook', {
+        accessToken,
+        refreshToken,
+        expiresAt,
+        providerUserId: userEmail,
+        scopes: tokenData.scope?.split(' '),
+      });
+
+      if (storeResult.success) {
+        console.log(`[Outlook] Tokens stored in database for ${appUserEmail}`);
+      } else {
+        console.error(`[Outlook] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Store in cookies for backward compatibility
+    cookieStore.set('outlook_access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365
+    });
+    if (refreshToken) {
+      cookieStore.set('outlook_refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365
+      });
+    }
+    cookieStore.set('outlook_email', userEmail, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365
+    });
+
+    // Set cookie with actual user email
     cookieStore.set('outlook_email', userEmail, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

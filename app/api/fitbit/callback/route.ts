@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,16 +52,40 @@ export async function GET(request: NextRequest) {
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
     const userId = tokenData.user_id;
+    const expiresIn = tokenData.expires_in; // seconds
+    const scopes = tokenData.scope ? tokenData.scope.split(' ') : [];
 
     console.log(`[Fitbit] Connected: User ID ${userId}`);
 
-    // Set cookies with tokens and user info
+    // Get user email from cookies
     const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+
+    // Store tokens in database
+    if (userEmail) {
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+
+      const storeResult = await storeToken(userEmail, 'fitbit', {
+        accessToken,
+        refreshToken,
+        expiresAt,
+        providerUserId: userId,
+        scopes,
+      });
+
+      if (storeResult.success) {
+        console.log(`[Fitbit] Tokens stored in database for ${userEmail}`);
+      } else {
+        console.error(`[Fitbit] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Keep cookies for backward compatibility
     cookieStore.set('fitbit_access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365
     });
 
     if (refreshToken) {
@@ -68,7 +93,7 @@ export async function GET(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365 // 1 year
+        maxAge: 60 * 60 * 24 * 365
       });
     }
 
@@ -76,7 +101,7 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365
     });
 
     // TODO: Store tokens in database for future API calls

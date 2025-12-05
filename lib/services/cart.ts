@@ -23,6 +23,7 @@ export interface CartItem {
   unitPrice: number;
   lineTotal: number;
   imageUrl: string;
+  imageLoading?: boolean; // True if image is being fetched
   inStock: boolean;
   stockLevel: number;
 }
@@ -54,7 +55,11 @@ export async function getOrCreateCart(
         *,
         cart_items (
           *,
-          supplement_products (*)
+          supplement_products (
+            *,
+            image_fetch_status,
+            image_confidence_score
+          )
         )
       `)
       .eq('user_email', userEmail)
@@ -453,6 +458,15 @@ function transformToCart(dbCart: any): Cart {
     const product = item.supplement_products;
     const lineTotal = item.quantity * parseFloat(item.unit_price);
 
+    // Determine if image needs to be loaded
+    const hasValidImage = product.image_url &&
+                         product.image_url !== '' &&
+                         product.image_url !== '/images/supplements/default.png' &&
+                         !product.image_url.includes('dicebear');
+
+    const imageUrl = hasValidImage ? product.image_url : '/images/supplements/default.svg';
+    const imageLoading = !hasValidImage && product.image_fetch_status !== 'failed';
+
     return {
       id: item.id,
       productId: product.id,
@@ -462,7 +476,8 @@ function transformToCart(dbCart: any): Cart {
       quantity: item.quantity,
       unitPrice: parseFloat(item.unit_price),
       lineTotal: Math.round(lineTotal * 100) / 100,
-      imageUrl: product.image_url || '/images/supplements/default.png',
+      imageUrl,
+      imageLoading,
       inStock: product.stock_level > 0,
       stockLevel: product.stock_level,
     };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import MultiFileUpload from '@/components/MultiFileUpload';
 import './onboarding.css';
 
 type Screen =
@@ -28,6 +29,7 @@ export default function SageOnboarding() {
   const [ouraConnected, setOuraConnected] = useState(false);
   const [dexcomConnected, setDexcomConnected] = useState(false);
   const [fitbitConnected, setFitbitConnected] = useState(false);
+  const [stravaConnected, setStravaConnected] = useState(false);
   const [vitalConnected, setVitalConnected] = useState(false);
   const [vitalUserId, setVitalUserId] = useState('');
   const [teamsConnected, setTeamsConnected] = useState(false);
@@ -286,7 +288,7 @@ export default function SageOnboarding() {
     mealsCooked: '',
     alcoholConsumption: '',
     integrations: [] as string[],
-    labFile: null as File | null,
+    labFiles: [] as File[],
   });
 
 
@@ -317,6 +319,32 @@ export default function SageOnboarding() {
       }
     }
   }, [currentScreen]);
+
+  // Clear cart when starting new onboarding flow
+  useEffect(() => {
+    const clearCartOnStart = async () => {
+      const cookies = document.cookie.split(';');
+      const emailCookie = cookies.find(c => c.trim().startsWith('gmail_email=') || c.trim().startsWith('user_email='));
+
+      if (emailCookie) {
+        const email = emailCookie.split('=')[1]?.trim();
+        if (email) {
+          try {
+            await fetch('/api/cart/clear', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: decodeURIComponent(email) }),
+            });
+            console.log('[Sage Onboarding] Cart cleared for new plan generation');
+          } catch (error) {
+            console.error('[Sage Onboarding] Failed to clear cart:', error);
+          }
+        }
+      }
+    };
+
+    clearCartOnStart();
+  }, []); // Run once on mount
 
   // Check if integrations are already connected on mount
   useEffect(() => {
@@ -810,7 +838,31 @@ export default function SageOnboarding() {
       const data = await response.json();
 
       if (data.authUrl) {
-        window.location.href = data.authUrl;
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'fitbit-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Listen for messages from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'fitbit-connected') {
+            setFitbitConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: [...prev.integrations, 'fitbit']
+            }));
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
       }
     } catch (err) {
       console.error('Error connecting to Fitbit:', err);
@@ -828,6 +880,57 @@ export default function SageOnboarding() {
       }));
     } catch (err) {
       console.error('Error disconnecting Fitbit:', err);
+    }
+  };
+
+  const handleConnectStrava = async () => {
+    try {
+      const response = await fetch('/api/strava/auth');
+      const data = await response.json();
+
+      if (data.authUrl) {
+        // Open in a new window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        window.open(
+          data.authUrl,
+          'strava-auth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        // Listen for messages from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'strava-connected') {
+            setStravaConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: [...prev.integrations, 'strava']
+            }));
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+      }
+    } catch (err) {
+      console.error('Error connecting to Strava:', err);
+    }
+  };
+
+  const handleDisconnectStrava = async () => {
+    try {
+      await fetch('/api/strava/disconnect', { method: 'POST' });
+      setStravaConnected(false);
+      // Remove strava from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'strava')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Strava:', err);
     }
   };
 
@@ -1101,54 +1204,10 @@ export default function SageOnboarding() {
     }, 400);
   };
 
-  const handleLabFileUpload = async (file: File) => {
-    setLabFileUploading(true);
-    setLabFileError('');
-
-    try {
-      // Just store the file - analysis will happen in the personalized plan page
-      handleInputChange('labFile', file);
-      console.log('Lab file uploaded:', file.name);
-    } catch (err) {
-      setLabFileError('Error uploading lab file');
-      console.error(err);
-    } finally {
-      setLabFileUploading(false);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (labFileUploading) return;
-
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      const file = files[0];
-      // Check file type
-      const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-      if (validTypes.includes(file.type)) {
-        handleLabFileUpload(file);
-      } else {
-        setLabFileError('Please upload a PDF, PNG, or JPEG file');
-      }
-    }
+  // Handler for multi-file lab upload
+  const handleLabFilesChange = (files: File[]) => {
+    setFormData(prev => ({ ...prev, labFiles: files }));
+    console.log('Lab files updated:', files.map(f => f.name).join(', '));
   };
 
   const toggleArrayValue = (field: 'allergies' | 'medicalConditions' | 'proteinSources' | 'integrations', value: string) => {
@@ -1199,18 +1258,17 @@ export default function SageOnboarding() {
     }
   };
 
-  // Global Enter key handler for all screens
+  // Global keyboard navigation handler for all screens
   useEffect(() => {
-    const handleGlobalEnter = (e: KeyboardEvent) => {
-      // Only handle Enter key
-      if (e.key !== 'Enter') return;
-
-      // Don't handle if typing in an input/textarea
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        // Allow Enter to work normally in text inputs
-        return;
-      }
+    const handleGlobalKeyboard = (e: KeyboardEvent) => {
+      // Handle Enter key or Right Arrow for forward navigation
+      if (e.key === 'Enter' || e.key === 'ArrowRight') {
+        // Don't handle if typing in an input/textarea
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          // Allow Enter to work normally in text inputs
+          return;
+        }
 
       // Determine next screen and if Continue is disabled based on current screen
       let nextScreen: Screen | null = null;
@@ -1320,10 +1378,20 @@ export default function SageOnboarding() {
         e.preventDefault();
         handleContinue(nextScreen);
       }
+      }
+
+      // Handle Left Arrow for backward navigation
+      if (e.key === 'ArrowLeft') {
+        const currentIndex = screenOrder.indexOf(currentScreen);
+        if (currentIndex > 0) {
+          e.preventDefault();
+          setCurrentScreen(screenOrder[currentIndex - 1]);
+        }
+      }
     };
 
-    window.addEventListener('keydown', handleGlobalEnter);
-    return () => window.removeEventListener('keydown', handleGlobalEnter);
+    window.addEventListener('keydown', handleGlobalKeyboard);
+    return () => window.removeEventListener('keydown', handleGlobalKeyboard);
   }, [currentScreen, formData]);
 
   // Screen order for navigation
@@ -1354,9 +1422,38 @@ export default function SageOnboarding() {
     return currentIndex > 1;
   };
 
+  const isContinueDisabled = (): boolean => {
+    switch (currentScreen) {
+      case 'name':
+        return !formData.fullName?.trim();
+      case 'age':
+        return !formData.age || parseInt(formData.age) < 18 || parseInt(formData.age) > 120;
+      case 'gender':
+        return !formData.gender;
+      case 'weight':
+        return !formData.weight;
+      case 'height':
+        return !formData.height;
+      case 'email':
+        return !formData.email?.includes('@');
+      case 'main-priority':
+        return !formData.mainPriority;
+      case 'driving-goal':
+        return !formData.drivingGoal;
+      case 'eating-style':
+        return !formData.eatingStyle;
+      case 'first-meal':
+        return !formData.firstMeal;
+      case 'energy-crash':
+        return !formData.energyCrash;
+      default:
+        return false;
+    }
+  };
+
   const canGoForward = () => {
     const currentIndex = screenOrder.indexOf(currentScreen);
-    return currentIndex < screenOrder.length - 1 && currentIndex >= 0;
+    return currentIndex < screenOrder.length - 1 && currentIndex >= 0 && !isContinueDisabled();
   };
 
   const handleSubmit = async () => {
@@ -1405,11 +1502,15 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // If lab file uploaded, analyze it first (on frontend)
-      if (formData.labFile) {
-        console.log('Uploading and analyzing lab file...');
+      // If lab files uploaded, analyze them first (on frontend)
+      if (formData.labFiles.length > 0) {
+        console.log(`Uploading and analyzing ${formData.labFiles.length} lab file(s)...`);
         const labFormData = new FormData();
-        labFormData.append('bloodTest', formData.labFile);
+
+        // Append all lab files
+        formData.labFiles.forEach((file) => {
+          labFormData.append('bloodTests', file);
+        });
         labFormData.append('email', formData.email);
 
         try {
@@ -1419,7 +1520,7 @@ export default function SageOnboarding() {
           });
           console.log('✅ Lab file analysis completed');
         } catch (err) {
-          console.error('Error analyzing lab file:', err);
+          console.error('Error analyzing lab files:', err);
           // Continue anyway
         }
       }
@@ -1493,60 +1594,10 @@ export default function SageOnboarding() {
           bottom: 'clamp(16px, 4vw, 30px)',
           right: 'clamp(16px, 4vw, 30px)',
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           gap: 'clamp(8px, 2vw, 10px)',
           zIndex: 9999
         }}>
-          <button
-            onClick={handleForward}
-            disabled={!canGoForward()}
-            style={{
-              width: 'clamp(44px, 12vw, 48px)',
-              height: 'clamp(44px, 12vw, 48px)',
-              minWidth: '44px',
-              minHeight: '44px',
-              borderRadius: '50%',
-              border: '2px solid #a8b8a0',
-              background: canGoForward() ? '#ffffff' : '#f5f5f5',
-              color: canGoForward() ? '#2d3a2d' : '#cccccc',
-              cursor: canGoForward() ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'clamp(18px, 5vw, 20px)',
-              transition: 'all 0.2s ease',
-              opacity: canGoForward() ? 1 : 0.5,
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-            }}
-            onMouseEnter={(e) => {
-              if (canGoForward() && window.innerWidth > 768) {
-                e.currentTarget.style.background = '#e8ede6';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (canGoForward() && window.innerWidth > 768) {
-                e.currentTarget.style.background = '#ffffff';
-                e.currentTarget.style.transform = 'scale(1)';
-              }
-            }}
-            onTouchStart={(e) => {
-              if (canGoForward()) {
-                e.currentTarget.style.background = '#e8ede6';
-                e.currentTarget.style.transform = 'scale(0.95)';
-              }
-            }}
-            onTouchEnd={(e) => {
-              if (canGoForward()) {
-                e.currentTarget.style.background = '#ffffff';
-                e.currentTarget.style.transform = 'scale(1)';
-              }
-            }}
-          >
-            ↑
-          </button>
           <button
             onClick={handleBack}
             disabled={!canGoBack()}
@@ -1555,47 +1606,85 @@ export default function SageOnboarding() {
               height: 'clamp(44px, 12vw, 48px)',
               minWidth: '44px',
               minHeight: '44px',
-              borderRadius: '50%',
-              border: '2px solid #a8b8a0',
-              background: canGoBack() ? '#ffffff' : '#f5f5f5',
+              border: 'none',
+              background: 'transparent',
               color: canGoBack() ? '#2d3a2d' : '#cccccc',
               cursor: canGoBack() ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 'clamp(18px, 5vw, 20px)',
+              fontSize: 'clamp(24px, 6vw, 28px)',
               transition: 'all 0.2s ease',
-              opacity: canGoBack() ? 1 : 0.5,
+              opacity: canGoBack() ? 1 : 0.3,
               WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+              touchAction: 'manipulation'
             }}
             onMouseEnter={(e) => {
               if (canGoBack() && window.innerWidth > 768) {
-                e.currentTarget.style.background = '#e8ede6';
-                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.transform = 'scale(1.2)';
               }
             }}
             onMouseLeave={(e) => {
               if (canGoBack() && window.innerWidth > 768) {
-                e.currentTarget.style.background = '#ffffff';
                 e.currentTarget.style.transform = 'scale(1)';
               }
             }}
             onTouchStart={(e) => {
               if (canGoBack()) {
-                e.currentTarget.style.background = '#e8ede6';
-                e.currentTarget.style.transform = 'scale(0.95)';
+                e.currentTarget.style.transform = 'scale(0.9)';
               }
             }}
             onTouchEnd={(e) => {
               if (canGoBack()) {
-                e.currentTarget.style.background = '#ffffff';
                 e.currentTarget.style.transform = 'scale(1)';
               }
             }}
           >
-            ↓
+            ←
+          </button>
+          <button
+            onClick={handleForward}
+            disabled={!canGoForward()}
+            style={{
+              width: 'clamp(44px, 12vw, 48px)',
+              height: 'clamp(44px, 12vw, 48px)',
+              minWidth: '44px',
+              minHeight: '44px',
+              border: 'none',
+              background: 'transparent',
+              color: canGoForward() ? '#2d3a2d' : '#cccccc',
+              cursor: canGoForward() ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'clamp(24px, 6vw, 28px)',
+              transition: 'all 0.2s ease',
+              opacity: canGoForward() ? 1 : 0.3,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
+            onMouseEnter={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.transform = 'scale(1.2)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canGoForward() && window.innerWidth > 768) {
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+            onTouchStart={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.transform = 'scale(0.9)';
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (canGoForward()) {
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            }}
+          >
+            →
           </button>
         </div>
       )}
@@ -2644,6 +2733,21 @@ export default function SageOnboarding() {
               </div>
             )}
 
+            {!stravaConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/strava.png" alt="Strava" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Strava</h3>
+                  <p className="integration-description">Sync your runs, rides, and training activities</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectStrava}>
+                  Connect
+                </button>
+              </div>
+            )}
+
             {fitbitConnected && (
               <div className="integration-item connected">
                 <div className="integration-logo">
@@ -2654,6 +2758,21 @@ export default function SageOnboarding() {
                   <p className="integration-description">Connected</p>
                 </div>
                 <button className="disconnect-button" onClick={handleDisconnectFitbit}>
+                  Disconnect
+                </button>
+              </div>
+            )}
+
+            {stravaConnected && (
+              <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/strava.png" alt="Strava" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">Strava</h3>
+                  <p className="integration-description">Connected</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectStrava}>
                   Disconnect
                 </button>
               </div>
@@ -2781,57 +2900,16 @@ export default function SageOnboarding() {
         <div className="typeform-content">
           <p className="section-label">4 The Final Step</p>
           <h1 className="typeform-title">Upload your labs and bloodwork.</h1>
-          <p className="typeform-subtitle">Please upload your most recent blood test results to unlock your personalized plan.</p>
+          <p className="typeform-subtitle">Please upload your most recent blood test results to unlock your personalized plan. You can upload multiple files including PDFs and screenshots.</p>
           <div className="upload-container">
-            <div
-              className="upload-box"
-              style={{cursor: labFileUploading ? 'not-allowed' : 'pointer', opacity: labFileUploading ? 0.6 : 1}}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => !labFileUploading && document.getElementById('lab-upload-input')?.click()}
-            >
-              {labFileUploading ? (
-                <>
-                  <div style={{fontSize: '16px', marginBottom: '8px'}}>Analyzing your lab results...</div>
-                  <div style={{fontSize: '14px', color: '#666'}}>This may take a moment</div>
-                </>
-              ) : formData.labFile && !labFileError ? (
-                <>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom: '16px', color: '#2e7d32'}}>
-                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{fontWeight: 500, marginBottom: '8px', color: '#2e7d32'}}>✓ {formData.labFile.name}</div>
-                  <div style={{fontSize: '14px', color: '#666'}}>Click to upload a different file</div>
-                </>
-              ) : (
-                <>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginBottom: '16px', opacity: 0.5}}>
-                    <path d="M12 15V3M12 3L8 7M12 3L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2 17L2 19C2 20.1046 2.89543 21 4 21L20 21C21.1046 21 22 20.1046 22 19L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{fontWeight: 500, marginBottom: '8px'}}>Click to upload or drag and drop</div>
-                  <div style={{fontSize: '14px', color: '#999'}}>PDF, PNG, JPG • max 10MB</div>
-                </>
-              )}
-            </div>
-            <input
-              id="lab-upload-input"
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg"
-              disabled={labFileUploading}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleLabFileUpload(file);
-              }}
-              style={{display: 'none'}}
+            <MultiFileUpload
+              files={formData.labFiles}
+              onFilesChange={handleLabFilesChange}
+              isUploading={labFileUploading}
+              error={labFileError}
+              onError={setLabFileError}
+              maxSizeMB={10}
             />
-            {labFileError && (
-              <div style={{marginTop: '16px', padding: '12px', background: '#ffebee', borderRadius: '8px', fontSize: '14px', color: '#c62828'}}>
-                Error: {labFileError}
-              </div>
-            )}
           </div>
           {/* <p className="typeform-subtitle" style={{marginTop: '40px', fontSize: '15px'}}>
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.

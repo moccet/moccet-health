@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { buildFitnessPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
+import { enhanceForgeContextWithInference, formatForgeInferenceForPrompt, generateForgeInferenceMetadata } from '@/lib/services/forge-inference-enhancer';
 
 export const maxDuration = 300;
 
@@ -50,6 +51,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Step 2: Enhance with Forge hybrid inference
+    console.log('[FORGE-PLAN] Running Forge hybrid inference...');
+    let enhancedContext = null;
+    let inferencePromptSection = '';
+    let inferenceMetadata = null;
+
+    if (userEmail) {
+      try {
+        enhancedContext = await enhanceForgeContextWithInference(userEmail, formData);
+
+        if (enhancedContext) {
+          inferencePromptSection = formatForgeInferenceForPrompt(enhancedContext);
+          inferenceMetadata = generateForgeInferenceMetadata(enhancedContext);
+          console.log('[FORGE-PLAN] ✅ Forge hybrid inference completed');
+          console.log(`[FORGE-PLAN] Inference Confidence: ${inferenceMetadata.inferenceConfidence}%`);
+          console.log(`[FORGE-PLAN] Training Data Source: ${inferenceMetadata.trainingDataSource}`);
+          console.log(`[FORGE-PLAN] Overtraining Risk: ${inferenceMetadata.overtrainingRisk}`);
+        } else {
+          console.log('[FORGE-PLAN] ⚠️ Inference enhancement failed, using standard prompt');
+        }
+      } catch (error) {
+        console.error('[FORGE-PLAN] Error running inference:', error);
+        console.log('[FORGE-PLAN] Proceeding without inference enhancement');
+      }
+    }
+
     const openai = getOpenAIClient();
 
     // Build the prompt (ecosystem-enriched or standard)
@@ -57,13 +84,19 @@ export async function POST(request: NextRequest) {
       ? buildFitnessPlanPrompt(unifiedContext, formData)
       : buildForgePlanPrompt(formData, bloodAnalysis);
 
-    const systemPrompt = unifiedContext
+    let systemPrompt = unifiedContext
       ? buildSystemPrompt()
       : `You are an elite strength and conditioning coach and fitness expert. You create comprehensive, personalized fitness plans that are safe, effective, and scientifically grounded. You consider the client's complete profile including training history, goals, injuries, available equipment, and biomarkers when available.
 
 Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`;
 
+    // Inject inference section into system prompt if available
+    if (inferencePromptSection) {
+      systemPrompt += '\n\n' + inferencePromptSection;
+    }
+
     console.log(`[FORGE-PLAN] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+    console.log(`[FORGE-PLAN] Inference: ${inferencePromptSection ? 'ENABLED' : 'DISABLED'}`);
     console.log(`[FORGE-PLAN] Model: GPT-5 for superior reasoning and personalization`);
 
     const completion = await openai.responses.create({
@@ -87,10 +120,18 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
     const plan = JSON.parse(planContent);
     console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
 
-    return NextResponse.json({
+    // Build response with optional inference metadata
+    const response: any = {
       success: true,
       plan
-    });
+    };
+
+    if (inferenceMetadata) {
+      response.inferenceMetadata = inferenceMetadata;
+      console.log('[FORGE-PLAN] ✅ Inference metadata attached to response');
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('[FORGE-PLAN] Error:', error);

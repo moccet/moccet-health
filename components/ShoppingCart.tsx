@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import Image from 'next/image';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface CartItem {
   id: string;
@@ -13,6 +18,7 @@ interface CartItem {
   unitPrice: number;
   lineTotal: number;
   imageUrl: string;
+  imageLoading?: boolean;
   inStock: boolean;
 }
 
@@ -31,11 +37,28 @@ interface ShoppingCartProps {
   onClose?: () => void;
 }
 
+interface SavedAddress {
+  id: string;
+  full_name: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state_province: string;
+  postal_code: string;
+  country: string;
+  phone?: string;
+  is_default: boolean;
+}
+
 export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIsOpen, onClose }: ShoppingCartProps) {
   const router = useRouter();
   const [cart, setCart] = useState<Cart | null>(null);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasAddress, setHasAddress] = useState(false);
+  const [defaultAddress, setDefaultAddress] = useState<SavedAddress | null>(null);
+  const [showOneClickModal, setShowOneClickModal] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   // Use controlled state if provided, otherwise use internal state
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
@@ -49,17 +72,73 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
 
       if (data.success) {
         setCart(data.cart);
+
+        // Trigger on-demand image fetching for items without images
+        if (data.cart?.items) {
+          data.cart.items.forEach((item: CartItem) => {
+            if (item.imageLoading) {
+              fetchProductImage(item.productId);
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
     }
   };
 
+  // Fetch product image on-demand
+  const fetchProductImage = async (productId: string) => {
+    try {
+      const response = await fetch('/api/products/ensure-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.imageUrl) {
+        // Update cart item with new image
+        setCart((prevCart) => {
+          if (!prevCart) return prevCart;
+
+          return {
+            ...prevCart,
+            items: prevCart.items.map((item) =>
+              item.productId === productId
+                ? { ...item, imageUrl: data.imageUrl, imageLoading: false }
+                : item
+            ),
+          };
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching product image:', error);
+    }
+  };
+
   useEffect(() => {
     if (userEmail) {
       fetchCart();
+      checkSavedAddress();
     }
   }, [userEmail]);
+
+  // Check if user has saved address for one-click checkout
+  const checkSavedAddress = async () => {
+    try {
+      const response = await fetch(`/api/checkout/one-click?email=${encodeURIComponent(userEmail)}`);
+      const data = await response.json();
+
+      if (data.success && data.hasAddress) {
+        setHasAddress(true);
+        setDefaultAddress(data.defaultAddress);
+      }
+    } catch (error) {
+      console.error('Error checking saved address:', error);
+    }
+  };
 
   // Update quantity
   const updateQuantity = async (cartItemId: string, quantity: number) => {
@@ -112,6 +191,124 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
     router.push(`/checkout?email=${encodeURIComponent(userEmail)}${planCode ? `&planCode=${planCode}` : ''}`);
   };
 
+  // Handle one-click checkout
+  const handleOneClickCheckout = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/checkout/one-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setShowOneClickModal(true);
+      } else {
+        alert(data.error || 'One-click checkout failed');
+      }
+    } catch (error) {
+      console.error('Error initiating one-click checkout:', error);
+      alert('Failed to initiate one-click checkout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // One-Click Payment Form Component
+  function OneClickPaymentForm({ onSuccess }: { onSuccess: () => void }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [processing, setProcessing] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (!stripe || !elements || !clientSecret) return;
+
+      setProcessing(true);
+
+      try {
+        const { error } = await stripe.confirmPayment({
+          elements,
+          redirect: 'if_required',
+        });
+
+        if (error) {
+          alert(`Payment failed: ${error.message}`);
+          setProcessing(false);
+        } else {
+          // Payment succeeded - create order with saved address
+          const response = await fetch('/api/checkout/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: userEmail,
+              paymentIntentId: clientSecret.split('_secret_')[0],
+              shippingAddress: {
+                fullName: defaultAddress?.full_name,
+                addressLine1: defaultAddress?.address_line1,
+                addressLine2: defaultAddress?.address_line2,
+                city: defaultAddress?.city,
+                stateProvince: defaultAddress?.state_province,
+                postalCode: defaultAddress?.postal_code,
+                country: defaultAddress?.country,
+                phone: defaultAddress?.phone,
+              },
+              customerNotes: '',
+              saveAddress: false, // Already saved
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            onSuccess();
+            router.push(`/order-confirmation?orderNumber=${data.order.orderNumber}&email=${encodeURIComponent(userEmail)}`);
+          } else {
+            alert('Order creation failed');
+            setProcessing(false);
+          }
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert('Payment failed');
+        setProcessing(false);
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <h3 className="font-semibold text-lg mb-4">Complete Payment</h3>
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <p className="text-sm text-gray-600 mb-2">Shipping to:</p>
+            <p className="font-medium">{defaultAddress?.full_name}</p>
+            <p className="text-sm text-gray-700">
+              {defaultAddress?.address_line1}
+              {defaultAddress?.address_line2 && `, ${defaultAddress.address_line2}`}
+            </p>
+            <p className="text-sm text-gray-700">
+              {defaultAddress?.city}, {defaultAddress?.state_province} {defaultAddress?.postal_code}
+            </p>
+          </div>
+        </div>
+
+        <PaymentElement />
+
+        <button
+          type="submit"
+          disabled={!stripe || processing}
+          className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {processing ? 'Processing...' : `Pay $${cart?.subtotal.toFixed(2)}`}
+        </button>
+      </form>
+    );
+  }
+
   if (!cart) return null;
 
   return (
@@ -162,12 +359,25 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
                       className="flex gap-4 p-4 border border-gray-200 rounded-lg"
                     >
                       {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                          <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
+                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                        {item.imageLoading ? (
+                          // Loading spinner
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        ) : (
+                          <Image
+                            src={item.imageUrl}
+                            alt={`${item.brand} ${item.name}`}
+                            width={64}
+                            height={64}
+                            className="object-cover"
+                            onError={(e) => {
+                              // Fallback to default SVG on error
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.src = '/images/supplements/default.svg';
+                              target.style.objectFit = 'contain';
+                            }}
+                          />
+                        )}
                       </div>
 
                       {/* Product Details */}
@@ -230,22 +440,98 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
                 {/* Shipping Info */}
                 <div className="text-sm text-gray-500">
                   {cart.subtotal >= 75 ? (
-                    <p className="text-green-600 font-medium">Free shipping</p>
+                    <p className="text-green-600 font-medium">✓ Free shipping</p>
                   ) : (
                     <p>Free shipping on orders over $75</p>
                   )}
                 </div>
 
-                {/* Checkout Button */}
-                <button
-                  onClick={proceedToCheckout}
-                  disabled={loading}
-                  className="w-full bg-black text-white py-4 rounded-lg font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Proceed to Checkout
-                </button>
+                {/* Checkout Buttons */}
+                <div className="space-y-3">
+                  {/* One-Click Checkout (if address saved) */}
+                  {hasAddress && defaultAddress && (
+                    <button
+                      onClick={handleOneClickCheckout}
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                      </svg>
+                      Quick Checkout
+                    </button>
+                  )}
+
+                  {/* Regular Checkout */}
+                  <button
+                    onClick={proceedToCheckout}
+                    disabled={loading}
+                    className={`w-full ${hasAddress ? 'bg-gray-800' : 'bg-black'} text-white py-4 rounded-lg font-semibold hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {hasAddress ? 'Standard Checkout' : 'Proceed to Checkout'}
+                  </button>
+                </div>
+
+                {/* Saved Address Info */}
+                {hasAddress && defaultAddress && (
+                  <div className="text-xs text-gray-500 text-center pt-2 border-t border-gray-100">
+                    <p>Quick checkout ships to:</p>
+                    <p className="font-medium text-gray-700">
+                      {defaultAddress.address_line1}, {defaultAddress.city}, {defaultAddress.state_province}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* One-Click Checkout Modal */}
+      {showOneClickModal && clientSecret && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-60 z-[300]"
+            onClick={() => setShowOneClickModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 flex items-center justify-center z-[300] p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowOneClickModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+
+              {/* Modal Content */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-600">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                  <h2 className="text-2xl font-bold text-gray-900">Quick Checkout</h2>
+                </div>
+                <p className="text-sm text-gray-600">Complete your purchase in seconds</p>
+              </div>
+
+              {/* Stripe Payment Form */}
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: { theme: 'stripe' },
+                }}
+              >
+                <OneClickPaymentForm onSuccess={() => setShowOneClickModal(false)} />
+              </Elements>
+            </div>
           </div>
         </>
       )}

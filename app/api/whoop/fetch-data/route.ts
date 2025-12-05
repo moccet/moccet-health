@@ -1,0 +1,397 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAccessToken } from '@/lib/services/token-manager';
+import { createClient } from '@/lib/supabase/server';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface WhoopRecovery {
+  score: number; // 0-100
+  resting_heart_rate: number;
+  hrv_rmssd: number; // HRV in milliseconds
+  spo2_percentage?: number;
+  skin_temp_celsius?: number;
+}
+
+interface WhoopWorkout {
+  id: number;
+  sport_id: number;
+  strain: number; // 0-21
+  average_heart_rate: number;
+  max_heart_rate: number;
+  kilojoules: number;
+  distance_meter?: number;
+  duration_millis: number;
+  created_at: string;
+}
+
+interface WhoopSleep {
+  id: number;
+  score: number; // 0-100
+  duration_millis: number;
+  sleep_efficiency: number; // percentage
+  respiratory_rate: number;
+  stage_summary: {
+    total_light_sleep_time_millis: number;
+    total_slow_wave_sleep_time_millis: number; // Deep sleep
+    total_rem_sleep_time_millis: number;
+    total_awake_time_millis: number;
+  };
+}
+
+interface WhoopCycle {
+  id: number;
+  days: string[];
+  score: {
+    strain: number; // 0-21
+    kilojoule: number;
+    average_heart_rate: number;
+    max_heart_rate: number;
+  };
+  recovery?: WhoopRecovery;
+  sleep?: WhoopSleep;
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Categorize recovery score
+ */
+function categorizeRecovery(score: number): 'green' | 'yellow' | 'red' {
+  if (score >= 67) return 'green';  // High recovery
+  if (score >= 34) return 'yellow'; // Moderate recovery
+  return 'red'; // Low recovery
+}
+
+/**
+ * Analyze recovery trends
+ */
+function analyzeRecoveryTrends(cycles: WhoopCycle[]) {
+  const recoveryScores = cycles
+    .filter(c => c.recovery)
+    .map(c => c.recovery!.score);
+
+  if (recoveryScores.length === 0) {
+    return {
+      avgRecoveryScore: 0,
+      trend: 'stable',
+      greenDays: 0,
+      yellowDays: 0,
+      redDays: 0,
+    };
+  }
+
+  const avgRecoveryScore = recoveryScores.reduce((sum, s) => sum + s, 0) / recoveryScores.length;
+
+  // Count recovery zone days
+  let greenDays = 0;
+  let yellowDays = 0;
+  let redDays = 0;
+
+  recoveryScores.forEach(score => {
+    const category = categorizeRecovery(score);
+    if (category === 'green') greenDays++;
+    else if (category === 'yellow') yellowDays++;
+    else redDays++;
+  });
+
+  // Simple trend detection (comparing first half to second half)
+  const midpoint = Math.floor(recoveryScores.length / 2);
+  const firstHalfAvg = recoveryScores.slice(0, midpoint).reduce((sum, s) => sum + s, 0) / midpoint;
+  const secondHalfAvg = recoveryScores.slice(midpoint).reduce((sum, s) => sum + s, 0) / (recoveryScores.length - midpoint);
+
+  let trend: 'improving' | 'stable' | 'declining' = 'stable';
+  if (secondHalfAvg > firstHalfAvg + 5) trend = 'improving';
+  else if (secondHalfAvg < firstHalfAvg - 5) trend = 'declining';
+
+  return {
+    avgRecoveryScore: Math.round(avgRecoveryScore),
+    trend,
+    greenDays,
+    yellowDays,
+    redDays,
+  };
+}
+
+/**
+ * Analyze HRV trends
+ */
+function analyzeHRVTrends(cycles: WhoopCycle[]) {
+  const hrvValues = cycles
+    .filter(c => c.recovery?.hrv_rmssd)
+    .map(c => c.recovery!.hrv_rmssd);
+
+  if (hrvValues.length === 0) {
+    return {
+      avgHRV: 0,
+      trend: 'stable',
+      baseline: 0,
+    };
+  }
+
+  const avgHRV = Math.round(hrvValues.reduce((sum, v) => sum + v, 0) / hrvValues.length);
+  const baseline = Math.round(hrvValues.slice(0, 7).reduce((sum, v) => sum + v, 0) / Math.min(7, hrvValues.length));
+
+  // Trend detection
+  const midpoint = Math.floor(hrvValues.length / 2);
+  const firstHalfAvg = hrvValues.slice(0, midpoint).reduce((sum, v) => sum + v, 0) / midpoint;
+  const secondHalfAvg = hrvValues.slice(midpoint).reduce((sum, v) => sum + v, 0) / (hrvValues.length - midpoint);
+
+  let trend: 'improving' | 'stable' | 'declining' = 'stable';
+  if (secondHalfAvg > firstHalfAvg + 3) trend = 'improving';
+  else if (secondHalfAvg < firstHalfAvg - 3) trend = 'declining';
+
+  return {
+    avgHRV,
+    trend,
+    baseline,
+  };
+}
+
+/**
+ * Analyze strain patterns
+ */
+function analyzeStrainPatterns(cycles: WhoopCycle[]) {
+  const strainValues = cycles
+    .filter(c => c.score?.strain)
+    .map(c => c.score.strain);
+
+  if (strainValues.length === 0) {
+    return {
+      avgDailyStrain: 0,
+      optimalStrainRange: [10, 15],
+      overreachingDays: 0,
+    };
+  }
+
+  const avgDailyStrain = strainValues.reduce((sum, s) => sum + s, 0) / strainValues.length;
+  const overreachingDays = strainValues.filter(s => s > 18).length; // Strain > 18 is very high
+
+  // Optimal strain based on recovery
+  const cyclesWithRecovery = cycles.filter(c => c.recovery && c.score);
+  const avgRecovery = cyclesWithRecovery.length > 0
+    ? cyclesWithRecovery.reduce((sum, c) => sum + c.recovery!.score, 0) / cyclesWithRecovery.length
+    : 75;
+
+  // Higher recovery = can handle more strain
+  const optimalStrainRange: [number, number] = avgRecovery >= 67
+    ? [12, 17]  // Green recovery
+    : avgRecovery >= 34
+    ? [10, 14]  // Yellow recovery
+    : [8, 12];  // Red recovery
+
+  return {
+    avgDailyStrain: Math.round(avgDailyStrain * 10) / 10,
+    optimalStrainRange,
+    overreachingDays,
+  };
+}
+
+// ============================================================================
+// MAIN ENDPOINT
+// ============================================================================
+
+/**
+ * POST /api/whoop/fetch-data
+ *
+ * Fetch recovery and training data from Whoop
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { email } = await request.json();
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    console.log(`[Whoop Fetch] Starting data fetch for ${email}`);
+
+    // Get access token
+    const { token, error: tokenError } = await getAccessToken(email, 'whoop');
+
+    if (!token || tokenError) {
+      console.error('[Whoop Fetch] Token error:', tokenError);
+      return NextResponse.json(
+        { error: 'Not authenticated with Whoop', details: tokenError },
+        { status: 401 }
+      );
+    }
+
+    // Date ranges (past 30 days)
+    const endDate = new Date();
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const totalDays = 30;
+
+    console.log(`[Whoop Fetch] Fetching cycles from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+    // Fetch cycles (Whoop's main data structure - includes recovery, sleep, strain)
+    const cyclesResponse = await fetch(
+      `https://api.whoop.com/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    if (!cyclesResponse.ok) {
+      const errorData = await cyclesResponse.json().catch(() => ({}));
+      console.error('[Whoop Fetch] API error:', errorData);
+      return NextResponse.json(
+        { error: 'Failed to fetch Whoop cycles', details: errorData },
+        { status: cyclesResponse.status }
+      );
+    }
+
+    const cycles: WhoopCycle[] = await cyclesResponse.json();
+    console.log(`[Whoop Fetch] Retrieved ${cycles.length} cycles`);
+
+    // Analyze recovery trends
+    const recoveryAnalysis = analyzeRecoveryTrends(cycles);
+
+    // Analyze HRV trends
+    const hrvAnalysis = analyzeHRVTrends(cycles);
+
+    // Analyze strain patterns
+    const strainAnalysis = analyzeStrainPatterns(cycles);
+
+    // Calculate resting HR trend
+    const restingHRValues = cycles
+      .filter(c => c.recovery?.resting_heart_rate)
+      .map(c => c.recovery!.resting_heart_rate);
+    const avgRestingHR = restingHRValues.length > 0
+      ? Math.round(restingHRValues.reduce((sum, hr) => sum + hr, 0) / restingHRValues.length)
+      : 0;
+
+    // Determine if deload is needed
+    const needsRest = recoveryAnalysis.redDays > 3 || recoveryAnalysis.avgRecoveryScore < 50;
+    const recommendedRestDays = needsRest ? 2 : 1;
+
+    // Optimal training days (based on recovery patterns)
+    const optimalTrainingDays: string[] = [];
+    const recentCycles = cycles.slice(-7); // Last week
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    recentCycles.forEach((cycle, idx) => {
+      if (cycle.recovery && categorizeRecovery(cycle.recovery.score) === 'green') {
+        const dayIndex = (new Date().getDay() + idx) % 7;
+        optimalTrainingDays.push(daysOfWeek[dayIndex]);
+      }
+    });
+
+    // Build patterns object
+    const patterns = {
+      recovery: recoveryAnalysis,
+      strain: strainAnalysis,
+      hrvTrends: hrvAnalysis,
+      restingHR: {
+        avg: avgRestingHR,
+        trend: 'stable', // Would need historical comparison
+      },
+      recommendations: {
+        restDaysNeeded: recommendedRestDays,
+        optimalTrainingDays: optimalTrainingDays.length > 0 ? optimalTrainingDays : ['Mon', 'Wed', 'Fri'],
+        deloadWeekRecommended: recoveryAnalysis.redDays > 5,
+      },
+    };
+
+    // Calculate metrics
+    const recoveryScore = recoveryAnalysis.avgRecoveryScore;
+    const overtrainingRisk = recoveryAnalysis.redDays > 5 || strainAnalysis.overreachingDays > 3
+      ? 'high'
+      : recoveryAnalysis.redDays > 3
+      ? 'moderate'
+      : 'low';
+
+    const metrics = {
+      recoveryScore,
+      strainScore: Math.round(strainAnalysis.avgDailyStrain * 5), // Convert 0-21 to 0-100 scale
+      overtrainingRisk,
+      hrvHealth: hrvAnalysis.avgHRV >= 60 ? 'good' : hrvAnalysis.avgHRV >= 40 ? 'moderate' : 'poor',
+    };
+
+    // Store in database
+    const supabase = await createClient();
+
+    // Update or insert training data
+    const { error: trainingDataError } = await supabase
+      .from('forge_training_data')
+      .upsert({
+        email,
+        provider: 'whoop',
+        workouts: [], // Whoop workouts would go here if we fetch them separately
+        recovery_score: recoveryAnalysis,
+        hrv_trends: hrvAnalysis,
+        resting_hr_trends: { avg: avgRestingHR, trend: 'stable' },
+        data_period_start: startDate.toISOString().split('T')[0],
+        data_period_end: endDate.toISOString().split('T')[0],
+        data_points_analyzed: cycles.length,
+        sync_date: new Date().toISOString(),
+      }, {
+        onConflict: 'email,provider',
+        ignoreDuplicates: false,
+      });
+
+    if (trainingDataError) {
+      console.error('[Whoop Fetch] Database error (training_data):', trainingDataError);
+    }
+
+    // Store workout patterns
+    const { error: patternsError } = await supabase
+      .from('forge_workout_patterns')
+      .upsert({
+        email,
+        source: 'whoop',
+        patterns,
+        metrics,
+        data_period_start: startDate.toISOString().split('T')[0],
+        data_period_end: endDate.toISOString().split('T')[0],
+        data_points_analyzed: cycles.length,
+        sync_date: new Date().toISOString(),
+      }, {
+        onConflict: 'email,source',
+        ignoreDuplicates: false,
+      });
+
+    if (patternsError) {
+      console.error('[Whoop Fetch] Database error (patterns):', patternsError);
+    }
+
+    console.log(`[Whoop Fetch] Successfully completed for ${email}`);
+
+    return NextResponse.json({
+      success: true,
+      cyclesAnalyzed: cycles.length,
+      patterns,
+      metrics,
+      dataPeriod: {
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0],
+      }
+    });
+
+  } catch (error) {
+    console.error('[Whoop Fetch] Unexpected error:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch Whoop data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET endpoint (legacy support)
+ */
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    error: 'Please use POST method with email in request body',
+    example: { email: 'user@example.com' }
+  }, { status: 400 });
+}

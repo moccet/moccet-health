@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 import { buildNutritionPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
+import { enhanceContextWithInference, formatInferenceForPrompt, generateConfidenceSection } from '@/lib/services/inference-enhancer';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -195,6 +196,31 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('[WARN] Error aggregating context:', error);
       console.log('[WARN] Proceeding with onboarding data only');
+    }
+
+    // Step 2.6: Enhance with hybrid inference
+    console.log(`[2.6/5] Running hybrid inference engine...`);
+    let enhancedContext = null;
+    let inferencePromptSection = '';
+
+    try {
+      enhancedContext = await enhanceContextWithInference(userEmail, formData, 'sage');
+
+      if (enhancedContext) {
+        console.log(`[OK] Inference complete with ${enhancedContext.confidenceMetrics.overall}% confidence`);
+        console.log(`[OK] Data Sources: ${enhancedContext.dataQualityReport.sourcesUsed.join(', ')}`);
+        console.log(`[OK] Stress Level: ${enhancedContext.inference.stress.stressLevel}/100 (${enhancedContext.inference.stress.category})`);
+        console.log(`[OK] Meal Timing: ${enhancedContext.inference.mealTiming.firstMeal.suggestedTime}, ${enhancedContext.inference.mealTiming.lunch.suggestedTime}, ${enhancedContext.inference.mealTiming.dinner.suggestedTime}`);
+        console.log(`[OK] Sleep Quality: ${enhancedContext.inference.sleepQuality.category}`);
+
+        // Format inference results for AI prompt
+        inferencePromptSection = formatInferenceForPrompt(enhancedContext);
+      } else {
+        console.log('[WARN] Inference enhancement not available, using standard generation');
+      }
+    } catch (error) {
+      console.error('[WARN] Error running inference:', error);
+      console.log('[WARN] Proceeding with standard generation');
     }
 
     // Generate AI plan
@@ -426,9 +452,21 @@ EXAMPLE OF CORRECT MEAL FORMAT:
 
 Return ONLY valid JSON. Be specific, personal, and actionable.`;
 
-    const systemPrompt = unifiedContext ? buildSystemPrompt() : 'Generate a valid JSON nutrition plan. Output must be parseable JSON only. Do not include any conversational text, greetings, or explanations outside the JSON structure.';
+    // Build system prompt and add inference if available
+    let systemPrompt = unifiedContext ? buildSystemPrompt() : 'Generate a valid JSON nutrition plan. Output must be parseable JSON only. Do not include any conversational text, greetings, or explanations outside the JSON structure.';
 
-    console.log(`[OK] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
+    // Inject inference section into prompt if available
+    if (inferencePromptSection) {
+      systemPrompt += '\n\n' + inferencePromptSection;
+    }
+
+    const promptType = enhancedContext
+      ? `INFERENCE-ENHANCED (${enhancedContext.confidenceMetrics.overall}% confidence)`
+      : unifiedContext
+      ? 'ECOSYSTEM-ENRICHED'
+      : 'STANDARD';
+
+    console.log(`[OK] Using ${promptType} prompt`);
 
     const completion = await openai.responses.create({
       model: 'gpt-5',
@@ -461,6 +499,22 @@ Return ONLY valid JSON. Be specific, personal, and actionable.`;
     }
 
     console.log('[OK] AI plan generated successfully\n');
+
+    // Add confidence transparency section if inference was used
+    if (enhancedContext) {
+      const confidenceSection = generateConfidenceSection(enhancedContext);
+      planData.confidenceTransparency = confidenceSection;
+      planData.inferenceMetadata = {
+        overallConfidence: enhancedContext.confidenceMetrics.overall,
+        stressLevel: enhancedContext.inference.stress.stressLevel,
+        stressCategory: enhancedContext.inference.stress.category,
+        mealTimingConfidence: enhancedContext.inference.mealTiming.confidence,
+        sleepQualityCategory: enhancedContext.inference.sleepQuality.category,
+        dataSources: enhancedContext.dataQualityReport.sourcesUsed,
+        dataQuality: enhancedContext.dataQualityReport.qualityLevel,
+      };
+      console.log('[OK] Confidence transparency section added to plan');
+    }
 
     // Store plan in cache (dev mode) and database (if Supabase configured)
     console.log(`[4/4] Storing plan in cache and database...`);

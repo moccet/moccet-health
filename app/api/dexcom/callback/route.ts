@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,16 +54,36 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in;
 
     console.log('[Dexcom] Connected successfully');
 
-    // Set cookies with tokens
+    // Store tokens in database
     const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+
+    if (userEmail) {
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+      const storeResult = await storeToken(userEmail, 'dexcom', {
+        accessToken,
+        refreshToken,
+        expiresAt,
+        scopes: ['offline_access'],
+      });
+
+      if (storeResult.success) {
+        console.log(`[Dexcom] Tokens stored in database for ${userEmail}`);
+      } else {
+        console.error(`[Dexcom] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Keep cookies for backward compatibility
     cookieStore.set('dexcom_access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
+      maxAge: 60 * 60 * 24 * 365
     });
 
     if (refreshToken) {
@@ -70,7 +91,7 @@ export async function GET(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365 // 1 year
+        maxAge: 60 * 60 * 24 * 365
       });
     }
 

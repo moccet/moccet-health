@@ -1,41 +1,420 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import type { calendar_v3 } from 'googleapis';
+import { getAccessToken } from '@/lib/services/token-manager';
+import { createClient } from '@/lib/supabase/server';
+import type { GmailPatterns } from '@/lib/services/ecosystem-fetcher';
 
-export async function GET(request: NextRequest) {
+// Helper type for calendar events - use Google's Schema$Event type
+type CalendarEvent = calendar_v3.Schema$Event;
+
+// Helper type for email data
+interface EmailData {
+  timestamp: string;
+  hour: number;
+  dayOfWeek: number;
+  isWeekend: boolean;
+  isAfterHours: boolean;
+}
+
+/**
+ * Calculate meeting density patterns from calendar events
+ */
+function calculateMeetingDensity(events: CalendarEvent[]): GmailPatterns['meetingDensity'] {
+  if (events.length === 0) {
+    return {
+      peakHours: [],
+      avgMeetingsPerDay: 0,
+      backToBackPercentage: 0
+    };
+  }
+
+  // Group events by date and hour
+  const eventsByDate: Record<string, CalendarEvent[]> = {};
+  const eventsByHour: Record<number, number> = {};
+  let backToBackCount = 0;
+
+  const sortedEvents = events
+    .filter(e => e.start?.dateTime)
+    .sort((a, b) => {
+      const aTime = new Date(a.start!.dateTime as string).getTime();
+      const bTime = new Date(b.start!.dateTime as string).getTime();
+      return aTime - bTime;
+    });
+
+  sortedEvents.forEach((event, index) => {
+    const startTime = new Date(event.start!.dateTime as string);
+    const dateKey = startTime.toISOString().split('T')[0];
+    const hour = startTime.getHours();
+
+    // Group by date
+    if (!eventsByDate[dateKey]) {
+      eventsByDate[dateKey] = [];
+    }
+    eventsByDate[dateKey].push(event);
+
+    // Count by hour
+    eventsByHour[hour] = (eventsByHour[hour] || 0) + 1;
+
+    // Check if back-to-back with next event
+    if (index < sortedEvents.length - 1) {
+      const endTime = event.end?.dateTime ? new Date(event.end.dateTime as string) : null;
+      const nextStartTime = new Date(sortedEvents[index + 1].start!.dateTime as string);
+
+      if (endTime && (nextStartTime.getTime() - endTime.getTime()) <= 5 * 60 * 1000) {
+        backToBackCount++;
+      }
+    }
+  });
+
+  // Calculate average meetings per day
+  const avgMeetingsPerDay = Object.keys(eventsByDate).length > 0
+    ? Object.values(eventsByDate).reduce((sum, evs) => sum + evs.length, 0) / Object.keys(eventsByDate).length
+    : 0;
+
+  // Find peak hours (top 3 hours with most meetings)
+  const peakHours = Object.entries(eventsByHour)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([hour]) => {
+      const h = parseInt(hour);
+      const endH = h + 1;
+      return `${h.toString().padStart(2, '0')}:00-${endH.toString().padStart(2, '0')}:00`;
+    });
+
+  // Calculate back-to-back percentage
+  const backToBackPercentage = sortedEvents.length > 1
+    ? Math.round((backToBackCount / (sortedEvents.length - 1)) * 100)
+    : 0;
+
+  return {
+    peakHours,
+    avgMeetingsPerDay: Math.round(avgMeetingsPerDay * 10) / 10,
+    backToBackPercentage
+  };
+}
+
+/**
+ * Calculate email volume patterns
+ */
+function calculateEmailVolume(emailData: EmailData[], totalDays: number): GmailPatterns['emailVolume'] {
+  if (emailData.length === 0) {
+    return {
+      avgPerDay: 0,
+      peakHours: [],
+      afterHoursPercentage: 0
+    };
+  }
+
+  // Count emails by hour
+  const emailsByHour: Record<number, number> = {};
+  let afterHoursCount = 0;
+
+  emailData.forEach(email => {
+    emailsByHour[email.hour] = (emailsByHour[email.hour] || 0) + 1;
+    if (email.isAfterHours) {
+      afterHoursCount++;
+    }
+  });
+
+  // Calculate average per day
+  const avgPerDay = totalDays > 0 ? Math.round(emailData.length / totalDays) : 0;
+
+  // Find peak hours (top 3)
+  const peakHours = Object.entries(emailsByHour)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([hour]) => {
+      const h = parseInt(hour);
+      const endH = h + 1;
+      return `${h.toString().padStart(2, '0')}:00-${endH.toString().padStart(2, '0')}:00`;
+    });
+
+  // Calculate after-hours percentage
+  const afterHoursPercentage = Math.round((afterHoursCount / emailData.length) * 100);
+
+  return {
+    avgPerDay,
+    peakHours,
+    afterHoursPercentage
+  };
+}
+
+/**
+ * Calculate work hours based on calendar and email patterns
+ */
+function calculateWorkHours(events: CalendarEvent[], emailData: EmailData[]): GmailPatterns['workHours'] {
+  const allTimes: Date[] = [];
+
+  // Add calendar event times
+  events.forEach(event => {
+    if (event.start?.dateTime) {
+      allTimes.push(new Date(event.start.dateTime as string));
+    }
+  });
+
+  // Add email times
+  emailData.forEach(email => {
+    allTimes.push(new Date(email.timestamp));
+  });
+
+  if (allTimes.length === 0) {
+    return {
+      start: '09:00',
+      end: '17:00',
+      weekendActivity: false
+    };
+  }
+
+  // Filter to weekday times only for start/end calculation
+  const weekdayTimes = allTimes.filter(t => {
+    const day = t.getDay();
+    return day !== 0 && day !== 6;
+  });
+
+  // Calculate average start time (earliest 10% of activities)
+  const sortedHours = weekdayTimes
+    .map(t => t.getHours() + t.getMinutes() / 60)
+    .sort((a, b) => a - b);
+
+  const earlyActivities = sortedHours.slice(0, Math.max(1, Math.floor(sortedHours.length * 0.1)));
+  const lateActivities = sortedHours.slice(Math.floor(sortedHours.length * 0.9));
+
+  const avgStart = earlyActivities.reduce((sum, h) => sum + h, 0) / earlyActivities.length;
+  const avgEnd = lateActivities.reduce((sum, h) => sum + h, 0) / lateActivities.length;
+
+  const startHour = Math.floor(avgStart);
+  const startMin = Math.round((avgStart - startHour) * 60);
+  const endHour = Math.floor(avgEnd);
+  const endMin = Math.round((avgEnd - endHour) * 60);
+
+  // Check for weekend activity
+  const weekendActivity = allTimes.some(t => {
+    const day = t.getDay();
+    return day === 0 || day === 6;
+  });
+
+  return {
+    start: `${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')}`,
+    end: `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`,
+    weekendActivity
+  };
+}
+
+/**
+ * Find optimal meal windows based on meeting gaps
+ */
+function findOptimalMealWindows(events: CalendarEvent[]): string[] {
+  if (events.length === 0) {
+    return ['12:00-13:00', '18:00-19:00'];
+  }
+
+  const mealWindows: string[] = [];
+
+  // Filter events with dateTime and sort by start time
+  const sortedEvents = events
+    .filter(e => e.start?.dateTime && e.end?.dateTime)
+    .sort((a, b) => {
+      const aTime = new Date(a.start!.dateTime as string).getTime();
+      const bTime = new Date(b.start!.dateTime as string).getTime();
+      return aTime - bTime;
+    });
+
+  if (sortedEvents.length === 0) {
+    return ['12:00-13:00', '18:00-19:00'];
+  }
+
+  // Find gaps for lunch (11am-3pm)
+  const lunchGaps: { start: Date; end: Date; duration: number }[] = [];
+
+  for (let i = 0; i < sortedEvents.length - 1; i++) {
+    const currentEnd = new Date(sortedEvents[i].end!.dateTime as string);
+    const nextStart = new Date(sortedEvents[i + 1].start!.dateTime as string);
+    const gapDuration = (nextStart.getTime() - currentEnd.getTime()) / (60 * 1000); // minutes
+
+    const currentEndHour = currentEnd.getHours();
+
+    // Look for gaps in lunch window (11am-3pm) that are at least 30 minutes
+    if (currentEndHour >= 11 && currentEndHour < 15 && gapDuration >= 30) {
+      lunchGaps.push({
+        start: currentEnd,
+        end: nextStart,
+        duration: gapDuration
+      });
+    }
+  }
+
+  // Add lunch window (largest gap or default)
+  if (lunchGaps.length > 0) {
+    const bestLunchGap = lunchGaps.sort((a, b) => b.duration - a.duration)[0];
+    const lunchStart = bestLunchGap.start;
+    const lunchEnd = new Date(Math.min(
+      bestLunchGap.end.getTime(),
+      lunchStart.getTime() + 60 * 60 * 1000 // Max 1 hour
+    ));
+
+    mealWindows.push(
+      `${lunchStart.getHours().toString().padStart(2, '0')}:${lunchStart.getMinutes().toString().padStart(2, '0')}-${lunchEnd.getHours().toString().padStart(2, '0')}:${lunchEnd.getMinutes().toString().padStart(2, '0')}`
+    );
+  } else {
+    mealWindows.push('12:00-13:00');
+  }
+
+  // Add dinner window (1 hour after last meeting, or default 6pm)
+  const lastEvent = sortedEvents[sortedEvents.length - 1];
+  const lastEventEnd = new Date(lastEvent.end!.dateTime as string);
+  const dinnerTime = new Date(lastEventEnd.getTime() + 60 * 60 * 1000); // 1 hour after
+
+  // Cap dinner time at 8pm
+  if (dinnerTime.getHours() <= 20) {
+    const dinnerEnd = new Date(dinnerTime.getTime() + 60 * 60 * 1000);
+    mealWindows.push(
+      `${dinnerTime.getHours().toString().padStart(2, '0')}:${dinnerTime.getMinutes().toString().padStart(2, '0')}-${dinnerEnd.getHours().toString().padStart(2, '0')}:${dinnerEnd.getMinutes().toString().padStart(2, '0')}`
+    );
+  } else {
+    mealWindows.push('18:00-19:00');
+  }
+
+  return mealWindows;
+}
+
+/**
+ * Calculate stress indicators
+ */
+function calculateStressIndicators(
+  meetingDensity: GmailPatterns['meetingDensity'],
+  emailVolume: GmailPatterns['emailVolume'],
+  workHours: GmailPatterns['workHours']
+): GmailPatterns['stressIndicators'] {
+  return {
+    highEmailVolume: emailVolume.avgPerDay > 50,
+    frequentAfterHoursWork: emailVolume.afterHoursPercentage > 20 || workHours.weekendActivity,
+    shortMeetingBreaks: meetingDensity.backToBackPercentage > 50
+  };
+}
+
+/**
+ * Generate insights from patterns
+ */
+function generateInsights(patterns: Omit<GmailPatterns, 'insights'>): string[] {
+  const insights: string[] = [];
+
+  // Meeting density insights
+  if (patterns.meetingDensity.avgMeetingsPerDay > 8) {
+    insights.push(`High meeting load with ${patterns.meetingDensity.avgMeetingsPerDay} meetings per day on average`);
+  }
+  if (patterns.meetingDensity.backToBackPercentage > 60) {
+    insights.push(`${patterns.meetingDensity.backToBackPercentage}% of meetings are back-to-back, limiting break time`);
+  }
+
+  // Email volume insights
+  if (patterns.emailVolume.avgPerDay > 60) {
+    insights.push(`Very high email volume with ${patterns.emailVolume.avgPerDay} emails per day`);
+  }
+  if (patterns.emailVolume.afterHoursPercentage > 25) {
+    insights.push(`${patterns.emailVolume.afterHoursPercentage}% of emails are sent/received outside work hours`);
+  }
+
+  // Work-life balance insights
+  if (patterns.workHours.weekendActivity) {
+    insights.push('Regular weekend work activity detected');
+  }
+
+  // Stress indicators
+  if (patterns.stressIndicators.highEmailVolume && patterns.stressIndicators.shortMeetingBreaks) {
+    insights.push('High stress indicators: heavy email load combined with limited meeting breaks');
+  }
+
+  // Positive insights
+  if (patterns.optimalMealWindows.length > 0 && !patterns.stressIndicators.shortMeetingBreaks) {
+    insights.push('Good calendar structure with identifiable meal windows');
+  }
+
+  // Default if no insights
+  if (insights.length === 0) {
+    insights.push('Moderate work activity with balanced schedule');
+  }
+
+  return insights;
+}
+
+/**
+ * POST endpoint to fetch and analyze Gmail + Calendar data
+ */
+export async function POST(request: NextRequest) {
   try {
-    const accessToken = request.cookies.get('gmail_access_token')?.value;
-    const refreshToken = request.cookies.get('gmail_refresh_token')?.value;
+    const { email } = await request.json();
 
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
+    console.log(`[Gmail Fetch] Starting data fetch for ${email}`);
+
+    // Get access token using token-manager (handles refresh automatically)
+    const { token, error: tokenError } = await getAccessToken(email, 'gmail');
+
+    if (!token || tokenError) {
+      console.error('[Gmail Fetch] Token error:', tokenError);
+      return NextResponse.json(
+        { error: 'Not authenticated with Gmail', details: tokenError },
+        { status: 401 }
+      );
+    }
+
+    // Initialize Google APIs
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/gmail/callback'
     );
 
-    oauth2Client.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken
-    });
+    oauth2Client.setCredentials({ access_token: token });
 
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    // Fetch last 100 messages for pattern analysis
-    const messagesResponse = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 100,
-      q: 'newer_than:30d' // Last 30 days
-    });
+    // Date ranges
+    const endDate = new Date();
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days future
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
 
-    const messages = messagesResponse.data.messages || [];
+    console.log(`[Gmail Fetch] Fetching data from ${startDate.toISOString()} to ${futureDate.toISOString()}`);
 
-    // Fetch message details
-    const emailData: Array<{timestamp: string, hour: number, dayOfWeek: number}> = [];
+    // Fetch data in parallel
+    const [calendarResponse, emailResponse] = await Promise.all([
+      calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startDate.toISOString(),
+        timeMax: futureDate.toISOString(),
+        maxResults: 500,
+        singleEvents: true,
+        orderBy: 'startTime'
+      }).catch(err => {
+        console.error('[Gmail Fetch] Calendar error:', err);
+        return { data: { items: [] } };
+      }),
+      gmail.users.messages.list({
+        userId: 'me',
+        q: `newer_than:30d`,
+        maxResults: 200
+      }).catch(err => {
+        console.error('[Gmail Fetch] Gmail error:', err);
+        return { data: { messages: [] } };
+      })
+    ]);
 
-    for (const message of messages.slice(0, 50)) { // Limit to 50 for performance
+    const calendarEvents = calendarResponse.data.items || [];
+    const emailMessages = emailResponse.data.messages || [];
+
+    console.log(`[Gmail Fetch] Retrieved ${calendarEvents.length} calendar events and ${emailMessages.length} email messages`);
+
+    // Process email metadata (sample up to 100 for performance)
+    const emailData: EmailData[] = [];
+    const emailSample = emailMessages.slice(0, 100);
+
+    for (const message of emailSample) {
       try {
         const messageDetail = await gmail.users.messages.get({
           userId: 'me',
@@ -50,41 +429,150 @@ export async function GET(request: NextRequest) {
 
         if (dateHeader?.value) {
           const date = new Date(dateHeader.value);
+          const hour = date.getHours();
+          const dayOfWeek = date.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const isAfterHours = hour < 7 || hour >= 19;
+
           emailData.push({
             timestamp: date.toISOString(),
-            hour: date.getHours(),
-            dayOfWeek: date.getDay()
+            hour,
+            dayOfWeek,
+            isWeekend,
+            isAfterHours
           });
         }
       } catch (err) {
-        console.error('Error fetching message:', err);
+        console.error('[Gmail Fetch] Error fetching message detail:', err);
       }
     }
 
-    // Analyze email patterns
-    const analysis = {
-      totalEmails: emailData.length,
-      avgHourOfDay: emailData.reduce((sum, e) => sum + e.hour, 0) / emailData.length || 0,
-      earlyMorningEmails: emailData.filter(e => e.hour >= 5 && e.hour < 9).length,
-      lateNightEmails: emailData.filter(e => e.hour >= 22 || e.hour < 5).length,
-      weekendEmails: emailData.filter(e => e.dayOfWeek === 0 || e.dayOfWeek === 6).length,
-      hourDistribution: emailData.reduce((acc, e) => {
-        acc[e.hour] = (acc[e.hour] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>)
+    console.log(`[Gmail Fetch] Processed ${emailData.length} email metadata entries`);
+
+    // Calculate behavioral patterns
+    const meetingDensity = calculateMeetingDensity(calendarEvents);
+    const emailVolume = calculateEmailVolume(emailData, totalDays);
+    const workHours = calculateWorkHours(calendarEvents, emailData);
+    const optimalMealWindows = findOptimalMealWindows(calendarEvents);
+    const stressIndicators = calculateStressIndicators(meetingDensity, emailVolume, workHours);
+
+    const patterns: GmailPatterns = {
+      meetingDensity,
+      emailVolume,
+      workHours,
+      optimalMealWindows,
+      stressIndicators,
+      insights: []
     };
+
+    // Generate insights
+    patterns.insights = generateInsights(patterns);
+
+    console.log('[Gmail Fetch] Patterns calculated:', JSON.stringify(patterns, null, 2));
+
+    // Calculate metrics
+    const stressScore =
+      (patterns.stressIndicators.highEmailVolume ? 3 : 0) +
+      (patterns.stressIndicators.frequentAfterHoursWork ? 3 : 0) +
+      (patterns.stressIndicators.shortMeetingBreaks ? 2 : 0);
+
+    const workLifeBalance =
+      10 -
+      (patterns.workHours.weekendActivity ? 2 : 0) -
+      (patterns.emailVolume.afterHoursPercentage > 20 ? 2 : 0) -
+      (patterns.meetingDensity.avgMeetingsPerDay > 8 ? 2 : 0);
+
+    const metrics = {
+      stressScore: Math.min(10, stressScore),
+      workLifeBalance: Math.max(0, workLifeBalance),
+      focusTimeAvailability: patterns.meetingDensity.backToBackPercentage > 50 ? 'low' :
+                             patterns.meetingDensity.backToBackPercentage > 30 ? 'medium' : 'high',
+      breakFrequency: patterns.meetingDensity.backToBackPercentage > 50 ? 'insufficient' : 'adequate'
+    };
+
+    // Store in database
+    const supabase = await createClient();
+
+    // Check if pattern already exists for this user and source
+    const { data: existingPattern } = await supabase
+      .from('behavioral_patterns')
+      .select('id')
+      .eq('email', email)
+      .eq('source', 'gmail')
+      .single();
+
+    if (existingPattern) {
+      // Update existing pattern
+      const { error: updateError } = await supabase
+        .from('behavioral_patterns')
+        .update({
+          patterns,
+          metrics,
+          data_period_start: startDate.toISOString().split('T')[0],
+          data_period_end: endDate.toISOString().split('T')[0],
+          data_points_analyzed: calendarEvents.length + emailData.length,
+          sync_date: new Date().toISOString()
+        })
+        .eq('id', existingPattern.id);
+
+      if (updateError) {
+        console.error('[Gmail Fetch] Database update error:', updateError);
+      } else {
+        console.log('[Gmail Fetch] Updated existing pattern in database');
+      }
+    } else {
+      // Insert new pattern
+      const { error: insertError } = await supabase
+        .from('behavioral_patterns')
+        .insert({
+          email,
+          source: 'gmail',
+          patterns,
+          metrics,
+          data_period_start: startDate.toISOString().split('T')[0],
+          data_period_end: endDate.toISOString().split('T')[0],
+          data_points_analyzed: calendarEvents.length + emailData.length,
+          sync_date: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error('[Gmail Fetch] Database insert error:', insertError);
+      } else {
+        console.log('[Gmail Fetch] Stored new pattern in database');
+      }
+    }
+
+    console.log(`[Gmail Fetch] Successfully completed for ${email}`);
 
     return NextResponse.json({
       success: true,
-      data: analysis,
-      rawData: emailData
+      patterns,
+      metrics,
+      dataPointsAnalyzed: calendarEvents.length + emailData.length,
+      dataPeriod: {
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0]
+      }
     });
 
   } catch (error) {
-    console.error('Error fetching Gmail data:', error);
+    console.error('[Gmail Fetch] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch Gmail data' },
+      {
+        error: 'Failed to fetch Gmail data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
+}
+
+/**
+ * GET endpoint (legacy support) - redirects to use POST
+ */
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    error: 'Please use POST method with email in request body',
+    example: { email: 'user@example.com' }
+  }, { status: 400 });
 }

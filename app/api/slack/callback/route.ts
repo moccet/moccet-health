@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,10 +66,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/sage-testing?error=auth_failed', origin));
     }
 
-    // Get team info
+    // Get team info and tokens
     const teamName = tokenData.team?.name || 'Slack Workspace';
+    const accessToken = tokenData.access_token;
+    const teamId = tokenData.team?.id;
+    const userId = tokenData.authed_user?.id;
 
     console.log('[SLACK CALLBACK] Connection successful, team:', teamName);
+
+    // Store tokens in database
+    const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+
+    if (userEmail && accessToken) {
+      const storeResult = await storeToken(userEmail, 'slack', {
+        accessToken,
+        providerUserId: userId,
+        scopes: tokenData.scope?.split(',') || [],
+        metadata: {
+          team_id: teamId,
+          team_name: teamName,
+        },
+      });
+
+      if (storeResult.success) {
+        console.log(`[Slack] Tokens stored in database for ${userEmail}`);
+      } else {
+        console.error(`[Slack] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Store in cookies for backward compatibility
+    if (accessToken) {
+      cookieStore.set('slack_access_token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365
+      });
+    }
+    cookieStore.set('slack_team', teamName, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365
+    });
 
     // Return HTML that closes the popup window
     const html = `

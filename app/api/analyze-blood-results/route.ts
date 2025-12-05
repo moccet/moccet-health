@@ -19,84 +19,9 @@ function getOpenAIClient() {
   });
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log('\n' + '='.repeat(80));
-    console.log('SAGE BLOOD RESULTS ANALYSIS');
-    console.log('='.repeat(80) + '\n');
-
-    const formData = await request.formData();
-    const bloodTestFile = formData.get('bloodTest') as File | null;
-    const email = formData.get('email') as string | null;
-
-    if (!bloodTestFile) {
-      return NextResponse.json(
-        { error: 'No blood test file provided' },
-        { status: 400 }
-      );
-    }
-
-    console.log('[1/3] Preparing PDF for upload...');
-    console.log(`[OK] PDF ready (${bloodTestFile.size} bytes)\n`);
-
-    // Get user context if email is provided
-    let userContext = '';
-    if (email) {
-      console.log('[2/3] Fetching user profile for personalized analysis...');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const devData = devOnboardingStorage.get(email) as any;
-
-      if (devData?.form_data) {
-        const formData = devData.form_data;
-        userContext = `
-User Profile Context:
-- Age: ${formData.age}, Gender: ${formData.gender}
-- Weight: ${formData.weight}, Height: ${formData.height}
-- Main Health Priority: ${formData.mainPriority}
-- Driving Goal: ${formData.drivingGoal}
-- Medical Conditions: ${formData.medicalConditions?.join(', ') || 'None'}
-- Current Medications: ${formData.medications || 'None'}
-- Current Supplements: ${formData.supplements || 'None'}
-`;
-        console.log('[OK] User profile retrieved\n');
-      } else {
-        // Try Supabase if dev storage doesn't have it
-        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-          try {
-            const supabase = await createClient();
-            const { data } = await supabase
-              .from('sage_onboarding_data')
-              .select('*')
-              .eq('email', email)
-              .single();
-
-            if (data?.form_data) {
-              const userData = data.form_data;
-              userContext = `
-User Profile Context:
-- Age: ${userData.age}, Gender: ${userData.gender}
-- Weight: ${userData.weight}, Height: ${userData.height}
-- Main Health Priority: ${userData.mainPriority}
-- Driving Goal: ${userData.drivingGoal}
-- Medical Conditions: ${userData.medicalConditions?.join(', ') || 'None'}
-- Current Medications: ${userData.medications || 'None'}
-- Current Supplements: ${userData.supplements || 'None'}
-`;
-              console.log('[OK] User profile retrieved from database\n');
-            }
-          } catch (error) {
-            console.log('[WARN] Could not fetch user profile from database\n');
-          }
-        }
-      }
-    }
-
-    // Generate comprehensive blood analysis
-    console.log('[3/3] Analyzing biomarkers with AI...');
-    const openai = getOpenAIClient();
-
-    const systemPrompt = `You are an elite clinical laboratory specialist and longevity medicine expert. Analyze the blood test results PDF and provide a comprehensive, easy-to-understand summary.
+// Helper function to analyze PDF files using Assistants API
+async function analyzePDFWithAssistants(file: File, openai: OpenAI, userContext: string) {
+  const systemPrompt = `You are an elite clinical laboratory specialist and longevity medicine expert. Analyze the blood test results PDF and provide a comprehensive, easy-to-understand summary.
 
 ${userContext}
 
@@ -164,84 +89,315 @@ IMPORTANT:
 - Consider optimal ranges for longevity, not just "normal" ranges
 - Return ONLY valid JSON, no markdown formatting`;
 
-    // Upload the PDF file to OpenAI
-    const fileBuffer = Buffer.from(await bloodTestFile.arrayBuffer());
-    const uploadableFile = await toFile(fileBuffer, bloodTestFile.name, { type: 'application/pdf' });
-    const file = await openai.files.create({
-      file: uploadableFile,
-      purpose: 'assistants'
-    });
+  // Upload the PDF file to OpenAI
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const uploadableFile = await toFile(fileBuffer, file.name, { type: 'application/pdf' });
+  const openaiFile = await openai.files.create({
+    file: uploadableFile,
+    purpose: 'assistants'
+  });
 
-    console.log('[AI] PDF uploaded to OpenAI, file ID:', file.id);
+  // Use Assistants API to analyze the PDF
+  const assistant = await openai.beta.assistants.create({
+    model: 'gpt-4o',
+    instructions: systemPrompt,
+    tools: [{ type: 'file_search' }]
+  });
 
-    // Use Assistants API to analyze the PDF
-    const assistant = await openai.beta.assistants.create({
-      model: 'gpt-4o',
-      instructions: systemPrompt,
-      tools: [{ type: 'file_search' }]
-    });
+  const thread = await openai.beta.threads.create({
+    messages: [{
+      role: 'user',
+      content: 'Please analyze the blood test PDF I uploaded and provide the analysis in the JSON format specified in your instructions.',
+      attachments: [{ file_id: openaiFile.id, tools: [{ type: 'file_search' }] }]
+    }]
+  });
 
-    const thread = await openai.beta.threads.create({
-      messages: [{
+  const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+    assistant_id: assistant.id
+  });
+
+  if (run.status !== 'completed') {
+    throw new Error(`Assistant run failed with status: ${run.status}`);
+  }
+
+  const messages = await openai.beta.threads.messages.list(thread.id);
+  const assistantMessage = messages.data.find(m => m.role === 'assistant');
+
+  if (!assistantMessage || assistantMessage.content[0].type !== 'text') {
+    throw new Error('No valid response from assistant');
+  }
+
+  let responseText = assistantMessage.content[0].text.value;
+
+  // Clean up
+  await openai.files.delete(openaiFile.id);
+  await openai.beta.assistants.delete(assistant.id);
+
+  // Parse JSON response
+  responseText = cleanAndParseJSON(responseText);
+  return JSON.parse(responseText);
+}
+
+// Helper function to analyze image files using Vision API
+async function analyzeImageWithVision(file: File, openai: OpenAI, userContext: string) {
+  const systemPrompt = `You are an elite clinical laboratory specialist. Analyze this blood test results image and extract all biomarkers.
+
+${userContext}
+
+Extract ALL visible biomarkers with their values and reference ranges. Return the same JSON structure as specified for PDFs.`;
+
+  // Convert image to base64
+  const imageBuffer = Buffer.from(await file.arrayBuffer());
+  const base64Image = imageBuffer.toString('base64');
+  const mimeType = file.type || 'image/jpeg';
+
+  // Use GPT-4 Vision to analyze the image
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
         role: 'user',
-        content: 'Please analyze the blood test PDF I uploaded and provide the analysis in the JSON format specified in your instructions.',
-        attachments: [{ file_id: file.id, tools: [{ type: 'file_search' }] }]
-      }]
-    });
+        content: [
+          {
+            type: 'text',
+            text: 'Please analyze this blood test results image and provide the analysis in the JSON format with biomarkers, summary, concerns, positives, and recommendations.'
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${mimeType};base64,${base64Image}`
+            }
+          }
+        ]
+      }
+    ],
+    max_tokens: 4096
+  });
 
-    const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
-      assistant_id: assistant.id
-    });
+  const responseText = response.choices[0]?.message?.content;
+  if (!responseText) {
+    throw new Error('No response from Vision API');
+  }
 
-    if (run.status !== 'completed') {
-      throw new Error(`Assistant run failed with status: ${run.status}`);
+  const cleanedText = cleanAndParseJSON(responseText);
+  return JSON.parse(cleanedText);
+}
+
+// Helper function to clean and parse JSON from AI responses
+function cleanAndParseJSON(text: string): string {
+  let cleaned = text.trim();
+
+  // Strip markdown code blocks
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```\n?/, '').replace(/\n?```$/, '');
+  }
+
+  cleaned = cleaned.trim();
+
+  // Extract JSON object
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd !== -1) {
+    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  }
+
+  return cleaned;
+}
+
+// Helper function to merge multiple analyses into one
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mergeAnalyses(analyses: any[]) {
+  if (analyses.length === 1) {
+    return analyses[0];
+  }
+
+  // Combine summaries
+  const summaries = analyses.map(a => a.summary).filter(Boolean);
+  const summary = summaries.join(' ');
+
+  // Merge biomarkers and deduplicate by name
+  const biomarkersMap = new Map();
+  for (const analysis of analyses) {
+    for (const biomarker of analysis.biomarkers || []) {
+      const key = biomarker.name.toLowerCase().trim();
+      // Keep the first occurrence of each biomarker
+      if (!biomarkersMap.has(key)) {
+        biomarkersMap.set(key, biomarker);
+      }
     }
+  }
+  const biomarkers = Array.from(biomarkersMap.values());
 
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const assistantMessage = messages.data.find(m => m.role === 'assistant');
-
-    if (!assistantMessage || assistantMessage.content[0].type !== 'text') {
-      throw new Error('No valid response from assistant');
+  // Merge concerns and deduplicate
+  const concernsSet = new Set();
+  for (const analysis of analyses) {
+    for (const concern of analysis.concerns || []) {
+      concernsSet.add(concern);
     }
+  }
+  const concerns = Array.from(concernsSet);
 
-    let responseText = assistantMessage.content[0].text.value;
-
-    // Clean up
-    await openai.files.delete(file.id);
-    await openai.beta.assistants.delete(assistant.id);
-
-    // Strip markdown code blocks if present
-    responseText = responseText.trim();
-    if (responseText.startsWith('```json')) {
-      responseText = responseText.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    } else if (responseText.startsWith('```')) {
-      responseText = responseText.replace(/^```\n?/, '').replace(/\n?```$/, '');
+  // Merge positives and deduplicate
+  const positivesSet = new Set();
+  for (const analysis of analyses) {
+    for (const positive of analysis.positives || []) {
+      positivesSet.add(positive);
     }
-    responseText = responseText.trim();
+  }
+  const positives = Array.from(positivesSet);
 
-    // Remove any non-JSON text before the first {
-    const jsonStart = responseText.indexOf('{');
-    const jsonEnd = responseText.lastIndexOf('}');
-    if (jsonStart !== -1 && jsonEnd !== -1) {
-      responseText = responseText.substring(jsonStart, jsonEnd + 1);
+  // Merge recommendations
+  const recommendations = {
+    lifestyle: [] as string[],
+    dietary: [] as string[],
+    supplements: [] as string[],
+    followUp: [] as string[],
+    retestTiming: analyses[0]?.recommendations?.retestTiming || '3-6 months'
+  };
+
+  for (const analysis of analyses) {
+    if (analysis.recommendations) {
+      recommendations.lifestyle.push(...(analysis.recommendations.lifestyle || []));
+      recommendations.dietary.push(...(analysis.recommendations.dietary || []));
+      recommendations.supplements.push(...(analysis.recommendations.supplements || []));
+      recommendations.followUp.push(...(analysis.recommendations.followUp || []));
     }
+  }
 
-    let analysis;
-    try {
-      analysis = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse JSON:', e);
-      console.error('Response text (first 500 chars):', responseText.substring(0, 500));
-      console.error('Response text (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)));
+  // Deduplicate recommendations
+  recommendations.lifestyle = Array.from(new Set(recommendations.lifestyle));
+  recommendations.dietary = Array.from(new Set(recommendations.dietary));
+  recommendations.supplements = Array.from(new Set(recommendations.supplements));
+  recommendations.followUp = Array.from(new Set(recommendations.followUp));
+
+  // Merge personalized notes if present
+  const personalizedNotes = [];
+  for (const analysis of analyses) {
+    if (analysis.personalizedNotes) {
+      personalizedNotes.push(...analysis.personalizedNotes);
+    }
+  }
+
+  return {
+    summary,
+    biomarkers,
+    concerns,
+    positives,
+    recommendations,
+    ...(personalizedNotes.length > 0 ? { personalizedNotes: Array.from(new Set(personalizedNotes)) } : {})
+  };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log('\n' + '='.repeat(80));
+    console.log('SAGE BLOOD RESULTS ANALYSIS');
+    console.log('='.repeat(80) + '\n');
+
+    const formData = await request.formData();
+    const bloodTestFiles = formData.getAll('bloodTests') as File[];
+    const email = formData.get('email') as string | null;
+
+    if (!bloodTestFiles || bloodTestFiles.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to generate valid analysis. AI returned invalid JSON.' },
-        { status: 500 }
+        { error: 'No blood test files provided' },
+        { status: 400 }
       );
     }
+
+    console.log(`[1/4] Processing ${bloodTestFiles.length} file(s)...`);
+    for (const file of bloodTestFiles) {
+      console.log(`  - ${file.name} (${file.size} bytes, ${file.type})`);
+    }
+    console.log();
+
+    // Get user context if email is provided
+    let userContext = '';
+    if (email) {
+      console.log('[2/4] Fetching user profile for personalized analysis...');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const devData = devOnboardingStorage.get(email) as any;
+
+      if (devData?.form_data) {
+        const formData = devData.form_data;
+        userContext = `
+User Profile Context:
+- Age: ${formData.age}, Gender: ${formData.gender}
+- Weight: ${formData.weight}, Height: ${formData.height}
+- Main Health Priority: ${formData.mainPriority}
+- Driving Goal: ${formData.drivingGoal}
+- Medical Conditions: ${formData.medicalConditions?.join(', ') || 'None'}
+- Current Medications: ${formData.medications || 'None'}
+- Current Supplements: ${formData.supplements || 'None'}
+`;
+        console.log('[OK] User profile retrieved\n');
+      } else {
+        // Try Supabase if dev storage doesn't have it
+        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+          try {
+            const supabase = await createClient();
+            const { data } = await supabase
+              .from('sage_onboarding_data')
+              .select('*')
+              .eq('email', email)
+              .single();
+
+            if (data?.form_data) {
+              const userData = data.form_data;
+              userContext = `
+User Profile Context:
+- Age: ${userData.age}, Gender: ${userData.gender}
+- Weight: ${userData.weight}, Height: ${userData.height}
+- Main Health Priority: ${userData.mainPriority}
+- Driving Goal: ${userData.drivingGoal}
+- Medical Conditions: ${userData.medicalConditions?.join(', ') || 'None'}
+- Current Medications: ${userData.medications || 'None'}
+- Current Supplements: ${userData.supplements || 'None'}
+`;
+              console.log('[OK] User profile retrieved from database\n');
+            }
+          } catch (error) {
+            console.log('[WARN] Could not fetch user profile from database\n');
+          }
+        }
+      }
+    }
+
+    // Process each file and collect analyses
+    console.log(`[3/4] Analyzing ${bloodTestFiles.length} file(s) with AI...`);
+    const openai = getOpenAIClient();
+
+    const allAnalyses = [];
+
+    for (let i = 0; i < bloodTestFiles.length; i++) {
+      const file = bloodTestFiles[i];
+      const fileNum = i + 1;
+      console.log(`\n[${fileNum}/${bloodTestFiles.length}] Processing: ${file.name}`);
+
+      const isImage = file.type.startsWith('image/');
+      const analysis = isImage
+        ? await analyzeImageWithVision(file, openai, userContext)
+        : await analyzePDFWithAssistants(file, openai, userContext);
+
+      allAnalyses.push(analysis);
+      console.log(`[OK] ${file.name} analyzed`);
+    }
+
+    // Merge all analyses into one comprehensive analysis
+    console.log(`\n[4/4] Merging ${allAnalyses.length} analyses...`);
+    const analysis = mergeAnalyses(allAnalyses);
 
     console.log('[OK] Blood analysis complete\n');
     console.log('='.repeat(80));
     console.log('[COMPLETE] ANALYSIS READY');
+    console.log(`Total biomarkers extracted: ${analysis.biomarkers?.length || 0}`);
     console.log('='.repeat(80) + '\n');
 
     // Store analysis if email provided

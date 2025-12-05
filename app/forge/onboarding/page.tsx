@@ -3963,11 +3963,6 @@ export default function ForgeOnboarding() {
                   {promoCodeError && (
                     <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
                   )}
-                  {promoCodeVerified && (
-                    <p style={{color: '#4caf50', fontSize: '14px', marginTop: '8px'}}>
-                      ✓ Referral code applied! Your plan is now free.
-                    </p>
-                  )}
                 </div>
 
                 {paymentError && (

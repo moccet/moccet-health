@@ -7,17 +7,118 @@ import { createClient } from '@/lib/supabase/server';
 // It can run for up to 13 minutes without blocking the main plan generation
 export const maxDuration = 800;
 
-// Import email sending function
+const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>forge - Your Personalized Fitness Plan is Ready</title>
+    <meta name="description" content="forge - Personalized fitness plans based on your biology, training data, and performance metrics" />
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a;">
+
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 0;">
+
+                <!-- Hero Image - Full Width -->
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
+                            <img src="https://c.animaapp.com/EVbz3TeZ/img/susan-wilkinson-eo76daedyim-unsplash.jpg" alt="forge gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Content Container -->
+                <table role="presentation" style="max-width: 560px; width: 100%; margin: 0 auto; border-collapse: collapse;">
+
+                    <!-- Logo -->
+                    <tr>
+                        <td style="padding: 48px 20px 40px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 400; letter-spacing: -0.3px; color: #000000;">forge</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 0 20px;">
+
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
+                                Hi ${name}, your personalized fitness plan is ready.
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
+                                We've analyzed your profile, training history, and goals to create a comprehensive plan tailored specifically for you. Your plan includes personalized workout programming, recovery strategies, and performance optimization guidance.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" style="margin: 0 0 32px 0;">
+                                <tr>
+                                    <td style="background-color: #000000; border-radius: 4px; text-align: center;">
+                                        <a href="${planUrl}" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none;">
+                                            View Your Plan
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
+                                <strong>moccet</strong>
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 48px 20px 32px; text-align: center;">
+                            <p style="margin: 0; font-size: 13px; color: #666666;">
+                                <a href="<%asm_group_unsubscribe_raw_url%>" style="color: #666666; text-decoration: none;">Unsubscribe</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>`;
+
 async function sendPlanReadyEmail(email: string, name: string, planUrl: string): Promise<boolean> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/send-forge-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, planUrl }),
-    });
-    return response.ok;
+    const sgMail = (await import('@sendgrid/mail')).default;
+    const apiKey = process.env.SENDGRID_API_KEY;
+
+    if (!apiKey) {
+      console.error('[FORGE-ENRICHMENT] SendGrid API key not configured');
+      return false;
+    }
+
+    sgMail.setApiKey(apiKey);
+
+    const msg = {
+      to: email,
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL || 'team@moccet.com',
+        name: 'forge'
+      },
+      subject: 'Your Personalized Fitness Plan is Ready',
+      html: EMAIL_TEMPLATE(name, planUrl),
+    };
+
+    await sgMail.send(msg);
+    console.log(`[FORGE-ENRICHMENT] ✅ Plan ready email sent to ${email}`);
+    return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('[FORGE-ENRICHMENT] ❌ Failed to send email:', error);
+    if (error && typeof error === 'object' && 'response' in error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error('[FORGE-ENRICHMENT] SendGrid error details:', (error as any).response?.body);
+    }
     return false;
   }
 }

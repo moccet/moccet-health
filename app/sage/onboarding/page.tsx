@@ -9,7 +9,7 @@ type Screen =
   | 'email' | 'ikigai-intro' | 'main-priority' | 'driving-goal'
   | 'baseline-intro' | 'allergies' | 'medications' | 'supplements' | 'medical-conditions'
   | 'fuel-intro' | 'eating-style' | 'first-meal' | 'energy-crash' | 'protein-sources' | 'food-dislikes'
-  | 'meals-cooked' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'final-completion';
+  | 'meals-cooked' | 'completion' | 'final-step-intro' | 'ecosystem-integration' | 'lab-upload' | 'payment' | 'final-completion';
 
 export default function SageOnboarding() {
   // Skip intro video in development mode
@@ -42,6 +42,11 @@ export default function SageOnboarding() {
   const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoCodeError, setPromoCodeError] = useState('');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
 
   // Video sound controls
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
@@ -107,7 +112,7 @@ export default function SageOnboarding() {
       'email', 'ikigai-intro', 'main-priority', 'driving-goal',
       'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
       'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-      'meals-cooked', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+      'meals-cooked', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'payment', 'final-completion'
     ];
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex === -1) return 0;
@@ -1367,8 +1372,11 @@ export default function SageOnboarding() {
         case 'ecosystem-integration':
           nextScreen = 'lab-upload';
           break;
-        // Lab upload should not auto-advance
         case 'lab-upload':
+          nextScreen = 'payment';
+          break;
+        // Payment screen should not auto-advance
+        case 'payment':
           return;
         default:
           return;
@@ -1400,7 +1408,7 @@ export default function SageOnboarding() {
     'email', 'ikigai-intro', 'main-priority', 'driving-goal',
     'baseline-intro', 'allergies', 'medications', 'supplements', 'medical-conditions',
     'fuel-intro', 'eating-style', 'first-meal', 'energy-crash', 'protein-sources', 'food-dislikes',
-    'meals-cooked', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'final-completion'
+    'meals-cooked', 'completion', 'final-step-intro', 'ecosystem-integration', 'lab-upload', 'payment', 'final-completion'
   ];
 
   const handleBack = () => {
@@ -2915,9 +2923,220 @@ export default function SageOnboarding() {
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.
           </p> */}
           <div className="button-container">
-            <button className="typeform-button" onClick={handleSubmit}>Continue</button>
-            
+            <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
+
           </div>
+          <div className="typeform-brand">sage</div>
+        </div>
+      </div>
+
+      {/* Payment Screen */}
+      <div className={`typeform-screen ${currentScreen === 'payment' ? 'active' : 'hidden'}`}>
+        <div className="typeform-content">
+          <p className="section-label" style={{textAlign: 'center'}}>5 Complete Your Plan</p>
+          <h1 style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontSize: '48px',
+            fontWeight: 500,
+            fontStretch: 'expanded',
+            color: '#000000',
+            lineHeight: '1.15',
+            letterSpacing: '0.5px',
+            marginBottom: '16px',
+            textAlign: 'center',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+          }}>
+            Unlock Your Personalized Plan
+          </h1>
+          <p style={{
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontSize: '18px',
+            fontWeight: 400,
+            color: 'rgba(0, 0, 0, 0.8)',
+            lineHeight: '1.6',
+            marginBottom: '48px',
+            textAlign: 'center',
+            maxWidth: '600px',
+            margin: '0 auto 48px auto'
+          }}>
+            Your custom nutrition plan is ready to be generated. Complete payment to receive your personalized Sage plan.
+          </p>
+
+          <div style={{
+            maxWidth: '500px',
+            margin: '0 auto',
+            padding: '32px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <span style={{fontSize: '18px', fontWeight: 500}}>Sage Nutrition Plan</span>
+              <span style={{fontSize: '24px', fontWeight: 600}}>$18</span>
+            </div>
+
+            <div style={{marginBottom: '24px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontSize: '14px'}}>
+                Referral Code (Optional)
+              </label>
+              <div style={{display: 'flex', gap: '8px'}}>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoCodeError('');
+                  }}
+                  placeholder="Enter referral code"
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    fontSize: '16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff'
+                  }}
+                />
+              </div>
+              {promoCodeError && (
+                <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
+              )}
+            </div>
+
+            {paymentError && (
+              <div style={{
+                padding: '16px',
+                marginBottom: '24px',
+                background: 'rgba(255, 107, 107, 0.1)',
+                border: '1px solid rgba(255, 107, 107, 0.3)',
+                borderRadius: '8px',
+                color: '#ff6b6b',
+                fontSize: '14px'
+              }}>
+                {paymentError}
+              </div>
+            )}
+
+            <button
+              className="typeform-button"
+              onClick={async () => {
+                setPaymentProcessing(true);
+                setPaymentError('');
+
+                try {
+                  // Submit onboarding data first
+                  const onboardingData = {
+                    ...formData,
+                    timestamp: new Date().toISOString(),
+                    completed: true
+                  };
+
+                  const onboardingResponse = await fetch('/api/sage-onboarding', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(onboardingData),
+                  });
+
+                  if (!onboardingResponse.ok) {
+                    throw new Error('Failed to save onboarding data');
+                  }
+
+                  const onboardingResult = await onboardingResponse.json();
+                  const uniqueCode = onboardingResult.data?.uniqueCode;
+
+                  // If lab files uploaded, analyze them
+                  if (formData.labFiles.length > 0) {
+                    const labFormData = new FormData();
+                    formData.labFiles.forEach((file) => {
+                      labFormData.append('bloodTests', file);
+                    });
+                    labFormData.append('email', formData.email);
+
+                    try {
+                      await fetch('/api/analyze-blood-results', {
+                        method: 'POST',
+                        body: labFormData,
+                      });
+                    } catch (err) {
+                      console.error('Error analyzing lab files:', err);
+                    }
+                  }
+
+                  // Create payment intent
+                  const paymentResponse = await fetch('/api/checkout/create-plan-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      email: formData.email,
+                      fullName: formData.fullName,
+                      planType: 'Sage',
+                      promoCode: promoCode || undefined,
+                    }),
+                  });
+
+                  if (!paymentResponse.ok) {
+                    throw new Error('Failed to create payment');
+                  }
+
+                  const paymentData = await paymentResponse.json();
+
+                  // If promo code made it free, skip payment and generate immediately
+                  if (paymentData.amount === 0) {
+                    // Queue plan generation directly
+                    const planFormData = new FormData();
+                    planFormData.append('email', formData.email);
+                    planFormData.append('uniqueCode', uniqueCode);
+                    planFormData.append('fullName', formData.fullName.split(' ')[0]);
+
+                    await fetch('/api/generate-plan-async', {
+                      method: 'POST',
+                      body: planFormData,
+                    });
+
+                    setCurrentScreen('final-completion');
+                  } else {
+                    // For now, show error that Stripe Elements integration is needed
+                    // In production, you'd integrate Stripe Elements here
+                    setPaymentError('Payment integration coming soon. For now, please use promo code for free access.');
+                  }
+                } catch (error) {
+                  console.error('Payment error:', error);
+                  setPaymentError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+                } finally {
+                  setPaymentProcessing(false);
+                }
+              }}
+              disabled={paymentProcessing}
+              style={{
+                width: '100%',
+                padding: '16px',
+                fontSize: '18px',
+                fontWeight: 600,
+                opacity: paymentProcessing ? 0.6 : 1,
+                cursor: paymentProcessing ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {paymentProcessing ? 'Processing...' : 'Complete Payment'}
+            </button>
+
+            <p style={{
+              marginTop: '16px',
+              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.6)',
+              textAlign: 'center'
+            }}>
+              Secure payment powered by Stripe
+            </p>
+          </div>
+
           <div className="typeform-brand">sage</div>
         </div>
       </div>
@@ -2931,14 +3150,16 @@ export default function SageOnboarding() {
       }}>
         <div className="typeform-content">
           <h1 style={{
-            fontFamily: '"Playfair Display", Georgia, serif',
+            fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize: '48px',
-            fontWeight: 400,
+            fontWeight: 500,
+            fontStretch: 'expanded',
             color: '#ffffff',
             lineHeight: '1.15',
-            letterSpacing: '-1px',
+            letterSpacing: '0.5px',
             marginBottom: '32px',
-            textAlign: 'left'
+            textAlign: 'left',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
           }}>
             Your plan is being generated.
           </h1>

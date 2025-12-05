@@ -718,11 +718,7 @@ export default function PersonalisedPlanPage() {
         <button
           className="sidebar-icon-button"
           onClick={() => {
-            const text = "Check out my personalized nutrition plan from Sage! 🥗";
-            const url = window.location.href;
-            // Instagram doesn't have a direct share URL API, so we copy to clipboard
-            navigator.clipboard.writeText(`${text}\n\n${url}`);
-            alert('Link copied to clipboard! Open Instagram and paste it in your story or post.');
+            window.open('https://www.instagram.com/', '_blank', 'width=600,height=600');
           }}
           title="Share on Instagram"
         >

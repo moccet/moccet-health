@@ -1432,8 +1432,14 @@ export default function ForgeOnboarding() {
   // Global keyboard navigation handler
   useEffect(() => {
     const handleGlobalKeyboard = (e: KeyboardEvent) => {
+      // Screens that should not auto-advance with Enter key
+      const noEnterScreens: Screen[] = ['daily-activity'];
+
       // Handle Enter key or Right Arrow for forward navigation
       if (e.key === 'Enter' || e.key === 'ArrowRight') {
+        // Don't handle Enter on screens that shouldn't auto-advance
+        if (e.key === 'Enter' && noEnterScreens.includes(currentScreen)) return;
+
         // Don't handle if Continue button is disabled
         if (isContinueDisabled()) return;
 
@@ -2196,31 +2202,68 @@ export default function ForgeOnboarding() {
           <p className="section-label">1 The Objective</p>
           <h1 className="typeform-title">How many days per week can you train?</h1>
           <p className="typeform-subtitle">Reflect on your weekly time for exercise.<br />The best plan is the one that works with your schedule.</p>
-          <div className="options-container" style={{flexDirection: 'row', justifyContent: 'center', gap: '20px'}}>
+          <div className="options-container" style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            maxWidth: '100%'
+          }}>
             <button
               className={`option-button ${formData.trainingDays === '1' ? 'selected' : ''} ${clickingOption === 'days-1' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '1', 'days-1')}
-              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+              style={{
+                minWidth: '60px',
+                width: '60px',
+                fontSize: '24px',
+                padding: '20px 10px',
+                flex: '0 0 auto'
+              }}
             >1</button>
             <button
               className={`option-button ${formData.trainingDays === '2' ? 'selected' : ''} ${clickingOption === 'days-2' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '2', 'days-2')}
-              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+              style={{
+                minWidth: '60px',
+                width: '60px',
+                fontSize: '24px',
+                padding: '20px 10px',
+                flex: '0 0 auto'
+              }}
             >2</button>
             <button
               className={`option-button ${formData.trainingDays === '3' ? 'selected' : ''} ${clickingOption === 'days-3' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '3', 'days-3')}
-              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+              style={{
+                minWidth: '60px',
+                width: '60px',
+                fontSize: '24px',
+                padding: '20px 10px',
+                flex: '0 0 auto'
+              }}
             >3</button>
             <button
               className={`option-button ${formData.trainingDays === '4' ? 'selected' : ''} ${clickingOption === 'days-4' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '4', 'days-4')}
-              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+              style={{
+                minWidth: '60px',
+                width: '60px',
+                fontSize: '24px',
+                padding: '20px 10px',
+                flex: '0 0 auto'
+              }}
             >4</button>
             <button
               className={`option-button ${formData.trainingDays === '5+' ? 'selected' : ''} ${clickingOption === 'days-5' ? 'clicking' : ''}`}
               onClick={() => handleOptionClick('trainingDays', '5+', 'days-5')}
-              style={{minWidth: '80px', fontSize: '24px', padding: '20px'}}
+              style={{
+                minWidth: '60px',
+                width: '60px',
+                fontSize: '24px',
+                padding: '20px 10px',
+                flex: '0 0 auto'
+              }}
             >5+</button>
           </div>
           <div className="button-container">
@@ -2414,7 +2457,7 @@ export default function ForgeOnboarding() {
                 {option === 'kettlebells' && 'Kettlebells'}
                 {option === 'cables-machines' && 'Cables or Machines'}
                 {option === 'resistance-bands' && 'Resistance Bands'}
-                {option === 'bodyweight-only' && 'Body Weight Only'}
+                {option === 'bodyweight-only' && 'Bodyweight'}
                 {option === 'cardio-machines' && 'Cardio Machines'}
               </button>
             ))}
@@ -2594,7 +2637,7 @@ export default function ForgeOnboarding() {
           <h1 className="typeform-title">Which skills do you want to prioritize?</h1>
           <div className="options-container">
             {['mobility', 'endurance-stamina', 'running-speed', 'olympic-lifts', 'upper-body-strength', 'lower-body-strength', 'flexibility'].map((option) => (
-              <button key={option} className={`option-button checkbox ${formData.skillsPriority.includes(option) ? 'selected' : ''}`} onClick={() => toggleArrayValue('skillsPriority', option)}>
+              <button key={option} className={`option-button checkbox ${formData.skillsPriority.includes(option) ? 'selected' : ''} ${clickingOption === `skill-${option}` ? 'clicking' : ''}`} onClick={() => handleArrayOptionClick('skillsPriority', option, `skill-${option}`)}>
                 {option === 'mobility' && 'Mobility'}
                 {option === 'endurance-stamina' && 'Endurance and Stamina'}
                 {option === 'running-speed' && 'Running Speed'}
@@ -3301,7 +3344,7 @@ export default function ForgeOnboarding() {
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.
           </p> */}
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('payment')}>Continue</button>
 
           </div>
           <div className="typeform-brand">forge</div>
@@ -3466,13 +3509,14 @@ export default function ForgeOnboarding() {
 
                   const paymentData = await paymentResponse.json();
 
-                  // If promo code made it free, skip payment and generate immediately
-                  if (paymentData.amount === 0) {
+                  // If referral code made it free, proceed with plan generation
+                  if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
                     // Queue plan generation directly
                     const planFormData = new FormData();
                     planFormData.append('email', formData.email);
                     planFormData.append('uniqueCode', uniqueCode);
                     planFormData.append('fullName', formData.fullName.split(' ')[0]);
+                    planFormData.append('referralCode', paymentData.referralCode);
 
                     await fetch('/api/forge-generate-plan-async', {
                       method: 'POST',
@@ -3483,7 +3527,7 @@ export default function ForgeOnboarding() {
                   } else {
                     // For now, show error that Stripe Elements integration is needed
                     // In production, you'd integrate Stripe Elements here
-                    setPaymentError('Payment integration coming soon. For now, please use promo code for free access.');
+                    setPaymentError('Please enter a valid referral code to proceed. Full payment integration is not yet available.');
                   }
                 } catch (error) {
                   console.error('Payment error:', error);

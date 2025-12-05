@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Client } from '@upstash/qstash';
 import { createClient } from '@/lib/supabase/server';
 import { notifyPlanQueued } from '@/lib/slack';
+import { incrementReferralCodeUsage } from '@/lib/referral-codes';
 
 // This endpoint publishes fitness plan generation jobs to Upstash QStash
 // QStash will call our webhook endpoint to process the job in the background
@@ -10,18 +11,25 @@ export async function POST(request: NextRequest) {
   try {
     // Handle both JSON and FormData (but lab file is now uploaded separately)
     const contentType = request.headers.get('content-type');
-    let email, uniqueCode, fullName;
+    let email, uniqueCode, fullName, referralCode;
 
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData();
       email = formData.get('email') as string;
       uniqueCode = formData.get('uniqueCode') as string;
       fullName = formData.get('fullName') as string;
+      referralCode = formData.get('referralCode') as string;
     } else {
       const body = await request.json();
       email = body.email;
       uniqueCode = body.uniqueCode;
       fullName = body.fullName;
+      referralCode = body.referralCode;
+    }
+
+    // Increment referral code usage if provided
+    if (referralCode) {
+      incrementReferralCodeUsage(referralCode);
     }
 
     if (!email || !uniqueCode || !fullName) {

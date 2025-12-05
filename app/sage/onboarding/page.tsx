@@ -2923,7 +2923,7 @@ export default function SageOnboarding() {
             Don&apos;t have labs? No problem. <a href="#" style={{color: '#2d3a2d', textDecoration: 'underline'}}>Find out your options ↗</a> or skip to add later.
           </p> */}
           <div className="button-container">
-            <button className="typeform-button" onClick={() => handleContinue('lab-upload')}>Continue</button>
+            <button className="typeform-button" onClick={() => handleContinue('payment')}>Continue</button>
 
           </div>
           <div className="typeform-brand">sage</div>
@@ -3088,13 +3088,14 @@ export default function SageOnboarding() {
 
                   const paymentData = await paymentResponse.json();
 
-                  // If promo code made it free, skip payment and generate immediately
-                  if (paymentData.amount === 0) {
+                  // If referral code made it free, proceed with plan generation
+                  if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
                     // Queue plan generation directly
                     const planFormData = new FormData();
                     planFormData.append('email', formData.email);
                     planFormData.append('uniqueCode', uniqueCode);
                     planFormData.append('fullName', formData.fullName.split(' ')[0]);
+                    planFormData.append('referralCode', paymentData.referralCode);
 
                     await fetch('/api/generate-plan-async', {
                       method: 'POST',
@@ -3105,7 +3106,7 @@ export default function SageOnboarding() {
                   } else {
                     // For now, show error that Stripe Elements integration is needed
                     // In production, you'd integrate Stripe Elements here
-                    setPaymentError('Payment integration coming soon. For now, please use promo code for free access.');
+                    setPaymentError('Please enter a valid referral code to proceed. Full payment integration is not yet available.');
                   }
                 } catch (error) {
                   console.error('Payment error:', error);

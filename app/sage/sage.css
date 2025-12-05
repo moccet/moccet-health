@@ -56,11 +56,16 @@ a {
   align-self: stretch;
   width: 100%;
   padding: 20px;
+}
+
+.sage-page-moccet .background-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
   background-color: #2d3a2d;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: background-image 0.5s ease-in-out;
 }
 
 .sage-page-moccet .first-page::-webkit-scrollbar {

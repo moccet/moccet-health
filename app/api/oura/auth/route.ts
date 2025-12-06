@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.OURA_CLIENT_ID;
     const redirectUri = process.env.OURA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/oura/callback`;
+
+    // Get state from query params or generate random state
+    const searchParams = request.nextUrl.searchParams;
+    const state = searchParams.get('state') || generateRandomState();
 
     if (!clientId) {
       return NextResponse.json(
@@ -26,7 +30,7 @@ export async function GET() {
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('scope', 'personal daily'); // Request personal info and daily data
-    authUrl.searchParams.append('state', generateRandomState());
+    authUrl.searchParams.append('state', state);
 
     return NextResponse.json(
       { authUrl: authUrl.toString() },

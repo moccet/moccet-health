@@ -1,7 +1,6 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import NewsNavigation from './NewsNavigation';
+import { createClient } from '@/lib/supabase/server';
 import './news.css';
 
 interface BlogPost {
@@ -13,116 +12,129 @@ interface BlogPost {
   image?: string;
 }
 
-export default function NewsPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const CACHE_KEY = 'substack_posts_cache';
 
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const response = await fetch('/api/substack-feed');
-        const data = await response.json();
+async function getPosts(): Promise<BlogPost[]> {
+  try {
+    // Try to get from Supabase cache first
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('cache_store')
+      .select('value')
+      .eq('key', CACHE_KEY)
+      .single();
 
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setPosts(data.posts || []);
-        }
-      } catch (err) {
-        console.error('Error fetching posts:', err);
-        setError('Failed to load blog posts');
-      } finally {
-        setLoading(false);
-      }
+    if (!error && data?.value) {
+      console.log('[News Page] Serving posts from cache');
+      return data.value as BlogPost[];
     }
 
-    fetchPosts();
-  }, []);
+    console.log('[News Page] No cache found, fetching from Substack');
 
-  function generateSlug(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+    // Fallback to fetching from Substack if no cache
+    const response = await fetch('https://moccetai.substack.com/feed', {
+      next: { revalidate: 3600 } // Cache for 1 hour
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch RSS feed');
+    }
+
+    const xmlText = await response.text();
+    const posts = parseRSSFeed(xmlText);
+
+    return posts;
+  } catch (err) {
+    console.error('[News Page] Error fetching posts:', err);
+    return [];
+  }
+}
+
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function parseRSSFeed(xmlText: string): BlogPost[] {
+  const items: BlogPost[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  const matches = xmlText.matchAll(itemRegex);
+
+  for (const match of matches) {
+    const itemContent = match[1];
+
+    const title = extractTag(itemContent, 'title');
+    const link = extractTag(itemContent, 'link');
+    const pubDate = extractTag(itemContent, 'pubDate');
+    const description = extractTag(itemContent, 'description');
+    const content = extractTag(itemContent, 'content:encoded') || description;
+
+    const imageMatch = content.match(/<img[^>]+src="([^">]+)"/);
+    const image = imageMatch ? imageMatch[1] : undefined;
+
+    const contentWithoutFirstImage = image
+      ? content.replace(/<img[^>]*src="[^"]*"[^>]*>/, '')
+      : content;
+
+    const cleanTitle = stripHTML(title);
+    const cleanDesc = stripHTML(description);
+
+    if (
+      title &&
+      link &&
+      cleanTitle.toLowerCase() !== 'coming soon' &&
+      !cleanDesc.toLowerCase().includes('this is moccet\'s substack') &&
+      !cleanDesc.toLowerCase().includes('your body generates data')
+    ) {
+      items.push({
+        title: cleanTitle,
+        link: cleanHTML(link),
+        pubDate: pubDate || '',
+        description: stripHTML(description),
+        content: cleanHTML(contentWithoutFirstImage),
+        image
+      });
+    }
   }
 
+  return items;
+}
+
+function extractTag(text: string, tagName: string): string {
+  const regex = new RegExp(`<${tagName}(?:[^>]*)>([\\s\\S]*?)<\\/${tagName}>`, 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim() : '';
+}
+
+function cleanHTML(text: string): string {
+  return text
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function stripHTML(text: string): string {
+  return cleanHTML(text).replace(/<[^>]+>/g, '');
+}
+
+export default async function NewsPage() {
+  const posts = await getPosts();
   const featuredPost = posts[0];
   const remainingPosts = posts.slice(1);
 
   return (
     <main className="news-page">
-      {/* Navigation */}
-      <nav className="news-nav">
-        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
-          <div className="ellipse"></div>
-          <div className="div"></div>
-          <div className="ellipse-2"></div>
-          <div className="ellipse-3"></div>
-          <div className="ellipse-4"></div>
-          <div className="ellipse-5"></div>
-          <div className="ellipse-6"></div>
-        </Link>
-        <div className="nav-menu">
-          <Link href="/sage" className="nav-link">Sage</Link>
-          <Link href="/forge" className="nav-link">Forge</Link>
-          <Link href="/news" className="nav-link">Stories</Link>
-          <Link href="/#waitlist" className="nav-link">
-            Join the waitlist
-            <svg className="nav-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </Link>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="mobile-menu-button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {mobileMenuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
-            <div className="mobile-menu-content" onClick={(e) => e.stopPropagation()}>
-              <Link href="/sage" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
-                Sage
-              </Link>
-              <Link href="/forge" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
-                Forge
-              </Link>
-              <Link href="/news" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
-                Stories
-              </Link>
-              <Link href="/#waitlist" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
-                Join the waitlist
-              </Link>
-            </div>
-          </div>
-        )}
-      </nav>
+      <NewsNavigation />
 
       <div className="news-container">
-        {loading ? (
-          <div className="loading-state">
-            <p>Loading posts...</p>
-          </div>
-        ) : error ? (
-          <div className="empty-state">
-            <h3>Unable to load posts</h3>
-            <p>{error}</p>
-          </div>
-        ) : posts.length === 0 ? (
+        {posts.length === 0 ? (
           <div className="empty-state">
             <h3>Coming Soon</h3>
             <p>

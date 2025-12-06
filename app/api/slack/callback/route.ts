@@ -112,7 +112,20 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Return HTML that closes the popup window
+    // Determine redirect path based on state parameter
+    let redirectPath = '/sage/onboarding';
+    try {
+      if (state) {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.returnPath) {
+          redirectPath = stateData.returnPath;
+        }
+      }
+    } catch (e) {
+      console.log('Could not parse state, using default redirect');
+    }
+
+    // Return HTML that closes popup OR redirects on mobile
     const html = `
       <!DOCTYPE html>
       <html>
@@ -121,19 +134,23 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Signal to parent window that connection was successful
+            // Check if we're in a popup window (desktop) or full page (mobile)
             if (window.opener) {
+              // Desktop: Signal to parent window that connection was successful
               window.opener.postMessage({ type: 'slack-connected', team: '${teamName}' }, '*');
+              // Close the popup after a short delay
+              setTimeout(() => {
+                window.close();
+              }, 1000);
+            } else {
+              // Mobile: Redirect back to onboarding
+              window.location.href = '${redirectPath}?auth=slack&success=true';
             }
-            // Close the popup after a short delay
-            setTimeout(() => {
-              window.close();
-            }, 1000);
           </script>
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
             <h1 style="color: #4CAF50;">✓ Connected</h1>
             <p>Slack has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
           </div>
         </body>
       </html>

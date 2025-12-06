@@ -431,8 +431,102 @@ export default function SageOnboarding() {
     clearCartOnStart();
   }, []); // Run once on mount
 
+  // Check URL parameters for OAuth callback (mobile redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authProvider = params.get('auth');
+    const success = params.get('success');
+
+    if (authProvider && success === 'true') {
+      // Handle successful OAuth redirect from mobile
+      if (authProvider === 'strava') {
+        setStravaConnected(true);
+        setFormData(prev => ({
+          ...prev,
+          integrations: prev.integrations.includes('strava')
+            ? prev.integrations
+            : [...prev.integrations, 'strava']
+        }));
+      } else if (authProvider === 'fitbit') {
+        setFitbitConnected(true);
+        setFormData(prev => ({
+          ...prev,
+          integrations: prev.integrations.includes('fitbit')
+            ? prev.integrations
+            : [...prev.integrations, 'fitbit']
+        }));
+      } else if (authProvider === 'oura') {
+        setOuraConnected(true);
+        setFormData(prev => ({
+          ...prev,
+          integrations: prev.integrations.includes('oura')
+            ? prev.integrations
+            : [...prev.integrations, 'oura']
+        }));
+      }
+
+      // Clean up URL parameters
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Restore progress from localStorage (general persistence)
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('sage_onboarding_progress');
+
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+        const expiryTime = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        // Check if progress hasn't expired
+        if (progress.expiresAt && Date.now() < progress.expiresAt) {
+          console.log('[Sage Onboarding] Restoring saved progress');
+
+          // Restore form data
+          if (progress.formData) {
+            setFormData(prev => ({ ...prev, ...progress.formData, labFiles: [] })); // Can't restore files
+          }
+
+          // Restore current screen
+          if (progress.currentScreen) {
+            setCurrentScreen(progress.currentScreen);
+          }
+
+          // Restore integration states
+          if (progress.integrationStates) {
+            setStravaConnected(progress.integrationStates.stravaConnected || false);
+            setFitbitConnected(progress.integrationStates.fitbitConnected || false);
+            setOuraConnected(progress.integrationStates.ouraConnected || false);
+            setSlackConnected(progress.integrationStates.slackConnected || false);
+            setTeamsConnected(progress.integrationStates.teamsConnected || false);
+            setOutlookConnected(progress.integrationStates.outlookConnected || false);
+            setGmailConnected(progress.integrationStates.gmailConnected || false);
+            setVitalConnected(progress.integrationStates.vitalConnected || false);
+            setDexcomConnected(progress.integrationStates.dexcomConnected || false);
+            setAppleHealthConnected(progress.integrationStates.appleHealthConnected || false);
+            setAppleCalendarConnected(progress.integrationStates.appleCalendarConnected || false);
+          }
+
+          // Restore integration data
+          if (progress.integrationData) {
+            setGmailEmail(progress.integrationData.gmailEmail || '');
+            setSlackTeam(progress.integrationData.slackTeam || '');
+            setOutlookEmail(progress.integrationData.outlookEmail || '');
+          }
+        } else {
+          // Expired, clear it
+          localStorage.removeItem('sage_onboarding_progress');
+        }
+      } catch (err) {
+        console.error('Error restoring progress:', err);
+        localStorage.removeItem('sage_onboarding_progress');
+      }
+    }
+  }, []);
+
   // Check if integrations are already connected on mount
-  // Restore onboarding state after OAuth redirect (mobile)
+  // Restore onboarding state after OAuth redirect (mobile) - LEGACY for 30-min window
   useEffect(() => {
     const savedState = localStorage.getItem('sage_onboarding_state');
     const pendingIntegration = localStorage.getItem('sage_onboarding_pending_integration');
@@ -543,6 +637,70 @@ export default function SageOnboarding() {
       setTeamsEmail(decodeURIComponent(email));
     }
   }, []);
+
+  // Auto-save progress to localStorage (debounced)
+  useEffect(() => {
+    // Skip auto-save on intro/welcome screens or if completed
+    if (['intro', 'welcome', 'final-completion'].includes(currentScreen)) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const progressData = {
+          formData: {
+            ...formData,
+            labFiles: [] // Can't serialize File objects
+          },
+          currentScreen,
+          integrationStates: {
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected
+          },
+          integrationData: {
+            gmailEmail,
+            slackTeam,
+            outlookEmail
+          },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
+        };
+
+        localStorage.setItem('sage_onboarding_progress', JSON.stringify(progressData));
+        console.log('[Sage Onboarding] Progress auto-saved');
+      } catch (err) {
+        console.error('Error saving progress:', err);
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    formData,
+    currentScreen,
+    stravaConnected,
+    fitbitConnected,
+    ouraConnected,
+    slackConnected,
+    teamsConnected,
+    outlookConnected,
+    gmailConnected,
+    vitalConnected,
+    dexcomConnected,
+    appleHealthConnected,
+    appleCalendarConnected,
+    gmailEmail,
+    slackTeam,
+    outlookEmail
+  ]);
 
   const handleConnectGmail = async () => {
     try {
@@ -861,7 +1019,9 @@ export default function SageOnboarding() {
 
   const handleConnectOura = async () => {
     try {
-      const response = await fetch('/api/oura/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      const response = await fetch(`/api/oura/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -999,7 +1159,9 @@ export default function SageOnboarding() {
 
   const handleConnectFitbit = async () => {
     try {
-      const response = await fetch('/api/fitbit/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      const response = await fetch(`/api/fitbit/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -1069,7 +1231,9 @@ export default function SageOnboarding() {
 
   const handleConnectStrava = async () => {
     try {
-      const response = await fetch('/api/strava/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      const response = await fetch(`/api/strava/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -1800,7 +1964,7 @@ export default function SageOnboarding() {
       )}
 
       {/* Fixed Navigation Arrows - Bottom Right */}
-      {!['intro', 'welcome'].includes(currentScreen) && !isLoading && (
+      {!['intro', 'welcome', 'final-completion'].includes(currentScreen) && !isLoading && (
         <div style={{
           position: 'fixed',
           bottom: 'clamp(16px, 4vw, 30px)',
@@ -2725,25 +2889,14 @@ export default function SageOnboarding() {
 
           <div className="integrations-scroll-container">
             {/* Connected Integrations Section */}
-            {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
+            {(gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
               <>
                 <div className="integration-section-header">
                   <h2 className="integration-section-title">Connected</h2>
                   <p className="integration-section-description">These integrations are active and providing data</p>
                 </div>
                 <div className="integrations-grid connected-grid">
-                {appleHealthConnected && (
-                  <div className="integration-item">
-                    <div className="integration-info">
-                      <h3 className="integration-name">Apple Health</h3>
-                      <p className="integration-description">Track activity, sleep, and health metrics</p>
-                    </div>
-                    <button className="connect-button connected" onClick={handleDisconnectAppleHealth}>
-                      ✓ Connected
-                    </button>
-                  </div>
-                )}
-
+                {/* Apple Health removed - not available */}
                 {/* Apple Calendar removed - not available via web API */}
 
                 {outlookConnected && (
@@ -2876,7 +3029,7 @@ export default function SageOnboarding() {
           )}
 
           {/* Available Integrations Section */}
-          <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
+          <div className="integration-section-header" style={{marginTop: (gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
             <h2 className="integration-section-title">Available</h2>
             <p className="integration-section-description">Connect your tools to provide Sage with richer data</p>
           </div>
@@ -3325,45 +3478,7 @@ export default function SageOnboarding() {
                     setPaymentError('');
 
                     try {
-                      // Submit onboarding data first
-                      const onboardingData = {
-                        ...formData,
-                        timestamp: new Date().toISOString(),
-                        completed: true
-                      };
-
-                      const onboardingResponse = await fetch('/api/sage-onboarding', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(onboardingData),
-                      });
-
-                      if (!onboardingResponse.ok) {
-                        throw new Error('Failed to save onboarding data');
-                      }
-
-                      const onboardingResult = await onboardingResponse.json();
-                      const uniqueCode = onboardingResult.data?.uniqueCode;
-
-                      // If lab files uploaded, analyze them
-                      if (formData.labFiles.length > 0) {
-                        const labFormData = new FormData();
-                        formData.labFiles.forEach((file) => {
-                          labFormData.append('bloodTests', file);
-                        });
-                        labFormData.append('email', formData.email);
-
-                        try {
-                          await fetch('/api/analyze-blood-results', {
-                            method: 'POST',
-                            body: labFormData,
-                          });
-                        } catch (err) {
-                          console.error('Error analyzing lab files:', err);
-                        }
-                      }
-
-                      // Create payment intent
+                      // Create payment intent FIRST (fast) - this is what user needs to see the payment UI
                       const paymentResponse = await fetch('/api/checkout/create-plan-payment-intent', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3382,32 +3497,74 @@ export default function SageOnboarding() {
 
                       const paymentData = await paymentResponse.json();
 
-                      // If referral code made it free, proceed with plan generation
-                      if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
-                        // Queue plan generation directly
-                        const planFormData = new FormData();
-                        planFormData.append('email', formData.email);
-                        planFormData.append('uniqueCode', uniqueCode);
-                        planFormData.append('fullName', formData.fullName.split(' ')[0]);
-                        planFormData.append('referralCode', paymentData.referralCode);
-
-                        await fetch('/api/generate-plan-async', {
-                          method: 'POST',
-                          body: planFormData,
-                        });
-
-                        setCurrentScreen('final-completion');
-                      } else if (paymentData.clientSecret) {
-                        // Show Stripe payment form
+                      // Show payment UI immediately or proceed with free plan
+                      if (paymentData.clientSecret) {
                         setClientSecret(paymentData.clientSecret);
-                      } else {
-                        throw new Error('No client secret received from payment API');
+                        setPaymentProcessing(false);
+                      } else if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
+                        // If referral code made it free, show video loading screen immediately
+                        setIsLoading(true);
+
+                        // Save onboarding data in background (non-blocking)
+                        const onboardingData = {
+                          ...formData,
+                          timestamp: new Date().toISOString(),
+                          completed: true
+                        };
+
+                        let uniqueCodePromise = fetch('/api/sage-onboarding', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(onboardingData),
+                        })
+                          .then(res => res.json())
+                          .then(result => result.data?.uniqueCode)
+                          .catch(err => {
+                            console.error('Error saving onboarding data (background):', err);
+                            return null;
+                          });
+
+                        // Analyze lab files in background (non-blocking) - this was the main bottleneck
+                        if (formData.labFiles.length > 0) {
+                          const labFormData = new FormData();
+                          formData.labFiles.forEach((file) => {
+                            labFormData.append('bloodTests', file);
+                          });
+                          labFormData.append('email', formData.email);
+
+                          fetch('/api/analyze-blood-results', {
+                            method: 'POST',
+                            body: labFormData,
+                          }).catch(err => {
+                            console.error('Error analyzing lab files (background):', err);
+                          });
+                        }
+
+                        // Wait for unique code from background save
+                        const uniqueCode = await uniqueCodePromise;
+
+                        if (uniqueCode) {
+                          // Queue plan generation
+                          const planFormData = new FormData();
+                          planFormData.append('email', formData.email);
+                          planFormData.append('uniqueCode', uniqueCode);
+                          planFormData.append('fullName', formData.fullName.split(' ')[0]);
+                          planFormData.append('referralCode', paymentData.referralCode);
+
+                          await fetch('/api/generate-plan-async', {
+                            method: 'POST',
+                            body: planFormData,
+                          });
+                        }
+
+                        setIsLoading(false);
+                        setCurrentScreen('final-completion');
                       }
                     } catch (error) {
                       console.error('Payment error:', error);
                       setPaymentError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
-                    } finally {
                       setPaymentProcessing(false);
+                      setIsLoading(false);
                     }
                   }}
                   disabled={paymentProcessing}

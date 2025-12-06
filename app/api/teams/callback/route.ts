@@ -108,23 +108,27 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Send message to parent window
+            // Check if we're in a popup window (desktop) or full page (mobile)
             if (window.opener) {
+              // Desktop: Send message to parent window
               window.opener.postMessage({
                 type: 'teams_connected',
                 email: '${userEmail}'
               }, window.location.origin);
+              // Close the popup after a short delay
+              setTimeout(() => {
+                window.close();
+              }, 1000);
+            } else {
+              // Mobile: Redirect back to onboarding
+              const returnPath = '/forge/onboarding'; // Default
+              window.location.href = returnPath + '?auth=teams&success=true';
             }
-
-            // Close the popup after a short delay
-            setTimeout(() => {
-              window.close();
-            }, 1000);
           </script>
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
             <h1 style="color: #4CAF50;">✓ Connected</h1>
             <p>Microsoft Teams has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">This window will close automatically...</p>
+            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
           </div>
         </body>
       </html>`,

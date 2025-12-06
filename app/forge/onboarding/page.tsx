@@ -504,7 +504,98 @@ export default function ForgeOnboarding() {
     }
   }, []);
 
-  // Restore onboarding state after OAuth redirect (mobile)
+  // Check URL parameters for OAuth callback (mobile redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authProvider = params.get('auth');
+    const success = params.get('success');
+
+    if (authProvider && success === 'true') {
+      // Handle successful OAuth redirect from mobile
+      const integrationMap: Record<string, { setter: (val: boolean) => void; name: string }> = {
+        'strava': { setter: setStravaConnected, name: 'strava' },
+        'fitbit': { setter: setFitbitConnected, name: 'fitbit' },
+        'oura': { setter: setOuraConnected, name: 'oura-ring' },
+        'dexcom': { setter: setDexcomConnected, name: 'dexcom' },
+        'vital': { setter: setVitalConnected, name: 'vital' },
+        'gmail': { setter: setGmailConnected, name: 'google-calendar' },
+        'slack': { setter: setSlackConnected, name: 'slack' },
+        'outlook': { setter: setOutlookConnected, name: 'outlook' },
+        'teams': { setter: setTeamsConnected, name: 'teams' }
+      };
+
+      const integration = integrationMap[authProvider];
+      if (integration) {
+        integration.setter(true);
+        setFormData(prev => ({
+          ...prev,
+          integrations: prev.integrations.includes(integration.name)
+            ? prev.integrations
+            : [...prev.integrations, integration.name]
+        }));
+      }
+
+      // Clean up URL parameters
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Restore progress from localStorage (general persistence)
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('forge_onboarding_progress');
+
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+
+        // Check if progress hasn't expired (7 days)
+        if (progress.expiresAt && Date.now() < progress.expiresAt) {
+          console.log('[Forge Onboarding] Restoring saved progress');
+
+          // Restore form data
+          if (progress.formData) {
+            setFormData(prev => ({ ...prev, ...progress.formData, labFiles: [] }));
+          }
+
+          // Restore current screen
+          if (progress.currentScreen) {
+            setCurrentScreen(progress.currentScreen);
+          }
+
+          // Restore integration states
+          if (progress.integrationStates) {
+            setStravaConnected(progress.integrationStates.stravaConnected || false);
+            setFitbitConnected(progress.integrationStates.fitbitConnected || false);
+            setOuraConnected(progress.integrationStates.ouraConnected || false);
+            setSlackConnected(progress.integrationStates.slackConnected || false);
+            setTeamsConnected(progress.integrationStates.teamsConnected || false);
+            setOutlookConnected(progress.integrationStates.outlookConnected || false);
+            setGmailConnected(progress.integrationStates.gmailConnected || false);
+            setVitalConnected(progress.integrationStates.vitalConnected || false);
+            setDexcomConnected(progress.integrationStates.dexcomConnected || false);
+            setAppleHealthConnected(progress.integrationStates.appleHealthConnected || false);
+            setAppleCalendarConnected(progress.integrationStates.appleCalendarConnected || false);
+          }
+
+          // Restore integration data
+          if (progress.integrationData) {
+            setGmailEmail(progress.integrationData.gmailEmail || '');
+            setSlackTeam(progress.integrationData.slackTeam || '');
+            setOutlookEmail(progress.integrationData.outlookEmail || '');
+            setTeamsEmail(progress.integrationData.teamsEmail || '');
+          }
+        } else {
+          // Expired, clear it
+          localStorage.removeItem('forge_onboarding_progress');
+        }
+      } catch (err) {
+        console.error('Error restoring progress:', err);
+        localStorage.removeItem('forge_onboarding_progress');
+      }
+    }
+  }, []);
+
+  // Restore onboarding state after OAuth redirect (mobile) - LEGACY for 30-min window
   useEffect(() => {
     const savedState = localStorage.getItem('forge_onboarding_state');
     const pendingIntegration = localStorage.getItem('forge_onboarding_pending_integration');
@@ -621,6 +712,72 @@ export default function ForgeOnboarding() {
       localStorage.removeItem('forge_onboarding_pending_integration');
     }
   }, []);
+
+  // Auto-save progress to localStorage (debounced)
+  useEffect(() => {
+    // Skip auto-save on intro/welcome screens or if completed
+    if (['intro', 'welcome', 'final-completion'].includes(currentScreen)) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const progressData = {
+          formData: {
+            ...formData,
+            labFiles: [] // Can't serialize File objects
+          },
+          currentScreen,
+          integrationStates: {
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected
+          },
+          integrationData: {
+            gmailEmail,
+            slackTeam,
+            outlookEmail,
+            teamsEmail
+          },
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
+        };
+
+        localStorage.setItem('forge_onboarding_progress', JSON.stringify(progressData));
+        console.log('[Forge Onboarding] Progress auto-saved');
+      } catch (err) {
+        console.error('Error saving progress:', err);
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    formData,
+    currentScreen,
+    stravaConnected,
+    fitbitConnected,
+    ouraConnected,
+    slackConnected,
+    teamsConnected,
+    outlookConnected,
+    gmailConnected,
+    vitalConnected,
+    dexcomConnected,
+    appleHealthConnected,
+    appleCalendarConnected,
+    gmailEmail,
+    slackTeam,
+    outlookEmail,
+    teamsEmail
+  ]);
 
   const handleConnectGmail = async () => {
     try {
@@ -1031,7 +1188,9 @@ export default function ForgeOnboarding() {
 
   const handleConnectOura = async () => {
     try {
-      const response = await fetch('/api/oura/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      const response = await fetch(`/api/oura/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -1219,7 +1378,9 @@ export default function ForgeOnboarding() {
 
   const handleConnectFitbit = async () => {
     try {
-      const response = await fetch('/api/fitbit/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      const response = await fetch(`/api/fitbit/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -1293,7 +1454,9 @@ export default function ForgeOnboarding() {
 
   const handleConnectStrava = async () => {
     try {
-      const response = await fetch('/api/strava/auth');
+      // Include return path in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      const response = await fetch(`/api/strava/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -2060,7 +2223,7 @@ export default function ForgeOnboarding() {
       )}
 
       {/* Fixed Navigation Arrows - Bottom Right */}
-      {!['intro', 'welcome'].includes(currentScreen) && !isLoading && (
+      {!['intro', 'welcome', 'final-completion'].includes(currentScreen) && !isLoading && (
         <div style={{
           position: 'fixed',
           bottom: 'clamp(16px, 4vw, 30px)',
@@ -3401,25 +3564,14 @@ export default function ForgeOnboarding() {
 
           <div className="integrations-scroll-container">
             {/* Connected Integrations Section */}
-            {(gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
+            {(gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
               <>
                 <div className="integration-section-header">
                   <h2 className="integration-section-title">Connected</h2>
                   <p className="integration-section-description">These integrations are active and providing data</p>
                 </div>
                 <div className="integrations-grid connected-grid">
-                {appleHealthConnected && (
-                  <div className="integration-item">
-                    <div className="integration-info">
-                      <h3 className="integration-name">Apple Health</h3>
-                      <p className="integration-description">Track activity, sleep, and health metrics</p>
-                    </div>
-                    <button className="connect-button connected" onClick={handleDisconnectAppleHealth}>
-                      ✓ Connected
-                    </button>
-                  </div>
-                )}
-
+                {/* Apple Health removed - not available */}
                 {/* Apple Calendar removed - not available via web API */}
 
                 {outlookConnected && (
@@ -3582,7 +3734,7 @@ export default function ForgeOnboarding() {
           )}
 
           {/* Available Integrations Section */}
-          <div className="integration-section-header" style={{marginTop: (gmailConnected || appleHealthConnected || appleCalendarConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
+          <div className="integration-section-header" style={{marginTop: (gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
             <h2 className="integration-section-title">Available</h2>
             <p className="integration-section-description">Connect your tools to provide Forge with richer data</p>
           </div>
@@ -3986,45 +4138,7 @@ export default function ForgeOnboarding() {
                     setPaymentError('');
 
                     try {
-                      // Submit onboarding data first
-                      const onboardingData = {
-                        ...formData,
-                        timestamp: new Date().toISOString(),
-                        completed: true
-                      };
-
-                      const onboardingResponse = await fetch('/api/forge-onboarding', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(onboardingData),
-                      });
-
-                      if (!onboardingResponse.ok) {
-                        throw new Error('Failed to save onboarding data');
-                      }
-
-                      const onboardingResult = await onboardingResponse.json();
-                      const uniqueCode = onboardingResult.data?.uniqueCode;
-
-                      // If lab files uploaded, analyze them
-                      if (formData.labFiles.length > 0) {
-                        const labFormData = new FormData();
-                        formData.labFiles.forEach((file) => {
-                          labFormData.append('bloodTests', file);
-                        });
-                        labFormData.append('email', formData.email);
-
-                        try {
-                          await fetch('/api/forge-analyze-blood-results', {
-                            method: 'POST',
-                            body: labFormData,
-                          });
-                        } catch (err) {
-                          console.error('Error analyzing lab files:', err);
-                        }
-                      }
-
-                      // Create payment intent
+                      // Create payment intent FIRST (fast) - this is what user needs to see the payment UI
                       const paymentResponse = await fetch('/api/checkout/create-plan-payment-intent', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -4043,32 +4157,74 @@ export default function ForgeOnboarding() {
 
                       const paymentData = await paymentResponse.json();
 
-                      // If referral code made it free, proceed with plan generation
-                      if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
-                        // Queue plan generation directly
-                        const planFormData = new FormData();
-                        planFormData.append('email', formData.email);
-                        planFormData.append('uniqueCode', uniqueCode);
-                        planFormData.append('fullName', formData.fullName.split(' ')[0]);
-                        planFormData.append('referralCode', paymentData.referralCode);
-
-                        await fetch('/api/forge-generate-plan-async', {
-                          method: 'POST',
-                          body: planFormData,
-                        });
-
-                        setCurrentScreen('final-completion');
-                      } else if (paymentData.clientSecret) {
-                        // Show Stripe payment form
+                      // Show payment UI immediately or proceed with free plan
+                      if (paymentData.clientSecret) {
                         setClientSecret(paymentData.clientSecret);
-                      } else {
-                        throw new Error('No client secret received from payment API');
+                        setPaymentProcessing(false);
+                      } else if (paymentData.amount === 0 && paymentData.referralCodeApplied) {
+                        // If referral code made it free, show video loading screen immediately
+                        setIsLoading(true);
+
+                        // Save onboarding data in background (non-blocking)
+                        const onboardingData = {
+                          ...formData,
+                          timestamp: new Date().toISOString(),
+                          completed: true
+                        };
+
+                        let uniqueCodePromise = fetch('/api/forge-onboarding', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(onboardingData),
+                        })
+                          .then(res => res.json())
+                          .then(result => result.data?.uniqueCode)
+                          .catch(err => {
+                            console.error('Error saving onboarding data (background):', err);
+                            return null;
+                          });
+
+                        // Analyze lab files in background (non-blocking) - this was the main bottleneck
+                        if (formData.labFiles.length > 0) {
+                          const labFormData = new FormData();
+                          formData.labFiles.forEach((file) => {
+                            labFormData.append('bloodTests', file);
+                          });
+                          labFormData.append('email', formData.email);
+
+                          fetch('/api/forge-analyze-blood-results', {
+                            method: 'POST',
+                            body: labFormData,
+                          }).catch(err => {
+                            console.error('Error analyzing lab files (background):', err);
+                          });
+                        }
+
+                        // Wait for unique code from background save
+                        const uniqueCode = await uniqueCodePromise;
+
+                        if (uniqueCode) {
+                          // Queue plan generation
+                          const planFormData = new FormData();
+                          planFormData.append('email', formData.email);
+                          planFormData.append('uniqueCode', uniqueCode);
+                          planFormData.append('fullName', formData.fullName.split(' ')[0]);
+                          planFormData.append('referralCode', paymentData.referralCode);
+
+                          await fetch('/api/forge-generate-plan-async', {
+                            method: 'POST',
+                            body: planFormData,
+                          });
+                        }
+
+                        setIsLoading(false);
+                        setCurrentScreen('final-completion');
                       }
                     } catch (error) {
                       console.error('Payment error:', error);
                       setPaymentError(error instanceof Error ? error.message : 'Payment failed. Please try again.');
-                    } finally {
                       setPaymentProcessing(false);
+                      setIsLoading(false);
                     }
                   }}
                   disabled={paymentProcessing}

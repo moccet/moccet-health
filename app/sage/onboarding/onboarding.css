@@ -994,6 +994,14 @@
   .height-ft-in-container {
     padding-left: 0;
   }
+
+  .input-with-unit-container {
+    padding-left: 0;
+  }
+
+  .validation-error {
+    padding-left: 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1002,14 +1010,15 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow-y: hidden;
   }
 
   .typeform-content {
     padding: 0;
     display: flex;
     flex-direction: column;
-    flex: 1;
-    overflow: hidden;
+    height: 100%;
+    min-height: 0;
   }
 
   .typeform-title {
@@ -1030,7 +1039,7 @@
   }
 
   .typeform-input {
-    font-size: 15px;
+    font-size: 16px;
     padding: 10px 40px 10px 16px;
   }
 
@@ -1042,8 +1051,11 @@
   .options-container {
     gap: 8px;
     margin-bottom: 24px;
-    max-height: calc(100vh - 320px);
+    max-height: none;
     padding-left: 0;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .button-container {
@@ -1121,6 +1133,14 @@
     padding-left: 0;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .input-with-unit-container {
+    padding-left: 0;
+  }
+
+  .validation-error {
+    padding-left: 0;
   }
 
   .toggle-option {

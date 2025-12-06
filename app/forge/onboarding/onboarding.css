@@ -1757,10 +1757,11 @@ body.payment-screen-active {
 /* Desktop: Wider buttons for training days */
 @media (min-width: 769px) {
   .options-container button[style*="min-width: 50px"] {
-    min-width: 80px !important;
-    width: 80px !important;
-    padding: 20px 0 !important;
-    font-size: 24px !important;
+    min-width: 120px !important;
+    width: 120px !important;
+    padding: 28px 0 !important;
+    font-size: 28px !important;
+    margin: 0 25px !important;
   }
 }
 

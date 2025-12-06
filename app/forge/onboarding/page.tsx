@@ -2812,7 +2812,7 @@ export default function ForgeOnboarding() {
           <div className="options-container" style={{
             display: 'flex',
             flexDirection: 'row',
-            justifyContent: 'space-evenly',
+            justifyContent: 'center',
             gap: '10px',
             flexWrap: 'nowrap',
             maxWidth: '100%',

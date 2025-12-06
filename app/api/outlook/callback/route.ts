@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
               }, 1000);
             } else {
               // Mobile: Redirect back to onboarding
-              const returnPath = '/sage/onboarding'; // Default
+              const returnPath = '/forge/onboarding'; // Default
               window.location.href = returnPath + '?auth=outlook&success=true';
             }
           </script>

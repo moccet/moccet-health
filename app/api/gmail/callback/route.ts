@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
               }, 1000);
             } else {
               // Mobile: Redirect back to onboarding
-              const returnPath = '/sage/onboarding'; // Default, could parse from state
+              const returnPath = '/forge/onboarding'; // Default, could parse from state
               window.location.href = returnPath + '?auth=gmail&success=true';
             }
           </script>

@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Determine redirect path based on state parameter
-    let redirectPath = '/sage/onboarding';
+    let redirectPath = '/forge/onboarding';
     try {
       if (state) {
         const stateData = JSON.parse(decodeURIComponent(state));

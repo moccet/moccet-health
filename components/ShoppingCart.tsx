@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import Image from 'next/image';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -17,8 +16,6 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  imageUrl: string;
-  imageLoading?: boolean;
   inStock: boolean;
 }
 
@@ -72,49 +69,9 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
 
       if (data.success) {
         setCart(data.cart);
-
-        // Trigger on-demand image fetching for items without images
-        if (data.cart?.items) {
-          data.cart.items.forEach((item: CartItem) => {
-            if (item.imageLoading) {
-              fetchProductImage(item.productId);
-            }
-          });
-        }
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-    }
-  };
-
-  // Fetch product image on-demand
-  const fetchProductImage = async (productId: string) => {
-    try {
-      const response = await fetch('/api/products/ensure-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.imageUrl) {
-        // Update cart item with new image
-        setCart((prevCart) => {
-          if (!prevCart) return prevCart;
-
-          return {
-            ...prevCart,
-            items: prevCart.items.map((item) =>
-              item.productId === productId
-                ? { ...item, imageUrl: data.imageUrl, imageLoading: false }
-                : item
-            ),
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching product image:', error);
     }
   };
 
@@ -358,28 +315,6 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
                       key={item.id}
                       className="flex gap-4 p-4 border border-gray-200 rounded-lg"
                     >
-                      {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 overflow-hidden relative">
-                        {item.imageLoading ? (
-                          // Loading spinner
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                        ) : (
-                          <Image
-                            src={item.imageUrl}
-                            alt={`${item.brand} ${item.name}`}
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                            onError={(e) => {
-                              // Fallback to default SVG on error
-                              const target = e.currentTarget as HTMLImageElement;
-                              target.src = '/images/supplements/default.svg';
-                              target.style.objectFit = 'contain';
-                            }}
-                          />
-                        )}
-                      </div>
-
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm">

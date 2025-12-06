@@ -9,7 +9,6 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import Image from 'next/image';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -21,8 +20,6 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  imageUrl?: string;
-  imageLoading?: boolean;
 }
 
 interface OrderSummary {
@@ -96,7 +93,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             lineTotal: item.lineTotal,
-            imageUrl: item.imageUrl,
           })),
         });
       }
@@ -139,7 +135,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             lineTotal: item.lineTotal,
-            imageUrl: item.imageUrl,
           })),
         });
 
@@ -154,37 +149,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
       alert('Failed to remove item');
     } finally {
       setUpdatingCart(false);
-    }
-  };
-
-  // Fetch product image on-demand
-  const fetchProductImage = async (productId: string) => {
-    try {
-      const response = await fetch('/api/products/ensure-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.imageUrl) {
-        // Update order summary with new image
-        setOrderSummary((prev) => {
-          if (!prev) return prev;
-
-          return {
-            ...prev,
-            items: prev.items.map((item) =>
-              item.productId === productId
-                ? { ...item, imageUrl: data.imageUrl, imageLoading: false }
-                : item
-            ),
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching product image:', error);
     }
   };
 
@@ -203,15 +167,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
         if (data.success) {
           setPaymentIntentId(data.paymentIntentId);
           setOrderSummary(data.orderSummary);
-
-          // Trigger on-demand image fetching for items without images
-          if (data.orderSummary?.items) {
-            data.orderSummary.items.forEach((item: CartItem) => {
-              if (item.imageLoading && item.productId) {
-                fetchProductImage(item.productId);
-              }
-            });
-          }
         } else {
           alert(`Error: ${data.error}`);
         }
@@ -325,7 +280,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
           <div className="px-6 py-4 border-t border-gray-200">
             {orderSummary.items.map((item, idx) => (
               <div key={idx} className="flex gap-4 mb-4">
-                <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
                 <div className="flex-1">
                   <p className="font-medium text-sm">{item.brand} {item.name}</p>
                   <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
@@ -594,34 +548,6 @@ function CheckoutForm({ email, planCode }: { email: string; planCode?: string })
               <div className="space-y-6">
                 {orderSummary.items.map((item, idx) => (
                   <div key={item.id || idx} className="flex gap-4">
-                    {/* Product Image */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-20 h-20 bg-white border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                        {item.imageLoading ? (
-                          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-                        ) : item.imageUrl ? (
-                          <Image
-                            src={item.imageUrl}
-                            alt={`${item.brand} ${item.name}`}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-cover rounded-lg"
-                            onError={(e) => {
-                              const target = e.currentTarget as HTMLImageElement;
-                              target.src = '/images/supplements/default.svg';
-                              target.style.objectFit = 'contain';
-                            }}
-                          />
-                        ) : (
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-sm mb-1">

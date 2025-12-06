@@ -11,6 +11,22 @@ html, body {
   position: fixed;
 }
 
+/* Allow scrolling when payment screen is active */
+html.payment-screen-active,
+body.payment-screen-active {
+  overflow: auto;
+  position: relative;
+  height: auto;
+  min-height: 100vh;
+}
+
+/* Ensure payment screen content is scrollable */
+.typeform-screen.payment-screen {
+  height: auto;
+  min-height: 100vh;
+  overflow-y: visible;
+}
+
 /* Container for both screens */
 .onboarding-container {
   min-height: 100vh;

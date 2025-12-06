@@ -139,6 +139,22 @@ export default function SageOnboarding() {
     }
   };
 
+  // Enable scrolling on payment screen
+  useEffect(() => {
+    if (currentScreen === 'payment') {
+      document.documentElement.classList.add('payment-screen-active');
+      document.body.classList.add('payment-screen-active');
+    } else {
+      document.documentElement.classList.remove('payment-screen-active');
+      document.body.classList.remove('payment-screen-active');
+    }
+
+    return () => {
+      document.documentElement.classList.remove('payment-screen-active');
+      document.body.classList.remove('payment-screen-active');
+    };
+  }, [currentScreen]);
+
   // Speech recognition functionality
   const startDictation = (fieldName: keyof typeof formData) => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -3288,7 +3304,7 @@ export default function SageOnboarding() {
       </div>
 
       {/* Payment Screen */}
-      <div className={`typeform-screen ${currentScreen === 'payment' ? 'active' : 'hidden'}`}>
+      <div className={`typeform-screen payment-screen ${currentScreen === 'payment' ? 'active' : 'hidden'}`}>
         <div className="typeform-content">
           <p className="section-label" style={{textAlign: 'center'}}>5 Complete Your Plan</p>
           <h1 style={{

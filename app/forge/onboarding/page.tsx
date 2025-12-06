@@ -4027,125 +4027,131 @@ export default function ForgeOnboarding() {
               </div>
             </div>
 
-            {!clientSecret ? (
-              <>
-                <div style={{marginBottom: '24px'}}>
-                  <label style={{display: 'block', marginBottom: '8px', fontSize: '14px'}}>
-                    Referral Code (Optional)
-                  </label>
-                  <div style={{display: 'flex', gap: '8px'}}>
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => {
-                        setPromoCode(e.target.value.toUpperCase());
-                        setPromoCodeError('');
-                        setPromoCodeVerified(false);
-                      }}
-                      placeholder="Enter referral code"
-                      disabled={promoCodeVerified}
-                      style={{
-                        flex: 1,
-                        padding: '12px',
-                        fontSize: '16px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        background: promoCodeVerified ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                        color: '#000000',
-                        opacity: promoCodeVerified ? 0.7 : 1
-                      }}
-                    />
-                    {!promoCodeVerified ? (
-                      <button
-                        onClick={async () => {
-                          if (!promoCode.trim()) {
-                            setPromoCodeError('Please enter a referral code');
-                            return;
-                          }
-
-                          setPromoCodeVerifying(true);
-                          setPromoCodeError('');
-
-                          try {
-                            // Verify the promo code by calling the payment intent API
-                            const response = await fetch('/api/checkout/create-plan-payment-intent', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                email: formData.email,
-                                fullName: formData.fullName,
-                                planType: 'Forge',
-                                promoCode: promoCode,
-                                verifyOnly: true
-                              }),
-                            });
-
-                            const data = await response.json();
-
-                            if (response.ok && data.amount === 0 && data.referralCodeApplied) {
-                              setPromoCodeVerified(true);
-                              setPromoCodeError('');
-                            } else if (response.ok && data.amount > 0) {
-                              setPromoCodeError('Invalid referral code');
-                            } else {
-                              setPromoCodeError(data.error || 'Invalid referral code');
-                            }
-                          } catch (error) {
-                            console.error('Promo code verification error:', error);
-                            setPromoCodeError('Failed to verify code. Please try again.');
-                          } finally {
-                            setPromoCodeVerifying(false);
-                          }
-                        }}
-                        disabled={promoCodeVerifying || !promoCode.trim()}
-                        style={{
-                          padding: '12px 24px',
-                          fontSize: '16px',
-                          fontWeight: 600,
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: '#000000',
-                          color: '#ffffff',
-                          cursor: (promoCodeVerifying || !promoCode.trim()) ? 'not-allowed' : 'pointer',
-                          opacity: (promoCodeVerifying || !promoCode.trim()) ? 0.5 : 1,
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {promoCodeVerifying ? 'Verifying...' : 'Verify'}
-                      </button>
-                    ) : (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '12px 24px',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        borderRadius: '8px',
-                        background: 'rgba(76, 175, 80, 0.2)',
-                        color: '#4caf50'
-                      }}>
-                        ✓ Verified
-                      </div>
-                    )}
-                  </div>
-                  {promoCodeError && (
-                    <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
-                  )}
-                </div>
-
-                {paymentError && (
-                  <div style={{
-                    padding: '16px',
-                    marginBottom: '24px',
-                    background: 'rgba(255, 107, 107, 0.1)',
-                    border: '1px solid rgba(255, 107, 107, 0.3)',
+            {/* Referral Code - Always Visible */}
+            <div style={{marginBottom: '24px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontSize: '14px'}}>
+                Referral Code (Optional)
+              </label>
+              <div style={{display: 'flex', gap: '8px'}}>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoCodeError('');
+                    setPromoCodeVerified(false);
+                  }}
+                  placeholder="Enter referral code"
+                  disabled={promoCodeVerified}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    fontSize: '16px',
                     borderRadius: '8px',
-                    color: '#ff6b6b',
-                    fontSize: '14px'
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    background: promoCodeVerified ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                    color: '#000000',
+                    opacity: promoCodeVerified ? 0.7 : 1
+                  }}
+                />
+                {!promoCodeVerified ? (
+                  <button
+                    onClick={async () => {
+                      if (!promoCode.trim()) {
+                        setPromoCodeError('Please enter a referral code');
+                        return;
+                      }
+
+                      setPromoCodeVerifying(true);
+                      setPromoCodeError('');
+
+                      try {
+                        // Verify the promo code by calling the payment intent API
+                        const response = await fetch('/api/checkout/create-plan-payment-intent', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            email: formData.email,
+                            fullName: formData.fullName,
+                            planType: 'Forge',
+                            promoCode: promoCode,
+                            verifyOnly: true
+                          }),
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.amount === 0 && data.referralCodeApplied) {
+                          setPromoCodeVerified(true);
+                          setPromoCodeError('');
+                          // If payment UI is already open and discount is 100%, close it
+                          if (clientSecret) {
+                            setClientSecret('');
+                          }
+                        } else if (response.ok && data.amount > 0) {
+                          setPromoCodeError('Invalid referral code');
+                        } else {
+                          setPromoCodeError(data.error || 'Invalid referral code');
+                        }
+                      } catch (error) {
+                        console.error('Promo code verification error:', error);
+                        setPromoCodeError('Failed to verify code. Please try again.');
+                      } finally {
+                        setPromoCodeVerifying(false);
+                      }
+                    }}
+                    disabled={promoCodeVerifying || !promoCode.trim()}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#000000',
+                      color: '#ffffff',
+                      cursor: (promoCodeVerifying || !promoCode.trim()) ? 'not-allowed' : 'pointer',
+                      opacity: (promoCodeVerifying || !promoCode.trim()) ? 0.5 : 1,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {promoCodeVerifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    background: 'rgba(76, 175, 80, 0.2)',
+                    color: '#4caf50'
                   }}>
-                    {paymentError}
+                    ✓ Verified
                   </div>
                 )}
+              </div>
+              {promoCodeError && (
+                <p style={{color: '#ff6b6b', fontSize: '14px', marginTop: '8px'}}>{promoCodeError}</p>
+              )}
+            </div>
+
+            {paymentError && (
+              <div style={{
+                padding: '16px',
+                marginBottom: '24px',
+                background: 'rgba(255, 107, 107, 0.1)',
+                border: '1px solid rgba(255, 107, 107, 0.3)',
+                borderRadius: '8px',
+                color: '#ff6b6b',
+                fontSize: '14px'
+              }}>
+                {paymentError}
+              </div>
+            )}
+
+            {!clientSecret ? (
+              <>
 
                 <button
                   className="typeform-button"

@@ -85,7 +85,7 @@ export default function SagePage() {
               objectPosition: 'center',
             }}
             placeholder="blur"
-            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMmQzYTJkO3N0b3Atb3BhY2l0eToxIi8+PHN0b3Agb2Zmc2V0PSI1MCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM0YTVhNGE7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMyZDNhMmQ7c3RvcC1vcGFjaXR5OjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg=="
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAKCAIAAAAYbLhkAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAyUlEQVR4nAG+AEH/AP+jTv+UQft9JehQALsiAH8XAAD/1oT/2IX/z3v/p1LpVQKfGAAA/++f/+aV/+mZ/+mW/6ZQyzgAAP+yXP+GK/+vVv/qmf/IdedZAgDiUACjFwC9RQL/umT/o0rYRAAAox4APQkgKQIjoysA0jwAixcAAJkdACoFJhAANDsEH1AIFS0HJgDKNwBVDBMYADENADUMADUIADYA7l0GryEAXw0POQkiLgYmLgYmAPt2HeFDALUhAIYYAGkQC1kOFC/XRY2Tszt+AAAAAElFTkSuQmCC"
           />
         </div>
         <Link href="/" className="logo" role="img" aria-label="Moccet logo">

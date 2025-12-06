@@ -22,9 +22,16 @@ body.payment-screen-active {
 
 /* Ensure payment screen content is scrollable */
 .typeform-screen.payment-screen {
-  height: auto;
+  height: auto !important;
   min-height: 100vh;
-  overflow-y: visible;
+  overflow-y: auto !important;
+  align-items: flex-start;
+}
+
+/* Payment screen content should not constrain height */
+.typeform-screen.payment-screen .typeform-content {
+  height: auto !important;
+  max-height: none !important;
 }
 
 /* Container for both screens */

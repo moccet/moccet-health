@@ -3389,7 +3389,7 @@ export default function SageOnboarding() {
                     fontSize: '16px',
                     borderRadius: '8px',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
-                    background: promoCodeVerified ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                    background: promoCodeVerified ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
                     color: '#000000',
                     opacity: promoCodeVerified ? 0.7 : 1
                   }}
@@ -3464,8 +3464,8 @@ export default function SageOnboarding() {
                     fontSize: '16px',
                     fontWeight: 600,
                     borderRadius: '8px',
-                    background: 'rgba(76, 175, 80, 0.2)',
-                    color: '#4caf50'
+                    background: 'rgba(0, 0, 0, 0.1)',
+                    color: '#000000'
                   }}>
                     ✓ Verified
                   </div>

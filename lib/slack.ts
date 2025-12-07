@@ -229,10 +229,14 @@ export async function notifyPlanQueued(
   email: string,
   planType: 'Sage' | 'Forge',
   uniqueCode: string,
-  fullName?: string
+  fullName?: string,
+  referralCode?: string
 ): Promise<boolean> {
   const planEmoji = planType === 'Sage' ? '🥗' : '💪';
   const planTypeLabel = planType === 'Sage' ? 'Nutrition Plan' : 'Fitness Plan';
+  const paymentStatus = referralCode
+    ? `🎟️ Referral Code: \`${referralCode}\``
+    : '💳 Paid';
 
   const payload = {
     text: `${planEmoji} ${planType} Plan Generation Queued`,
@@ -265,6 +269,13 @@ export async function notifyPlanQueued(
             text: `*Plan Code:*\n\`${uniqueCode}\``,
           },
         ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Payment:* ${paymentStatus}`,
+        },
       },
       {
         type: 'context',

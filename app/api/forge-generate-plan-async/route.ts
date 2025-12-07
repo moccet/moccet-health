@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
       // Send Slack notification
       try {
-        await notifyPlanQueued(email, 'Forge', uniqueCode, fullName);
+        await notifyPlanQueued(email, 'Forge', uniqueCode, fullName, referralCode);
       } catch (slackError) {
         console.warn('Failed to send Slack notification:', slackError);
         // Don't fail the request if Slack notification fails

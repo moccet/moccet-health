@@ -18,11 +18,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get access token from cookies
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('oura_access_token')?.value;
+    // Try to get access token from database first (for server-to-server calls)
+    let accessToken: string | undefined;
+
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('integration_tokens')
+      .select('access_token')
+      .eq('user_email', email)
+      .eq('provider', 'oura')
+      .eq('is_active', true)
+      .single();
+
+    if (tokenData?.access_token) {
+      // Token is stored base64 encoded, decode it
+      accessToken = Buffer.from(tokenData.access_token, 'base64').toString('utf-8');
+      console.log(`[Oura Sync] Using token from database for ${email}`);
+    } else {
+      // Fallback to cookies (for browser-initiated syncs)
+      const cookieStore = await cookies();
+      accessToken = cookieStore.get('oura_access_token')?.value;
+      if (accessToken) {
+        console.log(`[Oura Sync] Using token from cookies for ${email}`);
+      }
+    }
 
     if (!accessToken) {
+      console.log(`[Oura Sync] No token found for ${email}. DB error: ${tokenError?.message}`);
       return NextResponse.json(
         { error: 'Oura not connected. Please connect your Oura Ring first.' },
         { status: 401 }

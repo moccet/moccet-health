@@ -101,13 +101,13 @@ async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, base
 Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`;
 
   console.log(`[FORGE-PLAN] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
-  console.log(`[FORGE-PLAN] Model: GPT-5 for superior reasoning and personalization`);
+  console.log(`[FORGE-PLAN] Model: GPT-5 with medium reasoning for faster generation`);
 
   const completion = await openai.responses.create({
     model: 'gpt-5',
     input: `${systemPrompt}\n\n${prompt}`,
-    reasoning: { effort: 'high' },
-    text: { verbosity: 'medium' }  // Reduced from 'high' - word count limits enforce conciseness
+    reasoning: { effort: 'medium' },  // Reduced from 'high' to prevent timeouts
+    text: { verbosity: 'medium' }
   });
 
   let planContent = completion.output_text || '{}';

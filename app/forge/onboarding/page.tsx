@@ -1887,8 +1887,8 @@ export default function ForgeOnboarding() {
 
   // Handler for multi-file lab upload
   const handleLabFilesChange = (files: File[]) => {
-    setFormData(prev => ({ ...prev, labFiles: files }));
-    console.log('Lab files updated:', files.map(f => f.name).join(', '));
+    setFormData(prev => ({ ...prev, labFiles: files, hasLabFile: files.length > 0 }));
+    console.log('Lab files updated:', files.map(f => f.name).join(', '), '| hasLabFile:', files.length > 0);
   };
 
   const toggleArrayValue = (field: 'injuries' | 'allergies' | 'medicalConditions' | 'equipment' | 'skillsPriority' | 'conditioningPreferences' | 'proteinSources' | 'integrations', value: string) => {

@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiresAt,
         providerUserId: userId,
-        scopes: ['daily', 'heartrate', 'workout', 'sleep'], // Oura scopes
+        scopes: ['email', 'personal', 'daily', 'heartrate', 'tag', 'workout', 'session', 'spo2', 'ring_configuration', 'stress', 'heart_health'],
       });
 
       if (storeResult.success) {

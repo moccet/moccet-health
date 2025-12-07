@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('scope', 'personal daily'); // Request personal info and daily data
+    // Request all available Oura scopes for comprehensive health data
+    authUrl.searchParams.append('scope', 'email personal daily heartrate tag workout session spo2 ring_configuration stress heart_health');
     authUrl.searchParams.append('state', state);
 
     return NextResponse.json(

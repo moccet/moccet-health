@@ -87,13 +87,13 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ Plan generation job queued for ${email} (messageId: ${result.messageId})`);
 
-      // Send Slack notification (temporarily disabled)
-      // try {
-      //   await notifyPlanQueued(email, 'Sage', uniqueCode, fullName);
-      // } catch (slackError) {
-      //   console.warn('Failed to send Slack notification:', slackError);
-      //   // Don't fail the request if Slack notification fails
-      // }
+      // Send Slack notification
+      try {
+        await notifyPlanQueued(email, 'Sage', uniqueCode, fullName);
+      } catch (slackError) {
+        console.warn('Failed to send Slack notification:', slackError);
+        // Don't fail the request if Slack notification fails
+      }
 
       return NextResponse.json({
         success: true,

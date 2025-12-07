@@ -346,25 +346,63 @@ async function handler(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
     const planUrl = `${baseUrl}/forge/personalised-plan?code=${uniqueCode}`;
 
-    // Step 0: Wait for blood analysis to complete (if uploaded)
+    // Step 0: Check if user uploaded a lab file BEFORE polling
     console.log('[0/5] Checking for health data analysis...');
 
-    let bloodAnalysisComplete = false;
-    let pollCount = 0;
-    const maxPolls = 20; // 20 polls * 30 seconds = 10 minutes max wait
+    // Fetch user data ONCE to check hasLabFile - this fixes the bug where
+    // the async function was created but never awaited
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let initialUserData: any = devOnboardingStorage.get(email);
 
-    while (!bloodAnalysisComplete && pollCount < maxPolls) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let hasBloodAnalysis = false;
+    if (!initialUserData) {
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          const { data } = await supabase
+            .from('forge_onboarding_data')
+            .select('form_data, lab_file_analysis')
+            .eq('email', email)
+            .single();
+          initialUserData = data;
+        } catch {
+          // Continue without initial data
+        }
+      }
+    }
 
-      // Check dev storage first using EMAIL
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const devData = devOnboardingStorage.get(email) as any;
-      if (devData?.blood_analysis) {
-        hasBloodAnalysis = true;
-        console.log('[OK] Blood analysis found in dev storage');
-      } else {
-        // Check Supabase
+    const hasLabFile = initialUserData?.form_data?.hasLabFile;
+
+    // Skip polling entirely if no lab file was uploaded (saves up to 600s)
+    if (!hasLabFile) {
+      console.log('[INFO] No lab file uploaded, skipping blood analysis wait');
+      console.log('[OK] Ready to generate plan with all available data');
+    } else {
+      // Only poll if a lab file was actually uploaded
+      let bloodAnalysisComplete = false;
+      let pollCount = 0;
+      const maxPolls = 20; // 20 polls * 30 seconds = 10 minutes max wait
+
+      // Check if analysis is already available
+      if (initialUserData?.lab_file_analysis) {
+        bloodAnalysisComplete = true;
+        console.log('[OK] Blood analysis already available');
+      }
+
+      while (!bloodAnalysisComplete && pollCount < maxPolls) {
+        pollCount++;
+        console.log(`[INFO] Blood analysis not ready yet, waiting 30 seconds... (attempt ${pollCount}/${maxPolls})`);
+        await new Promise(resolve => setTimeout(resolve, 30000));
+
+        // Re-fetch to check for analysis
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const devData = devOnboardingStorage.get(email) as any;
+        if (devData?.lab_file_analysis) {
+          bloodAnalysisComplete = true;
+          console.log('[OK] Blood analysis found in dev storage');
+          break;
+        }
+
         const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
         if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
           try {
@@ -376,59 +414,21 @@ async function handler(request: NextRequest) {
               .single();
 
             if (data?.lab_file_analysis) {
-              hasBloodAnalysis = true;
+              bloodAnalysisComplete = true;
               console.log('[OK] Blood analysis found in Supabase');
+              break;
             }
-          } catch (error) {
-            // No blood analysis yet or no Supabase
-          }
-        }
-      }
-
-      // Check if user even uploaded a lab file
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userData = devData || (async () => {
-        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-          try {
-            const supabase = await createClient();
-            const { data } = await supabase
-              .from('forge_onboarding_data')
-              .select('*')
-              .eq('email', email)
-              .single();
-            return data;
           } catch {
-            return null;
+            // Continue polling
           }
         }
-        return null;
-      })();
-
-      const hasLabFile = userData?.form_data?.hasLabFile || devData?.form_data?.hasLabFile;
-
-      if (!hasLabFile) {
-        console.log('[INFO] No lab file uploaded, skipping blood analysis wait');
-        bloodAnalysisComplete = true;
-        break;
       }
 
-      if (hasBloodAnalysis) {
-        bloodAnalysisComplete = true;
-        break;
+      if (!bloodAnalysisComplete && pollCount >= maxPolls) {
+        console.log('[WARN] Blood analysis did not complete within 10 minutes, proceeding without it');
+      } else if (bloodAnalysisComplete) {
+        console.log('[OK] Ready to generate plan with blood analysis data');
       }
-
-      pollCount++;
-      if (pollCount < maxPolls) {
-        console.log(`[INFO] Blood analysis not ready yet, waiting 30 seconds... (attempt ${pollCount}/${maxPolls})`);
-        await new Promise(resolve => setTimeout(resolve, 30000));
-      }
-    }
-
-    if (!bloodAnalysisComplete && pollCount >= maxPolls) {
-      console.log('[WARN] Blood analysis did not complete within 10 minutes, proceeding without it');
-    } else {
-      console.log('[OK] Ready to generate plan with all available data');
     }
 
     // Fetch user's onboarding data from storage

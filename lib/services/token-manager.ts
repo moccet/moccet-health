@@ -7,7 +7,7 @@
  * @module lib/services/token-manager
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export type Provider =
   | 'oura' | 'dexcom' | 'fitbit' | 'strava' | 'vital'
@@ -54,7 +54,8 @@ export async function storeToken(
   tokenData: TokenData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for token storage
+    const supabase = createAdminClient();
 
     // Revoke any existing active tokens for this user/provider
     await revokeToken(userEmail, provider);
@@ -105,7 +106,8 @@ export async function getAccessToken(
   provider: Provider
 ): Promise<{ token: string | null; error?: string }> {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for token retrieval
+    const supabase = createAdminClient();
 
     // Get active token using stored procedure
     // Fallback to direct query if RPC is not available
@@ -185,7 +187,8 @@ export async function refreshToken(
   provider: Provider
 ): Promise<{ success: boolean; accessToken?: string; error?: string }> {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for token refresh
+    const supabase = createAdminClient();
 
     // Get current token data
     const { data, error: fetchError } = await supabase
@@ -375,7 +378,8 @@ export async function revokeToken(
   provider: Provider
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for token revocation
+    const supabase = createAdminClient();
 
     // Use stored procedure for safe revocation with fallback
     let error;
@@ -423,7 +427,8 @@ export async function getUserIntegrations(
   userEmail: string
 ): Promise<{ integrations: Provider[]; error?: string }> {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for reading integrations
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('integration_tokens')

@@ -67,14 +67,25 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Oura] Connected: User ID ${userId}`);
 
-    // Get user email from cookies (set during onboarding)
+    // Get user email from cookies (set during onboarding) or from state parameter
     const cookieStore = await cookies();
-    const userEmail = cookieStore.get('user_email')?.value;
+    let userEmail = cookieStore.get('user_email')?.value;
+
+    // Try to get email from state parameter if not in cookies
+    if (!userEmail && state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.email) {
+          userEmail = stateData.email;
+          console.log(`[Oura] Got email from state parameter: ${userEmail}`);
+        }
+      } catch (e) {
+        console.log('[Oura] Could not parse email from state');
+      }
+    }
 
     if (!userEmail) {
-      console.warn('[Oura] No user email found in cookies, storing tokens with state parameter');
-      // Fallback: try to get email from state parameter (if encoded there)
-      // For now, we'll still set cookies as backup
+      console.warn('[Oura] No user email found in cookies or state, cannot store token in database');
     }
 
     // Store tokens in database (new secure method)

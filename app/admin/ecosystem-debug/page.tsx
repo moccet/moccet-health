@@ -289,6 +289,58 @@ export default function EcosystemDebugPage() {
         </div>
       )}
 
+      {email && (
+        <div style={{ marginTop: '32px', padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #4CAF50' }}>
+          <h3 style={{ marginBottom: '16px', color: '#4CAF50' }}>Full Ecosystem Test</h3>
+          <p style={{ color: '#888', marginBottom: '16px', fontSize: '14px' }}>
+            Run the complete ecosystem flow: check tokens → sync providers → fetch data → analyze patterns
+          </p>
+          <button
+            onClick={async () => {
+              const btn = document.getElementById('full-test-btn') as HTMLButtonElement;
+              if (btn) btn.disabled = true;
+              btn.textContent = 'Running...';
+
+              try {
+                const res = await fetch('/api/admin/ecosystem-debug/test-ecosystem', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, syncFirst: true }),
+                });
+                const data = await res.json();
+
+                // Show results in a new expandable section
+                const resultsDiv = document.getElementById('ecosystem-test-results');
+                if (resultsDiv) {
+                  resultsDiv.innerHTML = `<pre style="background: #0d0d0d; padding: 16px; border-radius: 8px; overflow: auto; max-height: 600px; font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>`;
+                }
+              } catch (e) {
+                alert('Test failed: ' + e);
+              } finally {
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = 'Run Full Ecosystem Test';
+                }
+              }
+            }}
+            id="full-test-btn"
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 600,
+              background: '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            Run Full Ecosystem Test
+          </button>
+          <div id="ecosystem-test-results" style={{ marginTop: '16px' }}></div>
+        </div>
+      )}
+
       {results.length > 0 && (
         <div style={{ marginTop: '32px', padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
           <h3 style={{ marginBottom: '16px' }}>Manual Sync Test</h3>

@@ -114,11 +114,31 @@ export async function GET(request: NextRequest) {
 
     // Determine redirect path based on state parameter
     let redirectPath = '/forge/onboarding';
+    const state = searchParams.get('state');
     try {
       if (state) {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.returnPath) {
           redirectPath = stateData.returnPath;
+        }
+        // Also try to get user email from state if available
+        if (stateData.email && !userEmail) {
+          // If we didn't have userEmail from cookie, try from state
+          const emailFromState = stateData.email;
+          if (emailFromState && accessToken) {
+            const storeResult = await storeToken(emailFromState, 'slack', {
+              accessToken,
+              providerUserId: userId,
+              scopes: tokenData.scope?.split(',') || [],
+              metadata: {
+                team_id: teamId,
+                team_name: teamName,
+              },
+            });
+            if (storeResult.success) {
+              console.log(`[Slack] Tokens stored from state email for ${emailFromState}`);
+            }
+          }
         }
       }
     } catch (e) {

@@ -38,10 +38,17 @@ export async function GET(request: NextRequest) {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Get user email
+    // Get Google account email
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const userInfo = await oauth2.userinfo.get();
-    const userEmail = userInfo.data.email || '';
+    const googleEmail = userInfo.data.email || '';
+
+    // Get Forge account email from cookie (set during onboarding)
+    const cookieStore = await cookies();
+    const forgeEmail = cookieStore.get('user_email')?.value;
+
+    // Use Forge email if available (to link to user's account), otherwise use Google email
+    const userEmail = forgeEmail || googleEmail;
 
     // Store tokens in database
     if (userEmail && tokens.access_token) {
@@ -51,18 +58,17 @@ export async function GET(request: NextRequest) {
         refreshToken: tokens.refresh_token,
         expiresAt,
         scopes: tokens.scope?.split(' '),
-        providerUserId: userEmail,
+        providerUserId: googleEmail, // Store the Google email as provider ID
       });
 
       if (storeResult.success) {
-        console.log(`[Gmail] Tokens stored in database for ${userEmail}`);
+        console.log(`[Gmail] Tokens stored in database for ${userEmail} (Google: ${googleEmail})`);
       } else {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }
     }
 
-    // Store in cookies for backward compatibility
-    const cookieStore = await cookies();
+    // Store in cookies for backward compatibility (cookieStore already defined above)
     if (tokens.access_token) {
       cookieStore.set('gmail_access_token', tokens.access_token, {
         httpOnly: true,

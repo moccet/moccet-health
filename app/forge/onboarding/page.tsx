@@ -797,6 +797,11 @@ export default function ForgeOnboarding() {
 
   const handleConnectGmail = async () => {
     try {
+      // Set user_email cookie so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/gmail/auth');
       const data = await response.json();
 
@@ -882,7 +887,17 @@ export default function ForgeOnboarding() {
 
   const handleConnectSlack = async () => {
     try {
-      const response = await fetch('/api/slack/auth');
+      // Set user_email cookie so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Pass email in state parameter for the callback
+      const state = encodeURIComponent(JSON.stringify({
+        returnPath: '/forge/onboarding',
+        email: formData.email
+      }));
+      const response = await fetch(`/api/slack/auth?state=${state}`);
       const data = await response.json();
 
       if (data.authUrl) {
@@ -1204,8 +1219,16 @@ export default function ForgeOnboarding() {
 
   const handleConnectOura = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      // Set user_email cookie so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and email in state for the callback
+      const state = encodeURIComponent(JSON.stringify({
+        returnPath: '/forge/onboarding',
+        email: formData.email
+      }));
       const response = await fetch(`/api/oura/auth?state=${state}`);
       const data = await response.json();
 

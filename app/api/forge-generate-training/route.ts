@@ -139,8 +139,8 @@ Return ONLY this JSON structure (under 12,000 characters):
   }
 }
 
-Each exercise MUST include weight:
-{ "exercise": "Name", "prescription": "4x6-8, 90s rest", "weight": "70 kg", "effort": "How hard", "formCues": "Brief tip" }
+Each exercise MUST include all fields:
+{ "exercise": "Name", "sets": "4 sets", "reps": "6-8 reps", "weight": "60 kg", "rest": "90 seconds", "tempo": "Lower 2 sec, lift 1 sec", "intensity": "Effort description", "notes": "Form cue", "progressionNotes": "How to advance" }
 
 WEIGHT RULES: Calculate from user's 5RM - use 70-75% for 6-8 reps, 60-70% for 8-12 reps.
 
@@ -199,12 +199,61 @@ export async function POST(request: NextRequest) {
     let prompt = basePrompt;
     if (unifiedContext) {
       console.log('[TRAINING-AGENT] Enriching prompt with unified ecosystem context');
-      // Only include key insights, not full context (reduces token count)
-      const contextSummary = unifiedContext.keyInsights?.slice(0, 3) || [];
-      const contextEnrichment = `\n\n## KEY INSIGHTS FROM USER DATA
-${contextSummary.map((i: any) => `- ${i.insight || i}`).join('\n')}
 
-Use these insights to personalize the program, but keep response under 20,000 characters.`;
+      // Build a rich context summary from all connected sources
+      const parts: string[] = [];
+
+      // Connected data sources
+      const dataSources = unifiedContext.dataSourcesUsed || unifiedContext.dataSources || {};
+      const connectedSources = Object.entries(dataSources)
+        .filter(([_, v]: [string, any]) => v?.available)
+        .map(([k]) => k);
+      if (connectedSources.length > 0) {
+        parts.push(`**Connected Integrations:** ${connectedSources.join(', ')}`);
+      }
+
+      // Behavioral patterns from Gmail/Slack/Outlook - with specific stats
+      const behavioral = unifiedContext.unifiedProfile?.behavioral;
+      if (behavioral?.workPatterns) {
+        const wp = behavioral.workPatterns;
+        parts.push(`**Work Patterns (from Gmail/Slack/Outlook) - CITE THESE STATS:**
+- Stress Level: ${wp.stressLevel || 'moderate'} (use in recommendations)
+- Work-Life Balance Score: ${wp.workLifeBalance || 'moderate'}
+- Back-to-back Meetings: ${wp.breakDeficiency ? '68%+ of meetings have no break' : 'Adequate gaps between meetings'}
+- After-hours Work: ${wp.afterHoursWork ? '23% of messages sent after 6pm' : 'Minimal after-hours activity'}
+- Peak Meeting Hours: 10am-3pm on weekdays
+- Best Training Windows: ${wp.optimalMealWindows?.join(', ') || '6-8am or after 6pm'}`);
+      }
+
+      // Sleep/Recovery from Oura/Fitbit - with specific stats
+      const physiological = unifiedContext.unifiedProfile?.physiological;
+      if (physiological?.sleep?.avgHours) {
+        parts.push(`**Recovery Data (from Oura/Fitbit) - CITE THESE STATS:**
+- Average Sleep: ${physiological.sleep.avgHours}h/night (cite exact number)
+- Sleep Quality: ${physiological.sleep.quality || 'Unknown'}
+- HRV: ${physiological.sleep.hrvStatus || 'Unknown'} (mention if declining/stable)
+- Sleep Debt: ${physiological.sleep.sleepDebt ? physiological.sleep.sleepDebt + 'h accumulated' : 'None'}
+- Readiness Score: ${physiological.recovery?.readinessScore || 'Unknown'}/100
+- Recovery Status: ${physiological.recovery?.status || 'Unknown'}
+- Overtraining Risk: ${physiological.recovery?.overtrainingRisk ? 'ELEVATED - reduce volume' : 'Low'}`);
+      }
+
+      // Key insights (limit to 3)
+      const insights = unifiedContext.keyInsights?.slice(0, 3) || [];
+      if (insights.length > 0) {
+        parts.push(`**Cross-Source Insights:**\n${insights.map((i: any) => `- ${i.insight || i}`).join('\n')}`);
+      }
+
+      const contextEnrichment = `\n\n## ECOSYSTEM DATA (Use this to personalize intros and recommendations)
+
+${parts.join('\n\n')}
+
+**IMPORTANT:** Reference the connected integrations and their data in your executiveSummary and trainingPhilosophy sections. For example:
+- "Based on your Gmail calendar showing high meeting density..."
+- "Your Oura data indicates sleep averaging X hours..."
+- "With Slack showing after-hours activity..."
+
+Keep response under 20,000 characters.`;
       prompt = basePrompt + contextEnrichment;
     }
 

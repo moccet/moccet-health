@@ -84,7 +84,7 @@ Return ONLY valid JSON matching this exact structure:
 
 \`\`\`json
 {
-  "executiveSummary": "EXACTLY 50-75 words. Cover: fitness level, goals, key health points, training approach.",
+  "executiveSummary": "100-150 words with SPECIFIC STATISTICS. Include: (1) fitness level and goals, (2) exact numbers from connected data if available - e.g., 'Gmail shows 8.2 meetings/day avg', 'Oura: 6.4h sleep, 45ms HRV', 'Slack: 23% after-hours messages', 'Outlook: 68% back-to-back meetings'. (3) How these stats shaped the program. Example: 'Your Gmail calendar analysis reveals 8.2 meetings per day with 68% being back-to-back, leaving limited midday windows. Combined with Oura data showing 6.4 hours average sleep and declining HRV (45ms), this program prioritizes early morning sessions before your meeting blocks and emphasizes recovery protocols. Your Slack activity indicates 23% after-hours work, so we avoid evening training to protect sleep quality.'",
   "weeklyProgram": {
     "monday": {
       "dayName": "Monday",
@@ -103,11 +103,14 @@ Return ONLY valid JSON matching this exact structure:
       "mainWorkout": [
         {
           "exercise": "Barbell Bench Press",
-          "prescription": "4 sets × 6-8 reps, 3 min rest",
-          "weight": "Specific weight in kg (e.g., '70 kg' or 'Bodyweight')",
-          "effort": "Moderately hard - leave 2-3 reps in reserve",
-          "formCues": "Brief form tips (MAX 15 words)",
-          "progression": "How to advance (MAX 15 words)"
+          "sets": "4 sets",
+          "reps": "6-8 reps",
+          "weight": "60 kg",
+          "rest": "3 minutes",
+          "tempo": "Lower 2 sec, lift 1 sec",
+          "intensity": "Moderately hard - leave 2-3 reps in reserve",
+          "notes": "Brief form cue (MAX 15 words)",
+          "progressionNotes": "How to advance (MAX 15 words)"
         }
       ],
       "cooldown": {
@@ -129,7 +132,7 @@ Return ONLY valid JSON matching this exact structure:
     "sunday": { "dayName": "Sunday", "focus": "Rest Day", "activities": "Complete rest or light stretching." }
   },
   "trainingPhilosophy": {
-    "approach": "MAX 100 words explaining WHY this program design suits their goals and level.",
+    "approach": "150-180 words with SPECIFIC STATISTICS explaining WHY this program design suits them. MUST cite exact numbers: 'With 6.4h average sleep (Oura) and HRV at 45ms, recovery capacity is limited—hence 4 training days max.' 'Gmail shows 73% of meetings cluster 10am-3pm, so we target 6-7am training windows.' 'Slack data reveals peak stress on Tuesdays/Wednesdays—lighter sessions scheduled.' Include how biomarkers (if available) influenced exercise selection.",
     "keyPrinciples": [
       {
         "principle": "Principle name",
@@ -139,9 +142,9 @@ Return ONLY valid JSON matching this exact structure:
     "progressionStrategy": "MAX 100 words on how to progress week-to-week."
   },
   "weeklyStructure": {
-    "overview": "MAX 40 words summarizing the weekly split.",
+    "overview": "MAX 50 words summarizing the weekly split. Mention optimal training windows from calendar data if available.",
     "trainingDaysPerWeek": 4,
-    "rationale": "MAX 80 words on why this structure works.",
+    "rationale": "MAX 100 words on why this structure works. Reference work patterns and recovery data if available.",
     "intensityFramework": "MAX 80 words on effort levels and when to push/rest."
   }
 }
@@ -176,24 +179,26 @@ Return ONLY valid JSON matching this exact structure:
 
 ## CRITICAL: WORD LIMITS (NON-NEGOTIABLE - VERIFY BEFORE OUTPUT)
 
-**Your response MUST be under 20,000 characters. Enforce these limits strictly:**
+**Your response MUST be under 24,000 characters. Enforce these limits strictly:**
 
-**Executive Summary:** EXACTLY 50-75 words (not more!)
+**Executive Summary:** 100-150 words with SPECIFIC STATISTICS from ecosystem data!
+- MUST include exact numbers: "6.4h sleep", "68% back-to-back meetings", "45ms HRV"
+- Explain how each stat influenced program design
 
 **Weekly Program:**
 - Training days: MAX 3-4 warmup exercises, MAX 4-5 main exercises, MAX 2 cooldown stretches
 - Rest days: Use minimal structure: { "dayName", "focus": "Rest Day", "activities": "1 sentence max" }
-- Each exercise formCues: MAX 15 words
-- Each exercise progression: MAX 15 words
+- Each exercise notes: MAX 15 words
+- Each exercise progressionNotes: MAX 15 words
 
 **Training Philosophy:**
-- approach: MAX 100 words
+- approach: 150-180 words with SPECIFIC STATISTICS - cite exact numbers from ecosystem data
 - keyPrinciples: 3-4 principles, each description MAX 25 words
 - progressionStrategy: MAX 100 words
 
 **Weekly Structure:**
-- overview: MAX 40 words
-- rationale: MAX 80 words
+- overview: MAX 50 words - mention optimal training windows with specific times
+- rationale: MAX 100 words - cite work pattern statistics
 - intensityFramework: MAX 80 words
 
 **VERIFICATION STEP:** Before returning, mentally check each section against these limits. If ANY section exceeds its limit, shorten it.

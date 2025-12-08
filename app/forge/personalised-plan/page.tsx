@@ -1459,12 +1459,15 @@ export default function PersonalisedPlanPage() {
                               <span style={{ color: '#000000' }}>Sets × Reps:</span> <strong>{exercise.sets} × {exercise.reps}</strong>
                             </div>
                             <div>
+                              <span style={{ color: '#000000' }}>Weight:</span> <strong style={{ color: '#0066cc' }}>{exercise.weight || 'See notes'}</strong>
+                            </div>
+                            <div>
                               <span style={{ color: '#000000' }}>Rest:</span> <strong>{exercise.rest}</strong>
                             </div>
                             <div>
                               <span style={{ color: '#000000' }}>Tempo:</span> <strong>{exercise.tempo}</strong>
                             </div>
-                            <div>
+                            <div style={{ gridColumn: '1 / -1' }}>
                               <span style={{ color: '#000000' }}>Intensity:</span> <strong>{exercise.intensity}</strong>
                             </div>
                           </div>

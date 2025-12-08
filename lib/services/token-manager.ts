@@ -57,14 +57,19 @@ export async function storeToken(
     // Use admin client to bypass RLS for token storage
     const supabase = createAdminClient();
 
-    // Revoke any existing active tokens for this user/provider
-    await revokeToken(userEmail, provider);
-
     // Encrypt sensitive data
     const encryptedAccessToken = encryptToken(tokenData.accessToken);
     const encryptedRefreshToken = tokenData.refreshToken
       ? encryptToken(tokenData.refreshToken)
       : null;
+
+    // Delete ALL existing tokens for this user/provider (both active and inactive)
+    // This avoids unique constraint issues
+    await supabase
+      .from('integration_tokens')
+      .delete()
+      .eq('user_email', userEmail)
+      .eq('provider', provider);
 
     // Insert new token
     const { error } = await supabase
@@ -381,28 +386,12 @@ export async function revokeToken(
     // Use admin client to bypass RLS for token revocation
     const supabase = createAdminClient();
 
-    // Use stored procedure for safe revocation with fallback
-    let error;
-    try {
-      const result = await supabase.rpc('revoke_integration_token', {
-        p_user_email: userEmail,
-        p_provider: provider,
-      });
-      error = result.error;
-    } catch (rpcError) {
-      // Fallback: use direct update if stored procedure doesn't exist
-      console.warn('[TokenManager] RPC revoke_integration_token not available, using direct update');
-      const result = await supabase
-        .from('integration_tokens')
-        .update({
-          is_active: false,
-          revoked_at: new Date().toISOString(),
-        })
-        .eq('user_email', userEmail)
-        .eq('provider', provider)
-        .eq('is_active', true);
-      error = result.error;
-    }
+    // Delete all tokens for this user/provider (avoids unique constraint issues)
+    const { error } = await supabase
+      .from('integration_tokens')
+      .delete()
+      .eq('user_email', userEmail)
+      .eq('provider', provider);
 
     if (error) {
       console.error('[TokenManager] Error revoking token:', error);

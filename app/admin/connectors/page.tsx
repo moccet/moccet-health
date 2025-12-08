@@ -106,6 +106,8 @@ export default function ConnectorsPage() {
   const [fetchingDataId, setFetchingDataId] = useState<string | null>(null);
   const [connectorData, setConnectorData] = useState<Record<string, ConnectorData>>({});
   const [expandedData, setExpandedData] = useState<Set<string>>(new Set());
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({});
 
   // Listen for OAuth callback messages
   useEffect(() => {
@@ -260,6 +262,57 @@ export default function ConnectorsPage() {
     });
   };
 
+  // Full analysis endpoints for each connector
+  const analysisEndpoints: Record<string, string> = {
+    gmail: '/api/gmail/fetch-data',
+    oura: '/api/oura/sync',
+    fitbit: '/api/fitbit/sync',
+    strava: '/api/strava/sync',
+  };
+
+  const handleRunAnalysis = async (connectorId: string) => {
+    if (!email) return;
+
+    const endpoint = analysisEndpoints[connectorId];
+    if (!endpoint) {
+      alert(`Full analysis not yet implemented for ${connectorId}`);
+      return;
+    }
+
+    setAnalyzingId(connectorId);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+
+      setAnalysisResults((prev) => ({
+        ...prev,
+        [connectorId]: {
+          success: data.success !== false,
+          data,
+          timestamp: new Date().toISOString(),
+        },
+      }));
+
+      // Auto-expand to show the analysis
+      setExpandedData((prev) => new Set(prev).add(`${connectorId}-analysis`));
+    } catch (error) {
+      setAnalysisResults((prev) => ({
+        ...prev,
+        [connectorId]: {
+          success: false,
+          error: String(error),
+          timestamp: new Date().toISOString(),
+        },
+      }));
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   const categories = [
     { id: 'health', name: 'Health & Fitness', color: '#4CAF50' },
     { id: 'productivity', name: 'Productivity', color: '#2196F3' },
@@ -372,8 +425,12 @@ export default function ConnectorsPage() {
                   const isConnected = status?.connected;
                   const isConnecting = connectingId === connector.id;
                   const isFetching = fetchingDataId === connector.id;
+                  const isAnalyzing = analyzingId === connector.id;
                   const data = connectorData[connector.id];
+                  const analysis = analysisResults[connector.id];
                   const isExpanded = expandedData.has(connector.id);
+                  const isAnalysisExpanded = expandedData.has(`${connector.id}-analysis`);
+                  const hasAnalysisEndpoint = !!analysisEndpoints[connector.id];
 
                   return (
                     <div
@@ -468,19 +525,37 @@ export default function ConnectorsPage() {
                                 onClick={() => handleFetchData(connector.id)}
                                 disabled={isFetching}
                                 style={{
-                                  flex: 1,
                                   padding: '10px 16px',
                                   fontSize: '14px',
                                   fontWeight: 500,
-                                  background: isFetching ? '#333' : category.color,
+                                  background: isFetching ? '#333' : '#444',
                                   color: '#fff',
                                   border: 'none',
                                   borderRadius: '8px',
                                   cursor: isFetching ? 'not-allowed' : 'pointer',
                                 }}
                               >
-                                {isFetching ? 'Fetching...' : 'Fetch Data'}
+                                {isFetching ? 'Fetching...' : 'Quick Test'}
                               </button>
+                              {hasAnalysisEndpoint && (
+                                <button
+                                  onClick={() => handleRunAnalysis(connector.id)}
+                                  disabled={isAnalyzing}
+                                  style={{
+                                    flex: 1,
+                                    padding: '10px 16px',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    background: isAnalyzing ? '#333' : category.color,
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: isAnalyzing ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  {isAnalyzing ? 'Analyzing...' : 'Full Analysis'}
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDisconnect(connector.id)}
                                 style={{
@@ -546,6 +621,78 @@ export default function ConnectorsPage() {
                                 }}
                               >
                                 {JSON.stringify(data.data || data.error, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Full Analysis Results */}
+                      {analysis && (
+                        <div style={{ borderTop: '1px solid #333' }}>
+                          <div
+                            onClick={() => toggleDataExpand(`${connector.id}-analysis`)}
+                            style={{
+                              padding: '12px 20px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: '#0f1f0f',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: analysis.success ? '#4CAF50' : '#f44336',
+                              }}
+                            >
+                              Full Analysis {analysis.success ? 'Complete' : 'Error'}
+                              <span style={{ color: '#666', marginLeft: '8px' }}>
+                                {new Date(analysis.timestamp).toLocaleTimeString()}
+                              </span>
+                            </span>
+                            <span style={{ color: '#666' }}>{isAnalysisExpanded ? '▼' : '▶'}</span>
+                          </div>
+
+                          {isAnalysisExpanded && (
+                            <div style={{ padding: '12px 20px', paddingTop: 0 }}>
+                              {/* Show insights summary if available */}
+                              {analysis.data?.patterns?.insights && (
+                                <div style={{ marginBottom: '12px', padding: '12px', background: '#1a2a1a', borderRadius: '6px' }}>
+                                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#4CAF50', marginBottom: '8px' }}>Insights</div>
+                                  {analysis.data.patterns.insights.map((insight: string, i: number) => (
+                                    <div key={i} style={{ fontSize: '12px', color: '#ccc', marginBottom: '4px' }}>• {insight}</div>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Show metrics if available */}
+                              {analysis.data?.metrics && (
+                                <div style={{ marginBottom: '12px', padding: '12px', background: '#1a1a2a', borderRadius: '6px' }}>
+                                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#2196F3', marginBottom: '8px' }}>Metrics</div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '12px', color: '#ccc' }}>
+                                    {Object.entries(analysis.data.metrics).map(([key, value]) => (
+                                      <div key={key}><span style={{ color: '#888' }}>{key}:</span> {String(value)}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Raw data */}
+                              <pre
+                                style={{
+                                  margin: 0,
+                                  padding: '12px',
+                                  background: '#0d0d0d',
+                                  borderRadius: '6px',
+                                  overflow: 'auto',
+                                  maxHeight: '400px',
+                                  fontSize: '11px',
+                                  lineHeight: '1.4',
+                                  color: '#ccc',
+                                }}
+                              >
+                                {JSON.stringify(analysis.data || analysis.error, null, 2)}
                               </pre>
                             </div>
                           )}

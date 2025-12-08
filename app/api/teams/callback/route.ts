@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { storeToken } from '@/lib/services/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -74,7 +75,41 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Teams] Connected: ${userEmail}`);
 
-    // Set cookies with tokens
+    // Get user email from state parameter (passed from connector page) or use profile email
+    const state = searchParams.get('state');
+    let storedUserEmail = userEmail;
+    if (state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.email) {
+          storedUserEmail = stateData.email;
+        }
+      } catch (e) {
+        console.log('[Teams] Could not parse state for email');
+      }
+    }
+
+    // Store tokens in database
+    if (storedUserEmail) {
+      const expiresIn = tokenData.expires_in;
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+
+      const storeResult = await storeToken(storedUserEmail, 'teams', {
+        accessToken,
+        refreshToken,
+        expiresAt,
+        providerUserId: profile.id,
+        scopes: ['Chat.Read', 'Chat.ReadWrite', 'Team.ReadBasic.All', 'Channel.ReadBasic.All'],
+      });
+
+      if (storeResult.success) {
+        console.log(`[Teams] Tokens stored in database for ${storedUserEmail}`);
+      } else {
+        console.error(`[Teams] Failed to store tokens:`, storeResult.error);
+      }
+    }
+
+    // Set cookies with tokens (for backward compatibility)
     const cookieStore = await cookies();
     cookieStore.set('teams_access_token', accessToken, {
       httpOnly: true,

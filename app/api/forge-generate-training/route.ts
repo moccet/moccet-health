@@ -12,6 +12,112 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
+/**
+ * Attempt to repair truncated or malformed JSON
+ * This handles cases where GPT-5 response gets cut off mid-stream
+ */
+function repairJSON(jsonString: string): string {
+  let repaired = jsonString.trim();
+
+  // Count open vs close braces and brackets
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < repaired.length; i++) {
+    const char = repaired[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"' && !escapeNext) {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === '{') openBraces++;
+      else if (char === '}') openBraces--;
+      else if (char === '[') openBrackets++;
+      else if (char === ']') openBrackets--;
+    }
+  }
+
+  // If we're still in a string, close it
+  if (inString) {
+    repaired += '"';
+  }
+
+  // Remove any trailing incomplete property (e.g., "key": or "key":  )
+  repaired = repaired.replace(/,?\s*"[^"]*":\s*$/, '');
+  repaired = repaired.replace(/,?\s*"[^"]*$/, '');
+
+  // Remove trailing comma before closing
+  repaired = repaired.replace(/,(\s*)$/, '$1');
+
+  // Add missing closing brackets and braces
+  while (openBrackets > 0) {
+    repaired += ']';
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    repaired += '}';
+    openBraces--;
+  }
+
+  return repaired;
+}
+
+/**
+ * Try to parse JSON with multiple repair attempts
+ */
+function parseJSONWithRepair(jsonString: string): any {
+  // First, try parsing as-is
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.log('[TRAINING-AGENT] Initial parse failed, attempting repair...');
+  }
+
+  // Try repairing the JSON
+  const repaired = repairJSON(jsonString);
+  try {
+    const result = JSON.parse(repaired);
+    console.log('[TRAINING-AGENT] ✅ JSON repaired successfully');
+    return result;
+  } catch (e) {
+    console.log('[TRAINING-AGENT] Repair attempt 1 failed, trying aggressive repair...');
+  }
+
+  // Aggressive repair: find the last valid closing brace
+  let lastValidEnd = jsonString.length;
+  for (let i = jsonString.length - 1; i >= 0; i--) {
+    const substring = jsonString.substring(0, i + 1);
+    // Try to find a point where JSON could be valid
+    if (substring.endsWith('}') || substring.endsWith('}]') || substring.endsWith('"}')) {
+      try {
+        const testRepair = repairJSON(substring);
+        const result = JSON.parse(testRepair);
+        console.log(`[TRAINING-AGENT] ✅ JSON repaired by truncating at position ${i + 1}`);
+        return result;
+      } catch (e) {
+        // Keep trying
+      }
+    }
+  }
+
+  // Last resort: throw the original error
+  throw new Error('Could not repair JSON after multiple attempts');
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('[TRAINING-AGENT] Starting training program generation...');
@@ -88,13 +194,13 @@ ${JSON.stringify(unifiedContext, null, 2)}
 
     let aiResponse;
     try {
-      aiResponse = JSON.parse(responseText);
+      // Use repair-aware parsing to handle truncated responses
+      aiResponse = parseJSONWithRepair(responseText);
     } catch (parseError) {
       console.error('[TRAINING-AGENT] ❌ Failed to parse GPT-5 response as JSON:', parseError);
       console.error('[TRAINING-AGENT] Error at position:', parseError instanceof SyntaxError ? (parseError as any).message : 'Unknown');
       console.error('[TRAINING-AGENT] Response length:', responseText.length);
       console.error('[TRAINING-AGENT] First 1000 chars:', responseText.substring(0, 1000));
-      console.error('[TRAINING-AGENT] Chars around error position 28540:', responseText.substring(28500, 28600));
       console.error('[TRAINING-AGENT] Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)));
 
       // Re-throw with more context

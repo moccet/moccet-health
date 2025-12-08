@@ -13,6 +13,72 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
+/**
+ * Attempt to repair truncated or malformed JSON
+ */
+function repairJSON(jsonString: string): string {
+  let repaired = jsonString.trim();
+
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < repaired.length; i++) {
+    const char = repaired[i];
+    if (escapeNext) { escapeNext = false; continue; }
+    if (char === '\\') { escapeNext = true; continue; }
+    if (char === '"' && !escapeNext) { inString = !inString; continue; }
+    if (!inString) {
+      if (char === '{') openBraces++;
+      else if (char === '}') openBraces--;
+      else if (char === '[') openBrackets++;
+      else if (char === ']') openBrackets--;
+    }
+  }
+
+  if (inString) repaired += '"';
+  repaired = repaired.replace(/,?\s*"[^"]*":\s*$/, '');
+  repaired = repaired.replace(/,?\s*"[^"]*$/, '');
+  repaired = repaired.replace(/,(\s*)$/, '$1');
+
+  while (openBrackets > 0) { repaired += ']'; openBrackets--; }
+  while (openBraces > 0) { repaired += '}'; openBraces--; }
+
+  return repaired;
+}
+
+function parseJSONWithRepair(jsonString: string): any {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.log('[FORGE-PLAN] Initial parse failed, attempting repair...');
+  }
+
+  const repaired = repairJSON(jsonString);
+  try {
+    const result = JSON.parse(repaired);
+    console.log('[FORGE-PLAN] ✅ JSON repaired successfully');
+    return result;
+  } catch (e) {
+    console.log('[FORGE-PLAN] Repair attempt 1 failed, trying aggressive repair...');
+  }
+
+  for (let i = jsonString.length - 1; i >= 0; i--) {
+    const substring = jsonString.substring(0, i + 1);
+    if (substring.endsWith('}') || substring.endsWith('}]') || substring.endsWith('"}')) {
+      try {
+        const testRepair = repairJSON(substring);
+        const result = JSON.parse(testRepair);
+        console.log(`[FORGE-PLAN] ✅ JSON repaired by truncating at position ${i + 1}`);
+        return result;
+      } catch (e) { /* Keep trying */ }
+    }
+  }
+
+  throw new Error('Could not repair JSON after multiple attempts');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -117,7 +183,7 @@ Your plans are detailed, progressive, and designed for long-term results. You pr
     }
     planContent = planContent.trim();
 
-    const plan = JSON.parse(planContent);
+    const plan = parseJSONWithRepair(planContent);
     console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
 
     // Build response with optional inference metadata

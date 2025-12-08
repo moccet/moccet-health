@@ -155,6 +155,17 @@ Return ONLY valid JSON matching this exact structure:
 - **Practical**: Exercises should be executable with available equipment
 - **Form Cues**: Include brief form reminders to prevent injury
 
+## CRITICAL: RESPONSE LENGTH LIMIT
+
+**Your response MUST be under 25,000 characters to avoid truncation. Be concise:**
+- Keep exercise notes to 1 short sentence max
+- Warmup: 3-4 exercises max per day
+- Main workout: 4-6 exercises max per training day
+- Cooldown: 2-3 stretches max per day
+- Rest days: Brief description only, no detailed exercises
+- Philosophy sections: Keep to stated word limits (150-200 words max each)
+- DO NOT add extra commentary or explanation outside the JSON structure
+
 ## CRITICAL: USE PLAIN LANGUAGE - NO JARGON
 
 **AVOID** technical fitness terminology that laypeople won't understand:

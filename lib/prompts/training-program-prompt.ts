@@ -11,6 +11,8 @@ interface TrainingProgramInput {
     goals?: string[];
     injuries?: string[];
     equipment?: string[];
+    currentBests?: string;
+    trainingExperience?: string;
   };
   trainingProtocol: {
     phase: string;
@@ -47,6 +49,8 @@ Generate a complete 7-day workout program based on the training protocol recomme
 ${userProfile.goals ? `- Goals: ${userProfile.goals.join(', ')}` : ''}
 ${userProfile.injuries ? `- Injuries/Limitations: ${userProfile.injuries.join(', ')}` : ''}
 ${userProfile.equipment ? `- Available Equipment: ${userProfile.equipment.join(', ')}` : '- Equipment: Assume access to a full gym'}
+${userProfile.trainingExperience ? `- Training Experience: ${userProfile.trainingExperience}` : ''}
+${userProfile.currentBests ? `- Current Personal Bests (5RM): ${userProfile.currentBests}` : ''}
 
 ## TRAINING PROTOCOL TO IMPLEMENT
 **Phase**: ${trainingProtocol.phase || 'General Fitness'}
@@ -80,68 +84,65 @@ Return ONLY valid JSON matching this exact structure:
 
 \`\`\`json
 {
-  "executiveSummary": "3-4 sentence overview of this user's plan. Cover: their current fitness level and goals, key health considerations (from biomarkers if available), and the high-level training approach. Use plain language. Example: 'At 32 years old with 2-3 years training experience, your goal is to build muscle while maintaining general fitness. With 3 training sessions per week, this program focuses on progressive strength work and adequate recovery to support sustainable gains.'",
+  "executiveSummary": "EXACTLY 50-75 words. Cover: fitness level, goals, key health points, training approach.",
   "weeklyProgram": {
     "monday": {
       "dayName": "Monday",
       "focus": "Upper Body Strength",
       "duration": "60 minutes",
       "warmup": {
-        "description": "Dynamic upper body warmup to prepare shoulders and core",
+        "description": "Brief warmup description (MAX 15 words)",
         "exercises": [
           {
             "name": "Arm Circles",
-            "sets": "2 sets",
-            "reps": "10 reps each direction",
-            "notes": "Start small, gradually increase circle size"
+            "prescription": "2 sets × 10 reps each direction",
+            "notes": "Brief cue (MAX 10 words)"
           }
         ]
       },
       "mainWorkout": [
         {
           "exercise": "Barbell Bench Press",
-          "sets": "4 sets",
-          "reps": "6-8 reps",
-          "rest": "3 minutes",
-          "tempo": "2-0-2 (2 sec down, no pause, 2 sec up)",
-          "intensity": "How hard it feels: 7-8 out of 10, where 10 is maximum effort (leave 2-3 reps in reserve)",
-          "notes": "Retract scapula, feet flat on floor, arch lower back slightly",
-          "progressionNotes": "Add 2.5kg when you can complete 4x8 at current weight"
+          "prescription": "4 sets × 6-8 reps, 3 min rest",
+          "weight": "Specific weight in kg (e.g., '70 kg' or 'Bodyweight')",
+          "effort": "Moderately hard - leave 2-3 reps in reserve",
+          "formCues": "Brief form tips (MAX 15 words)",
+          "progression": "How to advance (MAX 15 words)"
         }
       ],
       "cooldown": {
-        "description": "Static stretching for chest, shoulders, and triceps",
+        "description": "Brief cooldown description (MAX 15 words)",
         "exercises": [
           {
             "name": "Doorway Chest Stretch",
-            "duration": "2 minutes each side",
-            "notes": "Hold stretch position, breathe deeply"
+            "prescription": "2 min each side",
+            "notes": "Brief cue (MAX 10 words)"
           }
         ]
       }
     },
-    "tuesday": { ... },
-    ... (continue for all 7 days)
+    "tuesday": { "dayName": "Tuesday", "focus": "Rest Day", "activities": "Light walking or stretching. Full recovery." },
+    "wednesday": { ... training day with full structure ... },
+    "thursday": { "dayName": "Thursday", "focus": "Rest Day", "activities": "Active recovery. Light movement." },
+    "friday": { ... training day with full structure ... },
+    "saturday": { ... training day OR rest with minimal structure ... },
+    "sunday": { "dayName": "Sunday", "focus": "Rest Day", "activities": "Complete rest or light stretching." }
   },
   "trainingPhilosophy": {
-    "approach": "2-3 paragraph explanation of your overall training approach for this user. Explain WHY this program is designed the way it is based on their goals, experience level, and biomarkers. Use plain language - avoid jargon like RPE, HRV, etc. Keep this concise (150-250 words total).",
+    "approach": "MAX 100 words explaining WHY this program design suits their goals and level.",
     "keyPrinciples": [
       {
-        "principle": "Progressive Overload",
-        "description": "How we'll make workouts gradually harder over time (add reps, weight, or difficulty) to build strength and muscle"
-      },
-      {
-        "principle": "Another key principle...",
-        "description": "Plain language explanation..."
+        "principle": "Principle name",
+        "description": "MAX 25 words explaining this principle"
       }
     ],
-    "progressionStrategy": "2-3 paragraph explanation of HOW this user will progress week-to-week. When do they add weight? When do they add reps? How do they know when to advance? Keep practical and specific (150-200 words)."
+    "progressionStrategy": "MAX 100 words on how to progress week-to-week."
   },
   "weeklyStructure": {
-    "overview": "Brief 2-3 sentence summary of the weekly training split (e.g., 'You'll train 4 days per week: Monday and Thursday for upper body, Tuesday and Friday for lower body').",
+    "overview": "MAX 40 words summarizing the weekly split.",
     "trainingDaysPerWeek": 4,
-    "rationale": "2-3 paragraph explanation of WHY this weekly structure makes sense for this user. Connect to their schedule, recovery capacity, goals, and experience level. Plain language only (150-200 words).",
-    "intensityFramework": "2-3 paragraph guide on how hard to work each day. Explain effort levels using 1-10 scale (where 10 is maximum effort). When to push hard, when to hold back, how to listen to their body (150-200 words)."
+    "rationale": "MAX 80 words on why this structure works.",
+    "intensityFramework": "MAX 80 words on effort levels and when to push/rest."
   }
 }
 \`\`\`
@@ -155,16 +156,49 @@ Return ONLY valid JSON matching this exact structure:
 - **Practical**: Exercises should be executable with available equipment
 - **Form Cues**: Include brief form reminders to prevent injury
 
-## CRITICAL: RESPONSE LENGTH LIMIT
+## CRITICAL: WEIGHT/LOAD REQUIREMENTS
 
-**Your response MUST be under 25,000 characters to avoid truncation. Be concise:**
-- Keep exercise notes to 1 short sentence max
-- Warmup: 3-4 exercises max per day
-- Main workout: 4-6 exercises max per training day
-- Cooldown: 2-3 stretches max per day
-- Rest days: Brief description only, no detailed exercises
-- Philosophy sections: Keep to stated word limits (150-200 words max each)
-- DO NOT add extra commentary or explanation outside the JSON structure
+**EVERY strength exercise MUST include a specific "weight" field with actual kg values:**
+
+- If user provided current bests (5RM), calculate working weights:
+  * 3-5 reps: Use 80-85% of their 5RM
+  * 6-8 reps: Use 70-75% of their 5RM
+  * 8-12 reps: Use 60-70% of their 5RM
+  * 12-15 reps: Use 50-60% of their 5RM
+
+- Example: If Bench Press 5RM is 80kg and prescription is 6-8 reps → weight: "60 kg"
+
+- For exercises not in their bests, estimate conservatively based on similar movements
+- For bodyweight exercises: "Bodyweight" or "Bodyweight + 10kg" if adding weight
+- For dumbbells: "22.5 kg each hand"
+
+**NEVER leave weight empty or say "appropriate weight" - always specify actual numbers.**
+
+## CRITICAL: WORD LIMITS (NON-NEGOTIABLE - VERIFY BEFORE OUTPUT)
+
+**Your response MUST be under 20,000 characters. Enforce these limits strictly:**
+
+**Executive Summary:** EXACTLY 50-75 words (not more!)
+
+**Weekly Program:**
+- Training days: MAX 3-4 warmup exercises, MAX 4-5 main exercises, MAX 2 cooldown stretches
+- Rest days: Use minimal structure: { "dayName", "focus": "Rest Day", "activities": "1 sentence max" }
+- Each exercise formCues: MAX 15 words
+- Each exercise progression: MAX 15 words
+
+**Training Philosophy:**
+- approach: MAX 100 words
+- keyPrinciples: 3-4 principles, each description MAX 25 words
+- progressionStrategy: MAX 100 words
+
+**Weekly Structure:**
+- overview: MAX 40 words
+- rationale: MAX 80 words
+- intensityFramework: MAX 80 words
+
+**VERIFICATION STEP:** Before returning, mentally check each section against these limits. If ANY section exceeds its limit, shorten it.
+
+DO NOT add commentary outside the JSON structure. Return ONLY the JSON object.
 
 ## CRITICAL: USE PLAIN LANGUAGE - NO JARGON
 

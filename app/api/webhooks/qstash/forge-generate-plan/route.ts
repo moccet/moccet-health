@@ -372,18 +372,22 @@ async function handler(request: NextRequest) {
     }
 
     const hasLabFile = initialUserData?.form_data?.hasLabFile;
+    const hasExistingAnalysis = !!initialUserData?.lab_file_analysis;
 
-    // Skip polling entirely if no lab file was uploaded (saves up to 600s)
-    if (!hasLabFile) {
+    // Skip polling entirely if no lab file was uploaded AND no analysis exists (saves up to 600s)
+    if (!hasLabFile && !hasExistingAnalysis) {
       console.log('[INFO] No lab file uploaded, skipping blood analysis wait');
       console.log('[OK] Ready to generate plan with all available data');
+    } else if (hasExistingAnalysis) {
+      // Analysis already complete - no need to wait
+      console.log('[OK] Blood analysis already available, proceeding immediately');
     } else {
-      // Only poll if a lab file was actually uploaded
+      // Only poll if a lab file was uploaded but analysis isn't ready yet
       let bloodAnalysisComplete = false;
       let pollCount = 0;
       const maxPolls = 20; // 20 polls * 30 seconds = 10 minutes max wait
 
-      // Check if analysis is already available
+      // Double-check if analysis is already available (in case it completed between checks)
       if (initialUserData?.lab_file_analysis) {
         bloodAnalysisComplete = true;
         console.log('[OK] Blood analysis already available');
@@ -492,6 +496,8 @@ async function handler(request: NextRequest) {
       height: parseFloat(formData.height) || 170,
       fitnessLevel: formData.fitnessLevel || formData.trainingExperience || 'intermediate',
       experienceLevel: formData.trainingExperience || 'intermediate',
+      trainingExperience: formData.trainingExperience || 'intermediate',
+      currentBests: formData.currentBests || '', // e.g., "Squat 5RM 100kg; Bench 5RM 80kg; Deadlift 5RM 140kg"
       currentActivity: formData.currentActivity || 'Not specified',
       goals: formData.goals || (formData.primaryGoal ? [formData.primaryGoal] : ['general fitness']),
       equipment: formData.equipment || ['bodyweight'],

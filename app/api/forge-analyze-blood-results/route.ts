@@ -419,14 +419,36 @@ User Profile Context:
       if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
         try {
           const supabase = await createClient();
+
+          // First, get current form_data to update hasLabFile flag
+          const { data: currentData } = await supabase
+            .from('forge_onboarding_data')
+            .select('form_data')
+            .eq('email', email)
+            .single();
+
+          // Update both lab_file_analysis AND set hasLabFile flag in form_data
+          const updatedFormData = currentData?.form_data
+            ? { ...currentData.form_data, hasLabFile: true }
+            : { hasLabFile: true };
+
           await supabase
             .from('forge_onboarding_data')
-            .update({ lab_file_analysis: analysis })
+            .update({
+              lab_file_analysis: analysis,
+              form_data: updatedFormData
+            })
             .eq('email', email);
           console.log('[OK] Blood analysis saved to database\n');
         } catch (error) {
-          console.log('[WARN] Could not save to database\n');
+          console.log('[WARN] Could not save to database:', error);
         }
+      }
+
+      // Also update dev storage hasLabFile flag
+      if (devData?.form_data) {
+        devData.form_data.hasLabFile = true;
+        devOnboardingStorage.set(email, devData);
       }
     }
 

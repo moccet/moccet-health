@@ -118,6 +118,57 @@ function parseJSONWithRepair(jsonString: string): any {
   throw new Error('Could not repair JSON after multiple attempts');
 }
 
+/**
+ * Build a minimal prompt for retry (just weeklyProgram, no philosophy sections)
+ */
+function buildMinimalPrompt(userProfile: any, trainingProtocol: any): string {
+  return `You are a fitness coach. Generate a simple 7-day workout program.
+
+USER: ${userProfile.name}, ${userProfile.age} years old, ${userProfile.gender}
+GOALS: ${userProfile.goals?.join(', ') || 'General fitness'}
+EQUIPMENT: ${userProfile.equipment?.join(', ') || 'Full gym'}
+${userProfile.currentBests ? `CURRENT BESTS (5RM): ${userProfile.currentBests}` : ''}
+
+Return ONLY this JSON structure (under 12,000 characters):
+{
+  "executiveSummary": "2-3 sentences about this plan (50 words max)",
+  "weeklyProgram": {
+    "monday": { "dayName": "Monday", "focus": "...", "duration": "...", "warmup": {...}, "mainWorkout": [...], "cooldown": {...} },
+    "tuesday": { "dayName": "Tuesday", "focus": "Rest Day", "activities": "Light stretching" },
+    ... (all 7 days)
+  }
+}
+
+Each exercise MUST include weight:
+{ "exercise": "Name", "prescription": "4x6-8, 90s rest", "weight": "70 kg", "effort": "How hard", "formCues": "Brief tip" }
+
+WEIGHT RULES: Calculate from user's 5RM - use 70-75% for 6-8 reps, 60-70% for 8-12 reps.
+
+Return ONLY valid JSON.`;
+}
+
+/**
+ * Clean and parse JSON response
+ */
+function cleanAndParseResponse(responseText: string): any {
+  let cleaned = responseText.trim();
+
+  // Strip markdown code blocks
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```\n?/, '').replace(/\n?```$/, '');
+  }
+  cleaned = cleaned.trim();
+
+  // Additional sanitization
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  cleaned = cleaned.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  cleaned = cleaned.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+
+  return parseJSONWithRepair(cleaned);
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('[TRAINING-AGENT] Starting training program generation...');
@@ -144,67 +195,60 @@ export async function POST(request: NextRequest) {
 
     const basePrompt = buildTrainingProgramPrompt(promptInput);
 
-    // Enrich with unified context if available
+    // Enrich with unified context if available (but keep it shorter)
     let prompt = basePrompt;
     if (unifiedContext) {
       console.log('[TRAINING-AGENT] Enriching prompt with unified ecosystem context');
-      const contextEnrichment = `\n\n## ECOSYSTEM CONTEXT (Sage Journals, Health Trends, Behavioral Patterns)
+      // Only include key insights, not full context (reduces token count)
+      const contextSummary = unifiedContext.keyInsights?.slice(0, 3) || [];
+      const contextEnrichment = `\n\n## KEY INSIGHTS FROM USER DATA
+${contextSummary.map((i: any) => `- ${i.insight || i}`).join('\n')}
 
-This user has been actively tracking their health and wellness through the moccet ecosystem. Use the following context to make highly personalized training recommendations:
-
-${JSON.stringify(unifiedContext, null, 2)}
-
-**Instructions for using this context:**
-- Look for patterns in Sage journal entries (energy levels, mood, exercise adherence)
-- Consider historical health trends and how they correlate with training
-- Adapt recommendations based on stated preferences and past behaviors
-- Reference specific insights from their journal entries when explaining exercise selection
-- Account for real-world constraints mentioned in their data (travel, work schedule, etc.)
-`;
+Use these insights to personalize the program, but keep response under 20,000 characters.`;
       prompt = basePrompt + contextEnrichment;
     }
 
     console.log('[TRAINING-AGENT] Calling GPT-5 with medium reasoning...');
-    const completion = await openai.responses.create({
-      model: 'gpt-5',
-      input: prompt,
-      reasoning: { effort: 'medium' },  // Medium to prevent timeout - training is complex but structured
-      text: { verbosity: 'medium' }
-    });
-
-    let responseText = completion.output_text || '{}';
-
-    // Strip markdown code blocks if present
-    responseText = responseText.trim();
-    if (responseText.startsWith('```json')) {
-      responseText = responseText.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    } else if (responseText.startsWith('```')) {
-      responseText = responseText.replace(/^```\n?/, '').replace(/\n?```$/, '');
-    }
-    responseText = responseText.trim();
-
-    // Additional JSON sanitization to handle common GPT formatting issues
-    // Remove any trailing commas before closing braces/brackets
-    responseText = responseText.replace(/,(\s*[}\]])/g, '$1');
-    // Remove JavaScript-style comments (// and /* */)
-    responseText = responseText.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    // Remove control characters EXCEPT newlines (\n = 0x0A) and carriage returns (\r = 0x0D) which are valid in JSON strings
-    // This removes null bytes, tabs in wrong places, etc. while preserving line breaks
-    responseText = responseText.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
-
     let aiResponse;
-    try {
-      // Use repair-aware parsing to handle truncated responses
-      aiResponse = parseJSONWithRepair(responseText);
-    } catch (parseError) {
-      console.error('[TRAINING-AGENT] ❌ Failed to parse GPT-5 response as JSON:', parseError);
-      console.error('[TRAINING-AGENT] Error at position:', parseError instanceof SyntaxError ? (parseError as any).message : 'Unknown');
-      console.error('[TRAINING-AGENT] Response length:', responseText.length);
-      console.error('[TRAINING-AGENT] First 1000 chars:', responseText.substring(0, 1000));
-      console.error('[TRAINING-AGENT] Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)));
+    let usedMinimalPrompt = false;
 
-      // Re-throw with more context
-      throw new Error(`Failed to parse training program response: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
+    try {
+      const completion = await openai.responses.create({
+        model: 'gpt-5',
+        input: prompt,
+        reasoning: { effort: 'medium' },
+        text: { verbosity: 'medium' }
+      });
+
+      const responseText = completion.output_text || '{}';
+      console.log('[TRAINING-AGENT] Response length:', responseText.length);
+
+      aiResponse = cleanAndParseResponse(responseText);
+    } catch (firstError) {
+      console.log('[TRAINING-AGENT] ⚠️ First attempt failed, retrying with minimal prompt...');
+      console.log('[TRAINING-AGENT] Error:', firstError instanceof Error ? firstError.message : 'Unknown');
+
+      // Retry with minimal prompt
+      usedMinimalPrompt = true;
+      const minimalPrompt = buildMinimalPrompt(userProfile, trainingProtocol);
+
+      try {
+        const retryCompletion = await openai.responses.create({
+          model: 'gpt-5',
+          input: minimalPrompt,
+          reasoning: { effort: 'low' },  // Lower effort for simpler prompt
+          text: { verbosity: 'low' }     // Lower verbosity for shorter output
+        });
+
+        const retryText = retryCompletion.output_text || '{}';
+        console.log('[TRAINING-AGENT] Retry response length:', retryText.length);
+
+        aiResponse = cleanAndParseResponse(retryText);
+        console.log('[TRAINING-AGENT] ✅ Retry successful with minimal prompt');
+      } catch (retryError) {
+        console.error('[TRAINING-AGENT] ❌ Retry also failed:', retryError);
+        throw new Error(`Failed to parse training program after retry: ${retryError instanceof Error ? retryError.message : 'Unknown'}`);
+      }
     }
 
     // Extract all training sections from AI response
@@ -214,6 +258,7 @@ ${JSON.stringify(unifiedContext, null, 2)}
     const weeklyStructure = aiResponse.weeklyStructure;
 
     console.log('[TRAINING-AGENT] ✅ Training program generated successfully');
+    console.log('[TRAINING-AGENT] Used minimal prompt:', usedMinimalPrompt);
     console.log('[TRAINING-AGENT] Has executiveSummary:', !!executiveSummary);
     console.log('[TRAINING-AGENT] Has weeklyProgram:', !!weeklyProgram);
     console.log('[TRAINING-AGENT] Has trainingPhilosophy:', !!trainingPhilosophy);
@@ -224,7 +269,8 @@ ${JSON.stringify(unifiedContext, null, 2)}
       executiveSummary,
       weeklyProgram,
       trainingPhilosophy,
-      weeklyStructure
+      weeklyStructure,
+      usedMinimalPrompt
     });
 
   } catch (error) {

@@ -268,11 +268,12 @@ Generate a comprehensive fitness plan in JSON format with the following structur
           "exercise": "Exercise name",
           "sets": "X sets",
           "reps": "X reps",
+          "weight": "Specific weight in kg/lbs based on their current bests (e.g., '80 kg' or '70% of max'). REQUIRED for strength exercises. Use 'Bodyweight' for bodyweight exercises.",
           "rest": "X seconds/minutes",
           "tempo": "Controlled and steady",
           "intensity": "Challenging but doable - leave 2-3 reps in reserve",
           "notes": "Form cues and modifications",
-          "progressionNotes": "How to progress this exercise"
+          "progressionNotes": "How to progress this exercise week by week"
         }
       ],
       "cooldown": {
@@ -399,6 +400,19 @@ IMPORTANT INSTRUCTIONS:
 8. Include specific exercises, not just categories
 9. Provide exact sets, reps, rest periods, and intensity descriptions using SIMPLE LANGUAGE
 10. NEVER use technical terms like "RPE", "1RM", "%", "tempo notation (3-1-1-0)"
+
+🏋️ CRITICAL WEIGHT/LOAD REQUIREMENTS 🏋️:
+- EVERY strength exercise MUST include a specific "weight" field with actual kg/lbs values
+- Calculate working weights based on their Current Personal Bests (${currentBests})
+- Weight calculation guidelines for different rep ranges:
+  * 3-5 reps: Use 80-85% of their 5RM (e.g., if Squat 5RM is 100kg, prescribe 80-85kg)
+  * 6-8 reps: Use 70-75% of their 5RM (e.g., if Squat 5RM is 100kg, prescribe 70-75kg)
+  * 8-12 reps: Use 60-70% of their 5RM (e.g., if Squat 5RM is 100kg, prescribe 60-70kg)
+  * 12-15 reps: Use 50-60% of their 5RM (e.g., if Squat 5RM is 100kg, prescribe 50-60kg)
+- For exercises not in their current bests, estimate based on similar movements or use conservative weights
+- For bodyweight exercises, use "Bodyweight" or "Bodyweight + Xkg" if adding weight
+- Example weight field values: "75 kg", "60 kg", "Bodyweight", "25 kg dumbbells each hand"
+- NEVER leave the weight field empty or say "appropriate weight" - always specify actual numbers
 11. Use descriptive intensity language: "Easy pace", "Moderate effort", "Challenging but doable", "Very challenging", "Leave 2-3 reps in reserve"
 12. Make supplement recommendations evidence-based and conservative
 13. If they have biomarker concerns, adjust training intensity and recovery accordingly

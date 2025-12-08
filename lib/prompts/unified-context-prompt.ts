@@ -46,6 +46,9 @@ interface OnboardingData {
   eatingStyle?: string;
   allergies?: string[];
   medicalConditions?: string[];
+  currentBests?: string;
+  trainingExperience?: string;
+  trainingDays?: string;
   [key: string]: unknown;
 }
 
@@ -70,6 +73,11 @@ function buildUserProfileSection(onboardingData: OnboardingData): string {
 **Primary Goals:**
 - Main Priority: ${onboardingData.mainPriority || onboardingData.primaryGoal || 'Not specified'}
 - Driving Goal: ${onboardingData.drivingGoal || 'Not specified'}
+
+**Training Background:**
+- Training Experience: ${onboardingData.trainingExperience || 'Not specified'}
+- Training Days Per Week: ${onboardingData.trainingDays || 'Not specified'}
+- Current Personal Bests (5RM): ${onboardingData.currentBests || 'Not specified'}
 
 **Health Context:**
 - Eating Style: ${onboardingData.eatingStyle || 'Not specified'}
@@ -465,7 +473,15 @@ You have access to this user's complete health ecosystem. Your fitness plan MUST
      * recoveryProtocol.personalizedIntro - Reference HRV, sleep debt, stress indicators (40-80 words)
      * progressTracking.metricsOverview - Mention baseline metrics from data (150-200 words)
      * injuryPrevention.personalizedRiskAssessment - Note mobility issues, injury history (200-300 words)
-   - Example format: "Your Oura data shows 6.2h average sleep with declining HRV, and blood work indicates elevated LDL at 220 mg/dL. This recovery protocol prioritizes sleep optimization and stress management to improve both metrics."
+
+   **CONNECTOR DATA TO HIGHLIGHT (cite actual values when available):**
+   - Oura Ring: "Your average sleep of X hours with Y readiness score suggests...", "HRV trend shows...", "Sleep debt of X hours indicates..."
+   - Gmail/Calendar: "Your meeting density of X meetings/day with Y% back-to-back suggests...", "After-hours email activity (X%) impacts...", "Optimal training windows are X based on your calendar gaps"
+   - Dexcom/CGM: "Glucose averaging X mg/dL with spikes after Y triggers...", "Variability pattern suggests..."
+   - Fitbit/Strava: "Training load of X sessions/week with Y intensity...", "Activity patterns show..."
+   - Cross-source insights: "Correlation between high meeting stress and poor sleep quality means...", "Your glucose spikes align with work stress patterns..."
+
+   - Example format: "Your Oura data shows 6.2h average sleep with declining HRV, and Gmail analysis reveals 68% back-to-back meetings causing high stress. This recovery protocol prioritizes sleep optimization and meeting buffer time to improve both metrics."
 
 3. **RECOVERY-DRIVEN PROGRAMMING:**
    - If overtraining risk detected → implement deload week immediately
@@ -499,6 +515,20 @@ You have access to this user's complete health ecosystem. Your fitness plan MUST
      * "Tempo notation" → Use descriptive language like "Lower slowly over 3 seconds"
    - Explain WHY each metric matters in simple terms
    - Keep all measurements actionable and clear
+
+8. **CRITICAL WEIGHT/LOAD REQUIREMENTS:**
+   - EVERY strength exercise MUST include a specific "weight" field with actual kg/lbs values
+   - Calculate working weights based on the user's Current Personal Bests from onboarding data
+   - Weight calculation guidelines for different rep ranges:
+     * 3-5 reps: Use 80-85% of their 5RM
+     * 6-8 reps: Use 70-75% of their 5RM
+     * 8-12 reps: Use 60-70% of their 5RM
+     * 12-15 reps: Use 50-60% of their 5RM
+   - For exercises not in their current bests, estimate based on similar movements
+   - For bodyweight exercises, use "Bodyweight" or "Bodyweight + Xkg" if adding weight
+   - Example weight values: "75 kg", "60 kg", "Bodyweight", "25 kg dumbbells each hand"
+   - NEVER leave weight empty or say "appropriate weight" - always specify actual numbers
+   - Exercise JSON structure MUST include: exercise, sets, reps, weight, rest, tempo, intensity, notes, progressionNotes
 
 ## OUTPUT REQUIREMENTS
 

@@ -21,6 +21,7 @@
     "@upstash/qstash": "^2.8.4",
     "@vercel/functions": "^2.2.13",
     "adm-zip": "^0.5.16",
+    "fastq": "^1.19.1",
     "framer-motion": "^12.23.25",
     "googleapis": "^165.0.0",
     "lucide-react": "^0.544.0",

@@ -157,24 +157,32 @@ export async function getAccessToken(
       // Fallback: use direct query if stored procedure doesn't exist
       console.warn('[TokenManager] RPC get_active_token not available, using direct query');
 
-      // Build query - prioritize user_code if provided
-      let query = supabase
-        .from('integration_tokens')
-        .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
-        .eq('provider', provider)
-        .eq('is_active', true);
+      let result;
 
+      // Try lookup by user_code first if provided
       if (userCode) {
-        // Look up by user_code first
-        query = query.eq('user_code', userCode);
-      } else {
-        // Fall back to email lookup
-        query = query.eq('user_email', userEmail);
+        result = await supabase
+          .from('integration_tokens')
+          .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
+          .eq('provider', provider)
+          .eq('is_active', true)
+          .eq('user_code', userCode)
+          .order('created_at', { ascending: false })
+          .limit(1);
       }
 
-      const result = await query
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // If no result from user_code lookup, fallback to email lookup
+      if (!result?.data || result.data.length === 0) {
+        console.log(`[TokenManager] No token found by code ${userCode}, trying email lookup for ${userEmail}`);
+        result = await supabase
+          .from('integration_tokens')
+          .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
+          .eq('provider', provider)
+          .eq('is_active', true)
+          .eq('user_email', userEmail)
+          .order('created_at', { ascending: false })
+          .limit(1);
+      }
 
       if (result.data && result.data.length > 0) {
         // Manually add is_expired field

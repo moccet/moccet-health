@@ -37,9 +37,33 @@ export async function POST(request: NextRequest) {
     const forceDevMode = process.env.FORCE_DEV_MODE === 'true';
     const hasSupabase = !forceDevMode && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // Generate unique code for this user's plan
-    const uniqueCode = generateUniqueCode();
-    console.log(`[UNIQUE CODE] Generated code for ${data.email}: ${uniqueCode}`);
+    // Check if there's an existing uniqueCode for this email (reuse to preserve integration tokens)
+    let uniqueCode: string;
+    if (hasSupabase) {
+      try {
+        const supabase = await createClient();
+        const { data: existingData } = await supabase
+          .from('sage_onboarding_data')
+          .select('form_data')
+          .eq('email', data.email)
+          .single();
+
+        if (existingData?.form_data?.uniqueCode) {
+          uniqueCode = existingData.form_data.uniqueCode;
+          console.log(`[UNIQUE CODE] Reusing existing code for ${data.email}: ${uniqueCode}`);
+        } else {
+          uniqueCode = generateUniqueCode();
+          console.log(`[UNIQUE CODE] Generated NEW code for ${data.email}: ${uniqueCode}`);
+        }
+      } catch {
+        // No existing record, generate new code
+        uniqueCode = generateUniqueCode();
+        console.log(`[UNIQUE CODE] Generated NEW code for ${data.email}: ${uniqueCode}`);
+      }
+    } else {
+      uniqueCode = generateUniqueCode();
+      console.log(`[UNIQUE CODE] Generated code for ${data.email}: ${uniqueCode} (dev mode)`);
+    }
 
     if (!hasSupabase || forceDevMode) {
       // Development mode: Use in-memory storage

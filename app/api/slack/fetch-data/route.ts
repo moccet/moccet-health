@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SlackPatterns } from '@/lib/services/ecosystem-fetcher';
+
+// Helper function to look up user's unique code from onboarding data
+async function getUserCode(email: string): Promise<string | null> {
+  const supabase = createAdminClient();
+
+  // Try forge_onboarding_data first
+  const { data: forgeData } = await supabase
+    .from('forge_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (forgeData?.form_data?.uniqueCode) {
+    return forgeData.form_data.uniqueCode;
+  }
+
+  // Try sage_onboarding_data
+  const { data: sageData } = await supabase
+    .from('sage_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (sageData?.form_data?.uniqueCode) {
+    return sageData.form_data.uniqueCode;
+  }
+
+  return null;
+}
 
 // Helper type for Slack message data
 interface MessageData {
@@ -229,7 +258,7 @@ function generateInsights(patterns: Omit<SlackPatterns, 'insights'>): string[] {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, code } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -237,8 +266,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Slack Fetch] Starting data fetch for ${email}`);
 
+    // Get user code - use provided code or look it up from onboarding data
+    const userCode = code || await getUserCode(email);
+    if (userCode) {
+      console.log(`[Slack Fetch] Using user code: ${userCode}`);
+    }
+
     // Get access token using token-manager (handles refresh automatically)
-    const { token, error: tokenError } = await getAccessToken(email, 'slack');
+    const { token, error: tokenError } = await getAccessToken(email, 'slack', userCode);
 
     if (!token || tokenError) {
       console.error('[Slack Fetch] Token error:', tokenError);

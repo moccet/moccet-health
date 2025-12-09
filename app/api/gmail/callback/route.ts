@@ -43,9 +43,10 @@ export async function GET(request: NextRequest) {
     const userInfo = await oauth2.userinfo.get();
     const googleEmail = userInfo.data.email || '';
 
-    // Get Forge account email from cookie (set during onboarding)
+    // Get Forge account email and code from cookies (set during onboarding)
     const cookieStore = await cookies();
     const forgeEmail = cookieStore.get('user_email')?.value;
+    const userCode = cookieStore.get('user_code')?.value;
 
     // Use Forge email if available (to link to user's account), otherwise use Google email
     const userEmail = forgeEmail || googleEmail;
@@ -59,10 +60,10 @@ export async function GET(request: NextRequest) {
         expiresAt,
         scopes: tokens.scope?.split(' '),
         providerUserId: googleEmail, // Store the Google email as provider ID
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Gmail] Tokens stored in database for ${userEmail} (Google: ${googleEmail})`);
+        console.log(`[Gmail] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''} (Google: ${googleEmail})`);
       } else {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }

@@ -2,8 +2,37 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import type { calendar_v3 } from 'googleapis';
 import { getAccessToken } from '@/lib/services/token-manager';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { GmailPatterns } from '@/lib/services/ecosystem-fetcher';
+
+// Helper function to look up user's unique code from onboarding data
+async function getUserCode(email: string): Promise<string | null> {
+  const supabase = createAdminClient();
+
+  // Try forge_onboarding_data first
+  const { data: forgeData } = await supabase
+    .from('forge_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (forgeData?.form_data?.uniqueCode) {
+    return forgeData.form_data.uniqueCode;
+  }
+
+  // Try sage_onboarding_data
+  const { data: sageData } = await supabase
+    .from('sage_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (sageData?.form_data?.uniqueCode) {
+    return sageData.form_data.uniqueCode;
+  }
+
+  return null;
+}
 
 // Helper type for calendar events - use Google's Schema$Event type
 type CalendarEvent = calendar_v3.Schema$Event;
@@ -343,7 +372,7 @@ function generateInsights(patterns: Omit<GmailPatterns, 'insights'>): string[] {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, code } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -351,8 +380,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Gmail Fetch] Starting data fetch for ${email}`);
 
+    // Get user code - use provided code or look it up from onboarding data
+    const userCode = code || await getUserCode(email);
+    if (userCode) {
+      console.log(`[Gmail Fetch] Using user code: ${userCode}`);
+    }
+
     // Get access token using token-manager (handles refresh automatically)
-    const { token, error: tokenError } = await getAccessToken(email, 'gmail');
+    const { token, error: tokenError } = await getAccessToken(email, 'gmail', userCode);
 
     if (!token || tokenError) {
       console.error('[Gmail Fetch] Token error:', tokenError);

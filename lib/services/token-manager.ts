@@ -47,11 +47,13 @@ function decryptToken(encryptedToken: string): string {
 
 /**
  * Store OAuth tokens securely in the database
+ * @param userCode - Optional 8-character unique code from onboarding (preferred identifier)
  */
 export async function storeToken(
   userEmail: string,
   provider: Provider,
-  tokenData: TokenData
+  tokenData: TokenData,
+  userCode?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Use admin client to bypass RLS for token storage
@@ -65,6 +67,15 @@ export async function storeToken(
 
     // Delete ALL existing tokens for this user/provider (both active and inactive)
     // This avoids unique constraint issues
+    // Delete by user_code if provided, otherwise by user_email
+    if (userCode) {
+      await supabase
+        .from('integration_tokens')
+        .delete()
+        .eq('user_code', userCode)
+        .eq('provider', provider);
+    }
+    // Also delete by email to handle legacy tokens
     await supabase
       .from('integration_tokens')
       .delete()
@@ -76,6 +87,7 @@ export async function storeToken(
       .from('integration_tokens')
       .insert({
         user_email: userEmail,
+        user_code: userCode || null,
         provider,
         access_token: encryptedAccessToken,
         refresh_token: encryptedRefreshToken,
@@ -92,7 +104,7 @@ export async function storeToken(
       return { success: false, error: error.message };
     }
 
-    console.log(`[TokenManager] Successfully stored token for ${userEmail}/${provider}`);
+    console.log(`[TokenManager] Successfully stored token for ${userEmail}/${provider}${userCode ? ` (code: ${userCode})` : ''}`);
     return { success: true };
   } catch (error) {
     console.error('[TokenManager] Exception storing token:', error);
@@ -105,10 +117,12 @@ export async function storeToken(
 
 /**
  * Retrieve access token, automatically refreshing if expired
+ * @param userCode - Optional 8-character unique code from onboarding (preferred for lookup)
  */
 export async function getAccessToken(
   userEmail: string,
-  provider: Provider
+  provider: Provider,
+  userCode?: string
 ): Promise<{ token: string | null; error?: string }> {
   try {
     // Use admin client to bypass RLS for token retrieval
@@ -121,18 +135,30 @@ export async function getAccessToken(
       const result = await supabase.rpc('get_active_token', {
         p_user_email: userEmail,
         p_provider: provider,
+        p_user_code: userCode || null,
       });
       data = result.data;
       error = result.error;
     } catch (rpcError) {
       // Fallback: use direct query if stored procedure doesn't exist
       console.warn('[TokenManager] RPC get_active_token not available, using direct query');
-      const result = await supabase
+
+      // Build query - prioritize user_code if provided
+      let query = supabase
         .from('integration_tokens')
-        .select('id, access_token, refresh_token, expires_at, provider_user_id')
-        .eq('user_email', userEmail)
+        .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
         .eq('provider', provider)
-        .eq('is_active', true)
+        .eq('is_active', true);
+
+      if (userCode) {
+        // Look up by user_code first
+        query = query.eq('user_code', userCode);
+      } else {
+        // Fall back to email lookup
+        query = query.eq('user_email', userEmail);
+      }
+
+      const result = await query
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -162,7 +188,8 @@ export async function getAccessToken(
     // Check if token is expired and needs refresh
     if (tokenRecord.is_expired && tokenRecord.refresh_token) {
       console.log(`[TokenManager] Token expired, attempting refresh for ${provider}`);
-      const refreshResult = await refreshToken(userEmail, provider);
+      // Pass userCode from the token record if available
+      const refreshResult = await refreshToken(userEmail, provider, tokenRecord.user_code || userCode);
 
       if (!refreshResult.success) {
         return { token: null, error: 'Token expired and refresh failed' };
@@ -186,23 +213,31 @@ export async function getAccessToken(
 
 /**
  * Refresh an expired OAuth token
+ * @param userCode - Optional 8-character unique code from onboarding
  */
 export async function refreshToken(
   userEmail: string,
-  provider: Provider
+  provider: Provider,
+  userCode?: string
 ): Promise<{ success: boolean; accessToken?: string; error?: string }> {
   try {
     // Use admin client to bypass RLS for token refresh
     const supabase = createAdminClient();
 
-    // Get current token data
-    const { data, error: fetchError } = await supabase
+    // Get current token data - prioritize user_code if available
+    let query = supabase
       .from('integration_tokens')
       .select('*')
-      .eq('user_email', userEmail)
       .eq('provider', provider)
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
+
+    if (userCode) {
+      query = query.eq('user_code', userCode);
+    } else {
+      query = query.eq('user_email', userEmail);
+    }
+
+    const { data, error: fetchError } = await query.single();
 
     if (fetchError || !data) {
       return { success: false, error: 'No token found to refresh' };
@@ -221,7 +256,7 @@ export async function refreshToken(
       return { success: false, error: refreshResult.error || 'Refresh failed' };
     }
 
-    // Store the new token
+    // Store the new token - preserve user_code from existing token
     const storeResult = await storeToken(userEmail, provider, {
       accessToken: refreshResult.accessToken,
       refreshToken: refreshResult.refreshToken || decryptedRefreshToken,
@@ -229,7 +264,7 @@ export async function refreshToken(
       tokenType: data.token_type,
       scopes: data.scopes as string[],
       providerUserId: data.provider_user_id || undefined,
-    });
+    }, data.user_code || userCode);
 
     if (!storeResult.success) {
       return { success: false, error: 'Failed to store refreshed token' };
@@ -411,19 +446,28 @@ export async function revokeToken(
 
 /**
  * Get all active integrations for a user
+ * @param userCode - Optional 8-character unique code from onboarding (preferred for lookup)
  */
 export async function getUserIntegrations(
-  userEmail: string
+  userEmail: string,
+  userCode?: string
 ): Promise<{ integrations: Provider[]; error?: string }> {
   try {
     // Use admin client to bypass RLS for reading integrations
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('integration_tokens')
       .select('provider')
-      .eq('user_email', userEmail)
       .eq('is_active', true);
+
+    if (userCode) {
+      query = query.eq('user_code', userCode);
+    } else {
+      query = query.eq('user_email', userEmail);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return { integrations: [], error: error.message };

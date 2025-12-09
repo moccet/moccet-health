@@ -131,6 +131,7 @@ export default function ForgeOnboarding() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [uniqueCode, setUniqueCode] = useState('');
 
   // Video sound controls
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
@@ -302,8 +303,14 @@ export default function ForgeOnboarding() {
       console.log('Mock onboarding data submitted successfully');
 
       // Get unique code and user's name
-      const uniqueCode = result.data?.uniqueCode;
+      const returnedUniqueCode = result.data?.uniqueCode;
       const userFirstName = mockData.fullName.split(' ')[0];
+
+      // Store unique code in state and cookie for OAuth integrations
+      if (returnedUniqueCode) {
+        setUniqueCode(returnedUniqueCode);
+        document.cookie = `user_code=${encodeURIComponent(returnedUniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
       // Skip lab file upload in dev mode - plan generation works without it
       console.log('⏭️  [DEV] Skipping mock lab file upload - generating plan without biomarkers');
@@ -322,7 +329,7 @@ export default function ForgeOnboarding() {
         },
         body: JSON.stringify({
           email: mockData.email,
-          uniqueCode: uniqueCode,
+          uniqueCode: returnedUniqueCode,
           fullName: userFirstName,
         }),
       });
@@ -344,8 +351,8 @@ export default function ForgeOnboarding() {
         clearInterval(progressInterval);
         setIsLoading(false);
 
-        const redirectUrl = uniqueCode
-          ? `/forge/personalised-plan?code=${uniqueCode}`
+        const redirectUrl = returnedUniqueCode
+          ? `/forge/personalised-plan?code=${returnedUniqueCode}`
           : `/forge/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
 
         window.location.href = redirectUrl;
@@ -797,9 +804,12 @@ export default function ForgeOnboarding() {
 
   const handleConnectGmail = async () => {
     try {
-      // Set user_email cookie so the callback can store the token
+      // Set user_email and user_code cookies so the callback can store the token
       if (formData.email) {
         document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
       }
 
       const response = await fetch('/api/gmail/auth');
@@ -887,15 +897,19 @@ export default function ForgeOnboarding() {
 
   const handleConnectSlack = async () => {
     try {
-      // Set user_email cookie so the callback can store the token
+      // Set user_email and user_code cookies so the callback can store the token
       if (formData.email) {
         document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
       }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
-      // Pass email in state parameter for the callback
+      // Pass email and code in state parameter for the callback
       const state = encodeURIComponent(JSON.stringify({
         returnPath: '/forge/onboarding',
-        email: formData.email
+        email: formData.email,
+        code: uniqueCode || undefined
       }));
       const response = await fetch(`/api/slack/auth?state=${state}`);
       const data = await response.json();
@@ -1040,6 +1054,14 @@ export default function ForgeOnboarding() {
 
   const handleConnectAppleCalendar = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/apple-calendar/auth');
       const data = await response.json();
 
@@ -1122,6 +1144,14 @@ export default function ForgeOnboarding() {
 
   const handleConnectOutlook = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/outlook/auth');
       const data = await response.json();
 
@@ -1219,15 +1249,19 @@ export default function ForgeOnboarding() {
 
   const handleConnectOura = async () => {
     try {
-      // Set user_email cookie so the callback can store the token
+      // Set user_email and user_code cookies so the callback can store the token
       if (formData.email) {
         document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
       }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
-      // Include return path and email in state for the callback
+      // Include return path, email, and code in state for the callback
       const state = encodeURIComponent(JSON.stringify({
         returnPath: '/forge/onboarding',
-        email: formData.email
+        email: formData.email,
+        code: uniqueCode || undefined
       }));
       const response = await fetch(`/api/oura/auth?state=${state}`);
       const data = await response.json();
@@ -1335,6 +1369,14 @@ export default function ForgeOnboarding() {
 
   const handleConnectDexcom = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/dexcom/auth');
       const data = await response.json();
 
@@ -1417,8 +1459,16 @@ export default function ForgeOnboarding() {
 
   const handleConnectFitbit = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and code in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding', code: uniqueCode || undefined }));
       const response = await fetch(`/api/fitbit/auth?state=${state}`);
       const data = await response.json();
 
@@ -1493,8 +1543,16 @@ export default function ForgeOnboarding() {
 
   const handleConnectStrava = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding' }));
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and code in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/forge/onboarding', code: uniqueCode || undefined }));
       const response = await fetch(`/api/strava/auth?state=${state}`);
       const data = await response.json();
 
@@ -1570,6 +1628,14 @@ export default function ForgeOnboarding() {
   const handleConnectVital = async () => {
     try {
       console.log('[Vital] Starting connection...');
+
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
       // Generate a unique user ID for Vital (hash email or use timestamp)
       // Note: Vital recommends NOT using PII (email) directly
@@ -1701,6 +1767,14 @@ export default function ForgeOnboarding() {
 
   const handleConnectTeams = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/teams/auth');
       const data = await response.json();
 
@@ -2173,8 +2247,14 @@ export default function ForgeOnboarding() {
       console.log('Onboarding data submitted successfully');
 
       // Get unique code and user's name
-      const uniqueCode = result.data?.uniqueCode;
+      const returnedUniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
+
+      // Store unique code in state and cookie for OAuth integrations
+      if (returnedUniqueCode) {
+        setUniqueCode(returnedUniqueCode);
+        document.cookie = `user_code=${encodeURIComponent(returnedUniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
       // If lab files uploaded, analyze them first (on frontend)
       if (formData.labFiles.length > 0) {
@@ -2204,7 +2284,7 @@ export default function ForgeOnboarding() {
 
       const planFormData = new FormData();
       planFormData.append('email', formData.email);
-      planFormData.append('uniqueCode', uniqueCode);
+      planFormData.append('uniqueCode', returnedUniqueCode);
       planFormData.append('fullName', userFirstName);
 
       const planResponse = await fetch('/api/forge-generate-plan-async', {
@@ -4246,13 +4326,17 @@ export default function ForgeOnboarding() {
                         }
 
                         // Wait for unique code from background save
-                        const uniqueCode = await uniqueCodePromise;
+                        const returnedCode = await uniqueCodePromise;
 
-                        if (uniqueCode) {
+                        if (returnedCode) {
+                          // Store unique code in state and cookie
+                          setUniqueCode(returnedCode);
+                          document.cookie = `user_code=${encodeURIComponent(returnedCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+
                           // Queue plan generation
                           const planFormData = new FormData();
                           planFormData.append('email', formData.email);
-                          planFormData.append('uniqueCode', uniqueCode);
+                          planFormData.append('uniqueCode', returnedCode);
                           planFormData.append('fullName', formData.fullName.split(' ')[0]);
                           planFormData.append('referralCode', paymentData.referralCode);
 

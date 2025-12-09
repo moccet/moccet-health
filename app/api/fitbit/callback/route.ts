@@ -57,9 +57,23 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Fitbit] Connected: User ID ${userId}`);
 
-    // Get user email from cookies
+    // Get user email and code from cookies
     const cookieStore = await cookies();
     const userEmail = cookieStore.get('user_email')?.value;
+    let userCode = cookieStore.get('user_code')?.value;
+
+    // Try to get code from state parameter if not in cookies
+    if (!userCode && state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Fitbit] Got code from state parameter: ${userCode}`);
+        }
+      } catch (e) {
+        console.log('[Fitbit] Could not parse code from state');
+      }
+    }
 
     // Store tokens in database
     if (userEmail) {
@@ -71,10 +85,10 @@ export async function GET(request: NextRequest) {
         expiresAt,
         providerUserId: userId,
         scopes,
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Fitbit] Tokens stored in database for ${userEmail}`);
+        console.log(`[Fitbit] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Fitbit] Failed to store tokens:`, storeResult.error);
       }

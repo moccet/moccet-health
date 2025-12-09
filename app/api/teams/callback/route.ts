@@ -75,17 +75,27 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Teams] Connected: ${userEmail}`);
 
-    // Get user email from state parameter (passed from connector page) or use profile email
+    // Get user email and code from state parameter (passed from connector page) or use profile email
     const state = searchParams.get('state');
     let storedUserEmail = userEmail;
+    let userCode: string | undefined;
+
+    // Get user_code from cookies
+    const cookieStore = await cookies();
+    userCode = cookieStore.get('user_code')?.value;
+
     if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.email) {
           storedUserEmail = stateData.email;
         }
+        if (!userCode && stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Teams] Got code from state parameter: ${userCode}`);
+        }
       } catch (e) {
-        console.log('[Teams] Could not parse state for email');
+        console.log('[Teams] Could not parse state for email/code');
       }
     }
 
@@ -100,17 +110,16 @@ export async function GET(request: NextRequest) {
         expiresAt,
         providerUserId: profile.id,
         scopes: ['Chat.Read', 'Chat.ReadWrite', 'Team.ReadBasic.All', 'Channel.ReadBasic.All'],
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Teams] Tokens stored in database for ${storedUserEmail}`);
+        console.log(`[Teams] Tokens stored in database for ${storedUserEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Teams] Failed to store tokens:`, storeResult.error);
       }
     }
 
     // Set cookies with tokens (for backward compatibility)
-    const cookieStore = await cookies();
     cookieStore.set('teams_access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

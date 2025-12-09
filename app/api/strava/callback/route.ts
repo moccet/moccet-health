@@ -52,9 +52,23 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Strava] Connected: Athlete ID ${athleteId}`);
 
-    // Get user email and store tokens in database
+    // Get user email and code, store tokens in database
     const cookieStore = await cookies();
     const userEmail = cookieStore.get('user_email')?.value;
+    let userCode = cookieStore.get('user_code')?.value;
+
+    // Try to get code from state parameter if not in cookies
+    if (!userCode && state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Strava] Got code from state parameter: ${userCode}`);
+        }
+      } catch (e) {
+        console.log('[Strava] Could not parse code from state');
+      }
+    }
 
     if (userEmail) {
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
@@ -64,10 +78,10 @@ export async function GET(request: NextRequest) {
         expiresAt,
         providerUserId: athleteId?.toString(),
         scopes: ['read', 'activity:read_all'],
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Strava] Tokens stored in database for ${userEmail}`);
+        console.log(`[Strava] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Strava] Failed to store tokens:`, storeResult.error);
       }

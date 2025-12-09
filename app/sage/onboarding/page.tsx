@@ -127,6 +127,7 @@ export default function SageOnboarding() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [uniqueCode, setUniqueCode] = useState('');
 
   // Video sound controls
   const [introVideoMuted, setIntroVideoMuted] = useState(true);
@@ -283,8 +284,14 @@ export default function SageOnboarding() {
       console.log('Mock onboarding data submitted successfully');
 
       // Get unique code and user's name
-      const uniqueCode = result.data?.uniqueCode;
+      const returnedUniqueCode = result.data?.uniqueCode;
       const userFirstName = mockData.fullName.split(' ')[0];
+
+      // Store unique code in state and cookie for OAuth integrations
+      if (returnedUniqueCode) {
+        setUniqueCode(returnedUniqueCode);
+        document.cookie = `user_code=${encodeURIComponent(returnedUniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
       // Upload mock lab file first (simulating real user flow)
       const mockPdfContent = '%PDF-1.4\nMock lab results PDF for testing';
@@ -311,7 +318,7 @@ export default function SageOnboarding() {
 
       const planFormData = new FormData();
       planFormData.append('email', mockData.email);
-      planFormData.append('uniqueCode', uniqueCode);
+      planFormData.append('uniqueCode', returnedUniqueCode);
       planFormData.append('fullName', userFirstName);
 
       // Start the async call (don't await yet)
@@ -344,8 +351,8 @@ export default function SageOnboarding() {
         clearInterval(progressInterval);
         setIsLoading(false);
 
-        const redirectUrl = uniqueCode
-          ? `/sage/personalised-plan?code=${uniqueCode}`
+        const redirectUrl = returnedUniqueCode
+          ? `/sage/personalised-plan?code=${returnedUniqueCode}`
           : `/sage/personalised-plan?email=${encodeURIComponent(mockData.email)}`;
 
         window.location.href = redirectUrl;
@@ -720,6 +727,14 @@ export default function SageOnboarding() {
 
   const handleConnectGmail = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/gmail/auth');
       const data = await response.json();
 
@@ -782,6 +797,14 @@ export default function SageOnboarding() {
 
   const handleConnectSlack = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/slack/auth');
       const data = await response.json();
 
@@ -902,6 +925,14 @@ export default function SageOnboarding() {
 
   const handleConnectAppleCalendar = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/apple-calendar/auth');
       const data = await response.json();
 
@@ -961,6 +992,14 @@ export default function SageOnboarding() {
 
   const handleConnectOutlook = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/outlook/auth');
       const data = await response.json();
 
@@ -1035,8 +1074,16 @@ export default function SageOnboarding() {
 
   const handleConnectOura = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and code in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding', code: uniqueCode || undefined }));
       const response = await fetch(`/api/oura/auth?state=${state}`);
       const data = await response.json();
 
@@ -1116,6 +1163,14 @@ export default function SageOnboarding() {
 
   const handleConnectDexcom = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/dexcom/auth');
       const data = await response.json();
 
@@ -1175,8 +1230,16 @@ export default function SageOnboarding() {
 
   const handleConnectFitbit = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and code in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding', code: uniqueCode || undefined }));
       const response = await fetch(`/api/fitbit/auth?state=${state}`);
       const data = await response.json();
 
@@ -1247,8 +1310,16 @@ export default function SageOnboarding() {
 
   const handleConnectStrava = async () => {
     try {
-      // Include return path in state for mobile redirects
-      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding' }));
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path and code in state for mobile redirects
+      const state = encodeURIComponent(JSON.stringify({ returnPath: '/sage/onboarding', code: uniqueCode || undefined }));
       const response = await fetch(`/api/strava/auth?state=${state}`);
       const data = await response.json();
 
@@ -1326,6 +1397,14 @@ export default function SageOnboarding() {
   const handleConnectVital = async () => {
     try {
       console.log('[Vital] Starting connection...');
+
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
 
       // Generate a unique user ID for Vital (using email as base)
       const userId = formData.email || `user_${Date.now()}`;
@@ -1430,6 +1509,14 @@ export default function SageOnboarding() {
 
   const handleConnectTeams = async () => {
     try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
       const response = await fetch('/api/teams/auth');
       const data = await response.json();
 

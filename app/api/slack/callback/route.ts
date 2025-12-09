@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     // Store tokens in database
     const cookieStore = await cookies();
     const userEmail = cookieStore.get('user_email')?.value;
+    let userCode = cookieStore.get('user_code')?.value;
 
     if (userEmail && accessToken) {
       const storeResult = await storeToken(userEmail, 'slack', {
@@ -87,10 +88,10 @@ export async function GET(request: NextRequest) {
           team_id: teamId,
           team_name: teamName,
         },
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Slack] Tokens stored in database for ${userEmail}`);
+        console.log(`[Slack] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Slack] Failed to store tokens:`, storeResult.error);
       }
@@ -121,10 +122,16 @@ export async function GET(request: NextRequest) {
         if (stateData.returnPath) {
           redirectPath = stateData.returnPath;
         }
+        // Get code from state if not in cookies
+        if (!userCode && stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Slack] Got code from state parameter: ${userCode}`);
+        }
         // Also try to get user email from state if available
         if (stateData.email && !userEmail) {
           // If we didn't have userEmail from cookie, try from state
           const emailFromState = stateData.email;
+          const codeFromState = stateData.code || userCode;
           if (emailFromState && accessToken) {
             const storeResult = await storeToken(emailFromState, 'slack', {
               accessToken,
@@ -134,9 +141,9 @@ export async function GET(request: NextRequest) {
                 team_id: teamId,
                 team_name: teamName,
               },
-            });
+            }, codeFromState);
             if (storeResult.success) {
-              console.log(`[Slack] Tokens stored from state email for ${emailFromState}`);
+              console.log(`[Slack] Tokens stored from state email for ${emailFromState}${codeFromState ? ` (code: ${codeFromState})` : ''}`);
             }
           }
         }

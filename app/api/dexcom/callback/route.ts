@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
     // Store tokens in database
     const cookieStore = await cookies();
     const userEmail = cookieStore.get('user_email')?.value;
+    const userCode = cookieStore.get('user_code')?.value;
 
     if (userEmail) {
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
@@ -69,10 +70,10 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiresAt,
         scopes: ['offline_access'],
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Dexcom] Tokens stored in database for ${userEmail}`);
+        console.log(`[Dexcom] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Dexcom] Failed to store tokens:`, storeResult.error);
       }

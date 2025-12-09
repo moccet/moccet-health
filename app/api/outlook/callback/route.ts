@@ -75,6 +75,20 @@ export async function GET(request: NextRequest) {
     // Store tokens in database
     const cookieStore = await cookies();
     const appUserEmail = cookieStore.get('user_email')?.value || userEmail;
+    let userCode = cookieStore.get('user_code')?.value;
+
+    // Try to get code from state parameter if not in cookies
+    if (!userCode && state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Outlook] Got code from state parameter: ${userCode}`);
+        }
+      } catch (e) {
+        console.log('[Outlook] Could not parse code from state');
+      }
+    }
 
     if (appUserEmail && accessToken) {
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
@@ -84,10 +98,10 @@ export async function GET(request: NextRequest) {
         expiresAt,
         providerUserId: userEmail,
         scopes: tokenData.scope?.split(' '),
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Outlook] Tokens stored in database for ${appUserEmail}`);
+        console.log(`[Outlook] Tokens stored in database for ${appUserEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Outlook] Failed to store tokens:`, storeResult.error);
       }

@@ -67,20 +67,25 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Oura] Connected: User ID ${userId}`);
 
-    // Get user email from cookies (set during onboarding) or from state parameter
+    // Get user email and code from cookies (set during onboarding) or from state parameter
     const cookieStore = await cookies();
     let userEmail = cookieStore.get('user_email')?.value;
+    let userCode = cookieStore.get('user_code')?.value;
 
-    // Try to get email from state parameter if not in cookies
-    if (!userEmail && state) {
+    // Try to get email and code from state parameter if not in cookies
+    if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
-        if (stateData.email) {
+        if (!userEmail && stateData.email) {
           userEmail = stateData.email;
           console.log(`[Oura] Got email from state parameter: ${userEmail}`);
         }
+        if (!userCode && stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Oura] Got code from state parameter: ${userCode}`);
+        }
       } catch (e) {
-        console.log('[Oura] Could not parse email from state');
+        console.log('[Oura] Could not parse email/code from state');
       }
     }
 
@@ -98,10 +103,10 @@ export async function GET(request: NextRequest) {
         expiresAt,
         providerUserId: userId,
         scopes: ['email', 'personal', 'daily', 'heartrate', 'tag', 'workout', 'session', 'spo2', 'ring_configuration', 'stress', 'heart_health'],
-      });
+      }, userCode);
 
       if (storeResult.success) {
-        console.log(`[Oura] Tokens stored in database for ${userEmail}`);
+        console.log(`[Oura] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
       } else {
         console.error(`[Oura] Failed to store tokens in database:`, storeResult.error);
       }

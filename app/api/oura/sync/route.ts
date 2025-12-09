@@ -7,9 +7,36 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Helper function to look up user's unique code from onboarding data
+async function getUserCode(email: string): Promise<string | null> {
+  // Try forge_onboarding_data first
+  const { data: forgeData } = await supabase
+    .from('forge_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (forgeData?.form_data?.uniqueCode) {
+    return forgeData.form_data.uniqueCode;
+  }
+
+  // Try sage_onboarding_data
+  const { data: sageData } = await supabase
+    .from('sage_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (sageData?.form_data?.uniqueCode) {
+    return sageData.form_data.uniqueCode;
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, startDate, endDate } = await request.json();
+    const { email, code, startDate, endDate } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -18,16 +45,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user code - use provided code or look it up from onboarding data
+    const userCode = code || await getUserCode(email);
+    if (userCode) {
+      console.log(`[Oura Sync] Using user code: ${userCode}`);
+    }
+
     // Try to get access token from database first (for server-to-server calls)
     let accessToken: string | undefined;
 
-    const { data: tokenData, error: tokenError } = await supabase
+    // Build query - prioritize user_code if available
+    let query = supabase
       .from('integration_tokens')
       .select('access_token')
-      .eq('user_email', email)
       .eq('provider', 'oura')
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
+
+    if (userCode) {
+      query = query.eq('user_code', userCode);
+    } else {
+      query = query.eq('user_email', email);
+    }
+
+    const { data: tokenData, error: tokenError } = await query.single();
 
     if (tokenData?.access_token) {
       // Token is stored base64 encoded, decode it

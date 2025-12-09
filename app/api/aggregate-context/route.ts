@@ -120,7 +120,8 @@ async function cacheContext(
   dataSourcesUsed: unknown,
   dataQuality: unknown,
   generationDuration: number,
-  apiCallsMade: number
+  apiCallsMade: number,
+  rawPatterns?: unknown
 ): Promise<void> {
   try {
     const supabase = await createClient();
@@ -138,6 +139,7 @@ async function cacheContext(
       is_valid: true,
       generation_duration_ms: generationDuration,
       api_calls_made: apiCallsMade,
+      raw_patterns: rawPatterns || null,
     });
 
     console.log('[Context Aggregation] Context cached successfully');
@@ -396,7 +398,17 @@ export async function POST(request: NextRequest) {
 
     const generationDuration = Date.now() - startTime;
 
-    // Cache the context
+    // Include raw patterns for detailed stats access (all integrations)
+    const rawPatterns = {
+      slack: ecosystemData.slack.data || null,
+      gmail: ecosystemData.gmail.data || null,
+      oura: ecosystemData.oura.data || null,
+      dexcom: ecosystemData.dexcom.data || null,
+      vital: ecosystemData.vital.data || null,
+      bloodBiomarkers: ecosystemData.bloodBiomarkers.data || null,
+    };
+
+    // Cache the context (including raw patterns for detailed stats)
     await cacheContext(
       email,
       contextType,
@@ -406,7 +418,8 @@ export async function POST(request: NextRequest) {
       dataSourcesUsed,
       validation.qualityReport,
       generationDuration,
-      apiCallsMade
+      apiCallsMade,
+      rawPatterns
     );
 
     console.log(`\n[Context Aggregation] COMPLETE in ${generationDuration}ms`);
@@ -427,6 +440,8 @@ export async function POST(request: NextRequest) {
         validation,
         generatedAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        // Include raw ecosystem patterns for detailed stats (actual percentages, timestamps, etc.)
+        rawPatterns,
       },
       generationTime: generationDuration,
       qualityMessage: generateQualityMessage(validation.qualityReport),

@@ -1386,7 +1386,7 @@ export default function PersonalisedPlanPage() {
                     {isOpen && (
                       <>
                         {/* Warmup */}
-                        {day.warmup && (
+                        {day.warmup && (day.warmup.description || (day.warmup.exercises && day.warmup.exercises.length > 0)) && (
                           <div className="workout-section" style={{ marginBottom: '20px' }}>
                             <h4 style={{
                               fontSize: '14px',
@@ -1497,7 +1497,7 @@ export default function PersonalisedPlanPage() {
                     </div>
 
                         {/* Cooldown */}
-                        {day.cooldown && (
+                        {day.cooldown && (day.cooldown.description || (day.cooldown.exercises && day.cooldown.exercises.length > 0)) && (
                           <div className="workout-section">
                             <h4 style={{
                               fontSize: '14px',

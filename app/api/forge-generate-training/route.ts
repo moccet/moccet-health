@@ -212,30 +212,229 @@ export async function POST(request: NextRequest) {
         parts.push(`**Connected Integrations:** ${connectedSources.join(', ')}`);
       }
 
-      // Behavioral patterns from Gmail/Slack/Outlook - with specific stats
+      // Extract raw patterns from ecosystem data (preserves actual stats)
+      const rawPatterns = unifiedContext.rawPatterns || unifiedContext.ecosystemPatterns || {};
+      const slackPatterns = rawPatterns.slack || unifiedContext.slackPatterns || {};
+      const gmailPatterns = rawPatterns.gmail || unifiedContext.gmailPatterns || {};
+
+      // Behavioral patterns from Gmail/Slack/Outlook - with ACTUAL stats from raw data
       const behavioral = unifiedContext.unifiedProfile?.behavioral;
-      if (behavioral?.workPatterns) {
-        const wp = behavioral.workPatterns;
-        parts.push(`**Work Patterns (from Gmail/Slack/Outlook) - CITE THESE STATS:**
-- Stress Level: ${wp.stressLevel || 'moderate'} (use in recommendations)
-- Work-Life Balance Score: ${wp.workLifeBalance || 'moderate'}
-- Back-to-back Meetings: ${wp.breakDeficiency ? '68%+ of meetings have no break' : 'Adequate gaps between meetings'}
-- After-hours Work: ${wp.afterHoursWork ? '23% of messages sent after 6pm' : 'Minimal after-hours activity'}
-- Peak Meeting Hours: 10am-3pm on weekdays
-- Best Training Windows: ${wp.optimalMealWindows?.join(', ') || '6-8am or after 6pm'}`);
+      if (behavioral?.workPatterns || slackPatterns?.messageVolume || gmailPatterns?.emailVolume) {
+        const wp = behavioral?.workPatterns || {};
+
+        // Get actual percentages from raw Slack data
+        const afterHoursPercent = slackPatterns?.messageVolume?.afterHoursPercentage
+          || gmailPatterns?.emailVolume?.afterHoursPercentage
+          || null;
+        const avgMessagesPerDay = slackPatterns?.messageVolume?.avgPerDay || null;
+        const slackPeakHours = slackPatterns?.messageVolume?.peakHours || [];
+        const workStart = slackPatterns?.workHours?.start || gmailPatterns?.workHours?.start || null;
+        const workEnd = slackPatterns?.workHours?.end || gmailPatterns?.workHours?.end || null;
+        const lateNightMessages = slackPatterns?.stressIndicators?.lateNightMessages || false;
+        const weekendActivity = slackPatterns?.workHours?.weekendActivity || false;
+
+        // Get actual meeting stats from Gmail
+        const avgMeetingsPerDay = gmailPatterns?.meetingDensity?.avgPerDay || null;
+        const backToBackPercent = gmailPatterns?.meetingDensity?.backToBackPercentage || null;
+        const meetingPeakHours = gmailPatterns?.meetingDensity?.peakHours || [];
+
+        let workPatternsText = `**Work Patterns (from Gmail/Slack/Outlook) - CITE THESE EXACT STATS:**\n`;
+        workPatternsText += `- Stress Level: ${wp.stressLevel || 'moderate'}\n`;
+        workPatternsText += `- Work-Life Balance: ${wp.workLifeBalance || 'moderate'}\n`;
+
+        // Use ACTUAL stats, not placeholders
+        if (afterHoursPercent !== null) {
+          workPatternsText += `- After-hours Activity: ${afterHoursPercent}% of messages sent outside work hours\n`;
+        }
+        if (avgMessagesPerDay !== null) {
+          workPatternsText += `- Slack Activity: ${avgMessagesPerDay} messages/day average\n`;
+        }
+        if (slackPeakHours.length > 0) {
+          workPatternsText += `- Peak Messaging Hours: ${slackPeakHours.join(', ')}\n`;
+        }
+        if (lateNightMessages) {
+          workPatternsText += `- ⚠️ LATE NIGHT ACTIVITY: Significant messaging detected after 10pm (affects recovery!)\n`;
+        }
+        if (weekendActivity) {
+          workPatternsText += `- Weekend Work: Active on weekends (impacts rest days)\n`;
+        }
+        if (workStart && workEnd) {
+          workPatternsText += `- Actual Work Hours: ${workStart} to ${workEnd}\n`;
+        }
+        if (avgMeetingsPerDay !== null) {
+          workPatternsText += `- Meeting Density: ${avgMeetingsPerDay} meetings/day average\n`;
+        }
+        if (backToBackPercent !== null) {
+          workPatternsText += `- Back-to-back Meetings: ${backToBackPercent}% with no breaks\n`;
+        }
+        if (meetingPeakHours.length > 0) {
+          workPatternsText += `- Peak Meeting Hours: ${meetingPeakHours.join(', ')}\n`;
+        }
+        workPatternsText += `- Best Training Windows: ${wp.optimalMealWindows?.join(', ') || 'Before work hours or after meetings end'}`;
+
+        parts.push(workPatternsText);
       }
 
-      // Sleep/Recovery from Oura/Fitbit - with specific stats
+      // Sleep/Recovery from Oura/Fitbit - with ACTUAL stats from raw data
       const physiological = unifiedContext.unifiedProfile?.physiological;
-      if (physiological?.sleep?.avgHours) {
-        parts.push(`**Recovery Data (from Oura/Fitbit) - CITE THESE STATS:**
-- Average Sleep: ${physiological.sleep.avgHours}h/night (cite exact number)
-- Sleep Quality: ${physiological.sleep.quality || 'Unknown'}
-- HRV: ${physiological.sleep.hrvStatus || 'Unknown'} (mention if declining/stable)
-- Sleep Debt: ${physiological.sleep.sleepDebt ? physiological.sleep.sleepDebt + 'h accumulated' : 'None'}
-- Readiness Score: ${physiological.recovery?.readinessScore || 'Unknown'}/100
-- Recovery Status: ${physiological.recovery?.status || 'Unknown'}
-- Overtraining Risk: ${physiological.recovery?.overtrainingRisk ? 'ELEVATED - reduce volume' : 'Low'}`);
+      const ouraRaw = rawPatterns.oura || {};
+
+      if (physiological?.sleep?.avgHours || ouraRaw?.avgSleepHours) {
+        let recoveryText = `**Recovery Data (from Oura/Fitbit) - CITE THESE EXACT STATS:**\n`;
+
+        // Use raw Oura data for actual numbers
+        const avgSleep = ouraRaw?.avgSleepHours || physiological?.sleep?.avgHours;
+        const avgHRV = ouraRaw?.avgHRV || null;
+        const readiness = ouraRaw?.avgReadinessScore || physiological?.recovery?.readinessScore;
+        const hrvTrend = ouraRaw?.hrvTrend || null;
+        const sleepQuality = ouraRaw?.sleepQuality || physiological?.sleep?.quality;
+        const activityLevel = ouraRaw?.activityLevel || null;
+
+        if (avgSleep) {
+          recoveryText += `- Average Sleep: ${avgSleep}h/night\n`;
+        }
+        if (sleepQuality) {
+          recoveryText += `- Sleep Quality: ${sleepQuality}\n`;
+        }
+        if (avgHRV) {
+          recoveryText += `- HRV: ${avgHRV}ms average\n`;
+        }
+        if (hrvTrend) {
+          recoveryText += `- HRV Trend: ${hrvTrend} (${hrvTrend === 'declining' ? '⚠️ recovery compromised' : hrvTrend === 'improving' ? 'good progress' : 'stable'})\n`;
+        }
+        if (physiological?.sleep?.sleepDebt && physiological.sleep.sleepDebt > 0) {
+          recoveryText += `- ⚠️ Sleep Debt: ${physiological.sleep.sleepDebt}h accumulated\n`;
+        }
+        if (readiness) {
+          recoveryText += `- Readiness Score: ${readiness}/100\n`;
+        }
+        if (activityLevel) {
+          recoveryText += `- Activity Level: ${activityLevel}\n`;
+        }
+        if (physiological?.recovery?.overtrainingRisk) {
+          recoveryText += `- ⚠️ OVERTRAINING RISK: Elevated - reduce training volume\n`;
+        }
+
+        // Add Oura insights if available
+        if (ouraRaw?.insights && ouraRaw.insights.length > 0) {
+          recoveryText += `- Insights: ${ouraRaw.insights.slice(0, 2).join('; ')}`;
+        }
+
+        parts.push(recoveryText);
+      }
+
+      // Glucose/CGM Data from Dexcom - with ACTUAL stats
+      const dexcomRaw = rawPatterns.dexcom || {};
+      const glucoseData = physiological?.glucose || {};
+
+      if (dexcomRaw?.avgGlucose || glucoseData?.avgGlucose) {
+        let glucoseText = `**Glucose Data (from Dexcom CGM) - CITE THESE EXACT STATS:**\n`;
+
+        const avgGlucose = dexcomRaw?.avgGlucose || glucoseData?.avgGlucose;
+        const fastingGlucose = dexcomRaw?.avgFastingGlucose || null;
+        const variability = dexcomRaw?.glucoseVariability || null;
+        const timeInRange = dexcomRaw?.timeInRange || null;
+        const spikeTimes = dexcomRaw?.spikeTimes || [];
+        const spikeEvents = dexcomRaw?.spikeEvents || [];
+
+        if (avgGlucose) {
+          const status = avgGlucose > 115 ? '⚠️ elevated' : avgGlucose > 100 ? 'slightly elevated' : 'optimal';
+          glucoseText += `- Average Glucose: ${avgGlucose} mg/dL (${status})\n`;
+        }
+        if (fastingGlucose) {
+          glucoseText += `- Fasting Glucose: ${fastingGlucose} mg/dL\n`;
+        }
+        if (variability) {
+          const varStatus = variability > 35 ? 'high - unstable' : variability > 20 ? 'moderate' : 'low - stable';
+          glucoseText += `- Glucose Variability: ${variability} (${varStatus})\n`;
+        }
+        if (timeInRange) {
+          glucoseText += `- Time in Range: ${timeInRange}% ${timeInRange < 70 ? '(⚠️ below target of 70%)' : '(good)'}\n`;
+        }
+        if (spikeTimes.length > 0) {
+          glucoseText += `- Spike Times: ${spikeTimes.join(', ')} (avoid carbs before these times)\n`;
+        }
+        if (spikeEvents.length > 0) {
+          const topSpikes = spikeEvents.slice(0, 3).map((e: any) => `${e.time}: ${e.value}mg/dL${e.trigger ? ` (${e.trigger})` : ''}`);
+          glucoseText += `- Recent Spike Events: ${topSpikes.join('; ')}\n`;
+        }
+
+        // Add Dexcom insights if available
+        if (dexcomRaw?.insights && dexcomRaw.insights.length > 0) {
+          glucoseText += `- Insights: ${dexcomRaw.insights.slice(0, 2).join('; ')}`;
+        }
+
+        parts.push(glucoseText);
+      }
+
+      // Vital Data (Fitbit/Strava/Garmin/etc.) - with actual stats
+      const vitalRaw = rawPatterns.vital || {};
+
+      if (vitalRaw?.connectedProviders && vitalRaw.connectedProviders.length > 0) {
+        let vitalText = `**Wearable Data (from ${vitalRaw.connectedProviders.join(', ')}) - CITE THESE STATS:**\n`;
+
+        // Activity data
+        if (vitalRaw?.activityData) {
+          const activity = vitalRaw.activityData;
+          if (activity.steps) vitalText += `- Daily Steps: ${activity.steps} average\n`;
+          if (activity.calories) vitalText += `- Calories Burned: ${activity.calories} kcal/day\n`;
+          if (activity.activeMinutes) vitalText += `- Active Minutes: ${activity.activeMinutes} min/day\n`;
+        }
+
+        // Sleep data (if not from Oura)
+        if (vitalRaw?.sleepData && !ouraRaw?.avgSleepHours) {
+          const sleep = vitalRaw.sleepData;
+          if (sleep.duration) vitalText += `- Sleep Duration: ${sleep.duration}h average\n`;
+          if (sleep.efficiency) vitalText += `- Sleep Efficiency: ${sleep.efficiency}%\n`;
+        }
+
+        // Workout data
+        if (vitalRaw?.workoutsData) {
+          const workouts = vitalRaw.workoutsData;
+          if (workouts.weeklyCount) vitalText += `- Workouts/Week: ${workouts.weeklyCount}\n`;
+          if (workouts.avgDuration) vitalText += `- Avg Workout Duration: ${workouts.avgDuration} min\n`;
+          if (workouts.types) vitalText += `- Workout Types: ${workouts.types.join(', ')}\n`;
+        }
+
+        // Body data
+        if (vitalRaw?.bodyData) {
+          const body = vitalRaw.bodyData;
+          if (body.weight) vitalText += `- Weight: ${body.weight} kg\n`;
+          if (body.bodyFat) vitalText += `- Body Fat: ${body.bodyFat}%\n`;
+        }
+
+        // Insights
+        if (vitalRaw?.insights && vitalRaw.insights.length > 0) {
+          vitalText += `- Insights: ${vitalRaw.insights.slice(0, 2).join('; ')}`;
+        }
+
+        parts.push(vitalText);
+      }
+
+      // Blood Biomarkers - with actual values
+      const biomarkersRaw = rawPatterns.bloodBiomarkers || {};
+
+      if (biomarkersRaw?.biomarkers && biomarkersRaw.biomarkers.length > 0) {
+        let bioText = `**Blood Biomarkers - CITE THESE EXACT VALUES:**\n`;
+
+        // Show top biomarkers with their values and status
+        const topMarkers = biomarkersRaw.biomarkers.slice(0, 8);
+        topMarkers.forEach((marker: any) => {
+          const statusIcon = marker.status === 'low' || marker.status === 'high' ? '⚠️ ' : '';
+          bioText += `- ${marker.name}: ${marker.value} (${statusIcon}${marker.status})\n`;
+        });
+
+        // Show concerns if any
+        if (biomarkersRaw?.concerns && biomarkersRaw.concerns.length > 0) {
+          bioText += `- ⚠️ Key Concerns: ${biomarkersRaw.concerns.join(', ')}\n`;
+        }
+
+        // Show optimizations if any
+        if (biomarkersRaw?.optimizations && biomarkersRaw.optimizations.length > 0) {
+          bioText += `- Optimization Targets: ${biomarkersRaw.optimizations.slice(0, 3).join(', ')}`;
+        }
+
+        parts.push(bioText);
       }
 
       // Key insights (limit to 3)

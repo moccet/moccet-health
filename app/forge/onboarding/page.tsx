@@ -3799,7 +3799,7 @@ export default function ForgeOnboarding() {
 
           <div className="integrations-scroll-container">
             {/* Connected Integrations Section */}
-            {(gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) && (
+            {(gmailConnected || outlookConnected || slackConnected || vitalConnected || whoopConnected || ouraConnected || formData.integrations.length > 0) && (
               <>
                 <div className="integration-section-header">
                   <h2 className="integration-section-title">Connected</h2>
@@ -3929,13 +3929,16 @@ export default function ForgeOnboarding() {
                   </div>
                 )}
 
-                {formData.integrations.includes('whoop') && (
+                {(whoopConnected || formData.integrations.includes('whoop')) && (
                   <div className="integration-item">
+                    <div className="integration-logo">
+                      <img src="/images/whoop.png" alt="WHOOP" />
+                    </div>
                     <div className="integration-info">
                       <h3 className="integration-name">WHOOP</h3>
-                      <p className="integration-description">Upload your recovery and strain data</p>
+                      <p className="integration-description">Sync your recovery, strain, and HRV data</p>
                     </div>
-                    <button className="connect-button connected" onClick={() => handleOpenUploadModal('whoop')}>
+                    <button className="connect-button connected" onClick={handleDisconnectWhoop}>
                       ✓ Connected
                     </button>
                   </div>
@@ -3969,7 +3972,7 @@ export default function ForgeOnboarding() {
           )}
 
           {/* Available Integrations Section */}
-          <div className="integration-section-header" style={{marginTop: (gmailConnected || outlookConnected || slackConnected || vitalConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
+          <div className="integration-section-header" style={{marginTop: (gmailConnected || outlookConnected || slackConnected || vitalConnected || whoopConnected || ouraConnected || formData.integrations.length > 0) ? '32px' : '0'}}>
             <h2 className="integration-section-title">Available</h2>
             <p className="integration-section-description">Connect your tools to provide Forge with richer data</p>
           </div>
@@ -4053,7 +4056,7 @@ export default function ForgeOnboarding() {
               </div>
             )}
 
-            {!whoopConnected && (
+            {!whoopConnected && !formData.integrations.includes('whoop') && (
               <div className="integration-item">
                 <div className="integration-logo">
                   <img src="/images/whoop.png" alt="WHOOP" />
@@ -4064,21 +4067,6 @@ export default function ForgeOnboarding() {
                 </div>
                 <button className="connect-button" onClick={handleConnectWhoop}>
                   Connect
-                </button>
-              </div>
-            )}
-
-            {whoopConnected && (
-              <div className="integration-item connected">
-                <div className="integration-logo">
-                  <img src="/images/whoop.png" alt="WHOOP" />
-                </div>
-                <div className="integration-info">
-                  <h3 className="integration-name">WHOOP</h3>
-                  <p className="integration-description">Connected</p>
-                </div>
-                <button className="disconnect-button" onClick={handleDisconnectWhoop}>
-                  Disconnect
                 </button>
               </div>
             )}

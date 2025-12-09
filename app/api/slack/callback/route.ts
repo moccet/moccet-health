@@ -67,10 +67,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Get team info and tokens
+    // With user_scope OAuth, the user token is in authed_user.access_token
     const teamName = tokenData.team?.name || 'Slack Workspace';
-    const accessToken = tokenData.access_token;
+    const userAccessToken = tokenData.authed_user?.access_token;
+    const botAccessToken = tokenData.access_token; // May be undefined with user_scope only
+    const accessToken = userAccessToken || botAccessToken; // Prefer user token
     const teamId = tokenData.team?.id;
     const userId = tokenData.authed_user?.id;
+
+    console.log('[SLACK CALLBACK] Token type:', userAccessToken ? 'user (xoxp)' : 'bot (xoxb)');
+    console.log('[SLACK CALLBACK] User ID:', userId);
 
     console.log('[SLACK CALLBACK] Connection successful, team:', teamName);
 
@@ -105,13 +111,17 @@ export async function GET(request: NextRequest) {
 
     // Store tokens in database (now we have email from cookies OR state)
     if (userEmail && accessToken) {
+      // Get scopes from the appropriate place depending on token type
+      const scopes = tokenData.authed_user?.scope?.split(',') || tokenData.scope?.split(',') || [];
+
       const storeResult = await storeToken(userEmail, 'slack', {
         accessToken,
         providerUserId: userId,
-        scopes: tokenData.scope?.split(',') || [],
+        scopes,
         metadata: {
           team_id: teamId,
           team_name: teamName,
+          token_type: userAccessToken ? 'user' : 'bot',
         },
       }, userCode);
 

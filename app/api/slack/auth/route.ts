@@ -19,21 +19,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Slack not configured' }, { status: 500, headers: corsHeaders });
     }
 
-    // Slack OAuth scopes - include all needed for conversations.list and enhanced analysis
-    const scopes = [
+    // User scopes - these grant permissions to the USER token (not bot)
+    // This allows us to identify the user's own messages
+    const userScopes = [
       'users:read',
       'users:read.email',
       'channels:history',
       'channels:read',
-      'groups:read',      // For private channels in conversations.list
+      'groups:read',      // For private channels
       'groups:history',   // For reading private channel messages
       'im:history',
       'im:read',
-      'reactions:read'    // For engagement metrics (reactions given/received)
+      'mpim:history',     // For group DMs
+      'mpim:read',
+      'reactions:read'    // For engagement metrics
     ].join(',');
 
-    // Include state parameter so callback receives email/code
-    const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+    // Use user_scope instead of scope to get a USER token (xoxp-) not a bot token (xoxb-)
+    // This allows auth.test to return the actual user's ID for accurate message filtering
+    const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&user_scope=${userScopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
     return NextResponse.json({ authUrl }, { headers: corsHeaders });
   } catch (error) {

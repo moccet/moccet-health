@@ -609,7 +609,7 @@ export async function POST(request: NextRequest) {
 
         if (historyData.ok && historyData.messages) {
           for (const message of historyData.messages) {
-            // FIXED: Only count current user's messages, not everyone's
+            // Filter to current user's messages only (requires user token from user_scope OAuth)
             if (message.ts && !message.bot_id && message.user === currentUserId) {
               const date = new Date(parseFloat(message.ts) * 1000);
               const hour = date.getHours();

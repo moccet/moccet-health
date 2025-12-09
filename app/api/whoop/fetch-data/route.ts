@@ -282,7 +282,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cycles: WhoopCycle[] = await cyclesResponse.json();
+    const cyclesData = await cyclesResponse.json();
+    // Whoop API returns { records: [...] } not a direct array
+    const cycles: WhoopCycle[] = cyclesData.records || cyclesData || [];
     console.log(`[Whoop Fetch] Retrieved ${cycles.length} cycles`);
 
     // Analyze recovery trends

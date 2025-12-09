@@ -82,6 +82,18 @@ export default function ShoppingCart({ userEmail, planCode, isOpen: controlledIs
     }
   }, [userEmail]);
 
+  // Listen for cart updates from other components
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, [userEmail]);
+
   // Check if user has saved address for one-click checkout
   const checkSavedAddress = async () => {
     try {

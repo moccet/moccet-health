@@ -9,15 +9,16 @@ const supabase = createClient(
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
-  // Try forge_onboarding_data first
+  // Try forge_onboarding_data first (use limit(1) instead of single() to avoid error if multiple rows)
   const { data: forgeData } = await supabase
     .from('forge_onboarding_data')
     .select('form_data')
     .eq('email', email)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-  if (forgeData?.form_data?.uniqueCode) {
-    return forgeData.form_data.uniqueCode;
+  if (forgeData?.[0]?.form_data?.uniqueCode) {
+    return forgeData[0].form_data.uniqueCode;
   }
 
   // Try sage_onboarding_data
@@ -25,10 +26,11 @@ async function getUserCode(email: string): Promise<string | null> {
     .from('sage_onboarding_data')
     .select('form_data')
     .eq('email', email)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-  if (sageData?.form_data?.uniqueCode) {
-    return sageData.form_data.uniqueCode;
+  if (sageData?.[0]?.form_data?.uniqueCode) {
+    return sageData[0].form_data.uniqueCode;
   }
 
   return null;
@@ -67,11 +69,12 @@ export async function POST(request: NextRequest) {
       query = query.eq('user_email', email);
     }
 
-    const { data: tokenData, error: tokenError } = await query.single();
+    // Use limit(1) instead of single() to avoid "Cannot coerce to single JSON object" error
+    const { data: tokenData, error: tokenError } = await query.order('created_at', { ascending: false }).limit(1);
 
-    if (tokenData?.access_token) {
+    if (tokenData?.[0]?.access_token) {
       // Token is stored base64 encoded, decode it
-      accessToken = Buffer.from(tokenData.access_token, 'base64').toString('utf-8');
+      accessToken = Buffer.from(tokenData[0].access_token, 'base64').toString('utf-8');
       console.log(`[Oura Sync] Using token from database for ${email}`);
     } else {
       // Fallback to cookies (for browser-initiated syncs)

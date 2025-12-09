@@ -395,12 +395,13 @@ async function callProviderRefresh(
       client_secret: clientSecret,
     });
 
-    // Special case for Fitbit and Whoop (uses Basic Auth)
+    // Special case for Fitbit (uses Basic Auth)
+    // Note: Whoop uses client_secret_post (credentials in body), not Basic Auth
     const headers: Record<string, string> = {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    if (provider === 'fitbit' || provider === 'whoop') {
+    if (provider === 'fitbit') {
       const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       headers['Authorization'] = `Basic ${basicAuth}`;
     }

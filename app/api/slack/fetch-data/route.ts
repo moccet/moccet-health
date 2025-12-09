@@ -40,6 +40,16 @@ interface MessageData {
   isWeekend: boolean;
   isAfterHours: boolean;
   channelId: string;
+  channelName?: string;
+  isThreadReply: boolean;
+  isThreadStarter: boolean;
+  mentions: string[]; // User IDs mentioned in message
+  text?: string;
+}
+
+// User ID to name mapping
+interface UserMap {
+  [userId: string]: string;
 }
 
 /**
@@ -201,25 +211,232 @@ function calculateStressIndicators(
 }
 
 /**
+ * Calculate thread patterns from messages
+ */
+function calculateThreadPatterns(messages: MessageData[]): SlackPatterns['threadPatterns'] {
+  const threadsStarted = messages.filter(m => m.isThreadStarter).length;
+  const threadsParticipatedIn = messages.filter(m => m.isThreadReply).length;
+  const topLevelMessages = messages.filter(m => !m.isThreadReply && !m.isThreadStarter).length;
+
+  const totalMessages = messages.length;
+  const threadedMessages = threadsStarted + threadsParticipatedIn;
+  const topLevelVsThreadedRatio = totalMessages > 0
+    ? Math.round((topLevelMessages / totalMessages) * 100) / 100
+    : 0;
+
+  return {
+    threadsStarted,
+    threadsParticipatedIn,
+    topLevelVsThreadedRatio
+  };
+}
+
+/**
+ * Calculate collaboration network from mentions
+ */
+function calculateCollaborationNetwork(
+  messages: MessageData[],
+  userMap: UserMap,
+  currentUserId: string
+): SlackPatterns['collaborationNetwork'] {
+  // Count mentions given by user
+  const mentionCounts: Record<string, number> = {};
+  let totalMentions = 0;
+
+  messages.forEach(msg => {
+    msg.mentions.forEach(userId => {
+      if (userId !== currentUserId) {
+        mentionCounts[userId] = (mentionCounts[userId] || 0) + 1;
+        totalMentions++;
+      }
+    });
+  });
+
+  // Get top collaborators
+  const topCollaborators = Object.entries(mentionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([userId, count]) => ({
+      name: userMap[userId] || `User ${userId.slice(-4)}`,
+      mentionCount: count
+    }));
+
+  return {
+    topCollaborators,
+    uniquePeopleMentioned: Object.keys(mentionCounts).length,
+    mentionsReceived: 0 // Would need to search all messages for mentions of current user
+  };
+}
+
+/**
+ * Calculate channel behavior patterns
+ */
+function calculateChannelBehavior(
+  messages: MessageData[],
+  totalChannels: number
+): SlackPatterns['channelBehavior'] {
+  // Count messages per channel
+  const channelCounts: Record<string, { count: number; name: string }> = {};
+
+  messages.forEach(msg => {
+    if (!channelCounts[msg.channelId]) {
+      channelCounts[msg.channelId] = { count: 0, name: msg.channelName || msg.channelId };
+    }
+    channelCounts[msg.channelId].count++;
+  });
+
+  const activeChannels = Object.keys(channelCounts).length;
+
+  // Get most active channels
+  const mostActiveChannels = Object.entries(channelCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([, data]) => ({
+      name: data.name,
+      messageCount: data.count
+    }));
+
+  return {
+    totalChannels,
+    activeChannels,
+    channelOverloadScore: totalChannels, // Simple score = total channels
+    mostActiveChannels
+  };
+}
+
+/**
+ * Calculate focus metrics and deep work windows
+ */
+function calculateFocusMetrics(messages: MessageData[], totalDays: number): SlackPatterns['focusMetrics'] {
+  if (messages.length === 0) {
+    return {
+      deepWorkWindows: totalDays * 2, // Assume 2 deep work windows per day if no messages
+      longestFocusPeriod: 480, // 8 hours
+      contextSwitchingScore: 'low'
+    };
+  }
+
+  // Sort messages by timestamp
+  const sortedMessages = [...messages].sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  // Find gaps between messages (potential deep work windows)
+  let deepWorkWindows = 0;
+  let longestGap = 0;
+
+  for (let i = 1; i < sortedMessages.length; i++) {
+    const gap = new Date(sortedMessages[i].timestamp).getTime() -
+                new Date(sortedMessages[i-1].timestamp).getTime();
+    const gapMinutes = gap / (1000 * 60);
+
+    // 2+ hour gaps during work hours (9am-5pm) count as deep work windows
+    const prevHour = new Date(sortedMessages[i-1].timestamp).getHours();
+    if (gapMinutes >= 120 && prevHour >= 9 && prevHour < 17) {
+      deepWorkWindows++;
+    }
+
+    longestGap = Math.max(longestGap, gapMinutes);
+  }
+
+  // Calculate channel switches per hour
+  const uniqueChannelSwitches = new Set<string>();
+  let channelSwitchCount = 0;
+  let lastChannel = '';
+
+  sortedMessages.forEach(msg => {
+    if (lastChannel && lastChannel !== msg.channelId) {
+      channelSwitchCount++;
+    }
+    lastChannel = msg.channelId;
+    uniqueChannelSwitches.add(msg.channelId);
+  });
+
+  // Messages spread over days
+  const avgMessagesPerHour = messages.length / (totalDays * 8); // Assume 8 work hours
+  const avgSwitchesPerHour = channelSwitchCount / (totalDays * 8);
+
+  let contextSwitchingScore: 'high' | 'moderate' | 'low' = 'low';
+  if (avgSwitchesPerHour > 5 || uniqueChannelSwitches.size > 15) {
+    contextSwitchingScore = 'high';
+  } else if (avgSwitchesPerHour > 2 || uniqueChannelSwitches.size > 8) {
+    contextSwitchingScore = 'moderate';
+  }
+
+  return {
+    deepWorkWindows,
+    longestFocusPeriod: Math.round(longestGap),
+    contextSwitchingScore
+  };
+}
+
+/**
  * Generate insights from Slack patterns
  */
 function generateInsights(patterns: Omit<SlackPatterns, 'insights'>): string[] {
   const insights: string[] = [];
 
+  // Collaboration network insights
+  if (patterns.collaborationNetwork?.topCollaborators && patterns.collaborationNetwork.topCollaborators.length > 0) {
+    const topNames = patterns.collaborationNetwork.topCollaborators
+      .slice(0, 3)
+      .map(c => `${c.name} (${c.mentionCount})`)
+      .join(', ');
+    insights.push(`You collaborate most with ${topNames}`);
+  }
+
+  // Channel overload insights
+  if (patterns.channelBehavior) {
+    if (patterns.channelBehavior.totalChannels > 50) {
+      insights.push(`You're in ${patterns.channelBehavior.totalChannels} channels but active in only ${patterns.channelBehavior.activeChannels} - consider leaving dormant channels to reduce noise`);
+    } else if (patterns.channelBehavior.totalChannels > 30 && patterns.channelBehavior.activeChannels < patterns.channelBehavior.totalChannels * 0.3) {
+      insights.push(`Active in ${patterns.channelBehavior.activeChannels} of ${patterns.channelBehavior.totalChannels} channels - many dormant memberships`);
+    }
+  }
+
+  // Focus metrics insights
+  if (patterns.focusMetrics) {
+    if (patterns.focusMetrics.deepWorkWindows === 0) {
+      insights.push(`No deep work periods detected - your longest focus was ${patterns.focusMetrics.longestFocusPeriod} minutes`);
+    } else if (patterns.focusMetrics.deepWorkWindows < 5) {
+      insights.push(`Only ${patterns.focusMetrics.deepWorkWindows} deep work windows (2+ hours) in the past 30 days`);
+    }
+
+    if (patterns.focusMetrics.contextSwitchingScore === 'high') {
+      insights.push('High context-switching detected - frequently jumping between channels');
+    }
+  }
+
+  // Thread pattern insights
+  if (patterns.threadPatterns) {
+    if (patterns.threadPatterns.topLevelVsThreadedRatio > 0.8) {
+      insights.push(`${Math.round(patterns.threadPatterns.topLevelVsThreadedRatio * 100)}% of messages are top-level broadcasts - threading could improve focus`);
+    }
+    if (patterns.threadPatterns.threadsStarted > patterns.threadPatterns.threadsParticipatedIn * 2) {
+      insights.push('You start threads more than you participate in them - initiator profile');
+    }
+  }
+
+  // Engagement insights
+  if (patterns.engagementMetrics) {
+    const { reactionsGiven, reactionsReceived } = patterns.engagementMetrics;
+    if (reactionsGiven > 0 && reactionsReceived > 0) {
+      const ratio = reactionsGiven / reactionsReceived;
+      if (ratio > 2) {
+        insights.push(`You give ${Math.round(ratio)}x more reactions than you receive - high engagement giver`);
+      } else if (ratio < 0.5) {
+        insights.push('Your messages receive more reactions than you give - high visibility');
+      }
+    }
+  }
+
   // Message volume insights
   if (patterns.messageVolume.avgPerDay > 50) {
     insights.push(`Very high Slack activity with ${patterns.messageVolume.avgPerDay} messages per day`);
-  } else if (patterns.messageVolume.avgPerDay > 30) {
-    insights.push(`High Slack activity with ${patterns.messageVolume.avgPerDay} messages per day`);
   }
 
   if (patterns.messageVolume.afterHoursPercentage > 30) {
-    insights.push(`${patterns.messageVolume.afterHoursPercentage}% of messages sent outside work hours`);
-  }
-
-  // Collaboration intensity insights
-  if (patterns.collaborationIntensity === 'high') {
-    insights.push('High collaboration intensity across multiple channels');
+    insights.push(`${patterns.messageVolume.afterHoursPercentage}% of messages sent outside work hours (9am-5pm)`);
   }
 
   // Work-life balance insights
@@ -234,10 +451,6 @@ function generateInsights(patterns: Omit<SlackPatterns, 'insights'>): string[] {
 
   if (patterns.stressIndicators.lateNightMessages) {
     insights.push('Late-night Slack activity detected (after 10pm)');
-  }
-
-  if (patterns.stressIndicators.noBreakPeriods) {
-    insights.push('Extended periods of continuous messaging without breaks');
   }
 
   // Positive insights
@@ -283,6 +496,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current user's Slack ID to filter only their messages
+    const authResponse = await fetch('https://slack.com/api/auth.test', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const authData = await authResponse.json();
+    const currentUserId = authData.user_id;
+    console.log(`[Slack Fetch] Filtering messages for user: ${currentUserId}`);
+
+    // Fetch users list for name mapping
+    const userMap: UserMap = {};
+    try {
+      const usersResponse = await fetch('https://slack.com/api/users.list?limit=500', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const usersData = await usersResponse.json();
+      if (usersData.ok && usersData.members) {
+        usersData.members.forEach((user: { id: string; real_name?: string; name?: string }) => {
+          userMap[user.id] = user.real_name || user.name || user.id;
+        });
+      }
+    } catch (err) {
+      console.warn('[Slack Fetch] Could not fetch user names:', err);
+    }
+
+    // Fetch reactions given by user
+    let reactionsGiven = 0;
+    try {
+      const reactionsResponse = await fetch('https://slack.com/api/reactions.list?limit=100', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const reactionsData = await reactionsResponse.json();
+      if (reactionsData.ok && reactionsData.items) {
+        reactionsGiven = reactionsData.items.length;
+      }
+    } catch (err) {
+      console.warn('[Slack Fetch] Could not fetch reactions:', err);
+    }
+
     // Calculate timestamp for 30 days ago
     const endDate = new Date();
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -291,7 +542,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Slack Fetch] Fetching data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-    // Get user's conversations (channels, DMs, etc.)
+    // Get ALL user's conversations to count total channels
+    const allChannelsResponse = await fetch(
+      'https://slack.com/api/users.conversations?types=public_channel,private_channel&limit=500',
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    const allChannelsData = await allChannelsResponse.json();
+    const totalChannels = allChannelsData.ok ? (allChannelsData.channels?.length || 0) : 0;
+    console.log(`[Slack Fetch] User is member of ${totalChannels} total channels`);
+
+    // Get user's conversations (channels, DMs, etc.) for message fetching
     const conversationsResponse = await fetch(
       'https://slack.com/api/conversations.list?types=public_channel,private_channel,im&limit=100',
       {
@@ -313,11 +578,20 @@ export async function POST(request: NextRequest) {
     }
 
     const channels = conversationsData.channels || [];
-    console.log(`[Slack Fetch] Found ${channels.length} conversations`);
+    console.log(`[Slack Fetch] Found ${channels.length} conversations to analyze`);
+
+    // Create channel ID to name mapping
+    const channelNameMap: Record<string, string> = {};
+    channels.forEach((ch: { id: string; name?: string }) => {
+      channelNameMap[ch.id] = ch.name || ch.id;
+    });
 
     // Fetch message history from channels (limit to first 20 channels for performance)
     const messageData: MessageData[] = [];
     const channelsToCheck = channels.slice(0, 20);
+
+    // Regex to extract @mentions from message text
+    const mentionRegex = /<@([A-Z0-9]+)>/g;
 
     for (const channel of channelsToCheck) {
       try {
@@ -335,13 +609,28 @@ export async function POST(request: NextRequest) {
 
         if (historyData.ok && historyData.messages) {
           for (const message of historyData.messages) {
-            // Only count user messages, not bot messages
-            if (message.ts && !message.bot_id) {
+            // FIXED: Only count current user's messages, not everyone's
+            if (message.ts && !message.bot_id && message.user === currentUserId) {
               const date = new Date(parseFloat(message.ts) * 1000);
               const hour = date.getHours();
               const dayOfWeek = date.getDay();
               const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-              const isAfterHours = hour < 7 || hour >= 19;
+              // FIXED: After-hours is now 9am-5pm (was 7am-7pm)
+              const isAfterHours = hour < 9 || hour >= 17;
+
+              // Extract mentions from message text
+              const mentions: string[] = [];
+              if (message.text) {
+                const matches = message.text.matchAll(mentionRegex);
+                for (const match of matches) {
+                  mentions.push(match[1]);
+                }
+              }
+
+              // Detect thread participation
+              const threadTs = message.thread_ts;
+              const isThreadReply = !!(threadTs && threadTs !== message.ts);
+              const isThreadStarter = !!(threadTs && threadTs === message.ts);
 
               messageData.push({
                 timestamp: date.toISOString(),
@@ -349,7 +638,12 @@ export async function POST(request: NextRequest) {
                 dayOfWeek,
                 isWeekend,
                 isAfterHours,
-                channelId: channel.id
+                channelId: channel.id,
+                channelName: channelNameMap[channel.id],
+                isThreadReply,
+                isThreadStarter,
+                mentions,
+                text: message.text
               });
             }
           }
@@ -359,7 +653,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[Slack Fetch] Processed ${messageData.length} messages from ${channelsToCheck.length} channels`);
+    console.log(`[Slack Fetch] Processed ${messageData.length} of YOUR messages from ${channelsToCheck.length} channels`);
 
     // Calculate behavioral patterns
     const messageVolume = calculateMessageVolume(messageData, totalDays);
@@ -367,11 +661,30 @@ export async function POST(request: NextRequest) {
     const collaborationIntensity = calculateCollaborationIntensity(messageData, totalDays);
     const stressIndicators = calculateStressIndicators(messageVolume, workHours, messageData);
 
+    // NEW: Calculate enhanced patterns
+    const threadPatterns = calculateThreadPatterns(messageData);
+    const collaborationNetwork = calculateCollaborationNetwork(messageData, userMap, currentUserId);
+    const channelBehavior = calculateChannelBehavior(messageData, totalChannels);
+    const focusMetrics = calculateFocusMetrics(messageData, totalDays);
+
+    // Engagement metrics (reactions)
+    const engagementMetrics: SlackPatterns['engagementMetrics'] = {
+      reactionsGiven,
+      reactionsReceived: 0, // Would need to scan all messages for reactions to user's messages
+      avgReactionsPerMessage: messageData.length > 0 ? reactionsGiven / messageData.length : 0
+    };
+
     const patterns: SlackPatterns = {
       messageVolume,
       workHours,
       collaborationIntensity,
       stressIndicators,
+      // NEW fields
+      threadPatterns,
+      collaborationNetwork,
+      channelBehavior,
+      focusMetrics,
+      engagementMetrics,
       insights: []
     };
 

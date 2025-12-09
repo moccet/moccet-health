@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Slack not configured' }, { status: 500, headers: corsHeaders });
     }
 
-    // Slack OAuth scopes - include all needed for conversations.list
+    // Slack OAuth scopes - include all needed for conversations.list and enhanced analysis
     const scopes = [
       'users:read',
       'users:read.email',
@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
       'groups:read',      // For private channels in conversations.list
       'groups:history',   // For reading private channel messages
       'im:history',
-      'im:read'
+      'im:read',
+      'reactions:read'    // For engagement metrics (reactions given/received)
     ].join(',');
 
     // Include state parameter so callback receives email/code

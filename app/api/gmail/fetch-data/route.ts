@@ -323,45 +323,294 @@ function calculateStressIndicators(
 }
 
 /**
+ * Analyze meeting types (1:1, group, large all-hands)
+ */
+function calculateMeetingTypes(events: CalendarEvent[]): GmailPatterns['meetingTypes'] {
+  let oneOnOnes = 0;
+  let groupMeetings = 0;
+  let largeAllHands = 0;
+  let totalAttendees = 0;
+  let eventsWithAttendees = 0;
+
+  events.forEach(event => {
+    const attendeeCount = event.attendees?.length || 1;
+    totalAttendees += attendeeCount;
+    eventsWithAttendees++;
+
+    if (attendeeCount <= 2) {
+      oneOnOnes++;
+    } else if (attendeeCount >= 10) {
+      largeAllHands++;
+    } else {
+      groupMeetings++;
+    }
+  });
+
+  return {
+    oneOnOnes,
+    groupMeetings,
+    largeAllHands,
+    avgAttendeesPerMeeting: eventsWithAttendees > 0
+      ? Math.round((totalAttendees / eventsWithAttendees) * 10) / 10
+      : 0
+  };
+}
+
+/**
+ * Analyze focus time blocks and meeting-free periods
+ */
+function calculateFocusTime(events: CalendarEvent[], totalDays: number): GmailPatterns['focusTime'] {
+  // Group events by date
+  const eventsByDate: Record<string, CalendarEvent[]> = {};
+
+  events.forEach(event => {
+    if (event.start?.dateTime) {
+      const dateKey = new Date(event.start.dateTime as string).toISOString().split('T')[0];
+      if (!eventsByDate[dateKey]) {
+        eventsByDate[dateKey] = [];
+      }
+      eventsByDate[dateKey].push(event);
+    }
+  });
+
+  // Count meeting-free days
+  const datesWithMeetings = Object.keys(eventsByDate).length;
+  const meetingFreeDays = Math.max(0, totalDays - datesWithMeetings);
+
+  // Calculate focus blocks (2+ hour gaps during work hours 9am-5pm)
+  let totalFocusBlocks = 0;
+  let longestFocusBlock = 0;
+
+  Object.values(eventsByDate).forEach(dayEvents => {
+    const sortedEvents = dayEvents
+      .filter(e => e.start?.dateTime && e.end?.dateTime)
+      .sort((a, b) => new Date(a.start!.dateTime as string).getTime() - new Date(b.start!.dateTime as string).getTime());
+
+    // Check gap at start of day (9am to first meeting)
+    if (sortedEvents.length > 0) {
+      const firstMeetingStart = new Date(sortedEvents[0].start!.dateTime as string);
+      const dayStart = new Date(firstMeetingStart);
+      dayStart.setHours(9, 0, 0, 0);
+      const morningGap = (firstMeetingStart.getTime() - dayStart.getTime()) / (1000 * 60);
+      if (morningGap >= 120) {
+        totalFocusBlocks++;
+        longestFocusBlock = Math.max(longestFocusBlock, morningGap);
+      }
+    }
+
+    // Check gaps between meetings
+    for (let i = 0; i < sortedEvents.length - 1; i++) {
+      const currentEnd = new Date(sortedEvents[i].end!.dateTime as string);
+      const nextStart = new Date(sortedEvents[i + 1].start!.dateTime as string);
+      const gap = (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60);
+
+      if (gap >= 120) {
+        totalFocusBlocks++;
+        longestFocusBlock = Math.max(longestFocusBlock, gap);
+      }
+    }
+
+    // Check gap at end of day (last meeting to 5pm)
+    if (sortedEvents.length > 0) {
+      const lastMeetingEnd = new Date(sortedEvents[sortedEvents.length - 1].end!.dateTime as string);
+      const dayEnd = new Date(lastMeetingEnd);
+      dayEnd.setHours(17, 0, 0, 0);
+      const afternoonGap = (dayEnd.getTime() - lastMeetingEnd.getTime()) / (1000 * 60);
+      if (afternoonGap >= 120) {
+        totalFocusBlocks++;
+        longestFocusBlock = Math.max(longestFocusBlock, afternoonGap);
+      }
+    }
+  });
+
+  const avgFocusBlocksPerDay = datesWithMeetings > 0 ? totalFocusBlocks / datesWithMeetings : 2;
+
+  // Determine focus score
+  let focusScore: 'excellent' | 'good' | 'limited' | 'fragmented' = 'fragmented';
+  if (avgFocusBlocksPerDay >= 2 && longestFocusBlock >= 180) {
+    focusScore = 'excellent';
+  } else if (avgFocusBlocksPerDay >= 1.5 || longestFocusBlock >= 120) {
+    focusScore = 'good';
+  } else if (avgFocusBlocksPerDay >= 1 || longestFocusBlock >= 90) {
+    focusScore = 'limited';
+  }
+
+  return {
+    avgFocusBlocksPerDay: Math.round(avgFocusBlocksPerDay * 10) / 10,
+    longestFocusBlock: Math.round(longestFocusBlock),
+    meetingFreeDays,
+    focusScore
+  };
+}
+
+/**
+ * Analyze recurring meeting burden
+ */
+function calculateRecurringMeetings(events: CalendarEvent[]): GmailPatterns['recurringMeetings'] {
+  let weeklyRecurring = 0;
+  let totalRecurringMinutes = 0;
+  let standupsPerWeek = 0;
+
+  events.forEach(event => {
+    // Check if recurring
+    if (event.recurringEventId) {
+      weeklyRecurring++;
+
+      // Calculate duration
+      if (event.start?.dateTime && event.end?.dateTime) {
+        const start = new Date(event.start.dateTime as string);
+        const end = new Date(event.end.dateTime as string);
+        totalRecurringMinutes += (end.getTime() - start.getTime()) / (1000 * 60);
+      }
+
+      // Detect standups
+      const summary = (event.summary || '').toLowerCase();
+      if (summary.includes('standup') || summary.includes('stand-up') || summary.includes('daily') || summary.includes('sync')) {
+        standupsPerWeek++;
+      }
+    }
+  });
+
+  return {
+    weeklyRecurring,
+    totalRecurringHours: Math.round((totalRecurringMinutes / 60) * 10) / 10,
+    standupsPerWeek
+  };
+}
+
+/**
+ * Analyze calendar health (buffers, protected time)
+ */
+function calculateCalendarHealth(events: CalendarEvent[]): GmailPatterns['calendarHealth'] {
+  const sortedEvents = events
+    .filter(e => e.start?.dateTime && e.end?.dateTime)
+    .sort((a, b) => new Date(a.start!.dateTime as string).getTime() - new Date(b.start!.dateTime as string).getTime());
+
+  // Calculate average buffer between meetings
+  let totalBuffer = 0;
+  let bufferCount = 0;
+  let lunchMeetings = 0;
+  let eveningMeetings = 0;
+
+  for (let i = 0; i < sortedEvents.length - 1; i++) {
+    const currentEnd = new Date(sortedEvents[i].end!.dateTime as string);
+    const nextStart = new Date(sortedEvents[i + 1].start!.dateTime as string);
+
+    // Only count buffers on the same day
+    if (currentEnd.toDateString() === nextStart.toDateString()) {
+      const buffer = (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60);
+      if (buffer > 0 && buffer < 240) { // Ignore gaps > 4 hours
+        totalBuffer += buffer;
+        bufferCount++;
+      }
+    }
+  }
+
+  // Check lunch and evening protection
+  sortedEvents.forEach(event => {
+    if (event.start?.dateTime) {
+      const startHour = new Date(event.start.dateTime as string).getHours();
+      if (startHour >= 12 && startHour < 13) {
+        lunchMeetings++;
+      }
+      if (startHour >= 18) {
+        eveningMeetings++;
+      }
+    }
+  });
+
+  const uniqueDays = new Set(
+    sortedEvents.map(e => new Date(e.start!.dateTime as string).toDateString())
+  ).size;
+
+  return {
+    bufferBetweenMeetings: bufferCount > 0 ? Math.round(totalBuffer / bufferCount) : 30,
+    lunchProtected: uniqueDays > 0 ? (lunchMeetings / uniqueDays) < 0.3 : true,
+    eveningsClear: uniqueDays > 0 ? (eveningMeetings / uniqueDays) < 0.2 : true
+  };
+}
+
+/**
  * Generate insights from patterns
  */
 function generateInsights(patterns: Omit<GmailPatterns, 'insights'>): string[] {
   const insights: string[] = [];
 
+  // Focus time insights (most valuable)
+  if (patterns.focusTime) {
+    if (patterns.focusTime.focusScore === 'fragmented') {
+      insights.push(`Calendar is fragmented with only ${patterns.focusTime.avgFocusBlocksPerDay} focus blocks per day — deep work requires protection`);
+    } else if (patterns.focusTime.focusScore === 'excellent') {
+      insights.push(`Strong calendar hygiene with ${patterns.focusTime.meetingFreeDays} meeting-free days and regular focus blocks`);
+    }
+    if (patterns.focusTime.longestFocusBlock > 0 && patterns.focusTime.longestFocusBlock < 90) {
+      insights.push(`Longest uninterrupted period is only ${patterns.focusTime.longestFocusBlock} minutes — consider blocking longer focus time`);
+    }
+  }
+
+  // Meeting types insights
+  if (patterns.meetingTypes) {
+    const total = patterns.meetingTypes.oneOnOnes + patterns.meetingTypes.groupMeetings + patterns.meetingTypes.largeAllHands;
+    if (total > 0) {
+      const oneOnOnePercent = Math.round((patterns.meetingTypes.oneOnOnes / total) * 100);
+      if (oneOnOnePercent > 60) {
+        insights.push(`${oneOnOnePercent}% of meetings are 1:1s — consider batching for efficiency`);
+      }
+      if (patterns.meetingTypes.largeAllHands > 5) {
+        insights.push(`${patterns.meetingTypes.largeAllHands} large meetings (10+ people) this month — evaluate necessity`);
+      }
+    }
+  }
+
+  // Recurring meeting burden
+  if (patterns.recurringMeetings) {
+    if (patterns.recurringMeetings.totalRecurringHours > 15) {
+      insights.push(`${patterns.recurringMeetings.totalRecurringHours}h/week locked in recurring meetings — audit for value`);
+    }
+    if (patterns.recurringMeetings.standupsPerWeek > 5) {
+      insights.push(`${patterns.recurringMeetings.standupsPerWeek} standups per week may be excessive`);
+    }
+  }
+
+  // Calendar health insights
+  if (patterns.calendarHealth) {
+    if (!patterns.calendarHealth.lunchProtected) {
+      insights.push('Lunch hour is frequently invaded by meetings — nourishment deserves protection');
+    }
+    if (!patterns.calendarHealth.eveningsClear) {
+      insights.push('Evening meetings encroach on personal time — consider hard boundaries');
+    }
+    if (patterns.calendarHealth.bufferBetweenMeetings < 10) {
+      insights.push(`Only ${patterns.calendarHealth.bufferBetweenMeetings} minutes average between meetings — insufficient transition time`);
+    }
+  }
+
   // Meeting density insights
   if (patterns.meetingDensity.avgMeetingsPerDay > 8) {
-    insights.push(`High meeting load with ${patterns.meetingDensity.avgMeetingsPerDay} meetings per day on average`);
+    insights.push(`Calendar carries ${patterns.meetingDensity.avgMeetingsPerDay} meetings daily — a demanding cadence`);
   }
   if (patterns.meetingDensity.backToBackPercentage > 60) {
-    insights.push(`${patterns.meetingDensity.backToBackPercentage}% of meetings are back-to-back, limiting break time`);
+    insights.push(`${patterns.meetingDensity.backToBackPercentage}% back-to-back meetings leave no room to breathe`);
   }
 
   // Email volume insights
-  if (patterns.emailVolume.avgPerDay > 60) {
-    insights.push(`Very high email volume with ${patterns.emailVolume.avgPerDay} emails per day`);
-  }
   if (patterns.emailVolume.afterHoursPercentage > 25) {
-    insights.push(`${patterns.emailVolume.afterHoursPercentage}% of emails are sent/received outside work hours`);
+    insights.push(`${patterns.emailVolume.afterHoursPercentage}% of email activity flows beyond 5pm — evening boundaries may need reinforcement`);
   }
 
   // Work-life balance insights
   if (patterns.workHours.weekendActivity) {
-    insights.push('Regular weekend work activity detected');
-  }
-
-  // Stress indicators
-  if (patterns.stressIndicators.highEmailVolume && patterns.stressIndicators.shortMeetingBreaks) {
-    insights.push('High stress indicators: heavy email load combined with limited meeting breaks');
+    insights.push('Weekend work patterns detected — rest is not optional');
   }
 
   // Positive insights
-  if (patterns.optimalMealWindows.length > 0 && !patterns.stressIndicators.shortMeetingBreaks) {
-    insights.push('Good calendar structure with identifiable meal windows');
+  if (patterns.focusTime?.focusScore === 'excellent' && !patterns.stressIndicators.shortMeetingBreaks) {
+    insights.push('Well-structured calendar with meaningful focus time and adequate breaks');
   }
 
   // Default if no insights
   if (insights.length === 0) {
-    insights.push('Moderate work activity with balanced schedule');
+    insights.push('Balanced calendar structure with room for both collaboration and focus');
   }
 
   return insights;
@@ -467,7 +716,8 @@ export async function POST(request: NextRequest) {
           const hour = date.getHours();
           const dayOfWeek = date.getDay();
           const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-          const isAfterHours = hour < 7 || hour >= 19;
+          // FIXED: After-hours is now 9am-5pm (was 7am-7pm)
+          const isAfterHours = hour < 9 || hour >= 17;
 
           emailData.push({
             timestamp: date.toISOString(),
@@ -491,12 +741,23 @@ export async function POST(request: NextRequest) {
     const optimalMealWindows = findOptimalMealWindows(calendarEvents);
     const stressIndicators = calculateStressIndicators(meetingDensity, emailVolume, workHours);
 
+    // NEW: Enhanced analysis
+    const meetingTypes = calculateMeetingTypes(calendarEvents);
+    const focusTime = calculateFocusTime(calendarEvents, totalDays);
+    const recurringMeetings = calculateRecurringMeetings(calendarEvents);
+    const calendarHealth = calculateCalendarHealth(calendarEvents);
+
     const patterns: GmailPatterns = {
       meetingDensity,
       emailVolume,
       workHours,
       optimalMealWindows,
       stressIndicators,
+      // NEW fields
+      meetingTypes,
+      focusTime,
+      recurringMeetings,
+      calendarHealth,
       insights: []
     };
 

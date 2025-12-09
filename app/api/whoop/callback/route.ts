@@ -26,19 +26,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Exchange authorization code for access token
-    // Whoop uses Basic Auth for token exchange
-    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
+    // Whoop uses client_secret_post method (credentials in body, not header)
     const tokenResponse = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
+        client_id: clientId,
+        client_secret: clientSecret,
       }),
     });
 

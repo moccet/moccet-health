@@ -18,6 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllEcosystemData } from '@/lib/services/ecosystem-fetcher';
 import { analyzeEcosystemPatterns } from '@/lib/services/pattern-analyzer';
+import { analyzeWithAI } from '@/lib/services/ai-pattern-analyzer';
 import { autoSyncEcosystemData } from '@/lib/services/auto-sync';
 import { validateUnifiedContext, generateQualityMessage } from '@/lib/validators/context-validator';
 
@@ -215,10 +216,18 @@ export async function POST(request: NextRequest) {
     );
     console.log(`[Step 2/5] Fetched ${ecosystemData.successCount}/${ecosystemData.totalSources} sources`);
 
-    // Step 4: Analyze patterns and generate insights
-    console.log('[Step 3/5] Analyzing patterns and correlations...');
+    // Step 4: Analyze patterns (rule-based for structure)
+    console.log('[Step 3/6] Analyzing patterns (rule-based)...');
     const analysisResult = analyzeEcosystemPatterns(ecosystemData);
-    console.log(`[Step 3/5] Generated ${analysisResult.crossSourceInsights.length} cross-source insights`);
+    console.log(`[Step 3/6] Generated ${analysisResult.crossSourceInsights.length} rule-based insights`);
+
+    // Step 5: AI-powered deep analysis (finds non-obvious patterns)
+    console.log('[Step 4/6] Running AI pattern analysis...');
+    const aiAnalysis = await analyzeWithAI(ecosystemData);
+    console.log(`[Step 4/6] Generated ${aiAnalysis.insights.length} AI insights`);
+    if (aiAnalysis.primaryConcern) {
+      console.log(`[Step 4/6] Primary concern: ${aiAnalysis.primaryConcern}`);
+    }
 
     // Step 5: Validate context quality
     console.log('[Step 4/5] Validating context quality...');
@@ -442,6 +451,13 @@ export async function POST(request: NextRequest) {
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         // Include raw ecosystem patterns for detailed stats (actual percentages, timestamps, etc.)
         rawPatterns,
+        // AI-powered insights (non-obvious patterns and correlations)
+        aiAnalysis: {
+          insights: aiAnalysis.insights,
+          summary: aiAnalysis.summary,
+          primaryConcern: aiAnalysis.primaryConcern,
+          hiddenPatterns: aiAnalysis.hiddenPatterns,
+        },
       },
       generationTime: generationDuration,
       qualityMessage: generateQualityMessage(validation.qualityReport),

@@ -1413,7 +1413,7 @@ export default function PersonalisedPlanPage() {
                               }}>
                                 <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
                                 <div style={{ fontSize: '13px', color: '#000000' }}>
-                                  {exercise.sets} × {exercise.reps}
+                                  {exercise.prescription || (exercise.sets && exercise.reps ? `${exercise.sets} × ${exercise.reps}` : '')}
                                 </div>
                                 {exercise.notes && (
                                   <div style={{ fontSize: '12px', color: '#000000', marginTop: '4px', fontStyle: 'italic' }}>
@@ -1523,7 +1523,9 @@ export default function PersonalisedPlanPage() {
                                 marginBottom: '8px'
                               }}>
                                 <div style={{ fontWeight: '500', marginBottom: '4px' }}>{exercise.name}</div>
-                                <div style={{ fontSize: '13px', color: '#000000' }}>{exercise.duration}</div>
+                                <div style={{ fontSize: '13px', color: '#000000' }}>
+                                  {exercise.prescription || exercise.duration || ''}
+                                </div>
                                 {exercise.notes && (
                                   <div style={{ fontSize: '12px', color: '#000000', marginTop: '4px', fontStyle: 'italic' }}>
                                     {exercise.notes}

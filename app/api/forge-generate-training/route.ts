@@ -437,10 +437,38 @@ export async function POST(request: NextRequest) {
         parts.push(bioText);
       }
 
-      // Key insights (limit to 3)
-      const insights = unifiedContext.keyInsights?.slice(0, 3) || [];
-      if (insights.length > 0) {
-        parts.push(`**Cross-Source Insights:**\n${insights.map((i: any) => `- ${i.insight || i}`).join('\n')}`);
+      // AI-Powered Insights (prioritize these - they're genuinely interesting)
+      const aiAnalysis = unifiedContext.aiAnalysis || {};
+      if (aiAnalysis.insights && aiAnalysis.insights.length > 0) {
+        let aiText = `**AI-DISCOVERED PATTERNS (Non-obvious correlations - MUST CITE IN YOUR RESPONSE):**\n`;
+
+        if (aiAnalysis.primaryConcern) {
+          aiText += `\n⚠️ PRIMARY CONCERN: ${aiAnalysis.primaryConcern}\n\n`;
+        }
+
+        aiAnalysis.insights.forEach((insight: any, idx: number) => {
+          aiText += `\n${idx + 1}. **${insight.title}** (Impact: ${insight.impact})\n`;
+          aiText += `   Finding: ${insight.finding}\n`;
+          aiText += `   Data: ${insight.dataCited?.join(', ') || 'N/A'}\n`;
+          aiText += `   Action: ${insight.actionableRecommendation}\n`;
+        });
+
+        if (aiAnalysis.hiddenPatterns && aiAnalysis.hiddenPatterns.length > 0) {
+          aiText += `\n**Hidden Patterns You Probably Haven't Noticed:**\n`;
+          aiAnalysis.hiddenPatterns.forEach((pattern: string) => {
+            aiText += `- ${pattern}\n`;
+          });
+        }
+
+        parts.push(aiText);
+      }
+
+      // Fallback to rule-based insights if no AI insights
+      if (!aiAnalysis.insights || aiAnalysis.insights.length === 0) {
+        const insights = unifiedContext.keyInsights?.slice(0, 3) || [];
+        if (insights.length > 0) {
+          parts.push(`**Cross-Source Insights:**\n${insights.map((i: any) => `- ${i.insight || i}`).join('\n')}`);
+        }
       }
 
       const contextEnrichment = `\n\n## ECOSYSTEM DATA (Use this to personalize intros and recommendations)

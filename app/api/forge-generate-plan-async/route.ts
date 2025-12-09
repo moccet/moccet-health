@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client } from '@upstash/qstash';
 import { createClient } from '@/lib/supabase/server';
-import { notifyPlanQueued } from '@/lib/slack';
 import { incrementReferralCodeUsage } from '@/lib/referral-codes';
 
 // This endpoint publishes fitness plan generation jobs to Upstash QStash
@@ -86,14 +85,6 @@ export async function POST(request: NextRequest) {
       });
 
       console.log(`✅ Fitness plan generation job queued for ${email} (messageId: ${result.messageId})`);
-
-      // Send Slack notification
-      try {
-        await notifyPlanQueued(email, 'Forge', uniqueCode, fullName, referralCode);
-      } catch (slackError) {
-        console.warn('Failed to send Slack notification:', slackError);
-        // Don't fail the request if Slack notification fails
-      }
 
       return NextResponse.json({
         success: true,

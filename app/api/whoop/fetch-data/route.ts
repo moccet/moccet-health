@@ -1,6 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+
+// Helper function to look up user's unique code from onboarding data
+async function getUserCode(email: string): Promise<string | null> {
+  const supabase = createAdminClient();
+
+  // Try forge_onboarding_data first
+  const { data: forgeData } = await supabase
+    .from('forge_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (forgeData?.form_data?.uniqueCode) {
+    return forgeData.form_data.uniqueCode;
+  }
+
+  // Try sage_onboarding_data
+  const { data: sageData } = await supabase
+    .from('sage_onboarding_data')
+    .select('form_data')
+    .eq('email', email)
+    .single();
+
+  if (sageData?.form_data?.uniqueCode) {
+    return sageData.form_data.uniqueCode;
+  }
+
+  return null;
+}
 
 // ============================================================================
 // TYPES
@@ -201,7 +230,7 @@ function analyzeStrainPatterns(cycles: WhoopCycle[]) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, code } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -209,8 +238,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Whoop Fetch] Starting data fetch for ${email}`);
 
-    // Get access token
-    const { token, error: tokenError } = await getAccessToken(email, 'whoop');
+    // Get user code - use provided code or look it up from onboarding data
+    const userCode = code || await getUserCode(email);
+    if (userCode) {
+      console.log(`[Whoop Fetch] Using user code: ${userCode}`);
+    }
+
+    // Get access token using token-manager (handles refresh automatically)
+    const { token, error: tokenError } = await getAccessToken(email, 'whoop', userCode);
 
     if (!token || tokenError) {
       console.error('[Whoop Fetch] Token error:', tokenError);
@@ -229,7 +264,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch cycles (Whoop's main data structure - includes recovery, sleep, strain)
     const cyclesResponse = await fetch(
-      `https://api.whoop.com/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
+      `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,

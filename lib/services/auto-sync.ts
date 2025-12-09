@@ -105,6 +105,17 @@ async function verifyDataExists(email: string, source: string): Promise<boolean>
       return data !== null && data.length > 0;
     }
 
+    if (source === 'whoop') {
+      // Whoop data is stored in forge_training_data with provider='whoop'
+      const { data } = await supabase
+        .from('forge_training_data')
+        .select('id')
+        .eq('email', email)
+        .eq('provider', 'whoop')
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
     return false; // Unknown source, assume no data
   } catch (error) {
     console.error(`[Auto-Sync] Error verifying data exists for ${source}:`, error);
@@ -543,6 +554,44 @@ async function syncTeamsPatterns(email: string): Promise<SyncResult> {
   }
 }
 
+/**
+ * Sync Whoop data (recovery, cycles, sleep, HRV)
+ */
+async function syncWhoopData(email: string): Promise<SyncResult> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/whoop/fetch-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        source: 'whoop',
+        success: false,
+        error: result.error || 'Sync failed',
+        syncedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      source: 'whoop',
+      success: true,
+      recordCount: result.cyclesAnalyzed || 0,
+      syncedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      source: 'whoop',
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      syncedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ============================================================================
 // MAIN AUTO-SYNC FUNCTION
 // ============================================================================
@@ -575,7 +624,7 @@ export async function autoSyncEcosystemData(
   console.log(`${'='.repeat(80)}\n`);
 
   // Available sync sources
-  const allSources = ['oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams'];
+  const allSources = ['oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop'];
   const sourcesToSync = requestedSources || allSources;
 
   // Determine which sources need syncing
@@ -661,6 +710,16 @@ export async function autoSyncEcosystemData(
       syncTeamsPatterns(email)
         .then(result => {
           updateSyncStatus(email, planType, 'teams', result.success, { messagesAnalyzed: result.recordCount });
+          return result;
+        })
+    );
+  }
+
+  if (syncDecisions.whoop) {
+    syncPromises.push(
+      syncWhoopData(email)
+        .then(result => {
+          updateSyncStatus(email, planType, 'whoop', result.success, { cyclesAnalyzed: result.recordCount });
           return result;
         })
     );

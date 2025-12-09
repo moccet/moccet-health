@@ -367,6 +367,11 @@ async function callProviderRefresh(
         clientIdEnv: 'OUTLOOK_CLIENT_ID',
         clientSecretEnv: 'OUTLOOK_CLIENT_SECRET',
       },
+      whoop: {
+        url: 'https://api.prod.whoop.com/oauth/oauth2/token',
+        clientIdEnv: 'WHOOP_CLIENT_ID',
+        clientSecretEnv: 'WHOOP_CLIENT_SECRET',
+      },
       // Add more providers as needed
     };
 
@@ -390,12 +395,12 @@ async function callProviderRefresh(
       client_secret: clientSecret,
     });
 
-    // Special case for Fitbit (uses Basic Auth)
+    // Special case for Fitbit and Whoop (uses Basic Auth)
     const headers: Record<string, string> = {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    if (provider === 'fitbit') {
+    if (provider === 'fitbit' || provider === 'whoop') {
       const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       headers['Authorization'] = `Basic ${basicAuth}`;
     }

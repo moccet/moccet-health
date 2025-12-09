@@ -117,6 +117,19 @@ export type OutlookPatterns = GmailPatterns;
 // TeamsPatterns reuses SlackPatterns structure (chat message data)
 export type TeamsPatterns = SlackPatterns;
 
+export interface WhoopData {
+  avgRecoveryScore: number;
+  avgStrainScore: number;
+  avgHRV: number;
+  avgRestingHR: number;
+  recoveryTrend: 'improving' | 'stable' | 'declining';
+  strainTrend: 'high' | 'moderate' | 'low';
+  sleepPerformance: number;
+  cyclesAnalyzed: number;
+  insights: string[];
+  rawData: unknown;
+}
+
 export interface BloodBiomarkers {
   biomarkers: Array<{
     name: string;
@@ -144,6 +157,7 @@ export interface EcosystemFetchResult {
   slack: EcosystemDataSource;
   outlook: EcosystemDataSource;
   teams: EcosystemDataSource;
+  whoop: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -628,6 +642,102 @@ export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSo
 }
 
 /**
+ * Fetch Whoop data from forge_training_data table
+ */
+export async function fetchWhoopData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('forge_training_data')
+      .select('*')
+      .eq('email', email)
+      .eq('provider', 'whoop')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error || !data || data.length === 0) {
+      return {
+        source: 'whoop',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: error?.message || 'No Whoop data found',
+      };
+    }
+
+    const whoopRecord = data[0];
+
+    // Extract data from forge_training_data columns
+    const recoveryScore = whoopRecord.recovery_score as Record<string, unknown> || {};
+    const hrvTrends = whoopRecord.hrv_trends as Record<string, unknown> || {};
+    const restingHrTrends = whoopRecord.resting_hr_trends as Record<string, unknown> || {};
+
+    const processedData: WhoopData = {
+      avgRecoveryScore: (recoveryScore.avg as number) || 0,
+      avgStrainScore: 0, // Strain data would come from workout analysis
+      avgHRV: (hrvTrends.avg as number) || 0,
+      avgRestingHR: (restingHrTrends.avg as number) || 0,
+      recoveryTrend: (recoveryScore.trend as 'improving' | 'stable' | 'declining') || 'stable',
+      strainTrend: 'moderate', // Default
+      sleepPerformance: 0, // Would come from sleep analysis
+      cyclesAnalyzed: whoopRecord.data_points_analyzed || 0,
+      insights: [],
+      rawData: whoopRecord,
+    };
+
+    // Generate insights from actual data
+    const insights: string[] = [];
+
+    if (processedData.avgRecoveryScore > 0 && processedData.avgRecoveryScore < 50) {
+      insights.push(`Low average recovery score (${Math.round(processedData.avgRecoveryScore)}%) suggests inadequate recovery`);
+    } else if (processedData.avgRecoveryScore >= 67) {
+      insights.push(`Strong recovery score (${Math.round(processedData.avgRecoveryScore)}%) indicates good readiness`);
+    }
+
+    if (processedData.avgHRV > 0 && processedData.avgHRV < 50) {
+      insights.push(`Low HRV (${Math.round(processedData.avgHRV)}ms) may indicate stress or overtraining`);
+    } else if (processedData.avgHRV >= 70) {
+      insights.push(`Good HRV (${Math.round(processedData.avgHRV)}ms) suggests strong recovery capacity`);
+    }
+
+    if (processedData.avgRestingHR > 0 && processedData.avgRestingHR < 60) {
+      insights.push(`Low resting heart rate (${Math.round(processedData.avgRestingHR)} bpm) indicates good cardiovascular fitness`);
+    }
+
+    // Add recovery zone distribution if available
+    const greenDays = recoveryScore.greenDays as number;
+    const yellowDays = recoveryScore.yellowDays as number;
+    const redDays = recoveryScore.redDays as number;
+    if (greenDays !== undefined) {
+      insights.push(`Recovery distribution: ${greenDays} green days, ${yellowDays} yellow days, ${redDays} red days`);
+    }
+
+    processedData.insights = insights;
+
+    return {
+      source: 'whoop',
+      available: true,
+      data: processedData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: processedData.cyclesAnalyzed,
+    };
+  } catch (error) {
+    console.error('[Ecosystem Fetcher] Error fetching Whoop data:', error);
+    return {
+      source: 'whoop',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Fetch blood biomarkers from onboarding data
  */
 export async function fetchBloodBiomarkers(
@@ -699,7 +809,7 @@ export async function fetchAllEcosystemData(
   const startTime = Date.now();
 
   // Fetch all data sources in parallel
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams] = await Promise.all([
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop] = await Promise.all([
     fetchBloodBiomarkers(email, planType),
     fetchOuraData(email, options?.startDate, options?.endDate),
     fetchDexcomData(email, options?.startDate, options?.endDate),
@@ -708,6 +818,7 @@ export async function fetchAllEcosystemData(
     fetchSlackPatterns(email),
     fetchOutlookPatterns(email),
     fetchTeamsPatterns(email),
+    fetchWhoopData(email),
   ]);
 
   const result: EcosystemFetchResult = {
@@ -719,9 +830,10 @@ export async function fetchAllEcosystemData(
     slack,
     outlook,
     teams,
+    whoop,
     fetchTimestamp: new Date().toISOString(),
-    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams].filter(s => s.available).length,
-    totalSources: 8,
+    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop].filter(s => s.available).length,
+    totalSources: 9,
   };
 
   const duration = Date.now() - startTime;

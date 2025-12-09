@@ -111,6 +111,7 @@ export default function ForgeOnboarding() {
   const [dexcomConnected, setDexcomConnected] = useState(false);
   const [fitbitConnected, setFitbitConnected] = useState(false);
   const [stravaConnected, setStravaConnected] = useState(false);
+  const [whoopConnected, setWhoopConnected] = useState(false);
   const [vitalConnected, setVitalConnected] = useState(false);
   const [vitalUserId, setVitalUserId] = useState('');
   const [teamsConnected, setTeamsConnected] = useState(false);
@@ -634,6 +635,7 @@ export default function ForgeOnboarding() {
           setStravaConnected(state.stravaConnected);
           setFitbitConnected(state.fitbitConnected);
           setOuraConnected(state.ouraConnected);
+          setWhoopConnected(state.whoopConnected);
           setSlackConnected(state.slackConnected);
           setTeamsConnected(state.teamsConnected);
           setOutlookConnected(state.outlookConnected);
@@ -667,6 +669,14 @@ export default function ForgeOnboarding() {
               integrations: prev.integrations.includes('oura-ring')
                 ? prev.integrations
                 : [...prev.integrations, 'oura-ring']
+            }));
+          } else if (pendingIntegration === 'whoop') {
+            setWhoopConnected(true);
+            setFormData(prev => ({
+              ...prev,
+              integrations: prev.integrations.includes('whoop')
+                ? prev.integrations
+                : [...prev.integrations, 'whoop']
             }));
           } else if (pendingIntegration === 'dexcom') {
             setDexcomConnected(true);
@@ -755,6 +765,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -825,6 +836,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -924,6 +936,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1075,6 +1088,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1165,6 +1179,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1276,6 +1291,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1390,6 +1406,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1482,6 +1499,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1566,6 +1584,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1625,6 +1644,101 @@ export default function ForgeOnboarding() {
     }
   };
 
+  const handleConnectWhoop = async () => {
+    try {
+      // Set user_email and user_code cookies so the callback can store the token
+      if (formData.email) {
+        document.cookie = `user_email=${encodeURIComponent(formData.email)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+      if (uniqueCode) {
+        document.cookie = `user_code=${encodeURIComponent(uniqueCode)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+      }
+
+      // Include return path, email, and code in state for the callback
+      const state = encodeURIComponent(JSON.stringify({
+        returnPath: '/forge/onboarding',
+        email: formData.email,
+        code: uniqueCode || undefined
+      }));
+      const response = await fetch(`/api/whoop/auth?state=${state}`);
+      const data = await response.json();
+
+      if (data.authUrl) {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          localStorage.setItem('forge_onboarding_state', JSON.stringify({
+            formData,
+            currentScreen,
+            stravaConnected,
+            fitbitConnected,
+            ouraConnected,
+            whoopConnected,
+            slackConnected,
+            teamsConnected,
+            outlookConnected,
+            gmailConnected,
+            vitalConnected,
+            dexcomConnected,
+            appleHealthConnected,
+            appleCalendarConnected,
+            timestamp: Date.now()
+          }));
+          localStorage.setItem('forge_onboarding_pending_integration', 'whoop');
+          window.location.href = data.authUrl;
+        } else {
+          // Open in a new window
+          const width = 600;
+          const height = 700;
+          const left = (window.screen.width - width) / 2;
+          const top = (window.screen.height - height) / 2;
+
+          window.open(
+            data.authUrl,
+            'whoop-auth',
+            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+          );
+
+          // Listen for messages from popup
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.type === 'whoop-connected') {
+              console.log('[Whoop] Connection confirmed via message');
+              setWhoopConnected(true);
+              setFormData(prev => ({
+                ...prev,
+                integrations: prev.integrations.includes('whoop')
+                  ? prev.integrations
+                  : [...prev.integrations, 'whoop']
+              }));
+              window.removeEventListener('message', handleMessage);
+            } else if (event.data.type === 'whoop-error') {
+              console.error('[Whoop] Connection failed');
+              window.removeEventListener('message', handleMessage);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+        }
+      }
+    } catch (err) {
+      console.error('Error connecting to Whoop:', err);
+    }
+  };
+
+  const handleDisconnectWhoop = async () => {
+    try {
+      await fetch('/api/whoop/disconnect', { method: 'POST' });
+      setWhoopConnected(false);
+      // Remove whoop from integrations
+      setFormData(prev => ({
+        ...prev,
+        integrations: prev.integrations.filter(i => i !== 'whoop')
+      }));
+    } catch (err) {
+      console.error('Error disconnecting Whoop:', err);
+    }
+  };
+
   const handleConnectVital = async () => {
     try {
       console.log('[Vital] Starting connection...');
@@ -1679,6 +1793,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -1788,6 +1903,7 @@ export default function ForgeOnboarding() {
             stravaConnected,
             fitbitConnected,
             ouraConnected,
+            whoopConnected,
             slackConnected,
             teamsConnected,
             outlookConnected,
@@ -3933,6 +4049,36 @@ export default function ForgeOnboarding() {
                 </div>
                 <button className="connect-button" onClick={handleConnectStrava}>
                   Connect
+                </button>
+              </div>
+            )}
+
+            {!whoopConnected && (
+              <div className="integration-item">
+                <div className="integration-logo">
+                  <img src="/images/whoop.png" alt="WHOOP" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">WHOOP</h3>
+                  <p className="integration-description">Sync your recovery, strain, and HRV data</p>
+                </div>
+                <button className="connect-button" onClick={handleConnectWhoop}>
+                  Connect
+                </button>
+              </div>
+            )}
+
+            {whoopConnected && (
+              <div className="integration-item connected">
+                <div className="integration-logo">
+                  <img src="/images/whoop.png" alt="WHOOP" />
+                </div>
+                <div className="integration-info">
+                  <h3 className="integration-name">WHOOP</h3>
+                  <p className="integration-description">Connected</p>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectWhoop}>
+                  Disconnect
                 </button>
               </div>
             )}

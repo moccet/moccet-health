@@ -1498,34 +1498,233 @@ export default function PersonalisedPlanPage() {
             </>
           )}
 
-          {plan.supplementRecommendations.optionalSupplements && plan.supplementRecommendations.optionalSupplements.length > 0 && (
+          {enrichedOptionalSupplements.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
               <h3 className="overview-heading">Optional Supplements</h3>
-              <div style={{ display: 'grid', gap: '15px' }}>
-                {plan.supplementRecommendations.optionalSupplements.map((supp: any, idx: number) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                {enrichedOptionalSupplements.map((supp: any, idx: number) => (
                   <div key={idx} style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '8px',
-                    padding: '15px'
+                    background: 'transparent',
+                    borderBottom: idx < enrichedOptionalSupplements.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                    paddingBottom: '32px'
                   }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>
+                    <div style={{
+                      fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+                      fontWeight: '600',
+                      fontSize: '28px',
+                      marginBottom: '16px',
+                      color: '#000000',
+                      letterSpacing: '-0.01em'
+                    }}>
                       {supp.name || supp.supplement}
                     </div>
-                    <div style={{ fontSize: '14px', marginBottom: '8px' }}>
-                      <strong>Dosage:</strong> {supp.dosage} • <strong>Timing:</strong> {supp.timing}
+
+                    {/* Product Info */}
+                    {supp.product && (
+                      <div style={{
+                        background: '#fafafa',
+                        padding: '20px',
+                        borderRadius: '8px',
+                        marginBottom: '16px',
+                        border: '1px solid #e5e5e5',
+                        display: 'flex',
+                        gap: '20px',
+                        alignItems: 'flex-start'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            fontFamily: '"Inter", Helvetica, sans-serif',
+                            fontSize: '18px',
+                            fontWeight: '600',
+                            marginBottom: '6px',
+                            color: '#000000'
+                          }}>
+                            {supp.product.brand} {supp.product.name}
+                          </div>
+                          <div style={{
+                            fontFamily: '"Inter", Helvetica, sans-serif',
+                            fontSize: '13px',
+                            color: '#000000',
+                            marginBottom: '16px'
+                          }}>
+                            {supp.product.quantity} {supp.product.unit} • {supp.product.strength}
+                          </div>
+                          <div>
+                            <div style={{
+                              fontFamily: '"SF Pro", sans-serif',
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              color: '#000000',
+                              letterSpacing: '-0.02em'
+                            }}>
+                              ${supp.product.retailPrice.toFixed(2)}
+                            </div>
+                            <div style={{
+                              fontFamily: '"Inter", Helvetica, sans-serif',
+                              fontSize: '12px',
+                              color: '#000000',
+                              marginTop: '4px'
+                            }}>
+                              ${supp.product.perDayPrice.toFixed(2)}/day
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Add to Cart and Buy Now Buttons - Stacked on right */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '140px' }}>
+                          {supp.product.inStock && (
+                            <>
+                            <button
+                              onClick={() => {
+                                handleAddToCart(supp.product.productId, supp.name, supp);
+                                const userIdentifier = email || `guest-${planCode}`;
+                                setTimeout(() => {
+                                  window.location.href = `/checkout?email=${encodeURIComponent(userIdentifier)}${planCode ? `&planCode=${planCode}` : ''}`;
+                                }, 500);
+                              }}
+                              disabled={addingToCart === supp.product.productId}
+                              style={{
+                                padding: '12px 16px',
+                                background: '#1a1a1a',
+                                color: '#ffffff',
+                                border: '1px solid #1a1a1a',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                fontFamily: '"Inter", Helvetica, sans-serif',
+                                cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
+                                opacity: addingToCart === supp.product.productId ? 0.6 : 1,
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (addingToCart !== supp.product.productId) {
+                                  e.currentTarget.style.background = '#000000';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (addingToCart !== supp.product.productId) {
+                                  e.currentTarget.style.background = '#1a1a1a';
+                                }
+                              }}
+                            >
+                              Buy Now
+                            </button>
+                            <button
+                              onClick={() => handleAddToCart(supp.product.productId, supp.name, supp)}
+                              disabled={addingToCart === supp.product.productId}
+                              style={{
+                                padding: '12px 16px',
+                                background: '#f5f5f5',
+                                color: '#000000',
+                                border: '1px solid #e5e5e5',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                fontWeight: '400',
+                                fontFamily: '"Inter", Helvetica, sans-serif',
+                                cursor: addingToCart === supp.product.productId ? 'not-allowed' : 'pointer',
+                                opacity: addingToCart === supp.product.productId ? 0.6 : 1,
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (addingToCart !== supp.product.productId) {
+                                  e.currentTarget.style.background = '#eeeeee';
+                                  e.currentTarget.style.borderColor = '#d0d0d0';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (addingToCart !== supp.product.productId) {
+                                  e.currentTarget.style.background = '#f5f5f5';
+                                  e.currentTarget.style.borderColor = '#e5e5e5';
+                                }
+                              }}
+                            >
+                              {addingToCart === supp.product.productId ? 'Adding...' : 'Add to Cart'}
+                            </button>
+                            </>
+                          )}
+
+                          {/* Stock status below buttons */}
+                          <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                            {supp.product.inStock ? (
+                              <div style={{
+                                fontFamily: '"Inter", Helvetica, sans-serif',
+                                fontSize: '11px',
+                                color: '#10b981',
+                                fontWeight: '400'
+                              }}>
+                                In Stock
+                              </div>
+                            ) : (
+                              <div style={{
+                                fontFamily: '"Inter", Helvetica, sans-serif',
+                                fontSize: '11px',
+                                color: '#ef4444',
+                                fontWeight: '400'
+                              }}>
+                                Out of Stock
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommendation Details */}
+                    <div style={{
+                      fontFamily: '"Inter", Helvetica, sans-serif',
+                      fontSize: '14px',
+                      lineHeight: '1.7',
+                      color: '#000000',
+                      marginBottom: '8px',
+                      letterSpacing: '0'
+                    }}>
+                      Dosage: {supp.dosage} • Timing: {supp.timing}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#000000', marginBottom: '6px' }}>
-                      <strong>Why:</strong> {supp.rationale}
+                    <div style={{
+                      fontFamily: '"SF Pro", sans-serif',
+                      fontSize: '15px',
+                      lineHeight: '1.7',
+                      color: '#000000',
+                      marginBottom: '8px',
+                      letterSpacing: '-0.01em'
+                    }}>
+                      {supp.rationale}
                     </div>
                     {supp.benefits && (
-                      <div style={{ fontSize: '12px', color: '#000000', marginTop: '6px' }}>
-                        <strong>Benefits:</strong> {supp.benefits}
+                      <div style={{
+                        fontFamily: '"Inter", Helvetica, sans-serif',
+                        fontSize: '13px',
+                        color: '#000000',
+                        marginTop: '12px',
+                        lineHeight: '1.6'
+                      }}>
+                        {supp.benefits}
                       </div>
                     )}
                     {supp.duration && (
-                      <div style={{ fontSize: '12px', color: '#000000' }}>
-                        <strong>Duration:</strong> {supp.duration}
+                      <div style={{
+                        fontFamily: '"Inter", Helvetica, sans-serif',
+                        fontSize: '12px',
+                        color: '#000000',
+                        marginTop: '8px'
+                      }}>
+                        Duration: {supp.duration}
+                      </div>
+                    )}
+
+                    {/* No Match Warning */}
+                    {supp.matchStatus === 'no_match' && (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '12px 16px',
+                        background: 'rgba(254, 243, 199, 0.08)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(254, 243, 199, 0.15)',
+                        fontFamily: '"Inter", Helvetica, sans-serif',
+                        fontSize: '13px',
+                        color: '#fbbf24'
+                      }}>
+                        Product not available in our store yet
                       </div>
                     )}
                   </div>

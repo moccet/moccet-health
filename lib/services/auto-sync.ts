@@ -51,7 +51,59 @@ export interface AutoSyncReport {
 // ============================================================================
 
 /**
- * Check if a source needs refresh based on TTL
+ * Verify that actual data exists for a source (not just sync timestamp)
+ */
+async function verifyDataExists(email: string, source: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+
+    // Check the appropriate table based on source
+    if (source === 'gmail' || source === 'slack') {
+      const { data } = await supabase
+        .from('behavioral_patterns')
+        .select('id')
+        .eq('email', email)
+        .eq('source', source)
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
+    if (source === 'oura') {
+      const { data } = await supabase
+        .from('oura_data')
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
+    if (source === 'dexcom') {
+      const { data } = await supabase
+        .from('dexcom_data')
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
+    if (source === 'vital') {
+      const { data } = await supabase
+        .from('vital_data')
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
+    return false; // Unknown source, assume no data
+  } catch (error) {
+    console.error(`[Auto-Sync] Error verifying data exists for ${source}:`, error);
+    return false; // Assume no data on error (will trigger sync)
+  }
+}
+
+/**
+ * Check if a source needs refresh based on TTL AND data existence
  */
 async function needsSync(
   email: string,
@@ -84,7 +136,18 @@ async function needsSync(
 
         if (sourceStatus && sourceStatus.lastSync) {
           const sourceLastSync = new Date(sourceStatus.lastSync);
-          return Date.now() - sourceLastSync.getTime() >= ttlMs;
+          const withinTTL = Date.now() - sourceLastSync.getTime() < ttlMs;
+
+          if (withinTTL) {
+            // TTL says cached - but verify actual data exists!
+            const hasData = await verifyDataExists(email, source);
+            if (!hasData) {
+              console.log(`[Auto-Sync] ${source}: No data found despite recent sync timestamp - forcing resync`);
+              return true; // Force sync because no data exists
+            }
+            return false; // Within TTL and data exists - skip sync
+          }
+          return true; // Outside TTL - needs sync
         }
       }
     }

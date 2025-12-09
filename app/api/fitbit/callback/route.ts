@@ -59,19 +59,23 @@ export async function GET(request: NextRequest) {
 
     // Get user email and code from cookies
     const cookieStore = await cookies();
-    const userEmail = cookieStore.get('user_email')?.value;
+    let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
 
-    // Try to get code from state parameter if not in cookies
-    if (!userCode && state) {
+    // Try to get email and code from state parameter if not in cookies
+    if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
-        if (stateData.code) {
+        if (!userEmail && stateData.email) {
+          userEmail = stateData.email;
+          console.log(`[Fitbit] Got email from state parameter: ${userEmail}`);
+        }
+        if (!userCode && stateData.code) {
           userCode = stateData.code;
           console.log(`[Fitbit] Got code from state parameter: ${userCode}`);
         }
       } catch (e) {
-        console.log('[Fitbit] Could not parse code from state');
+        console.log('[Fitbit] Could not parse state parameter');
       }
     }
 

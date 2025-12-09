@@ -114,6 +114,18 @@ export async function storeToken(
         .update({ is_valid: false })
         .eq('email', userEmail);
       console.log(`[TokenManager] Invalidated ecosystem cache for ${userEmail} after ${provider} connection`);
+
+      // Also reset ecosystem sync status so fresh data is fetched from the new integration
+      // Setting last_ecosystem_sync to null forces a full resync on next plan generation
+      await supabase2
+        .from('forge_onboarding_data')
+        .update({ last_ecosystem_sync: null })
+        .eq('email', userEmail);
+      await supabase2
+        .from('sage_onboarding_data')
+        .update({ last_ecosystem_sync: null })
+        .eq('email', userEmail);
+      console.log(`[TokenManager] Reset ecosystem sync status for ${userEmail} after ${provider} connection`);
     } catch (cacheError) {
       // Don't fail the token storage if cache invalidation fails
       console.warn(`[TokenManager] Failed to invalidate cache:`, cacheError);
@@ -142,57 +154,55 @@ export async function getAccessToken(
     // Use admin client to bypass RLS for token retrieval
     const supabase = createAdminClient();
 
-    // Get active token using stored procedure
-    // Fallback to direct query if RPC is not available
-    let data, error;
-    try {
-      const result = await supabase.rpc('get_active_token', {
-        p_user_email: userEmail,
-        p_provider: provider,
-        p_user_code: userCode || null,
-      });
-      data = result.data;
-      error = result.error;
-    } catch (rpcError) {
-      // Fallback: use direct query if stored procedure doesn't exist
-      console.warn('[TokenManager] RPC get_active_token not available, using direct query');
+    // Use direct query for reliability (RPC has issues with fallback logic)
+    let data: any[] = [];
+    let error: any = null;
 
-      let result;
+    // Strategy: Try by code first, then fallback to email
+    // This handles cases where tokens were stored before code was assigned
 
-      // Try lookup by user_code first if provided
-      if (userCode) {
-        result = await supabase
-          .from('integration_tokens')
-          .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
-          .eq('provider', provider)
-          .eq('is_active', true)
-          .eq('user_code', userCode)
-          .order('created_at', { ascending: false })
-          .limit(1);
+    // Step 1: Try lookup by user_code if provided
+    if (userCode) {
+      const codeResult = await supabase
+        .from('integration_tokens')
+        .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_code', userCode)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (codeResult.data && codeResult.data.length > 0) {
+        console.log(`[TokenManager] Found token by code ${userCode} for ${provider}`);
+        data = codeResult.data;
       }
+      error = codeResult.error;
+    }
 
-      // If no result from user_code lookup, fallback to email lookup
-      if (!result?.data || result.data.length === 0) {
-        console.log(`[TokenManager] No token found by code ${userCode}, trying email lookup for ${userEmail}`);
-        result = await supabase
-          .from('integration_tokens')
-          .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
-          .eq('provider', provider)
-          .eq('is_active', true)
-          .eq('user_email', userEmail)
-          .order('created_at', { ascending: false })
-          .limit(1);
-      }
+    // Step 2: If no token found by code, try by email
+    if (data.length === 0) {
+      console.log(`[TokenManager] No token by code ${userCode || 'N/A'}, trying email ${userEmail} for ${provider}`);
+      const emailResult = await supabase
+        .from('integration_tokens')
+        .select('id, access_token, refresh_token, expires_at, provider_user_id, user_code')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_email', userEmail)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (result.data && result.data.length > 0) {
-        // Manually add is_expired field
-        const token = result.data[0];
-        const isExpired = token.expires_at ? new Date(token.expires_at) < new Date() : false;
-        data = [{ ...token, is_expired: isExpired }];
-      } else {
-        data = result.data;
+      if (emailResult.data && emailResult.data.length > 0) {
+        console.log(`[TokenManager] Found token by email for ${userEmail}/${provider}`);
+        data = emailResult.data;
       }
-      error = result.error;
+      error = emailResult.error;
+    }
+
+    // Add is_expired field
+    if (data.length > 0) {
+      const token = data[0];
+      const isExpired = token.expires_at ? new Date(token.expires_at) < new Date() : false;
+      data = [{ ...token, is_expired: isExpired }];
     }
 
     if (error) {
@@ -201,7 +211,7 @@ export async function getAccessToken(
     }
 
     if (!data || data.length === 0) {
-      console.log(`[TokenManager] No token found for ${userEmail}/${provider}`);
+      console.log(`[TokenManager] No token found for ${userEmail}/${provider} (checked both code and email)`);
       return { token: null, error: 'No token found' };
     }
 

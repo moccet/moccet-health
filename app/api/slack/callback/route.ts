@@ -74,11 +74,36 @@ export async function GET(request: NextRequest) {
 
     console.log('[SLACK CALLBACK] Connection successful, team:', teamName);
 
-    // Store tokens in database
+    // Get cookies and state first
     const cookieStore = await cookies();
-    const userEmail = cookieStore.get('user_email')?.value;
+    let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
 
+    // Parse state parameter FIRST to get email/code if not in cookies
+    let redirectPath = '/forge/onboarding';
+    const state = searchParams.get('state');
+    try {
+      if (state) {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (stateData.returnPath) {
+          redirectPath = stateData.returnPath;
+        }
+        // Get code from state if not in cookies
+        if (!userCode && stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Slack] Got code from state parameter: ${userCode}`);
+        }
+        // Get email from state if not in cookies
+        if (!userEmail && stateData.email) {
+          userEmail = stateData.email;
+          console.log(`[Slack] Got email from state parameter: ${userEmail}`);
+        }
+      }
+    } catch (e) {
+      console.log('[Slack] Could not parse state parameter');
+    }
+
+    // Store tokens in database (now we have email from cookies OR state)
     if (userEmail && accessToken) {
       const storeResult = await storeToken(userEmail, 'slack', {
         accessToken,
@@ -95,6 +120,8 @@ export async function GET(request: NextRequest) {
       } else {
         console.error(`[Slack] Failed to store tokens:`, storeResult.error);
       }
+    } else {
+      console.warn(`[Slack] Cannot store token - no email available (cookie: ${!!cookieStore.get('user_email')?.value}, state: ${!!state})`);
     }
 
     // Store in cookies for backward compatibility
@@ -112,45 +139,6 @@ export async function GET(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365
     });
-
-    // Determine redirect path based on state parameter
-    let redirectPath = '/forge/onboarding';
-    const state = searchParams.get('state');
-    try {
-      if (state) {
-        const stateData = JSON.parse(decodeURIComponent(state));
-        if (stateData.returnPath) {
-          redirectPath = stateData.returnPath;
-        }
-        // Get code from state if not in cookies
-        if (!userCode && stateData.code) {
-          userCode = stateData.code;
-          console.log(`[Slack] Got code from state parameter: ${userCode}`);
-        }
-        // Also try to get user email from state if available
-        if (stateData.email && !userEmail) {
-          // If we didn't have userEmail from cookie, try from state
-          const emailFromState = stateData.email;
-          const codeFromState = stateData.code || userCode;
-          if (emailFromState && accessToken) {
-            const storeResult = await storeToken(emailFromState, 'slack', {
-              accessToken,
-              providerUserId: userId,
-              scopes: tokenData.scope?.split(',') || [],
-              metadata: {
-                team_id: teamId,
-                team_name: teamName,
-              },
-            }, codeFromState);
-            if (storeResult.success) {
-              console.log(`[Slack] Tokens stored from state email for ${emailFromState}${codeFromState ? ` (code: ${codeFromState})` : ''}`);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.log('Could not parse state, using default redirect');
-    }
 
     // Return HTML that closes popup OR redirects on mobile
     const html = `

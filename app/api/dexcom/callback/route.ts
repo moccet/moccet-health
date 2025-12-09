@@ -60,8 +60,26 @@ export async function GET(request: NextRequest) {
 
     // Store tokens in database
     const cookieStore = await cookies();
-    const userEmail = cookieStore.get('user_email')?.value;
-    const userCode = cookieStore.get('user_code')?.value;
+    let userEmail = cookieStore.get('user_email')?.value;
+    let userCode = cookieStore.get('user_code')?.value;
+
+    // Parse state parameter to get email/code if not in cookies
+    const state = request.nextUrl.searchParams.get('state');
+    if (state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        if (!userEmail && stateData.email) {
+          userEmail = stateData.email;
+          console.log(`[Dexcom] Got email from state parameter: ${userEmail}`);
+        }
+        if (!userCode && stateData.code) {
+          userCode = stateData.code;
+          console.log(`[Dexcom] Got code from state parameter: ${userCode}`);
+        }
+      } catch (e) {
+        console.log('[Dexcom] Could not parse state parameter');
+      }
+    }
 
     if (userEmail) {
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;

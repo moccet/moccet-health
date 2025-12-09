@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { getAccessToken } from '@/lib/services/token-manager';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
-  // Try forge_onboarding_data first (use limit(1) instead of single() to avoid error if multiple rows)
+  const supabase = createAdminClient();
+
+  // Try forge_onboarding_data first
   const { data: forgeData } = await supabase
     .from('forge_onboarding_data')
     .select('form_data')
@@ -53,45 +50,18 @@ export async function POST(request: NextRequest) {
       console.log(`[Oura Sync] Using user code: ${userCode}`);
     }
 
-    // Try to get access token from database first (for server-to-server calls)
-    let accessToken: string | undefined;
-
-    // Build query - prioritize user_code if available
-    let query = supabase
-      .from('integration_tokens')
-      .select('access_token')
-      .eq('provider', 'oura')
-      .eq('is_active', true);
-
-    if (userCode) {
-      query = query.eq('user_code', userCode);
-    } else {
-      query = query.eq('user_email', email);
-    }
-
-    // Use limit(1) instead of single() to avoid "Cannot coerce to single JSON object" error
-    const { data: tokenData, error: tokenError } = await query.order('created_at', { ascending: false }).limit(1);
-
-    if (tokenData?.[0]?.access_token) {
-      // Token is stored base64 encoded, decode it
-      accessToken = Buffer.from(tokenData[0].access_token, 'base64').toString('utf-8');
-      console.log(`[Oura Sync] Using token from database for ${email}`);
-    } else {
-      // Fallback to cookies (for browser-initiated syncs)
-      const cookieStore = await cookies();
-      accessToken = cookieStore.get('oura_access_token')?.value;
-      if (accessToken) {
-        console.log(`[Oura Sync] Using token from cookies for ${email}`);
-      }
-    }
+    // Get token using token-manager (handles RLS bypass and automatic refresh)
+    const { token: accessToken, error: tokenError } = await getAccessToken(email, 'oura', userCode);
 
     if (!accessToken) {
-      console.log(`[Oura Sync] No token found for ${email}. DB error: ${tokenError?.message}`);
+      console.log(`[Oura Sync] No token found for ${email}. Error: ${tokenError}`);
       return NextResponse.json(
         { error: 'Oura not connected. Please connect your Oura Ring first.' },
         { status: 401 }
       );
     }
+
+    console.log(`[Oura Sync] Token retrieved successfully for ${email}`);
 
     // Set default date range: last 30 days
     const end = endDate || new Date().toISOString().split('T')[0];
@@ -132,7 +102,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Store data in Supabase
+    // Store data in Supabase using admin client to bypass RLS
+    const supabase = createAdminClient();
     const { error: insertError } = await supabase
       .from('oura_data')
       .insert({

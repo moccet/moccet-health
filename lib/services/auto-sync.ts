@@ -95,6 +95,16 @@ async function verifyDataExists(email: string, source: string): Promise<boolean>
       return data !== null && data.length > 0;
     }
 
+    if (source === 'outlook' || source === 'teams') {
+      const { data } = await supabase
+        .from('behavioral_patterns')
+        .select('id')
+        .eq('email', email)
+        .eq('source', source)
+        .limit(1);
+      return data !== null && data.length > 0;
+    }
+
     return false; // Unknown source, assume no data
   } catch (error) {
     console.error(`[Auto-Sync] Error verifying data exists for ${source}:`, error);
@@ -457,6 +467,82 @@ async function syncSlackPatterns(email: string): Promise<SyncResult> {
   }
 }
 
+/**
+ * Sync Outlook patterns (email + calendar)
+ */
+async function syncOutlookPatterns(email: string): Promise<SyncResult> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/outlook/fetch-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        source: 'outlook',
+        success: false,
+        error: result.error || 'Pattern analysis failed',
+        syncedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      source: 'outlook',
+      success: true,
+      recordCount: result.dataPointsAnalyzed || 0,
+      syncedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      source: 'outlook',
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      syncedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Sync Teams patterns (chat messages)
+ */
+async function syncTeamsPatterns(email: string): Promise<SyncResult> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/teams/fetch-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        source: 'teams',
+        success: false,
+        error: result.error || 'Pattern analysis failed',
+        syncedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      source: 'teams',
+      success: true,
+      recordCount: result.dataPointsAnalyzed || 0,
+      syncedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      source: 'teams',
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      syncedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ============================================================================
 // MAIN AUTO-SYNC FUNCTION
 // ============================================================================
@@ -489,7 +575,7 @@ export async function autoSyncEcosystemData(
   console.log(`${'='.repeat(80)}\n`);
 
   // Available sync sources
-  const allSources = ['oura', 'dexcom', 'vital', 'gmail', 'slack'];
+  const allSources = ['oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams'];
   const sourcesToSync = requestedSources || allSources;
 
   // Determine which sources need syncing
@@ -555,6 +641,26 @@ export async function autoSyncEcosystemData(
       syncSlackPatterns(email)
         .then(result => {
           updateSyncStatus(email, planType, 'slack', result.success, { messagesAnalyzed: result.recordCount });
+          return result;
+        })
+    );
+  }
+
+  if (syncDecisions.outlook) {
+    syncPromises.push(
+      syncOutlookPatterns(email)
+        .then(result => {
+          updateSyncStatus(email, planType, 'outlook', result.success, { dataPointsAnalyzed: result.recordCount });
+          return result;
+        })
+    );
+  }
+
+  if (syncDecisions.teams) {
+    syncPromises.push(
+      syncTeamsPatterns(email)
+        .then(result => {
+          updateSyncStatus(email, planType, 'teams', result.success, { messagesAnalyzed: result.recordCount });
           return result;
         })
     );

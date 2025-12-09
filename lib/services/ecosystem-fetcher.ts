@@ -111,6 +111,12 @@ export interface SlackPatterns {
   insights: string[];
 }
 
+// OutlookPatterns reuses GmailPatterns structure (email + calendar data)
+export type OutlookPatterns = GmailPatterns;
+
+// TeamsPatterns reuses SlackPatterns structure (chat message data)
+export type TeamsPatterns = SlackPatterns;
+
 export interface BloodBiomarkers {
   biomarkers: Array<{
     name: string;
@@ -136,6 +142,8 @@ export interface EcosystemFetchResult {
   vital: EcosystemDataSource;
   gmail: EcosystemDataSource;
   slack: EcosystemDataSource;
+  outlook: EcosystemDataSource;
+  teams: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -520,6 +528,106 @@ export async function fetchSlackPatterns(email: string): Promise<EcosystemDataSo
 }
 
 /**
+ * Fetch Outlook patterns from behavioral_patterns table
+ */
+export async function fetchOutlookPatterns(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('behavioral_patterns')
+      .select('*')
+      .eq('email', email)
+      .eq('source', 'outlook')
+      .order('sync_date', { ascending: false })
+      .limit(1);
+
+    if (error || !data || data.length === 0) {
+      return {
+        source: 'outlook',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: error?.message || 'No Outlook pattern data found',
+      };
+    }
+
+    const outlookRecord = data[0];
+    const patterns = outlookRecord.patterns as OutlookPatterns;
+
+    return {
+      source: 'outlook',
+      available: true,
+      data: patterns,
+      insights: patterns.insights || [],
+      fetchedAt: new Date().toISOString(),
+      recordCount: outlookRecord.data_points_analyzed || 0,
+    };
+  } catch (error) {
+    console.error('[Ecosystem Fetcher] Error fetching Outlook patterns:', error);
+    return {
+      source: 'outlook',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Fetch Teams patterns from behavioral_patterns table
+ */
+export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('behavioral_patterns')
+      .select('*')
+      .eq('email', email)
+      .eq('source', 'teams')
+      .order('sync_date', { ascending: false })
+      .limit(1);
+
+    if (error || !data || data.length === 0) {
+      return {
+        source: 'teams',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: error?.message || 'No Teams pattern data found',
+      };
+    }
+
+    const teamsRecord = data[0];
+    const patterns = teamsRecord.patterns as TeamsPatterns;
+
+    return {
+      source: 'teams',
+      available: true,
+      data: patterns,
+      insights: patterns.insights || [],
+      fetchedAt: new Date().toISOString(),
+      recordCount: teamsRecord.data_points_analyzed || 0,
+    };
+  } catch (error) {
+    console.error('[Ecosystem Fetcher] Error fetching Teams patterns:', error);
+    return {
+      source: 'teams',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Fetch blood biomarkers from onboarding data
  */
 export async function fetchBloodBiomarkers(
@@ -591,13 +699,15 @@ export async function fetchAllEcosystemData(
   const startTime = Date.now();
 
   // Fetch all data sources in parallel
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack] = await Promise.all([
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams] = await Promise.all([
     fetchBloodBiomarkers(email, planType),
     fetchOuraData(email, options?.startDate, options?.endDate),
     fetchDexcomData(email, options?.startDate, options?.endDate),
     fetchVitalData(email, options?.startDate, options?.endDate),
     fetchGmailPatterns(email),
     fetchSlackPatterns(email),
+    fetchOutlookPatterns(email),
+    fetchTeamsPatterns(email),
   ]);
 
   const result: EcosystemFetchResult = {
@@ -607,9 +717,11 @@ export async function fetchAllEcosystemData(
     vital,
     gmail,
     slack,
+    outlook,
+    teams,
     fetchTimestamp: new Date().toISOString(),
-    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack].filter(s => s.available).length,
-    totalSources: 6,
+    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams].filter(s => s.available).length,
+    totalSources: 8,
   };
 
   const duration = Date.now() - startTime;

@@ -1347,9 +1347,30 @@ export default function PersonalisedPlanPage() {
 
                 const isOpen = openDays[dayKey] || false;
 
+                // Check if this is a rest day
+                const isRestDay = day.focus?.toLowerCase().includes('rest') ||
+                                  day.isRestDay === true ||
+                                  (!day.exercises && !day.warmup && !day.cooldown && !day.mainWorkout);
+
                 return (
                   <div key={dayKey} className="day-column">
                     <h3 className="day-title">{displayDayName}</h3>
+                    {isRestDay ? (
+                      <div
+                        className="workout-day-header"
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid #e5e5e5',
+                          padding: '15px',
+                          borderRadius: '8px',
+                          marginBottom: '15px',
+                        }}
+                      >
+                        <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#000000' }}>
+                          Rest Day
+                        </div>
+                      </div>
+                    ) : (
                     <div
                       className="workout-day-header"
                       onClick={() => setOpenDays(prev => ({ ...prev, [dayKey]: !prev[dayKey] }))}
@@ -1382,8 +1403,9 @@ export default function PersonalisedPlanPage() {
                         ▼
                       </div>
                     </div>
+                    )}
 
-                    {isOpen && (
+                    {!isRestDay && isOpen && (
                       <>
                         {/* Warmup */}
                         {day.warmup && (day.warmup.description || (day.warmup.exercises && day.warmup.exercises.length > 0)) && (

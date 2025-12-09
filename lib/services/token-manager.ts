@@ -105,6 +105,20 @@ export async function storeToken(
     }
 
     console.log(`[TokenManager] Successfully stored token for ${userEmail}/${provider}${userCode ? ` (code: ${userCode})` : ''}`);
+
+    // Invalidate ecosystem context cache so new data is fetched on next plan generation
+    try {
+      const supabase2 = createAdminClient();
+      await supabase2
+        .from('ecosystem_context_cache')
+        .update({ is_valid: false })
+        .eq('email', userEmail);
+      console.log(`[TokenManager] Invalidated ecosystem cache for ${userEmail} after ${provider} connection`);
+    } catch (cacheError) {
+      // Don't fail the token storage if cache invalidation fails
+      console.warn(`[TokenManager] Failed to invalidate cache:`, cacheError);
+    }
+
     return { success: true };
   } catch (error) {
     console.error('[TokenManager] Exception storing token:', error);
@@ -478,6 +492,39 @@ export async function getUserIntegrations(
   } catch (error) {
     return {
       integrations: [],
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Invalidate ecosystem context cache for a user
+ * Should be called when new integrations are connected
+ */
+export async function invalidateEcosystemCache(
+  userEmail: string,
+  userCode?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createAdminClient();
+
+    // Invalidate all context cache entries for this user
+    const { error } = await supabase
+      .from('ecosystem_context_cache')
+      .update({ is_valid: false })
+      .eq('email', userEmail);
+
+    if (error) {
+      console.error(`[TokenManager] Failed to invalidate cache for ${userEmail}:`, error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`[TokenManager] Invalidated ecosystem cache for ${userEmail}`);
+    return { success: true };
+  } catch (error) {
+    console.error('[TokenManager] Exception invalidating cache:', error);
+    return {
+      success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }

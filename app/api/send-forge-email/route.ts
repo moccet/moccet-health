@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { notifyOnboardingEmail } from '@/lib/slack';
 
 const EMAIL_TEMPLATE = `<!DOCTYPE html>
 <html lang="en">
@@ -76,7 +77,7 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, fullName, screenIndex, totalScreens } = await request.json();
 
     // Validate email
     if (!email || typeof email !== 'string') {
@@ -130,8 +131,17 @@ export async function POST(request: NextRequest) {
       const errorText = await sendGridResponse.text();
       console.error('Failed to send email via SendGrid:', errorText);
       // Don't fail the request if email sending fails
-      return NextResponse.json({ success: true });
     }
+
+    // Send Slack notification for new onboarding email
+    await notifyOnboardingEmail(
+      email,
+      'Forge',
+      'email',
+      screenIndex ?? 7,
+      totalScreens ?? 35,
+      fullName
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

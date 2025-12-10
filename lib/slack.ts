@@ -223,6 +223,74 @@ export async function notifyOrderShipped(
 }
 
 /**
+ * Sends onboarding email submission notification to Slack
+ */
+export async function notifyOnboardingEmail(
+  email: string,
+  product: 'Forge' | 'Sage',
+  currentScreen: string,
+  screenIndex: number,
+  totalScreens: number,
+  fullName?: string
+): Promise<boolean> {
+  const productEmoji = product === 'Sage' ? '🥗' : '💪';
+  const progress = Math.round((screenIndex / totalScreens) * 100);
+
+  const payload = {
+    text: `${productEmoji} New ${product} Onboarding Email: ${email}`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `${productEmoji} New ${product} Onboarding Started`,
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n${email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Name:*\n${fullName || 'Not yet provided'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Product:*\n${product}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Current Screen:*\n${currentScreen}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Progress:* ${screenIndex + 1}/${totalScreens} screens (${progress}%)`,
+        },
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Email submitted: <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return sendSlackNotification(payload);
+}
+
+/**
  * Sends plan generation queued notification to Slack
  */
 export async function notifyPlanQueued(

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import MultiFileUpload from '@/components/MultiFileUpload';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useOnboardingTracker } from '@/lib/hooks/useOnboardingTracker';
 import './onboarding.css';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -400,6 +401,13 @@ export default function SageOnboarding() {
     labFiles: [] as File[],
   });
 
+  // Track onboarding progress
+  useOnboardingTracker({
+    product: 'sage',
+    currentScreen,
+    email: formData.email,
+    fullName: formData.fullName,
+  });
 
   // Auto-transition from intro to welcome when video ends
   useEffect(() => {

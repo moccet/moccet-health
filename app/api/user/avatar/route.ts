@@ -31,29 +31,73 @@ async function ensureBucketExists(supabase: ReturnType<typeof createAdminClient>
 }
 
 /**
+ * Helper to infer MIME type from file extension
+ */
+function inferMimeType(filename: string): string | null {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'heic': 'image/heic',
+    'heif': 'image/heif',
+  };
+  return ext ? mimeMap[ext] || null : null;
+}
+
+/**
  * POST - Upload avatar image
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Avatar] ========== NEW UPLOAD REQUEST ==========');
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const userId = formData.get('user_id') as string | null;
 
+    console.log('[Avatar] FormData keys:', Array.from(formData.keys()));
+    console.log('[Avatar] user_id:', userId);
+
     if (!file) {
+      console.log('[Avatar] ERROR: No file provided');
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    console.log('[Avatar] File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified,
+    });
+
     if (!userId) {
+      console.log('[Avatar] ERROR: No user_id provided');
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
+    }
+
+    // Determine file type - use provided type, or infer from extension
+    let fileType = file.type;
+    if (!fileType || fileType === 'application/octet-stream') {
+      const inferredType = inferMimeType(file.name);
+      console.log(`[Avatar] MIME type missing/octet-stream, inferred from extension: ${inferredType}`);
+      if (inferredType) {
+        fileType = inferredType;
+      }
     }
 
     // Validate file type (including HEIC/HEIF for iPhone photos)
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
-    if (!validTypes.includes(file.type)) {
+    if (!validTypes.includes(fileType)) {
+      console.log(`[Avatar] ERROR: Invalid file type '${fileType}' (original: '${file.type}')`);
       return NextResponse.json({
-        error: 'Invalid file type. Allowed: jpeg, png, webp, gif, heic, heif'
+        error: `Invalid file type '${fileType}'. Allowed: jpeg, png, webp, gif, heic, heif`
       }, { status: 400 });
     }
+
+    console.log(`[Avatar] File type validated: ${fileType}`);
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -93,11 +137,12 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to storage
+    // Upload to storage (use validated fileType, not original file.type)
+    console.log(`[Avatar] Uploading to storage: ${fileName} with contentType: ${fileType}`);
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType: fileType,
         upsert: true,
       });
 

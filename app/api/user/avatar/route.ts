@@ -15,7 +15,7 @@ async function ensureBucketExists(supabase: ReturnType<typeof createAdminClient>
       const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
         public: true,
         fileSizeLimit: 5242880, // 5MB
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'],
       });
 
       if (error && !error.message.includes('already exists')) {
@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
     }
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    // Validate file type (including HEIC/HEIF for iPhone photos)
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json({
-        error: 'Invalid file type. Allowed: jpeg, png, webp, gif'
+        error: 'Invalid file type. Allowed: jpeg, png, webp, gif, heic, heif'
       }, { status: 400 });
     }
 

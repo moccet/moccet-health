@@ -247,6 +247,20 @@ body {
   margin: 30px 0;
 }
 
+/* Hide Substack expand/resize icons */
+.blog-content .image-link,
+.blog-content .captioned-image-container .image-link,
+.blog-content .image-link-expand,
+.blog-content a[class*="image-link"],
+.blog-content .captioned-button-wrap,
+.blog-content .expand-image-icon,
+.blog-content svg.expand-icon,
+.blog-content .image-link svg,
+.blog-content figure a[target="_blank"]:has(svg),
+.blog-content .captioned-image-container a:not(:has(img)) {
+  display: none !important;
+}
+
 .blog-content strong {
   font-weight: 600;
   color: #1a1a1a;

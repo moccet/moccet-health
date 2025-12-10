@@ -6,67 +6,7 @@ import Image from 'next/image';
 import './forge.css';
 
 export default function ForgePage() {
-  const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return email.trim() && emailRegex.test(email);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim() || !emailRegex.test(email)) {
-      alert('Please enter a valid email address');
-      return;
-    }
-
-    try {
-      // Send Slack notification
-      try {
-        await fetch('/api/notify-slack', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            source: 'Forge Landing Page',
-          }),
-        });
-      } catch (slackError) {
-        console.error('Error sending Slack notification:', slackError);
-        // Continue even if notification fails
-      }
-
-      // Send forge welcome email
-      try {
-        await fetch('/api/send-forge-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-          }),
-        });
-      } catch (emailError) {
-        console.error('Error sending forge email:', emailError);
-        // Continue even if email fails
-      }
-
-      // Show welcome message
-      setIsSubmitted(true);
-
-    } catch (error) {
-      console.error('Error:', error);
-      alert('There was an error. Please try again.');
-    }
-  };
 
   return (
     <main className="forge-page-moccet">
@@ -152,26 +92,11 @@ export default function ForgePage() {
             src="https://c.animaapp.com/EVbz3TeZ/img/your-personal-training-program-@4x.png"
             alt="Your personal training program"
           />
-          {!isSubmitted ? (
-            <form className="enter-email" onSubmit={handleSubmit} noValidate>
-              <input
-                type="email"
-                id="email-input"
-                name="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                aria-required="true"
-                className="email-input-field"
-              />
-              <button type="submit" className="button" disabled={!isValidEmail(email)}>
-                <span className="text-wrapper-3">Get started</span>
-              </button>
-            </form>
-          ) : (
-            <div className="success-message">Welcome to forge</div>
-          )}
+          <div className="cta-container">
+            <Link href="/onboarding" className="button">
+              <span className="text-wrapper-3">Get started</span>
+            </Link>
+          </div>
           <p className="p">1000+ people on the list for early access</p>
           <nav className="social-links" aria-label="Social media links and footer navigation">
             <a

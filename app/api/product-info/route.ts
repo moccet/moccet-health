@@ -66,10 +66,43 @@ const products = {
     ],
 
     dataInputs: {
-      bloodWork: ["Glucose regulation", "Lipid metabolism", "Liver function", "Kidney function", "Inflammatory markers", "Hormones", "Micronutrients"],
+      bloodWork: ["Glucose regulation", "Lipid metabolism", "Liver function", "Kidney function", "Inflammatory markers", "Hormones", "Micronutrients", "Cholesterol", "LDL", "HDL", "Triglycerides"],
       wearables: ["CGM data", "Activity patterns", "Sleep data", "Heart rate", "Meal timing"],
       microbiome: ["Bacterial composition", "Metabolic capacity", "Inflammatory potential"],
       optional: ["Genome data", "Calendar data", "Food tracking history"]
+    },
+
+    healthConditionsAddressed: {
+      cholesterol: {
+        condition: "High Cholesterol (LDL, HDL, Triglycerides)",
+        approach: "Diet plans optimized for LDL reduction and HDL improvement based on your actual lipid panel numbers",
+        dataUsed: ["Lipid panel", "LDL", "HDL", "Triglycerides", "Metabolic markers"]
+      },
+      cardiovascular: {
+        condition: "Cardiovascular Health",
+        approach: "Heart-healthy nutrition matched to your biomarkers including cholesterol, triglycerides, and blood pressure",
+        dataUsed: ["Lipid panels", "Blood pressure data", "Inflammatory markers"]
+      },
+      metabolicSyndrome: {
+        condition: "Metabolic Syndrome",
+        approach: "Eating patterns for insulin sensitivity based on metabolic markers",
+        dataUsed: ["Glucose markers", "Lipid panels", "Metabolic health indicators"]
+      },
+      preDiabetes: {
+        condition: "Pre-diabetes / Insulin Resistance",
+        approach: "Glucose-optimized nutrition using CGM data for blood sugar control",
+        dataUsed: ["CGM data", "Fasting glucose", "HbA1c", "Insulin levels"]
+      },
+      inflammation: {
+        condition: "Chronic Inflammation",
+        approach: "Anti-inflammatory protocols based on CRP and other inflammatory markers",
+        dataUsed: ["CRP", "Inflammatory markers", "Microbiome data"]
+      },
+      gutHealth: {
+        condition: "Gut Health / Digestive Issues",
+        approach: "Microbiome-informed food selection for digestive health optimization",
+        dataUsed: ["Microbiome test results", "Food sensitivity data", "Digestive patterns"]
+      }
     }
   },
 
@@ -99,9 +132,37 @@ const products = {
     ],
 
     dataInputs: {
-      bloodWork: ["Hormones", "Inflammation markers", "Metabolic health", "Recovery markers"],
+      bloodWork: ["Hormones", "Inflammation markers", "Metabolic health", "Recovery markers", "Lipid panels", "Cholesterol", "LDL", "HDL", "Triglycerides"],
       wearables: ["HRV trends", "Resting heart rate", "Sleep quality", "Activity levels", "Training load"],
       connectedApps: ["Calendar data", "Work patterns", "Training history"]
+    },
+
+    healthConditionsAddressed: {
+      cholesterol: {
+        condition: "High Cholesterol (LDL, HDL, Triglycerides)",
+        approach: "Creates cardio + resistance programs optimized for lipid improvement based on your actual cholesterol numbers",
+        dataUsed: ["Lipid panel", "LDL", "HDL", "Triglycerides", "HRV", "Recovery data"]
+      },
+      cardiovascular: {
+        condition: "Cardiovascular Risk",
+        approach: "Exercise protocols based on actual biomarkers, not generic recommendations. Training intensity matched to cardiovascular health status",
+        dataUsed: ["Blood pressure data", "Lipid panels", "Resting heart rate", "HRV trends"]
+      },
+      metabolicSyndrome: {
+        condition: "Metabolic Syndrome",
+        approach: "Training programs matched to insulin sensitivity and metabolic markers",
+        dataUsed: ["Glucose markers", "Lipid panels", "Metabolic health indicators"]
+      },
+      preDiabetes: {
+        condition: "Pre-diabetes / Insulin Resistance",
+        approach: "Glucose-aware exercise timing and intensity for blood sugar control",
+        dataUsed: ["Fasting glucose", "HbA1c", "CGM data", "Activity patterns"]
+      },
+      inflammation: {
+        condition: "Chronic Inflammation",
+        approach: "Recovery-focused programming based on inflammatory markers",
+        dataUsed: ["CRP", "Inflammatory markers", "HRV", "Sleep quality"]
+      }
     }
   },
 

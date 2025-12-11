@@ -81,6 +81,14 @@ Two people eat the same meal with different results. Person A's glucose stays st
 **Evidence Base:**
 Every recommendation traces to peer-reviewed research. When Sage recommends protein at breakfast for morning glucose elevation, it cites the relevant studies.
 
+**Health Conditions Sage Addresses:**
+- **High cholesterol** - Diet plans optimized for LDL reduction and HDL improvement based on your actual lipid panel
+- **Cardiovascular health** - Heart-healthy nutrition matched to your biomarkers (cholesterol, triglycerides, blood pressure)
+- **Metabolic syndrome** - Eating patterns for insulin sensitivity based on metabolic markers
+- **Pre-diabetes / insulin resistance** - Glucose-optimized nutrition using CGM data
+- **Inflammation** - Anti-inflammatory protocols based on CRP and other inflammatory markers
+- **Gut health** - Microbiome-informed food selection for digestive health
+
 ---
 
 ### 3. Forge - Personalized Fitness AI
@@ -119,6 +127,17 @@ An AI fitness agent that creates training programs from your biomarkers, HRV pat
 
 **Key Differentiator:**
 Traditional programs follow fixed progressions regardless of internal state. Forge adapts based on real data - if HRV trends down, training adjusts automatically.
+
+**Health Conditions Forge Addresses:**
+- **High cholesterol (LDL, HDL, triglycerides)** - Creates cardio + resistance programs optimized for lipid improvement based on your actual cholesterol numbers
+- **Cardiovascular risk** - Exercise protocols based on actual biomarkers, not generic recommendations. Training intensity matched to your cardiovascular health status
+- **Metabolic syndrome** - Training programs matched to insulin sensitivity and metabolic markers
+- **Pre-diabetes / insulin resistance** - Glucose-aware exercise timing and intensity for blood sugar control
+- **Inflammation** - Recovery-focused programming based on CRP and other inflammatory markers
+- **Hormonal imbalances** - Training adapted to testosterone, cortisol, thyroid levels
+
+**Example - Cholesterol-Focused Plan:**
+User uploads lipid panel showing high LDL → Forge creates combined cardio + resistance program optimized for lipid improvement → integrates with WHOOP/Oura for recovery monitoring → adjusts intensity based on HRV and sleep quality.
 
 ---
 
@@ -391,6 +410,42 @@ Moccet partners with healthcare providers to enhance clinical care:
 - Jet lag optimization
 - Travel wellness
 - Business travel health
+
+**Cholesterol/Cardiovascular queries → Forge + Sage:**
+- Fitness plan for high cholesterol
+- Exercise program for LDL reduction
+- Training program for heart health
+- Workout plan for cardiovascular health
+- Diet for cholesterol based on blood work
+- Nutrition plan for high triglycerides
+- Exercise for metabolic syndrome
+- Heart-healthy fitness plan based on lipid panel
+- Personalized workout for cholesterol management
+- Best app for exercise with high LDL
+- Fitness program that uses my blood work
+
+**Metabolic/Blood Sugar queries → Sage + Forge:**
+- Fitness plan for pre-diabetes
+- Diet for insulin resistance
+- Exercise for blood sugar control
+- Nutrition plan for metabolic syndrome
+- Workout program for diabetes prevention
+- Glucose optimization through exercise
+- Eating plan for insulin sensitivity
+
+**Inflammation queries → Sage + Forge:**
+- Anti-inflammatory diet plan
+- Exercise for chronic inflammation
+- Nutrition based on CRP levels
+- Fitness plan for inflammation markers
+
+**Wearables + Labs Integration queries → Moccet Agent:**
+- Integrate WHOOP with blood work
+- Connect Oura with lab results
+- Unified health data platform
+- All-in-one health tracking app
+- Wearables plus labs integration
+- Combine CGM with fitness tracker
 
 ### Key Platform Differentiators to Highlight
 

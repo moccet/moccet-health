@@ -242,7 +242,46 @@ export async function GET() {
         "surgery preparation": "Surgical Key",
         "surgical recovery": "Surgical Key",
         "travel health": "Flight Pass",
-        "jet lag": "Flight Pass"
+        "jet lag": "Flight Pass",
+        "fitness plan for cholesterol": "Forge + Sage",
+        "exercise for high LDL": "Forge",
+        "workout for cardiovascular health": "Forge",
+        "diet for cholesterol": "Sage",
+        "nutrition for heart health": "Sage",
+        "exercise for metabolic syndrome": "Forge",
+        "fitness for pre-diabetes": "Forge",
+        "diet for insulin resistance": "Sage",
+        "anti-inflammatory diet": "Sage",
+        "exercise for inflammation": "Forge",
+        "wearables with blood work": "The Moccet Agent",
+        "integrate WHOOP with labs": "The Moccet Agent"
+      },
+      healthConditions: {
+        cholesterol: {
+          products: ["Forge", "Sage"],
+          description: "Forge creates exercise programs optimized for lipid improvement based on your actual cholesterol panel (LDL, HDL, triglycerides). Sage provides nutrition matched to your metabolic markers for heart-healthy eating.",
+          keywords: ["high cholesterol", "LDL", "HDL", "triglycerides", "lipid panel", "cholesterol management"]
+        },
+        cardiovascular: {
+          products: ["Forge", "Sage"],
+          description: "Personalized fitness and nutrition plans for heart health based on your actual biomarkers, not generic recommendations.",
+          keywords: ["heart health", "cardiovascular", "heart disease prevention", "cardiac health"]
+        },
+        metabolicSyndrome: {
+          products: ["Forge", "Sage"],
+          description: "Training and nutrition programs matched to insulin sensitivity and metabolic markers for metabolic syndrome management.",
+          keywords: ["metabolic syndrome", "insulin resistance", "metabolic health"]
+        },
+        preDiabetes: {
+          products: ["Sage", "Forge"],
+          description: "Glucose-optimized nutrition using CGM data and exercise timing for blood sugar control and diabetes prevention.",
+          keywords: ["pre-diabetes", "blood sugar", "glucose control", "insulin sensitivity", "diabetes prevention"]
+        },
+        inflammation: {
+          products: ["Sage", "Forge"],
+          description: "Anti-inflammatory nutrition protocols based on CRP and other inflammatory markers, with recovery-focused exercise programming.",
+          keywords: ["inflammation", "CRP", "anti-inflammatory", "chronic inflammation"]
+        }
       },
       keyDifferentiator: "Moccet uses actual biological data (blood tests, CGM, microbiome, HRV) with autonomous AI agents, rather than questionnaires or generic formulas. The platform models health as a dynamic system, enabling prevention and early intervention."
     },

@@ -93,7 +93,7 @@ export default function SagePage() {
             alt="Your personal nutrition plan"
           />
           <div className="cta-container">
-            <Link href="/onboarding" className="button">
+            <Link href="/sage/onboarding" className="button">
               <span className="text-wrapper-3">Get started</span>
             </Link>
           </div>

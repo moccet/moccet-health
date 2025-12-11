@@ -93,7 +93,7 @@ export default function ForgePage() {
             alt="Your personal training program"
           />
           <div className="cta-container">
-            <Link href="/onboarding" className="button">
+            <Link href="/forge/onboarding" className="button">
               <span className="text-wrapper-3">Get started</span>
             </Link>
           </div>

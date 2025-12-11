@@ -12,7 +12,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 export type Provider =
   | 'oura' | 'dexcom' | 'fitbit' | 'strava' | 'vital'
   | 'gmail' | 'slack' | 'outlook' | 'teams' | 'apple_calendar' | 'apple_health'
-  | 'whoop' | 'myfitnesspal' | 'cronometer';
+  | 'whoop' | 'myfitnesspal' | 'cronometer' | 'spotify';
 
 export interface TokenData {
   accessToken: string;
@@ -371,6 +371,11 @@ async function callProviderRefresh(
         url: 'https://api.prod.whoop.com/oauth/oauth2/token',
         clientIdEnv: 'WHOOP_CLIENT_ID',
         clientSecretEnv: 'WHOOP_CLIENT_SECRET',
+      },
+      spotify: {
+        url: 'https://accounts.spotify.com/api/token',
+        clientIdEnv: 'SPOTIFY_CLIENT_ID',
+        clientSecretEnv: 'SPOTIFY_CLIENT_SECRET',
       },
       // Add more providers as needed
     };

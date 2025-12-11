@@ -7,6 +7,21 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
+    const stateParam = searchParams.get('state');
+
+    // Parse state to check if this is from mobile
+    let source = 'web';
+    let mobileUserId = '';
+    if (stateParam) {
+      try {
+        const state = JSON.parse(stateParam);
+        source = state.source || 'web';
+        mobileUserId = state.userId || '';
+      } catch (e) {
+        // State is not JSON, ignore
+      }
+    }
+    const isMobile = source === 'mobile';
 
     // Detect the correct origin - check for ngrok or forwarded host headers
     const forwardedHost = request.headers.get('x-forwarded-host');
@@ -93,8 +108,73 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Return HTML that closes the popup window
-    const html = `
+    // Return HTML based on source (mobile vs web)
+    const html = isMobile ? `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Gmail Connected</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              text-align: center;
+              padding: 60px 20px;
+              background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+              min-height: 100vh;
+              margin: 0;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+            }
+            .success-icon {
+              width: 80px;
+              height: 80px;
+              background: #4CAF50;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 24px;
+            }
+            .success-icon svg {
+              width: 40px;
+              height: 40px;
+              fill: white;
+            }
+            h1 {
+              color: #1a1a1a;
+              font-size: 24px;
+              margin: 0 0 12px 0;
+            }
+            p {
+              color: #666;
+              font-size: 16px;
+              margin: 0 0 8px 0;
+            }
+            .hint {
+              font-size: 14px;
+              color: #888;
+              margin-top: 32px;
+              padding: 16px;
+              background: rgba(255,255,255,0.8);
+              border-radius: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <h1>Gmail Connected!</h1>
+          <p>Your account has been linked successfully.</p>
+          <div class="hint">
+            You can now close this window<br>and return to the moccet app.
+          </div>
+        </body>
+      </html>
+    ` : `
       <!DOCTYPE html>
       <html>
         <head>
@@ -102,7 +182,7 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Check if we're in a popup window (desktop) or full page (mobile)
+            // Check if we're in a popup window (desktop) or full page (web)
             if (window.opener) {
               // Desktop: Signal to parent window that connection was successful
               window.opener.postMessage({ type: 'gmail-connected', email: '${userEmail}' }, '*');
@@ -111,8 +191,8 @@ export async function GET(request: NextRequest) {
                 window.close();
               }, 1000);
             } else {
-              // Mobile: Redirect back to onboarding
-              const returnPath = '/forge/onboarding'; // Default, could parse from state
+              // Web: Redirect back to onboarding
+              const returnPath = '/forge/onboarding';
               window.location.href = returnPath + '?auth=gmail&success=true';
             }
           </script>

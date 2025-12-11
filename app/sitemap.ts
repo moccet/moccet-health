@@ -34,25 +34,60 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching blog posts for sitemap:', error);
   }
 
-  // Static pages
+  // Static pages - prioritized for health/fitness SEO
   const staticPages = [
+    // Core pages
     {
       url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
       priority: 1,
     },
+    // Product pages - high priority for SEO
+    {
+      url: `${baseUrl}/sage`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/forge`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.95,
+    },
+    // Onboarding pages
+    {
+      url: `${baseUrl}/sage/onboarding`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/forge/onboarding`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    // Content pages
     {
       url: `${baseUrl}/news`,
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 0.8,
     },
+    // Legal pages
     {
-      url: `${baseUrl}/sage`,
+      url: `${baseUrl}/privacy-policy`,
       lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/terms-of-use`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
     },
   ];
 

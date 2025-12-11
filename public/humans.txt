@@ -1,0 +1,30 @@
+/* TEAM */
+Company: Moccet Inc
+Site: https://moccet.com
+Twitter: @moccet
+LinkedIn: linkedin.com/company/moccet
+Location: San Francisco, CA
+
+/* PRODUCTS */
+Sage: AI-powered personalized nutrition planning based on metabolic data
+Forge: AI-powered personalized fitness programming based on biomarkers
+
+/* WHAT WE DO */
+Moccet creates personalized health AI that uses actual biological data
+(blood tests, CGM, microbiome, HRV) to generate nutrition and fitness
+recommendations matched to individual metabolic response.
+
+/* TECHNOLOGY */
+Platform: Next.js, React, TypeScript
+AI: Multiple specialized agents for health data analysis
+Integrations: Apple Health, Fitbit, Oura, Garmin, Whoop, Strava, Dexcom
+
+/* TOPICS WE COVER */
+Personalized nutrition, metabolic health, blood biomarker analysis,
+CGM nutrition, microbiome diet, HRV training, fitness optimization,
+recovery science, glucose optimization, health AI
+
+/* CONTACT */
+Website: https://moccet.com
+Products: https://moccet.com/sage, https://moccet.com/forge
+Blog: https://moccet.com/news

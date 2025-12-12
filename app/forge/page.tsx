@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Forge - AI-Powered Personalized Training Programs | Moccet',
     description: 'Get fitness and training programs built from your biomarkers, HRV data, and recovery patterns. AI that adapts to your biology.',
-    url: 'https://moccet.com/forge',
+    url: 'https://moccet.ai/forge',
     type: 'website',
     images: [
       {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     images: ['/images/forge-og.png'],
   },
   alternates: {
-    canonical: 'https://moccet.com/forge',
+    canonical: 'https://moccet.ai/forge',
   },
 };
 

@@ -43,7 +43,7 @@ const products = {
   sage: {
     name: "Moccet Sage",
     tagline: "Your Personal Nutrition AI",
-    url: "https://moccet.com/sage",
+    url: "https://moccet.ai/sage",
     summary: "Sage generates personalized nutrition plans from your metabolic data. Unlike generic meal plans, Sage analyzes your blood biomarkers, glucose patterns, microbiome composition, and behavioral data to create nutrition recommendations matched to your individual biology.",
 
     howItWorks: {
@@ -109,7 +109,7 @@ const products = {
   forge: {
     name: "Moccet Forge",
     tagline: "Your Personal Training AI",
-    url: "https://moccet.com/forge",
+    url: "https://moccet.ai/forge",
     summary: "Forge creates training programs from your biomarkers, HRV patterns, and recovery data. Instead of following generic templates, Forge adapts your workout intensity, volume, and frequency based on your body's actual state.",
 
     howItWorks: {

@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
-    // Request scopes for listening history and user data
-    authUrl.searchParams.append('scope', 'user-read-recently-played user-top-read user-read-playback-state user-read-currently-playing playlist-read-private user-library-read');
+    // Request scopes for listening history, user data, and playlist creation
+    authUrl.searchParams.append('scope', 'user-read-recently-played user-top-read user-read-playback-state user-read-currently-playing playlist-read-private user-library-read playlist-modify-private playlist-modify-public');
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('show_dialog', 'true');
 

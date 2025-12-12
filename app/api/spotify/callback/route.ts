@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiresAt,
         providerUserId: userId,
-        scopes: ['user-read-recently-played', 'user-top-read', 'user-read-playback-state', 'user-read-currently-playing', 'playlist-read-private', 'user-library-read'],
+        scopes: ['user-read-recently-played', 'user-top-read', 'user-read-playback-state', 'user-read-currently-playing', 'playlist-read-private', 'user-library-read', 'playlist-modify-private', 'playlist-modify-public'],
         metadata: {
           displayName,
           spotifyEmail: userInfo.email,

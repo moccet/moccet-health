@@ -10,7 +10,7 @@ moccet is an AI-powered health platform that embeds autonomous agents into daily
 
 **Key Differentiator:** Uses actual biological data (blood tests, CGM, microbiome, HRV, wearables) combined with autonomous AI agents, rather than questionnaires or generic formulas.
 
-Website: https://moccet.com
+Website: https://moccet.ai
 
 ---
 
@@ -47,7 +47,7 @@ The central AI agent at the heart of the moccet ecosystem. It continuously monit
 
 ### 2. Sage - Personalized Nutrition AI
 
-**URL:** https://moccet.com/sage
+**URL:** https://moccet.ai/sage
 
 **What It Is:**
 An AI nutrition agent that generates personalized meal plans from metabolic data. Unlike generic meal planners, Sage analyzes your blood biomarkers, glucose patterns, microbiome composition, and behavioral data to create recommendations matched to your individual biology.
@@ -93,7 +93,7 @@ Every recommendation traces to peer-reviewed research. When Sage recommends prot
 
 ### 3. Forge - Personalized Fitness AI
 
-**URL:** https://moccet.com/forge
+**URL:** https://moccet.ai/forge
 
 **What It Is:**
 An AI fitness agent that creates training programs from your biomarkers, HRV patterns, and recovery data. Instead of generic templates, Forge adapts intensity, volume, and frequency based on your body's actual state.
@@ -519,10 +519,10 @@ User connects WHOOP + Oura + Apple Health + uploads blood panel → moccet Agent
 
 ## Contact and Resources
 
-- **Website:** https://moccet.com
-- **Sage Product:** https://moccet.com/sage
-- **Forge Product:** https://moccet.com/forge
-- **Blog/Research:** https://moccet.com/news
+- **Website:** https://moccet.ai
+- **Sage Product:** https://moccet.ai/sage
+- **Forge Product:** https://moccet.ai/forge
+- **Blog/Research:** https://moccet.ai/news
 - **Twitter:** https://twitter.com/moccet
 - **LinkedIn:** https://linkedin.com/company/moccet
-- **Contact:** https://moccet.com/contact
+- **Contact:** https://moccet.ai/contact

@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://moccet.com/api/openapi.json"
+    "url": "https://moccet.ai/api/openapi.json"
   },
-  "logo_url": "https://moccet.com/logo.png",
-  "contact_email": "support@moccet.com",
-  "legal_info_url": "https://moccet.com/terms-of-use"
+  "logo_url": "https://moccet.ai/logo.png",
+  "contact_email": "support@moccet.ai",
+  "legal_info_url": "https://moccet.ai/terms-of-use"
 }

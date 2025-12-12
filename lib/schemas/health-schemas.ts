@@ -10,8 +10,8 @@ export const organizationSchema = {
   "name": "Moccet",
   "alternateName": "Moccet Inc",
   "description": "Autonomous health AI platform that embeds AI agents into daily life, relationships, and clinical workflows. Combines continuous health monitoring, personalized AI recommendations, and deep clinical integration for proactive, personalized care.",
-  "url": "https://moccet.com",
-  "logo": "https://moccet.com/logo.png",
+  "url": "https://moccet.ai",
+  "logo": "https://moccet.ai/logo.png",
   "foundingDate": "2024",
   "industry": "Health Technology",
   "knowsAbout": [
@@ -41,7 +41,7 @@ export const organizationSchema = {
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
-    "url": "https://moccet.com/contact"
+    "url": "https://moccet.ai/contact"
   }
 };
 
@@ -51,10 +51,10 @@ export const sageProductSchema = {
   "@graph": [
     {
       "@type": "MedicalWebPage",
-      "@id": "https://moccet.com/sage#webpage",
+      "@id": "https://moccet.ai/sage#webpage",
       "name": "Sage - AI-Powered Personalized Nutrition Plans",
       "description": "Generate personalized nutrition plans based on metabolic data, blood biomarkers, CGM data, and microbiome analysis. AI that adapts to your biology.",
-      "url": "https://moccet.com/sage",
+      "url": "https://moccet.ai/sage",
       "specialty": {
         "@type": "MedicalSpecialty",
         "name": "Nutrition Science"
@@ -93,7 +93,7 @@ export const sageProductSchema = {
       "provider": {
         "@type": "Organization",
         "name": "Moccet",
-        "url": "https://moccet.com"
+        "url": "https://moccet.ai"
       },
       "featureList": [
         "Personalized nutrition plans from metabolic data",
@@ -113,10 +113,10 @@ export const forgeProductSchema = {
   "@graph": [
     {
       "@type": "MedicalWebPage",
-      "@id": "https://moccet.com/forge#webpage",
+      "@id": "https://moccet.ai/forge#webpage",
       "name": "Forge - AI-Powered Personalized Training Programs",
       "description": "Get fitness and training programs built from your biomarkers, HRV data, and recovery patterns. AI that adapts to your biology.",
-      "url": "https://moccet.com/forge",
+      "url": "https://moccet.ai/forge",
       "specialty": {
         "@type": "MedicalSpecialty",
         "name": "Exercise Science"
@@ -157,7 +157,7 @@ export const forgeProductSchema = {
       "provider": {
         "@type": "Organization",
         "name": "Moccet",
-        "url": "https://moccet.com"
+        "url": "https://moccet.ai"
       },
       "featureList": [
         "Training programs from blood biomarkers",
@@ -370,11 +370,11 @@ export const websiteSchema = {
   "@type": "WebSite",
   "name": "Moccet",
   "alternateName": "Moccet - Autonomous Health AI Platform",
-  "url": "https://moccet.com",
+  "url": "https://moccet.ai",
   "description": "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and specialized health programs.",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://moccet.com/search?q={search_term_string}",
+    "target": "https://moccet.ai/search?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 };
@@ -390,7 +390,7 @@ export const moccetAgentSchema = {
   "provider": {
     "@type": "Organization",
     "name": "Moccet",
-    "url": "https://moccet.com"
+    "url": "https://moccet.ai"
   },
   "featureList": [
     "Continuous health monitoring across all connected sources",
@@ -423,7 +423,7 @@ export const moccetMedicSchema = {
       "provider": {
         "@type": "Organization",
         "name": "Moccet",
-        "url": "https://moccet.com"
+        "url": "https://moccet.ai"
       },
       "featureList": [
         "Continuous health data aggregation",
@@ -448,7 +448,7 @@ export const moccetShareSchema = {
   "provider": {
     "@type": "Organization",
     "name": "Moccet",
-    "url": "https://moccet.com"
+    "url": "https://moccet.ai"
   },
   "featureList": [
     "Shared health dashboards for family members",
@@ -471,7 +471,7 @@ export const moccetConnectSchema = {
   "provider": {
     "@type": "Organization",
     "name": "Moccet",
-    "url": "https://moccet.com"
+    "url": "https://moccet.ai"
   },
   "featureList": [
     "Workout buddy matching based on schedules and fitness levels",
@@ -504,7 +504,7 @@ export const surgicalKeySchema = {
       "provider": {
         "@type": "Organization",
         "name": "Moccet",
-        "url": "https://moccet.com"
+        "url": "https://moccet.ai"
       },
       "featureList": [
         "Pre-surgery health optimization protocols",
@@ -529,7 +529,7 @@ export const flightPassSchema = {
   "provider": {
     "@type": "Organization",
     "name": "Moccet",
-    "url": "https://moccet.com"
+    "url": "https://moccet.ai"
   },
   "featureList": [
     "Travel readiness assessment",

@@ -73,7 +73,12 @@ export async function GET(request: NextRequest) {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         expiresAt,
-        scopes: tokens.scope?.split(' '),
+        scopes: tokens.scope?.split(' ') || [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/calendar.readonly',
+          'https://www.googleapis.com/auth/calendar.events',
+          'https://www.googleapis.com/auth/userinfo.email'
+        ],
         providerUserId: googleEmail, // Store the Google email as provider ID
       }, userCode);
 

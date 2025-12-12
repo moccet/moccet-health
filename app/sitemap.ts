@@ -17,7 +17,7 @@ function generateSlug(text: string): string {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://moccet.com'; // Update with your actual domain
+  const baseUrl = 'https://moccet.ai';
 
   // Fetch blog posts
   let blogPosts: BlogPost[] = [];

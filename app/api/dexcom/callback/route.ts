@@ -62,8 +62,10 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
-    // Parse state parameter to get email/code if not in cookies
+    // Parse state parameter to get email/code/userId/source
     const state = request.nextUrl.searchParams.get('state');
     if (state) {
       try {
@@ -76,8 +78,30 @@ export async function GET(request: NextRequest) {
           userCode = stateData.code;
           console.log(`[Dexcom] Got code from state parameter: ${userCode}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Dexcom] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       } catch (e) {
-        console.log('[Dexcom] Could not parse state parameter');
+        console.log('[Dexcom] Could not parse state data');
+      }
+    }
+
+    // If we have userId but no email, look up the email from Supabase
+    if (!userEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          userEmail = userData.user.email;
+          console.log(`[Dexcom] Looked up email from userId: ${userEmail}`);
+        }
+      } catch (e) {
+        console.log('[Dexcom] Could not look up email from userId:', e);
       }
     }
 
@@ -96,17 +120,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Dexcom] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        let supabaseUserId: string | null = null;
-        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Dexcom', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Dexcom] Updated user_connectors for user ${supabaseUserId}`);
-        }
-      } catch (e) { console.error('[Dexcom] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Dexcom',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Dexcom] Updated user_connectors for user ${supabaseUserId}`);
+      } catch (connectorError) {
+        console.error('[Dexcom] Failed to update user_connectors:', connectorError);
+      }
+    } else {
+      console.warn('[Dexcom] No userId available, cannot update user_connectors');
     }
 
     // Keep cookies for backward compatibility
@@ -133,10 +166,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });
 
-    // Determine redirect and source
-    let isMobileApp = false;
-    if (state) { try { isMobileApp = JSON.parse(decodeURIComponent(state)).source === 'mobile'; } catch (e) {} }
-
+    // Return HTML based on source (isMobileApp already set above from state parsing)
     if (isMobileApp) {
       return new NextResponse(
         `<!DOCTYPE html><html><head><title>Dexcom Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #4CAF50; font-size: 24px;">Connected!</h1><p>Dexcom CGM has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,

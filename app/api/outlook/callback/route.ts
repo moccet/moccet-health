@@ -74,19 +74,43 @@ export async function GET(request: NextRequest) {
 
     // Store tokens in database
     const cookieStore = await cookies();
-    const appUserEmail = cookieStore.get('user_email')?.value || userEmail;
+    let appUserEmail = cookieStore.get('user_email')?.value || userEmail;
     let userCode = cookieStore.get('user_code')?.value;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
-    // Try to get code from state parameter if not in cookies
-    if (!userCode && state) {
+    // Try to get code, userId, and source from state parameter
+    if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.code) {
           userCode = stateData.code;
           console.log(`[Outlook] Got code from state parameter: ${userCode}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Outlook] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       } catch (e) {
-        console.log('[Outlook] Could not parse code from state');
+        console.log('[Outlook] Could not parse state data');
+      }
+    }
+
+    // If we have userId but no email, look up the email from Supabase
+    if (!appUserEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          appUserEmail = userData.user.email;
+          console.log(`[Outlook] Looked up email from userId: ${appUserEmail}`);
+        }
+      } catch (e) {
+        console.log('[Outlook] Could not look up email from userId:', e);
       }
     }
 
@@ -106,17 +130,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Outlook] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        let supabaseUserId: string | null = null;
-        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Outlook', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Outlook] Updated user_connectors for user ${supabaseUserId}`);
-        }
-      } catch (e) { console.error('[Outlook] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Outlook',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Outlook] Updated user_connectors for user ${supabaseUserId}`);
+      } catch (connectorError) {
+        console.error('[Outlook] Failed to update user_connectors:', connectorError);
+      }
+    } else {
+      console.warn('[Outlook] No userId available, cannot update user_connectors');
     }
 
     // Store in cookies for backward compatibility
@@ -149,10 +182,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });
 
-    // Determine redirect and source
-    let isMobileApp = false;
-    if (state) { try { isMobileApp = JSON.parse(decodeURIComponent(state)).source === 'mobile'; } catch (e) {} }
-
+    // Return HTML based on source (isMobileApp already set above from state parsing)
     if (isMobileApp) {
       return new NextResponse(
         `<!DOCTYPE html><html><head><title>Outlook Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #0078D4; font-size: 24px;">Connected!</h1><p>Outlook has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,

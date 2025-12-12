@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     let storedUserEmail = userEmail;
     let userCode: string | undefined;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
     // Get user_code from cookies
     const cookieStore = await cookies();
@@ -94,8 +96,30 @@ export async function GET(request: NextRequest) {
           userCode = stateData.code;
           console.log(`[Teams] Got code from state parameter: ${userCode}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Teams] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       } catch (e) {
-        console.log('[Teams] Could not parse state for email/code');
+        console.log('[Teams] Could not parse state data');
+      }
+    }
+
+    // If we have userId but no email, look up the email from Supabase
+    if (!storedUserEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          storedUserEmail = userData.user.email;
+          console.log(`[Teams] Looked up email from userId: ${storedUserEmail}`);
+        }
+      } catch (e) {
+        console.log('[Teams] Could not look up email from userId:', e);
       }
     }
 
@@ -118,17 +142,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Teams] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        let supabaseUserId: string | null = null;
-        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Teams', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Teams] Updated user_connectors for user ${supabaseUserId}`);
-        }
-      } catch (e) { console.error('[Teams] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Teams',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Teams] Updated user_connectors for user ${supabaseUserId}`);
+      } catch (connectorError) {
+        console.error('[Teams] Failed to update user_connectors:', connectorError);
+      }
+    } else {
+      console.warn('[Teams] No userId available, cannot update user_connectors');
     }
 
     // Set cookies with tokens (for backward compatibility)
@@ -155,10 +188,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });
 
-    // Determine redirect and source
-    let isMobileApp = false;
-    if (state) { try { isMobileApp = JSON.parse(decodeURIComponent(state)).source === 'mobile'; } catch (e) {} }
-
+    // Return HTML based on source (isMobileApp already set above from state parsing)
     if (isMobileApp) {
       return new NextResponse(
         `<!DOCTYPE html><html><head><title>Teams Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #6264A7; font-size: 24px;">Connected!</h1><p>Microsoft Teams has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,

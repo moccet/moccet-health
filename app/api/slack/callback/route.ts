@@ -84,8 +84,10 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
-    // Parse state parameter FIRST to get email/code if not in cookies
+    // Parse state parameter FIRST to get email/code/userId/source
     let redirectPath = '/forge/onboarding';
     const state = searchParams.get('state');
     try {
@@ -104,12 +106,34 @@ export async function GET(request: NextRequest) {
           userEmail = stateData.email;
           console.log(`[Slack] Got email from state parameter: ${userEmail}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Slack] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       }
     } catch (e) {
-      console.log('[Slack] Could not parse state parameter');
+      console.log('[Slack] Could not parse state data');
     }
 
-    // Store tokens in database (now we have email from cookies OR state)
+    // If we have userId but no email, look up the email from Supabase
+    if (!userEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          userEmail = userData.user.email;
+          console.log(`[Slack] Looked up email from userId: ${userEmail}`);
+        }
+      } catch (e) {
+        console.log('[Slack] Could not look up email from userId:', e);
+      }
+    }
+
+    // Store tokens in database (now we have email from cookies OR state OR userId lookup)
     if (userEmail && accessToken) {
       // Get scopes from the appropriate place depending on token type
       const scopes = tokenData.authed_user?.scope?.split(',') || tokenData.scope?.split(',') || [];
@@ -131,19 +155,28 @@ export async function GET(request: NextRequest) {
         console.error(`[Slack] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    } else {
+      console.warn(`[Slack] Cannot store token - no email available (cookie: ${!!cookieStore.get('user_email')?.value}, state: ${!!state})`);
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        let supabaseUserId: string | null = null;
-        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Slack', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Slack] Updated user_connectors for user ${supabaseUserId}`);
-        }
-      } catch (e) { console.error('[Slack] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Slack',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Slack] Updated user_connectors for user ${supabaseUserId}`);
+      } catch (connectorError) {
+        console.error('[Slack] Failed to update user_connectors:', connectorError);
+      }
     } else {
-      console.warn(`[Slack] Cannot store token - no email available (cookie: ${!!cookieStore.get('user_email')?.value}, state: ${!!state})`);
+      console.warn('[Slack] No userId available, cannot update user_connectors');
     }
 
     // Store in cookies for backward compatibility
@@ -162,11 +195,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Determine if mobile app
-    let isMobileApp = false;
-    if (state) { try { isMobileApp = JSON.parse(decodeURIComponent(state)).source === 'mobile'; } catch (e) {} }
-
-    // Return HTML based on source
+    // Return HTML based on source (isMobileApp already set above from state parsing)
     const html = isMobileApp
       ? `<!DOCTYPE html><html><head><title>Slack Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #4A154B; font-size: 24px;">Connected!</h1><p>Slack has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`
       : `<!DOCTYPE html><html><head><title>Slack Connected</title></head><body><script>if(window.opener){window.opener.postMessage({type:'slack-connected',team:'${teamName}'},'*');setTimeout(()=>{window.close();},1000);}else{window.location.href='${redirectPath}?auth=slack&success=true';}</script><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;"><h1 style="color: #4A154B;">✓ Connected</h1><p>Slack has been connected successfully.</p></div></body></html>`;

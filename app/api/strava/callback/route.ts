@@ -56,8 +56,10 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
-    // Try to get email and code from state parameter if not in cookies
+    // Try to get email, code, userId, and source from state parameter
     if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
@@ -69,8 +71,30 @@ export async function GET(request: NextRequest) {
           userCode = stateData.code;
           console.log(`[Strava] Got code from state parameter: ${userCode}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Strava] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       } catch (e) {
-        console.log('[Strava] Could not parse state parameter');
+        console.log('[Strava] Could not parse state data');
+      }
+    }
+
+    // If we have userId but no email, look up the email from Supabase
+    if (!userEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          userEmail = userData.user.email;
+          console.log(`[Strava] Looked up email from userId: ${userEmail}`);
+        }
+      } catch (e) {
+        console.log('[Strava] Could not look up email from userId:', e);
       }
     }
 
@@ -90,17 +114,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Strava] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        let supabaseUserId: string | null = null;
-        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Strava', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Strava] Updated user_connectors for user ${supabaseUserId}`);
-        }
-      } catch (e) { console.error('[Strava] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Strava',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Strava] Updated user_connectors for user ${supabaseUserId}`);
+      } catch (connectorError) {
+        console.error('[Strava] Failed to update user_connectors:', connectorError);
+      }
+    } else {
+      console.warn('[Strava] No userId available, cannot update user_connectors');
     }
 
     // Keep cookies for backward compatibility
@@ -127,16 +160,16 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Determine redirect and source
+    // Determine redirect path (isMobileApp already set above from state parsing)
     let redirectPath = '/forge/onboarding';
-    let isMobileApp = false;
-    try {
-      if (state) {
+    if (state) {
+      try {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.returnPath) redirectPath = stateData.returnPath;
-        if (stateData.source === 'mobile') isMobileApp = true;
+      } catch (e) {
+        // Already logged above
       }
-    } catch (e) {}
+    }
 
     if (isMobileApp) {
       return new NextResponse(

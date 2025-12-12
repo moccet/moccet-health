@@ -88,15 +88,26 @@ export async function GET(request: NextRequest) {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }
 
-      // Update user_connectors for mobile app
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (mobileUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-        if (mobileUserId) {
-          await supabase.from('user_connectors').upsert({ user_id: mobileUserId, connector_name: 'Google', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
-          console.log(`[Gmail] Updated user_connectors for user ${mobileUserId}`);
-        }
-      } catch (e) { console.error('[Gmail] Failed to update user_connectors:', e); }
+        await supabase.from('user_connectors').upsert({
+          user_id: mobileUserId,
+          connector_name: 'Google',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,connector_name' });
+        console.log(`[Gmail] Updated user_connectors for user ${mobileUserId}`);
+      } catch (connectorError) {
+        console.error('[Gmail] Failed to update user_connectors:', connectorError);
+      }
+    } else {
+      console.warn('[Gmail] No userId available, cannot update user_connectors');
     }
 
     // Store in cookies for backward compatibility (cookieStore already defined above)

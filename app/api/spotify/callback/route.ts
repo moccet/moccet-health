@@ -71,8 +71,10 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     let userEmail = cookieStore.get('user_email')?.value;
     let userCode = cookieStore.get('user_code')?.value;
+    let supabaseUserId: string | null = null;
+    let isMobileApp = false;
 
-    // Try to get email and code from state parameter if not in cookies
+    // Try to get email, code, userId, and source from state parameter
     if (state) {
       try {
         const stateData = JSON.parse(decodeURIComponent(state));
@@ -84,13 +86,35 @@ export async function GET(request: NextRequest) {
           userCode = stateData.code;
           console.log(`[Spotify] Got code from state parameter: ${userCode}`);
         }
+        if (stateData.userId) {
+          supabaseUserId = stateData.userId;
+          console.log(`[Spotify] Got userId from state parameter: ${supabaseUserId}`);
+        }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       } catch (e) {
-        console.log('[Spotify] Could not parse email/code from state');
+        console.log('[Spotify] Could not parse state data');
+      }
+    }
+
+    // If we have userId but no email, look up the email from Supabase
+    if (!userEmail && supabaseUserId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        const { data: userData } = await supabase.auth.admin.getUserById(supabaseUserId);
+        if (userData?.user?.email) {
+          userEmail = userData.user.email;
+          console.log(`[Spotify] Looked up email from userId: ${userEmail}`);
+        }
+      } catch (e) {
+        console.log('[Spotify] Could not look up email from userId:', e);
       }
     }
 
     if (!userEmail) {
-      console.warn('[Spotify] No user email found in cookies or state, cannot store token in database');
+      console.warn('[Spotify] No user email found, cannot store token in database');
     }
 
     // Store tokens in database (new secure method)
@@ -115,39 +139,28 @@ export async function GET(request: NextRequest) {
         console.error(`[Spotify] Failed to store tokens in database:`, storeResult.error);
       }
 
-      // Also update user_connectors table for mobile app compatibility
+    }
+
+    // Update user_connectors table for mobile app compatibility (outside userEmail check)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
-
-        // Get user_id from state if available
-        let supabaseUserId: string | null = null;
-        if (state) {
-          try {
-            const stateData = JSON.parse(decodeURIComponent(state));
-            supabaseUserId = stateData.userId || null;
-          } catch (e) {
-            console.log('[Spotify] Could not parse userId from state');
-          }
-        }
-
-        if (supabaseUserId) {
-          await supabase.from('user_connectors').upsert({
-            user_id: supabaseUserId,
-            connector_name: 'Spotify',
-            is_connected: true,
-            connected_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,connector_name'
-          });
-          console.log(`[Spotify] Updated user_connectors for user ${supabaseUserId}`);
-        } else {
-          console.warn('[Spotify] No userId in state, cannot update user_connectors');
-        }
+        await supabase.from('user_connectors').upsert({
+          user_id: supabaseUserId,
+          connector_name: 'Spotify',
+          is_connected: true,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,connector_name'
+        });
+        console.log(`[Spotify] Updated user_connectors for user ${supabaseUserId}`);
       } catch (connectorError) {
         console.error('[Spotify] Failed to update user_connectors:', connectorError);
       }
+    } else {
+      console.warn('[Spotify] No userId available, cannot update user_connectors');
     }
 
     // Keep cookies for backward compatibility and session validation
@@ -174,21 +187,17 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Determine redirect path and source based on state parameter
+    // Determine redirect path (isMobileApp already set above from state parsing)
     let redirectPath = '/forge/onboarding';
-    let isMobileApp = false;
-    try {
-      if (state) {
+    if (state) {
+      try {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.returnPath) {
           redirectPath = stateData.returnPath;
         }
-        if (stateData.source === 'mobile') {
-          isMobileApp = true;
-        }
+      } catch (e) {
+        // Already logged above
       }
-    } catch (e) {
-      console.log('Could not parse state, using default redirect');
     }
 
     // Return HTML based on source

@@ -100,7 +100,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Store tokens in database
-    const state = searchParams.get('state');
     if (storedUserEmail) {
       const expiresIn = tokenData.expires_in;
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;

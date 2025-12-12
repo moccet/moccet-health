@@ -19,10 +19,23 @@ import type {
 
 // Note: Playwright will be dynamically imported when needed
 // This allows the service to be used in serverless environments
+// The import is wrapped to prevent webpack from bundling it
 
 type Browser = any;
 type Page = any;
 type BrowserContext = any;
+
+// Dynamic import wrapper to prevent build-time resolution
+async function getPlaywright() {
+  try {
+    // Use eval to prevent webpack from analyzing this import
+    const playwright = await (eval('import("playwright")') as Promise<any>);
+    return playwright;
+  } catch (error) {
+    console.error('[PlaywrightService] Playwright not available:', error);
+    return null;
+  }
+}
 
 // Random user agents for stealth
 const USER_AGENTS = [
@@ -68,8 +81,12 @@ export class PlaywrightService {
   private async initBrowser(): Promise<void> {
     if (this.browser) return;
 
+    const playwright = await getPlaywright();
+    if (!playwright) {
+      throw new Error('Playwright not available. Install with: npm install playwright');
+    }
+
     try {
-      const playwright = await import('playwright');
       this.browser = await playwright.chromium.launch({
         headless: this.config.headless,
       });

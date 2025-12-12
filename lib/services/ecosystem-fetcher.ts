@@ -1346,6 +1346,17 @@ export async function fetchBloodBiomarkers(
 // ============================================================================
 
 /**
+ * Fetch ecosystem data for a user (alias for fetchAllEcosystemData)
+ * Used by inference enhancers
+ */
+export async function fetchEcosystemData(
+  email: string,
+  planType: 'sage' | 'forge' = 'sage'
+): Promise<EcosystemFetchResult> {
+  return fetchAllEcosystemData(email, planType);
+}
+
+/**
  * Fetch all available ecosystem data for a user
  * Runs all fetches in parallel for optimal performance
  */

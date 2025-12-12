@@ -18,7 +18,25 @@ function getOpenAIClient() {
   }
   return new OpenAI({
     apiKey,
+    timeout: 600000, // 10 minutes timeout for API calls (GPT-5 with reasoning can be slow)
+    maxRetries: 2,   // Retry on transient failures
   });
+}
+
+// Helper for fetch with timeout (prevents UND_ERR_BODY_TIMEOUT)
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 300000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -63,7 +81,7 @@ async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, base
 
   if (userEmail) {
     try {
-      const contextResponse = await fetch(`${baseUrl}/api/aggregate-context`, {
+      const contextResponse = await fetchWithTimeout(`${baseUrl}/api/aggregate-context`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +89,7 @@ async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, base
           contextType: 'forge',
           forceRefresh: false,
         }),
-      });
+      }, 60000); // 1 minute timeout for context aggregation
 
       if (contextResponse.ok) {
         const contextData = await contextResponse.json();
@@ -546,9 +564,12 @@ async function handler(request: NextRequest) {
       console.log('[CONTEXT] Passing ecosystem data to specialized agents (Sage journals, health trends, behavioral patterns)');
     }
 
+    // 5 minute timeout per agent (they run in parallel, so total time is ~5 min not 20 min)
+    const agentTimeoutMs = 300000;
+
     const [trainingResult, nutritionResult, recoveryResult, adaptationResult] = await Promise.all([
       // Training Agent
-      fetch(`${baseUrl}/api/forge-generate-training`, {
+      fetchWithTimeout(`${baseUrl}/api/forge-generate-training`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -557,13 +578,13 @@ async function handler(request: NextRequest) {
           recommendations,
           unifiedContext // Pass the full ecosystem context
         })
-      }).then(res => res.json()).catch(err => {
+      }, agentTimeoutMs).then(res => res.json()).catch(err => {
         console.error('[TRAINING-AGENT] Error:', err);
-        return { success: false };
+        return { success: false, error: err.message };
       }),
 
       // Nutrition Agent
-      fetch(`${baseUrl}/api/forge-generate-nutrition`, {
+      fetchWithTimeout(`${baseUrl}/api/forge-generate-nutrition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -572,13 +593,13 @@ async function handler(request: NextRequest) {
           recommendations,
           unifiedContext // Pass the full ecosystem context
         })
-      }).then(res => res.json()).catch(err => {
+      }, agentTimeoutMs).then(res => res.json()).catch(err => {
         console.error('[NUTRITION-AGENT] Error:', err);
-        return { success: false };
+        return { success: false, error: err.message };
       }),
 
       // Recovery Agent
-      fetch(`${baseUrl}/api/forge-generate-recovery`, {
+      fetchWithTimeout(`${baseUrl}/api/forge-generate-recovery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -587,13 +608,13 @@ async function handler(request: NextRequest) {
           recommendations,
           unifiedContext // Pass the full ecosystem context
         })
-      }).then(res => res.json()).catch(err => {
+      }, agentTimeoutMs).then(res => res.json()).catch(err => {
         console.error('[RECOVERY-AGENT] Error:', err);
-        return { success: false };
+        return { success: false, error: err.message };
       }),
 
       // Adaptation Agent (needs training program, so we'll use a placeholder for now)
-      fetch(`${baseUrl}/api/forge-generate-adaptation`, {
+      fetchWithTimeout(`${baseUrl}/api/forge-generate-adaptation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -602,9 +623,9 @@ async function handler(request: NextRequest) {
           trainingProgram: { weeklyProgram: {} }, // Will be populated after training agent
           unifiedContext // Pass the full ecosystem context
         })
-      }).then(res => res.json()).catch(err => {
+      }, agentTimeoutMs).then(res => res.json()).catch(err => {
         console.error('[ADAPTATION-AGENT] Error:', err);
-        return { success: false };
+        return { success: false, error: err.message };
       })
     ]);
 

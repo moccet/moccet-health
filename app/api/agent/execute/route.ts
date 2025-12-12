@@ -58,6 +58,16 @@ export async function POST(request: NextRequest) {
         case 'health_booking':
           result = await executeHealthBookingTask(task, email);
           break;
+        case 'shopping':
+          // Shopping tasks are handled by the shopping-agent API
+          // This redirects to the shopping agent execute endpoint
+          const shoppingResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/shopping-agent/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, taskId: task.id }),
+          });
+          result = await shoppingResponse.json();
+          break;
         default:
           throw new Error(`Unknown task type: ${task.type}`);
       }
@@ -290,7 +300,7 @@ async function executeSpotifyTask(task: any, email: string) {
   }
 }
 
-// Supplement task execution
+// Supplement task execution - analyzes blood work and creates shopping task
 async function executeSupplementTask(task: any, email: string) {
   const params = task.params || {};
 
@@ -326,15 +336,77 @@ async function executeSupplementTask(task: any, email: string) {
 
   await updateTaskStep(task.id, 'step_3', 'completed', `${recommendations.supplements?.length || 0} supplements matched`);
 
-  // Step 4: Prepare recommendations
+  // Step 4: Create Shopping Agent Task (NEW!)
   await updateTaskStep(task.id, 'step_4', 'in_progress');
-  await updateTaskStep(task.id, 'step_4', 'completed', 'Recommendations ready');
+
+  let shoppingTaskId = null;
+  const supplements = recommendations.supplements || [];
+
+  if (supplements.length > 0 && params.enableShopping !== false) {
+    try {
+      // Convert supplement recommendations to shopping products
+      const products = supplements.map((supp: any) => ({
+        name: supp.name || supp.supplementName,
+        dosage: supp.dosage || supp.strength,
+        quantity: 1,
+        maxPrice: supp.retailPrice ? supp.retailPrice * 1.2 : null, // Allow 20% more than internal price
+        priority: supp.priority || 'normal',
+      }));
+
+      // Create shopping agent task
+      const shoppingResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/shopping-agent/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          parentTaskId: task.id,
+          products,
+          targetSites: params.preferredSites || ['amazon', 'iherb', 'healf'],
+        }),
+      });
+
+      const shoppingData = await shoppingResponse.json();
+
+      if (shoppingData.success) {
+        shoppingTaskId = shoppingData.taskId;
+        console.log(`[Supplement Agent] Created shopping task: ${shoppingTaskId}`);
+
+        // Optionally start price comparison immediately
+        if (params.autoCompare !== false) {
+          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/shopping-agent/compare-prices`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              products,
+              taskId: shoppingTaskId,
+            }),
+          });
+        }
+      }
+    } catch (shoppingError) {
+      console.error('[Supplement Agent] Error creating shopping task:', shoppingError);
+      // Continue without shopping task - don't fail the whole supplement task
+    }
+  }
+
+  await updateTaskStep(
+    task.id,
+    'step_4',
+    'completed',
+    shoppingTaskId
+      ? `Shopping task created - comparing prices`
+      : 'Recommendations ready'
+  );
 
   return {
     success: true,
-    recommendations: recommendations.supplements || [],
+    recommendations: supplements,
     deficiencies,
-    message: `Found ${recommendations.supplements?.length || 0} supplement recommendations based on your biomarkers`,
+    shoppingTaskId,
+    message: shoppingTaskId
+      ? `Found ${supplements.length} supplements. Shopping agent is comparing prices across Amazon, Healf, and iHerb.`
+      : `Found ${supplements.length} supplement recommendations based on your biomarkers`,
   };
 }
 

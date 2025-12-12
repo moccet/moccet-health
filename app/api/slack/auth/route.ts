@@ -11,9 +11,12 @@ export async function GET(request: NextRequest) {
     const clientId = process.env.SLACK_CLIENT_ID;
     const redirectUri = process.env.SLACK_REDIRECT_URI || 'http://localhost:3003/api/slack/callback';
 
-    // Get state from query params (contains email and code from onboarding)
     const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state') || '';
+    const source = searchParams.get('source');
+    const userId = searchParams.get('userId');
+
+    const stateData = { random: Math.random().toString(36).substring(2, 15), source: source || 'web', userId };
+    const state = encodeURIComponent(JSON.stringify(stateData));
 
     if (!clientId) {
       return NextResponse.json({ error: 'Slack not configured' }, { status: 500, headers: corsHeaders });

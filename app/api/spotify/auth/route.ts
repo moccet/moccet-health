@@ -7,7 +7,16 @@ export async function GET(request: NextRequest) {
 
     // Get state from query params or generate random state
     const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state') || generateRandomState();
+    const source = searchParams.get('source'); // 'mobile' if from app
+    const userId = searchParams.get('userId');
+
+    // Include source in state so callback knows where request came from
+    const stateData = {
+      random: generateRandomState(),
+      source: source || 'web',
+      userId: userId,
+    };
+    const state = encodeURIComponent(JSON.stringify(stateData));
 
     if (!clientId) {
       return NextResponse.json(

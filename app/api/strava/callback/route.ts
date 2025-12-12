@@ -89,6 +89,18 @@ export async function GET(request: NextRequest) {
       } else {
         console.error(`[Strava] Failed to store tokens:`, storeResult.error);
       }
+
+      // Update user_connectors for mobile app
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        let supabaseUserId: string | null = null;
+        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
+        if (supabaseUserId) {
+          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Strava', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
+          console.log(`[Strava] Updated user_connectors for user ${supabaseUserId}`);
+        }
+      } catch (e) { console.error('[Strava] Failed to update user_connectors:', e); }
     }
 
     // Keep cookies for backward compatibility
@@ -115,54 +127,27 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Determine redirect path based on state parameter
+    // Determine redirect and source
     let redirectPath = '/forge/onboarding';
+    let isMobileApp = false;
     try {
       if (state) {
         const stateData = JSON.parse(decodeURIComponent(state));
-        if (stateData.returnPath) {
-          redirectPath = stateData.returnPath;
-        }
+        if (stateData.returnPath) redirectPath = stateData.returnPath;
+        if (stateData.source === 'mobile') isMobileApp = true;
       }
-    } catch (e) {
-      console.log('Could not parse state, using default redirect');
+    } catch (e) {}
+
+    if (isMobileApp) {
+      return new NextResponse(
+        `<!DOCTYPE html><html><head><title>Strava Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #FC4C02; font-size: 24px;">Connected!</h1><p>Strava has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
     }
 
-    // Return HTML to close popup OR redirect on mobile
     return new NextResponse(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Strava Connected</title>
-        </head>
-        <body>
-          <script>
-            // Check if we're in a popup window (desktop) or full page (mobile)
-            if (window.opener) {
-              // Desktop: Signal to parent window that connection was successful
-              window.opener.postMessage({ type: 'strava-connected' }, '*');
-              // Close the popup after a short delay
-              setTimeout(() => {
-                window.close();
-              }, 1000);
-            } else {
-              // Mobile: Redirect back to onboarding
-              window.location.href = '${redirectPath}?auth=strava&success=true';
-            }
-          </script>
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
-            <h1 style="color: #4CAF50;">✓ Connected</h1>
-            <p>Strava has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
-          </div>
-        </body>
-      </html>`,
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html',
-        },
-      }
+      `<!DOCTYPE html><html><head><title>Strava Connected</title></head><body><script>if(window.opener){window.opener.postMessage({type:'strava-connected'},'*');setTimeout(()=>{window.close();},1000);}else{window.location.href='${redirectPath}?auth=strava&success=true';}</script><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;"><h1 style="color: #FC4C02;">✓ Connected</h1><p>Strava has been connected successfully.</p></div></body></html>`,
+      { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
 
   } catch (error) {

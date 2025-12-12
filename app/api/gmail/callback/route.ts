@@ -87,6 +87,16 @@ export async function GET(request: NextRequest) {
       } else {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }
+
+      // Update user_connectors for mobile app
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        if (mobileUserId) {
+          await supabase.from('user_connectors').upsert({ user_id: mobileUserId, connector_name: 'Google', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
+          console.log(`[Gmail] Updated user_connectors for user ${mobileUserId}`);
+        }
+      } catch (e) { console.error('[Gmail] Failed to update user_connectors:', e); }
     }
 
     // Store in cookies for backward compatibility (cookieStore already defined above)

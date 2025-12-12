@@ -11,9 +11,12 @@ export async function GET(request: NextRequest) {
     const clientId = process.env.WHOOP_CLIENT_ID;
     const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/whoop/callback`;
 
-    // Get state from query params (contains email and code from onboarding)
     const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state') || '';
+    const source = searchParams.get('source');
+    const userId = searchParams.get('userId');
+
+    const stateData = { random: Math.random().toString(36).substring(2, 15), source: source || 'web', userId };
+    const state = encodeURIComponent(JSON.stringify(stateData));
 
     if (!clientId) {
       return NextResponse.json(

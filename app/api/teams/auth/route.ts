@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,8 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const source = searchParams.get('source');
+    const userId = searchParams.get('userId');
+
     const clientId = process.env.MICROSOFT_CLIENT_ID;
     const redirectUri = process.env.MICROSOFT_TEAMS_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/teams/callback`;
 
@@ -42,8 +46,11 @@ export async function GET() {
       'ChannelMessage.Send', // Send messages in channels
     ].join(' ');
 
+    const stateData = { random: generateRandomState(), source: source || 'web', userId };
+    const state = encodeURIComponent(JSON.stringify(stateData));
+
     authUrl.searchParams.append('scope', scopes);
-    authUrl.searchParams.append('state', generateRandomState());
+    authUrl.searchParams.append('state', state);
 
     return NextResponse.json({
       success: true,

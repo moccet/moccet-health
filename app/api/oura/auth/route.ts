@@ -5,9 +5,18 @@ export async function GET(request: NextRequest) {
     const clientId = process.env.OURA_CLIENT_ID;
     const redirectUri = process.env.OURA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/oura/callback`;
 
-    // Get state from query params or generate random state
+    // Get params from query
     const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state') || generateRandomState();
+    const source = searchParams.get('source'); // 'mobile' if from app
+    const userId = searchParams.get('userId');
+
+    // Include source in state so callback knows where request came from
+    const stateData = {
+      random: generateRandomState(),
+      source: source || 'web',
+      userId: userId,
+    };
+    const state = encodeURIComponent(JSON.stringify(stateData));
 
     if (!clientId) {
       return NextResponse.json(

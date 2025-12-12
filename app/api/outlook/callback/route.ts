@@ -105,6 +105,18 @@ export async function GET(request: NextRequest) {
       } else {
         console.error(`[Outlook] Failed to store tokens:`, storeResult.error);
       }
+
+      // Update user_connectors for mobile app
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+        let supabaseUserId: string | null = null;
+        if (state) { try { supabaseUserId = JSON.parse(decodeURIComponent(state)).userId || null; } catch (e) {} }
+        if (supabaseUserId) {
+          await supabase.from('user_connectors').upsert({ user_id: supabaseUserId, connector_name: 'Outlook', is_connected: true, connected_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,connector_name' });
+          console.log(`[Outlook] Updated user_connectors for user ${supabaseUserId}`);
+        }
+      } catch (e) { console.error('[Outlook] Failed to update user_connectors:', e); }
     }
 
     // Store in cookies for backward compatibility
@@ -137,36 +149,20 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });
 
-    // TODO: Store tokens in database for future API calls
-    // For now, we just verify the connection works
+    // Determine redirect and source
+    let isMobileApp = false;
+    if (state) { try { isMobileApp = JSON.parse(decodeURIComponent(state)).source === 'mobile'; } catch (e) {} }
 
-    // Return HTML to close the popup and signal success to parent window
+    if (isMobileApp) {
+      return new NextResponse(
+        `<!DOCTYPE html><html><head><title>Outlook Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #0078D4; font-size: 24px;">Connected!</h1><p>Outlook has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
+
+    // Web: Return HTML to close the popup
     return new NextResponse(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Outlook Connected</title>
-        </head>
-        <body>
-          <script>
-            // Check if we're in a popup window (desktop) or full page (mobile)
-            if (window.opener) {
-              // Desktop: Send message to parent window
-              window.opener.postMessage({
-                type: 'outlook_connected',
-                email: '${userEmail}'
-              }, window.location.origin);
-              // Close the popup after a short delay
-              setTimeout(() => {
-                window.close();
-              }, 1000);
-            } else {
-              // Mobile: Redirect back to onboarding
-              const returnPath = '/forge/onboarding'; // Default
-              window.location.href = returnPath + '?auth=outlook&success=true';
-            }
-          </script>
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
+      `<!DOCTYPE html><html><head><title>Outlook Connected</title></head><body><script>if(window.opener){window.opener.postMessage({type:'outlook_connected',email:'${userEmail}'},window.location.origin);setTimeout(()=>{window.close();},1000);}else{window.location.href='/forge/onboarding?auth=outlook&success=true';}</script><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
             <h1 style="color: #4CAF50;">✓ Connected</h1>
             <p>Outlook has been connected successfully.</p>
             <p style="font-size: 14px; color: #666;">Redirecting you back...</p>

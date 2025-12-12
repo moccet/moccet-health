@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.STRAVA_CLIENT_ID;
     const redirectUri = process.env.STRAVA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/strava/callback`;
+
+    const searchParams = request.nextUrl.searchParams;
+    const source = searchParams.get('source');
+    const userId = searchParams.get('userId');
 
     if (!clientId) {
       return NextResponse.json(
@@ -19,15 +23,17 @@ export async function GET() {
       );
     }
 
+    const stateData = { random: generateRandomState(), source: source || 'web', userId };
+    const state = encodeURIComponent(JSON.stringify(stateData));
+
     // Strava OAuth 2.0 authorization URL
-    // Documentation: https://developers.strava.com/docs/authentication/
     const authUrl = new URL('https://www.strava.com/oauth/authorize');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('approval_prompt', 'auto');
-    authUrl.searchParams.append('scope', 'read,activity:read_all,profile:read_all'); // Request activity and profile data
-    authUrl.searchParams.append('state', generateRandomState());
+    authUrl.searchParams.append('scope', 'read,activity:read_all,profile:read_all');
+    authUrl.searchParams.append('state', state);
 
     return NextResponse.json(
       { authUrl: authUrl.toString() },

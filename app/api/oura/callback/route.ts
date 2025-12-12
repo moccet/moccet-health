@@ -110,6 +110,38 @@ export async function GET(request: NextRequest) {
       } else {
         console.error(`[Oura] Failed to store tokens in database:`, storeResult.error);
       }
+
+      // Also update user_connectors table for mobile app compatibility
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/server');
+        const supabase = createAdminClient();
+
+        // Get user_id from state if available
+        let supabaseUserId: string | null = null;
+        if (state) {
+          try {
+            const stateData = JSON.parse(decodeURIComponent(state));
+            supabaseUserId = stateData.userId || null;
+          } catch (e) {
+            console.log('[Oura] Could not parse userId from state');
+          }
+        }
+
+        if (supabaseUserId) {
+          await supabase.from('user_connectors').upsert({
+            user_id: supabaseUserId,
+            connector_name: 'Oura Ring',
+            is_connected: true,
+            connected_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,connector_name'
+          });
+          console.log(`[Oura] Updated user_connectors for user ${supabaseUserId}`);
+        }
+      } catch (connectorError) {
+        console.error('[Oura] Failed to update user_connectors:', connectorError);
+      }
     }
 
     // Keep cookies for backward compatibility and session validation
@@ -136,20 +168,46 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365
     });
 
-    // Determine redirect path based on state parameter
+    // Determine redirect path and source based on state parameter
     let redirectPath = '/forge/onboarding';
+    let isMobileApp = false;
     try {
       if (state) {
         const stateData = JSON.parse(decodeURIComponent(state));
         if (stateData.returnPath) {
           redirectPath = stateData.returnPath;
         }
+        if (stateData.source === 'mobile') {
+          isMobileApp = true;
+        }
       }
     } catch (e) {
       console.log('Could not parse state, using default redirect');
     }
 
-    // Return HTML to close popup OR redirect on mobile
+    // Return HTML based on source
+    if (isMobileApp) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Oura Connected</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+          </head>
+          <body>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto;">
+              <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
+              <h1 style="color: #4CAF50; font-size: 24px; margin-bottom: 12px;">Connected!</h1>
+              <p style="color: #333; font-size: 16px; margin-bottom: 24px;">Oura Ring has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p>
+            </div>
+          </body>
+        </html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
+
+    // Web: Close popup or redirect
     return new NextResponse(
       `<!DOCTYPE html>
       <html>
@@ -158,16 +216,10 @@ export async function GET(request: NextRequest) {
         </head>
         <body>
           <script>
-            // Check if we're in a popup window (desktop) or full page (mobile)
             if (window.opener) {
-              // Desktop: Signal to parent window that connection was successful
               window.opener.postMessage({ type: 'oura-connected' }, '*');
-              // Close the popup after a short delay
-              setTimeout(() => {
-                window.close();
-              }, 1000);
+              setTimeout(() => { window.close(); }, 1000);
             } else {
-              // Mobile: Redirect back to onboarding
               window.location.href = '${redirectPath}?auth=oura&success=true';
             }
           </script>
@@ -178,12 +230,7 @@ export async function GET(request: NextRequest) {
           </div>
         </body>
       </html>`,
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html',
-        },
-      }
+      { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
 
   } catch (error) {

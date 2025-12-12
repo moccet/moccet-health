@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.FITBIT_CLIENT_ID;
     const redirectUri = process.env.FITBIT_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/fitbit/callback`;
+
+    // Get params from query
+    const searchParams = request.nextUrl.searchParams;
+    const source = searchParams.get('source'); // 'mobile' if from app
+    const userId = searchParams.get('userId');
 
     if (!clientId) {
       return NextResponse.json(
@@ -19,6 +24,14 @@ export async function GET() {
       );
     }
 
+    // Include source in state so callback knows where request came from
+    const stateData = {
+      random: generateRandomState(),
+      source: source || 'web',
+      userId: userId,
+    };
+    const state = encodeURIComponent(JSON.stringify(stateData));
+
     // Fitbit OAuth 2.0 authorization URL
     // Documentation: https://dev.fitbit.com/build/reference/web-api/developer-guide/authorization/
     const authUrl = new URL('https://www.fitbit.com/oauth2/authorize');
@@ -26,7 +39,7 @@ export async function GET() {
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('scope', 'activity heartrate sleep profile'); // Request activity, heart rate, sleep, and profile data
-    authUrl.searchParams.append('state', generateRandomState());
+    authUrl.searchParams.append('state', state);
 
     return NextResponse.json(
       { authUrl: authUrl.toString() },

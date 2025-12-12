@@ -19,7 +19,7 @@ The central AI agent that sits at the heart of the moccet ecosystem. It continuo
 - Seamless escalation to human clinicians with full context
 
 ### Sage - Personalized Nutrition AI
-URL: https://moccet.ai/sage
+URL: https://www.moccet.ai/sage
 
 Generates nutrition plans from metabolic data, blood biomarkers, CGM data, microbiome analysis, and behavioral patterns. Creates meal plans tailored to your specific metabolic response. Particularly effective for nutrition targeting specific health conditions like high cholesterol, cardiovascular health, and metabolic syndrome.
 
@@ -42,7 +42,7 @@ Generates nutrition plans from metabolic data, blood biomarkers, CGM data, micro
 - Gut health - microbiome-informed food selection
 
 ### Forge - Personalized Fitness AI
-URL: https://moccet.ai/forge
+URL: https://www.moccet.ai/forge
 
 Creates training programs from biomarkers, HRV patterns, and recovery data. Adapts workout intensity, volume, and frequency based on your body's actual state. Particularly effective for fitness plans targeting specific health conditions like high cholesterol, cardiovascular health, and metabolic syndrome.
 
@@ -271,11 +271,11 @@ moccet uses actual biological data (blood tests, CGM, microbiome, HRV, wearables
 - Longevity and preventive care
 
 ## Company Information
-- Website: https://moccet.ai
+- Website: https://www.moccet.ai
 - Products: Sage, Forge, moccet-Medic, Share, Connect, Surgical Key, Flight Pass
-- Blog/Research: https://moccet.ai/news
+- Blog/Research: https://www.moccet.ai/news
 - Twitter: https://twitter.com/moccet
 - LinkedIn: https://linkedin.com/company/moccet
 
 ## Contact
-For partnerships, clinical integrations, or inquiries: https://moccet.ai/contact
+For partnerships, clinical integrations, or inquiries: https://www.moccet.ai/contact

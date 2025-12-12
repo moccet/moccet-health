@@ -58,11 +58,11 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                             </p>
 
                             <p style="margin: 0 0 8px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                <a href="https://moccet.ai/forge" style="color: #0066cc; text-decoration: none;">forge ↗</a> — Training programs from your biomarkers
+                                <a href="https://www.moccet.ai/forge" style="color: #0066cc; text-decoration: none;">forge ↗</a> — Training programs from your biomarkers
                             </p>
 
                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                <a href="https://moccet.ai/sage" style="color: #0066cc; text-decoration: none;">sage ↗</a> — Nutrition plans from your metabolic state
+                                <a href="https://www.moccet.ai/sage" style="color: #0066cc; text-decoration: none;">sage ↗</a> — Nutrition plans from your metabolic state
                             </p>
 
                             <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">

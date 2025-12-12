@@ -1,6 +1,6 @@
 /* TEAM */
 Company: Moccet Inc
-Site: https://moccet.ai
+Site: https://www.moccet.ai
 Twitter: @moccet
 LinkedIn: linkedin.com/company/moccet
 Location: San Francisco, CA
@@ -25,6 +25,6 @@ CGM nutrition, microbiome diet, HRV training, fitness optimization,
 recovery science, glucose optimization, health AI
 
 /* CONTACT */
-Website: https://moccet.ai
-Products: https://moccet.ai/sage, https://moccet.ai/forge
-Blog: https://moccet.ai/news
+Website: https://www.moccet.ai
+Products: https://www.moccet.ai/sage, https://www.moccet.ai/forge
+Blog: https://www.moccet.ai/news

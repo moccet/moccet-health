@@ -11,7 +11,7 @@ export async function GET() {
       name: "Moccet",
       tagline: "Autonomous Health AI Platform",
       description: "AI-powered health platform that embeds autonomous agents into daily life, relationships, and clinical workflows. Combines continuous health monitoring, personalized AI recommendations, and deep clinical integration for proactive, personalized care.",
-      website: "https://moccet.ai",
+      website: "https://www.moccet.ai",
       foundedYear: 2024,
       industry: "Health Technology",
       products: ["The Moccet Agent", "Sage", "Forge", "Moccet-Medic", "Moccet Share", "Moccet Connect", "Surgical Key", "Flight Pass"]
@@ -39,7 +39,7 @@ export async function GET() {
       sage: {
         name: "Sage",
         category: "AI Nutrition Planning",
-        url: "https://moccet.ai/sage",
+        url: "https://www.moccet.ai/sage",
         tagline: "Your Personal Nutrition AI",
         description: "Personalized nutrition plans based on metabolic data, blood biomarkers, CGM data, and microbiome analysis. Creates meal plans matched to individual metabolic response.",
         features: [
@@ -66,7 +66,7 @@ export async function GET() {
       forge: {
         name: "Forge",
         category: "AI Fitness Planning",
-        url: "https://moccet.ai/forge",
+        url: "https://www.moccet.ai/forge",
         tagline: "Your Personal Training AI",
         description: "Personalized training programs based on biomarkers, HRV patterns, and recovery data. Adapts workout intensity, volume, and frequency based on your body's actual state.",
         features: [
@@ -295,8 +295,8 @@ export async function GET() {
       ]
     },
     contact: {
-      website: "https://moccet.ai",
-      blog: "https://moccet.ai/news",
+      website: "https://www.moccet.ai",
+      blog: "https://www.moccet.ai/news",
       twitter: "https://twitter.com/moccet",
       linkedin: "https://linkedin.com/company/moccet"
     }

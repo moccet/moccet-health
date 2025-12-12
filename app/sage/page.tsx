@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Sage - AI-Powered Personalized Nutrition Plans | Moccet',
     description: 'Generate personalized nutrition plans based on your metabolic data, blood biomarkers, CGM data, and microbiome analysis. AI that adapts to your biology.',
-    url: 'https://moccet.ai/sage',
+    url: 'https://www.moccet.ai/sage',
     type: 'website',
     images: [
       {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     images: ['/images/sage-og.png'],
   },
   alternates: {
-    canonical: 'https://moccet.ai/sage',
+    canonical: 'https://www.moccet.ai/sage',
   },
 };
 

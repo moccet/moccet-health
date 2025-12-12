@@ -49,7 +49,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/private/', '/dashboard/', '/admin/'],
       },
     ],
-    sitemap: 'https://moccet.ai/sitemap.xml',
-    host: 'https://moccet.ai',
+    sitemap: 'https://www.moccet.ai/sitemap.xml',
+    host: 'https://www.moccet.ai',
   }
 }

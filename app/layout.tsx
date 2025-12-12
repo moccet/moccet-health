@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://moccet.ai"
+    canonical: "https://www.moccet.ai"
   },
   icons: {
     icon: [
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Moccet",
     locale: "en_US",
-    url: "https://moccet.ai",
+    url: "https://www.moccet.ai",
     images: [
       {
         url: '/og-image.png',

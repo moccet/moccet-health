@@ -131,48 +131,103 @@ async function updateTaskStep(taskId: string, stepId: string, status: string, de
   }
 }
 
-// Calendar task execution
+// Calendar task execution - uses real Google Calendar API
 async function executeCalendarTask(task: any, email: string) {
   const params = task.params || {};
+  const duration = params.duration || 30; // minutes
 
   // Step 1: Check calendar availability
   await updateTaskStep(task.id, 'step_1', 'in_progress');
 
-  // Fetch calendar data
-  const calendarResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/gmail/fetch-data?email=${encodeURIComponent(email)}`);
-  const calendarData = await calendarResponse.json();
+  try {
+    // Use the availability endpoint to find free slots
+    const availabilityUrl = new URL(`${process.env.NEXT_PUBLIC_BASE_URL}/api/calendar/availability`);
+    availabilityUrl.searchParams.append('email', email);
+    availabilityUrl.searchParams.append('duration', String(duration));
+    availabilityUrl.searchParams.append('days', '7');
 
-  await updateTaskStep(task.id, 'step_1', 'completed', 'Calendar data retrieved');
+    const availabilityResponse = await fetch(availabilityUrl.toString());
+    const availabilityData = await availabilityResponse.json();
 
-  // Step 2: Find optimal time slot
-  await updateTaskStep(task.id, 'step_2', 'in_progress');
+    if (!availabilityResponse.ok || !availabilityData.success) {
+      if (availabilityData.needsAuth) {
+        throw new Error('Calendar not connected. Please reconnect Gmail with updated permissions.');
+      }
+      throw new Error(availabilityData.error || 'Failed to check calendar availability');
+    }
 
-  // Simple logic: find next available slot (could be enhanced with AI)
-  const suggestedTime = findNextAvailableSlot(calendarData, params.duration || 30);
+    await updateTaskStep(task.id, 'step_1', 'completed', `Checked ${availabilityData.totalEventsChecked} events`);
 
-  await updateTaskStep(task.id, 'step_2', 'completed', `Best time: ${suggestedTime.formatted}`);
+    // Step 2: Find optimal time slot
+    await updateTaskStep(task.id, 'step_2', 'in_progress');
 
-  // Step 3: Create calendar event
-  await updateTaskStep(task.id, 'step_3', 'in_progress');
+    const availableSlots = availabilityData.availableSlots || [];
+    if (availableSlots.length === 0) {
+      throw new Error('No available time slots found in the next 7 days');
+    }
 
-  // TODO: Actually create the event via Google Calendar API
-  // For now, we'll simulate success
-  const eventId = `evt_${Date.now()}`;
+    // Use the best slot (first available) or a specific time if provided
+    let selectedSlot = availableSlots[0];
 
-  await updateTaskStep(task.id, 'step_3', 'completed', 'Event created');
+    // If user specified a preferred time, try to find a matching slot
+    if (params.preferredTime) {
+      const preferredDate = new Date(params.preferredTime);
+      const matchingSlot = availableSlots.find((slot: any) => {
+        const slotDate = new Date(slot.start);
+        return slotDate.getDate() === preferredDate.getDate() &&
+               slotDate.getHours() === preferredDate.getHours();
+      });
+      if (matchingSlot) {
+        selectedSlot = matchingSlot;
+      }
+    }
 
-  // Step 4: Confirm
-  await updateTaskStep(task.id, 'step_4', 'in_progress');
-  await updateTaskStep(task.id, 'step_4', 'completed', 'Booking confirmed');
+    await updateTaskStep(task.id, 'step_2', 'completed', `Best time: ${selectedSlot.formatted}`);
 
-  return {
-    success: true,
-    eventId,
-    title: params.title || 'Scheduled Event',
-    startTime: suggestedTime.start,
-    endTime: suggestedTime.end,
-    message: `Successfully scheduled "${params.title || 'event'}" for ${suggestedTime.formatted}`,
-  };
+    // Step 3: Create calendar event
+    await updateTaskStep(task.id, 'step_3', 'in_progress');
+
+    const createEventResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/calendar/create-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        title: params.title || 'Scheduled Event',
+        description: params.description || `Created by Moccet Agent`,
+        startTime: selectedSlot.start,
+        endTime: selectedSlot.end,
+        location: params.location || '',
+      }),
+    });
+
+    const eventData = await createEventResponse.json();
+
+    if (!createEventResponse.ok || !eventData.success) {
+      if (eventData.needsAuth) {
+        throw new Error('Calendar write permission not granted. Please reconnect Gmail/Calendar.');
+      }
+      throw new Error(eventData.error || 'Failed to create calendar event');
+    }
+
+    await updateTaskStep(task.id, 'step_3', 'completed', `Event created: "${eventData.title}"`);
+
+    // Step 4: Confirm
+    await updateTaskStep(task.id, 'step_4', 'in_progress');
+    await updateTaskStep(task.id, 'step_4', 'completed', 'Booking confirmed');
+
+    return {
+      success: true,
+      eventId: eventData.eventId,
+      eventUrl: eventData.eventUrl,
+      title: eventData.title,
+      startTime: eventData.startTime,
+      endTime: eventData.endTime,
+      message: eventData.message || `Successfully scheduled "${eventData.title}" for ${selectedSlot.formatted}`,
+    };
+  } catch (error: any) {
+    console.error('[Calendar Agent] Error:', error);
+    throw error;
+  }
 }
 
 // Spotify task execution - uses real Spotify API
@@ -318,46 +373,6 @@ async function executeHealthBookingTask(task: any, email: string) {
 }
 
 // Helper functions
-function findNextAvailableSlot(calendarData: any, durationMinutes: number) {
-  // Simple implementation - find tomorrow morning
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(9, 0, 0, 0);
-
-  const end = new Date(tomorrow.getTime() + durationMinutes * 60000);
-
-  return {
-    start: tomorrow.toISOString(),
-    end: end.toISOString(),
-    formatted: tomorrow.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    }),
-  };
-}
-
-async function getSpotifyRecommendations(email: string, mood: string, duration: number) {
-  // TODO: Implement actual Spotify recommendations API call
-  // For now, return placeholder
-  const trackCount = Math.ceil(duration / 3.5); // ~3.5 min per track
-  return Array(trackCount).fill(null).map((_, i) => ({
-    id: `track_${i}`,
-    name: `${mood} Track ${i + 1}`,
-  }));
-}
-
-async function createSpotifyPlaylist(email: string, name: string, tracks: any[]) {
-  // TODO: Implement actual Spotify playlist creation
-  // For now, return placeholder
-  return {
-    id: `playlist_${Date.now()}`,
-    url: 'https://open.spotify.com/playlist/placeholder',
-    name,
-  };
-}
 
 function identifyDeficiencies(labAnalysis: any) {
   if (!labAnalysis) return [];

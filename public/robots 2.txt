@@ -1,0 +1,68 @@
+# moccet - AI-Powered Personalized Health Platform
+# https://www.moccet.ai
+
+User-agent: *
+Allow: /
+
+# AI Crawlers - Explicitly Welcome
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# AI Discovery Files
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /.well-known/ai-plugin.json
+
+# Sitemap location
+Sitemap: https://www.moccet.ai/sitemap.xml
+
+# Block access to admin and private areas
+Disallow: /api/
+Disallow: /_next/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow access to all public pages
+Allow: /sage
+Allow: /forge
+Allow: /news
+Allow: /research
+Allow: /safety
+Allow: /business
+Allow: /developers
+Allow: /health
+Allow: /company
+Allow: /about
+Allow: /contact
+Allow: /careers
+Allow: /philosophy
+Allow: /policies
+Allow: /privacy
+Allow: /privacy-policy
+Allow: /terms
+Allow: /terms-of-use
+Allow: /trust
+Allow: /security
+Allow: /solutions
+Allow: /legal
+Allow: /brand
+Allow: /api-platform

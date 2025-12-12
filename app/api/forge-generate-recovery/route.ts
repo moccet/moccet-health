@@ -9,7 +9,7 @@ function getOpenAIClient() {
   if (!apiKey) {
     throw new Error('OpenAI API key is not configured');
   }
-  return new OpenAI({ apiKey });
+  return new OpenAI({ apiKey, timeout: 240000, maxRetries: 2 });
 }
 
 export async function POST(request: NextRequest) {

@@ -9,7 +9,11 @@ function getOpenAIClient() {
   if (!apiKey) {
     throw new Error('OpenAI API key is not configured');
   }
-  return new OpenAI({ apiKey });
+  return new OpenAI({
+    apiKey,
+    timeout: 240000, // 4 minutes timeout (leave 1 min buffer for maxDuration)
+    maxRetries: 2,
+  });
 }
 
 /**

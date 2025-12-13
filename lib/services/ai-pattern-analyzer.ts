@@ -23,6 +23,7 @@ export interface AIInsight {
   impact: 'critical' | 'high' | 'medium' | 'low';
   actionableRecommendation: string;
   sources: string[];
+  designCategory: 'PREDICTION' | 'OPTIMIZATION' | 'ANALYSIS' | 'IKIGAI' | 'SOCIAL';
 }
 
 export interface AIAnalysisResult {
@@ -136,7 +137,7 @@ export async function analyzeWithAI(ecosystemData: EcosystemFetchResult): Promis
 
   const openai = getOpenAIClient();
 
-  const prompt = `You are an elite health data analyst. Analyze this person's ecosystem data and find GENUINELY INTERESTING, NON-OBVIOUS patterns and correlations.
+  const prompt = `You are an elite health data analyst. Analyze this person's ecosystem data and generate EXACTLY 5 personalized insights for their health dashboard.
 
 DO NOT give generic advice like "you work late" or "sleep more". Find specific, personalized insights that connect multiple data points.
 
@@ -144,32 +145,58 @@ ${dataSummary}
 
 ## YOUR TASK
 
-Find 3-5 insights that are:
-1. **SPECIFIC** - cite exact numbers from the data
-2. **CROSS-SOURCE** - connect patterns across different data sources (e.g., Slack activity timing + glucose spikes + sleep quality)
-3. **NON-OBVIOUS** - things the person probably hasn't noticed themselves
-4. **ACTIONABLE** - with a specific recommendation
+Generate EXACTLY 5 insights, each with a DIFFERENT designCategory. One insight per category:
+
+1. **PREDICTION** - Future-focused insight predicting what will happen
+   - Title examples: "Energy crash predicted tomorrow at 3 pm", "Recovery dip expected Wednesday"
+
+2. **OPTIMIZATION** - Data correlation insight showing how metrics connect
+   - Title examples: "Your inflammation markers correlate with dairy consumption", "Meeting stress amplifies glucose spikes by 40%"
+
+3. **ANALYSIS** - Metric analysis insight examining recent data patterns
+   - Title examples: "Your resting heart rate was higher than usual yesterday", "Sleep debt accumulated to 4.5 hours this week"
+
+4. **IKIGAI** - Purpose and meaning insight connecting health to life goals
+   - Title examples: "Your Purpose Drives Better Health Outcomes", "Morning routines align with peak creativity"
+
+5. **SOCIAL** - Community and social connection insight
+   - Title examples: "Social Workouts give 3x better long-term results", "Evening calls with family improve sleep scores"
+
+## CRITICAL RULES
+
+1. **NEVER recommend continuing current behavior.** Every insight MUST suggest a CHANGE or NEW action.
+   - ❌ BAD: "Keep up the great sleep schedule"
+   - ❌ BAD: "Continue your morning walks"
+   - ❌ BAD: "Maintain your current routine"
+   - ✅ GOOD: "Your sleep could improve recovery by starting 30 min earlier"
+   - ✅ GOOD: "Adding a 5-min stretch post-walk increases HRV by 15%"
+
+2. **Titles must be punchy and data-driven** with specific numbers/times when possible
+
+3. **Each insight must cite exact numbers** from the data provided
+
+4. **Cross-source insights are preferred** - connect patterns across different data sources
 
 Examples of GOOD insights:
 - "Your glucose spikes at 14:00-15:00 coincide with your back-to-back meeting blocks (68%). The stress-cortisol response is likely amplifying post-lunch glucose. Try a 10-min walk between meetings."
 - "Your HRV drops 23% on days following late-night Slack activity (after 11pm). The 2-3am messaging pattern is directly impacting next-day recovery."
-- "Despite 7h sleep, your readiness is only 62/100. Your peak email hours (8-10pm) overlap with your wind-down window, suppressing melatonin."
 
-Examples of BAD insights (too generic):
-- "You work after hours which affects sleep"
-- "High meeting load causes stress"
-- "Try to sleep more"
+Examples of BAD insights (too generic or recommending status quo):
+- "You work after hours which affects sleep" (too generic)
+- "Keep up the great sleep schedule" (recommends status quo)
+- "Your health metrics are good" (no action)
 
 Return JSON:
 {
   "insights": [
     {
-      "title": "Short, catchy title (5-8 words)",
+      "title": "Punchy title with data (5-10 words)",
       "finding": "The specific pattern found with exact numbers (2-3 sentences)",
       "dataCited": ["Slack: 42% after-hours", "Oura: HRV 45ms declining", "etc"],
       "impact": "critical|high|medium|low",
-      "actionableRecommendation": "Specific action to take (1-2 sentences)",
-      "sources": ["slack", "oura", "etc"]
+      "actionableRecommendation": "Specific NEW action to take - NOT continuing current behavior (1-2 sentences)",
+      "sources": ["slack", "oura", "etc"],
+      "designCategory": "PREDICTION|OPTIMIZATION|ANALYSIS|IKIGAI|SOCIAL"
     }
   ],
   "summary": "2-3 sentence overview of the most important finding",
@@ -177,7 +204,7 @@ Return JSON:
   "hiddenPatterns": ["Pattern 1 they probably haven't noticed", "Pattern 2", "etc"]
 }
 
-Be brutally specific. No fluff. Cite exact numbers.`;
+REMEMBER: Exactly 5 insights, each with a UNIQUE designCategory. Be brutally specific. No fluff. Cite exact numbers. Never recommend maintaining status quo.`;
 
   try {
     console.log('[AI-PATTERN-ANALYZER] Calling AI for pattern analysis...');

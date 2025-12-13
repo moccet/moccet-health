@@ -2,7 +2,8 @@
 -- Adds planning capabilities and health plans to the agent system
 
 -- ============================================================================
--- PLANNING RESULTS TABLE
+-- PLANNING RESULTS TABLE 
+
 -- ============================================================================
 -- Stores the reasoning/planning output for each task
 

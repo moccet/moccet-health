@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import {
+  planTask,
+  getTaskPlan,
+  needsPlanning,
+  canAutoExecute,
+} from '@/lib/services/agent-planning/planning-engine';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,7 +16,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { taskId, email } = body;
+    const { taskId, email, skipPlanning = false } = body;
 
     if (!taskId || !email) {
       return NextResponse.json(
@@ -37,6 +43,38 @@ export async function POST(request: NextRequest) {
         { error: `Cannot execute task with status: ${task.status}` },
         { status: 400 }
       );
+    }
+
+    // === PLANNING PHASE ===
+    // Check if task needs planning before execution
+    if (!skipPlanning && needsPlanning(task)) {
+      console.log(`[Agent Execute] Task ${taskId} needs planning, triggering plan phase...`);
+
+      try {
+        const plan = await planTask(task, email);
+
+        // If task is not low-risk and not Spotify, require approval
+        if (!canAutoExecute(task)) {
+          await updateTaskStatus(taskId, 'awaiting_approval');
+          return NextResponse.json({
+            success: true,
+            status: 'awaiting_approval',
+            plan,
+            message: 'Task planned successfully. Awaiting your approval to proceed.',
+          });
+        }
+
+        // Low-risk task (e.g., Spotify) - continue to execution
+        console.log(`[Agent Execute] Low-risk task ${taskId}, auto-executing...`);
+      } catch (planError) {
+        console.error('[Agent Execute] Planning failed:', planError);
+        await supabase
+          .from('agent_tasks')
+          .update({ planning_status: 'failed' })
+          .eq('id', taskId);
+
+        // Fall through to use hardcoded steps
+      }
     }
 
     // Update status to executing

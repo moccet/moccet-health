@@ -54,11 +54,15 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('id', taskId)
         .eq('user_email', email)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching task:', error);
-        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Failed to fetch task' }, { status: 500 });
+      }
+
+      if (!task) {
+        return NextResponse.json({ error: 'Task not found', task: null }, { status: 200 });
       }
 
       return NextResponse.json({ task });

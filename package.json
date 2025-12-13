@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.1",
+    "@langchain/core": "^1.1.5",
+    "@langchain/langgraph": "^1.0.4",
+    "@langchain/openai": "^1.2.0",
     "@sendgrid/helpers": "^8.0.0",
     "@sendgrid/mail": "^8.1.6",
     "@stripe/react-stripe-js": "^5.4.1",
@@ -31,11 +34,12 @@
     "pdf-parse": "^2.2.2",
     "pdfjs-dist": "^3.11.174",
     "plaiceholder": "^3.0.0",
+    "playwright": "^1.40.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "stripe": "^20.0.0",
     "xml2js": "^0.6.2",
-    "playwright": "^1.40.0"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

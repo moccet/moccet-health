@@ -332,17 +332,37 @@ export async function POST(request: NextRequest) {
       }
 
       const fileBuffer = await fileResponse.arrayBuffer();
-      const fileName = fileUrl.split('/').pop() || 'blood_test.pdf';
-      const mimeType = fileName.endsWith('.pdf') ? 'application/pdf'
-        : fileName.endsWith('.png') ? 'image/png'
-        : fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ? 'image/jpeg'
+
+      // Extract filename from URL, stripping query parameters (signed URL tokens)
+      const urlWithoutParams = fileUrl.split('?')[0];
+      let fileName = urlWithoutParams.split('/').pop() || 'blood_test.pdf';
+
+      // Determine MIME type from file extension
+      const extension = fileName.split('.').pop()?.toLowerCase();
+      const mimeType = extension === 'pdf' ? 'application/pdf'
+        : extension === 'png' ? 'image/png'
+        : extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg'
         : 'application/octet-stream';
 
+      // If MIME type is still unknown, try Content-Type header from response
+      const contentTypeHeader = fileResponse.headers.get('content-type');
+      const finalMimeType = mimeType !== 'application/octet-stream' ? mimeType
+        : contentTypeHeader?.split(';')[0] || 'application/pdf';
+
+      // Ensure filename has proper extension
+      if (!fileName.match(/\.(pdf|png|jpg|jpeg)$/i)) {
+        const extFromMime = finalMimeType === 'application/pdf' ? 'pdf'
+          : finalMimeType === 'image/png' ? 'png'
+          : finalMimeType === 'image/jpeg' ? 'jpg'
+          : 'pdf';
+        fileName = `blood_test_${Date.now()}.${extFromMime}`;
+      }
+
       // Create a File object from the fetched data
-      const file = new File([fileBuffer], fileName, { type: mimeType });
+      const file = new File([fileBuffer], fileName, { type: finalMimeType });
       bloodTestFiles = [file];
 
-      console.log(`[Mobile] File fetched: ${fileName} (${fileBuffer.byteLength} bytes, ${mimeType})`);
+      console.log(`[Mobile] File fetched: ${fileName} (${fileBuffer.byteLength} bytes, ${finalMimeType})`);
     } else {
       // Web sends FormData with actual files
       const formData = await request.formData();

@@ -319,7 +319,7 @@ function getTaskConfig(type: string, params?: Record<string, any>) {
   return configs[type] || {
     defaultDescription: 'Execute task',
     analyzing: ['data'],
-    using: ['Moccet'],
+    using: ['moccet'],
     steps: [
       { id: 'step_1', description: 'Processing request', status: 'pending' },
       { id: 'step_2', description: 'Completing task', status: 'pending' },

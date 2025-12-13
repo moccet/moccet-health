@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     version: '1.0.0',
     name: '@moccet/health-mcp',
-    description: 'Moccet Health MCP Server - HTTP API',
+    description: 'moccet health MCP server - HTTP API',
     resources: {
       count: resources.length,
       items: resources,

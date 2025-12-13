@@ -410,3 +410,50 @@ CREATE POLICY "Service role full access to style" ON user_communication_style
 
 CREATE POLICY "Service role full access to summaries" ON user_memory_summaries
   FOR ALL USING (auth.role() = 'service_role');
+
+-- =============================================================================
+-- INSIGHT FEEDBACK TABLES
+-- =============================================================================
+
+-- Table to store raw feedback on insights
+CREATE TABLE IF NOT EXISTS insight_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  insight_id TEXT,
+  insight_title TEXT,
+  insight_category TEXT,
+  feedback_text TEXT NOT NULL,
+  extracted_facts JSONB,  -- Facts extracted by AI
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_insight_feedback_user ON insight_feedback(user_email);
+CREATE INDEX IF NOT EXISTS idx_insight_feedback_insight ON insight_feedback(insight_id);
+
+-- Table to track dismissed insights (to avoid showing again)
+CREATE TABLE IF NOT EXISTS user_insight_dismissals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  insight_id TEXT NOT NULL,
+  reason TEXT,
+  dismissed_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_email, insight_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_insight_dismissals_user ON user_insight_dismissals(user_email);
+
+-- RLS for insight feedback tables
+ALTER TABLE insight_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_insight_dismissals ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access to insight_feedback" ON insight_feedback
+  FOR ALL USING (auth.role() = 'service_role');
+
+CREATE POLICY "Service role full access to insight_dismissals" ON user_insight_dismissals
+  FOR ALL USING (auth.role() = 'service_role');
+
+CREATE POLICY "Users can view own feedback" ON insight_feedback
+  FOR SELECT USING (auth.jwt() ->> 'email' = user_email);
+
+CREATE POLICY "Users can view own dismissals" ON user_insight_dismissals
+  FOR SELECT USING (auth.jwt() ->> 'email' = user_email);

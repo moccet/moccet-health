@@ -37,8 +37,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Only execute tasks that are approved (awaiting_approval or executing status)
-    if (!['awaiting_approval', 'executing', 'pending'].includes(task.status)) {
+    // Only execute tasks that are in a valid state for execution
+    // Include 'analyzing' since that's the state after user starts a task
+    if (!['awaiting_approval', 'executing', 'pending', 'analyzing'].includes(task.status)) {
       return NextResponse.json(
         { error: `Cannot execute task with status: ${task.status}` },
         { status: 400 }
@@ -241,7 +242,7 @@ async function executeCalendarTask(task: any, email: string) {
       body: JSON.stringify({
         email,
         title: params.title || 'Scheduled Event',
-        description: params.description || `Created by Moccet Agent`,
+        description: params.description || `Created by moccet agent`,
         startTime: selectedSlot.start,
         endTime: selectedSlot.end,
         location: params.location || '',

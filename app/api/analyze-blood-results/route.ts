@@ -300,9 +300,55 @@ export async function POST(request: NextRequest) {
     console.log('SAGE BLOOD RESULTS ANALYSIS');
     console.log('='.repeat(80) + '\n');
 
-    const formData = await request.formData();
-    const bloodTestFiles = formData.getAll('bloodTests') as File[];
-    const email = formData.get('email') as string | null;
+    let bloodTestFiles: File[] = [];
+    let email: string | null = null;
+
+    // Check content type to handle both JSON (mobile) and FormData (web) requests
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      // Mobile app sends JSON with fileUrl
+      const jsonBody = await request.json();
+      email = jsonBody.email || null;
+      const fileUrl = jsonBody.fileUrl;
+
+      if (!fileUrl) {
+        return NextResponse.json(
+          { error: 'No fileUrl provided' },
+          { status: 400 }
+        );
+      }
+
+      console.log(`[Mobile] Fetching file from URL: ${fileUrl}`);
+
+      // Fetch the file from Supabase storage
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        console.error(`Failed to fetch file: ${fileResponse.status} ${fileResponse.statusText}`);
+        return NextResponse.json(
+          { error: 'Failed to fetch file from storage' },
+          { status: 400 }
+        );
+      }
+
+      const fileBuffer = await fileResponse.arrayBuffer();
+      const fileName = fileUrl.split('/').pop() || 'blood_test.pdf';
+      const mimeType = fileName.endsWith('.pdf') ? 'application/pdf'
+        : fileName.endsWith('.png') ? 'image/png'
+        : fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ? 'image/jpeg'
+        : 'application/octet-stream';
+
+      // Create a File object from the fetched data
+      const file = new File([fileBuffer], fileName, { type: mimeType });
+      bloodTestFiles = [file];
+
+      console.log(`[Mobile] File fetched: ${fileName} (${fileBuffer.byteLength} bytes, ${mimeType})`);
+    } else {
+      // Web sends FormData with actual files
+      const formData = await request.formData();
+      bloodTestFiles = formData.getAll('bloodTests') as File[];
+      email = formData.get('email') as string | null;
+    }
 
     if (!bloodTestFiles || bloodTestFiles.length === 0) {
       return NextResponse.json(

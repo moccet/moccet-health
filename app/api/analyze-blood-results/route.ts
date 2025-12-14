@@ -485,18 +485,42 @@ User Profile Context:
       if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
         try {
           const supabase = await createClient();
-          // Use upsert to create row if it doesn't exist
-          await supabase
+
+          // First check if row exists
+          const { data: existingRow } = await supabase
             .from('sage_onboarding_data')
-            .upsert(
-              {
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+
+          if (existingRow) {
+            // Update existing row
+            const { error: updateError } = await supabase
+              .from('sage_onboarding_data')
+              .update({ lab_file_analysis: analysis })
+              .eq('email', email);
+
+            if (updateError) {
+              console.log('[WARN] Update failed:', updateError);
+            } else {
+              console.log('[OK] Blood analysis updated in database\n');
+            }
+          } else {
+            // Insert new row
+            const { error: insertError } = await supabase
+              .from('sage_onboarding_data')
+              .insert({
                 email,
                 lab_file_analysis: analysis,
-                form_data: { email }
-              },
-              { onConflict: 'email' }
-            );
-          console.log('[OK] Blood analysis saved to database\n');
+                form_data: { email, bloodAnalysisOnly: true }
+              });
+
+            if (insertError) {
+              console.log('[WARN] Insert failed:', insertError);
+            } else {
+              console.log('[OK] Blood analysis inserted in database\n');
+            }
+          }
         } catch (error) {
           console.log('[WARN] Could not save to database:', error);
         }

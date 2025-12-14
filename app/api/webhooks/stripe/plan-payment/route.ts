@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
+import { notifyPaymentSuccess } from '@/lib/slack';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,13 +51,29 @@ export async function POST(request: NextRequest) {
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const metadata = paymentIntent.metadata;
-
-      console.log(`[Plan Payment Webhook] Payment succeeded for ${metadata.user_email}`);
+      const amount = paymentIntent.amount / 100; // Convert from cents to dollars
 
       // Extract metadata
-      const email = metadata.user_email;
-      const planType = metadata.plan_type; // 'Sage' or 'Forge'
-      const fullName = metadata.user_name;
+      const email = metadata.user_email || metadata.customer_email;
+      const planType = metadata.plan_type as 'Sage' | 'Forge' | undefined;
+      const fullName = metadata.user_name || metadata.full_name;
+
+      console.log(`[Plan Payment Webhook] Payment succeeded for ${email}`);
+
+      // Send Slack notification for successful payment
+      if (email) {
+        try {
+          await notifyPaymentSuccess(email, amount, 'plan', {
+            planType: planType,
+            fullName: fullName,
+            paymentIntentId: paymentIntent.id,
+          });
+          console.log(`[Plan Payment Webhook] ✅ Slack notification sent for ${email}`);
+        } catch (slackError) {
+          console.error('[Plan Payment Webhook] Failed to send Slack notification:', slackError);
+          // Don't fail the webhook if Slack fails
+        }
+      }
 
       // Get unique code from the onboarding data
       const onboardingApiUrl = planType === 'Sage'

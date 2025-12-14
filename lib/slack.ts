@@ -291,6 +291,96 @@ export async function notifyOnboardingEmail(
 }
 
 /**
+ * Sends payment success notification to Slack
+ */
+export async function notifyPaymentSuccess(
+  email: string,
+  amount: number,
+  paymentType: 'plan' | 'cart' | 'other',
+  details?: {
+    planType?: 'Sage' | 'Forge';
+    fullName?: string;
+    itemCount?: number;
+    paymentIntentId?: string;
+  }
+): Promise<boolean> {
+  let emoji = '💳';
+  let title = 'New Payment Received';
+  let typeLabel = 'Payment';
+
+  if (paymentType === 'plan' && details?.planType) {
+    emoji = details.planType === 'Sage' ? '🥗' : '💪';
+    title = `${details.planType} Plan Payment Received`;
+    typeLabel = `${details.planType} Plan`;
+  } else if (paymentType === 'cart') {
+    emoji = '🛒';
+    title = 'Supplement Order Payment Received';
+    typeLabel = 'Supplement Order';
+  }
+
+  const payload = {
+    text: `${emoji} ${title}: $${amount.toFixed(2)}`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `${emoji} ${title}`,
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Customer:*\n${details?.fullName || email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n${email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Amount:*\n$${amount.toFixed(2)}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Type:*\n${typeLabel}`,
+          },
+        ],
+      },
+      ...(details?.itemCount ? [{
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Items:* ${details.itemCount} items`,
+        },
+      }] : []),
+      ...(details?.paymentIntentId ? [{
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Payment ID: \`${details.paymentIntentId}\` | <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      }] : [{
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Payment received: <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      }]),
+    ],
+  };
+
+  return sendSlackNotification(payload);
+}
+
+/**
  * Sends plan generation queued notification to Slack
  */
 export async function notifyPlanQueued(

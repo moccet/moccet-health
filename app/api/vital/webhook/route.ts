@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Client as QStashClient } from '@upstash/qstash';
 import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Initialize QStash client for async insight processing
+const qstash = new QStashClient({
+  token: process.env.QSTASH_TOKEN || '',
+});
 
 // Verify webhook signature
 function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
@@ -53,14 +59,57 @@ export async function POST(request: NextRequest) {
       case 'daily.data.body.created':
       case 'daily.data.workout.created':
       case 'daily.data.nutrition.created':
-        // Store webhook event data
-        await supabase.from('vital_webhook_events').insert({
-          event_type: event.event_type,
-          user_id: event.user_id,
-          provider: event.provider,
-          data: event.data,
-          received_at: new Date().toISOString(),
-        });
+        // Store webhook event data and get the ID
+        const { data: insertedEvent, error: insertError } = await supabase
+          .from('vital_webhook_events')
+          .insert({
+            event_type: event.event_type,
+            user_id: event.user_id,
+            provider: event.provider,
+            event_data: event.data,
+            received_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (insertError) {
+          console.error('[Vital Webhook] Error storing event:', insertError);
+          break;
+        }
+
+        // Look up user email from Vital user ID (stored in integration_tokens)
+        const { data: tokenData } = await supabase
+          .from('integration_tokens')
+          .select('user_email')
+          .eq('provider_user_id', event.user_id)
+          .eq('provider', 'vital')
+          .single();
+
+        // If we found the user, queue insight processing
+        if (tokenData?.user_email && process.env.QSTASH_TOKEN) {
+          try {
+            const baseUrl = process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.ai';
+
+            await qstash.publishJSON({
+              url: `${baseUrl}/api/webhooks/qstash/process-vital-event`,
+              body: {
+                eventId: insertedEvent?.id,
+                eventType: event.event_type,
+                email: tokenData.user_email,
+              },
+              retries: 3,
+            });
+
+            console.log(`[Vital Webhook] Queued insight processing for ${tokenData.user_email}`);
+          } catch (qstashError) {
+            console.error('[Vital Webhook] Error queuing insight processing:', qstashError);
+            // Don't fail the webhook if QStash fails
+          }
+        } else {
+          console.log(`[Vital Webhook] No user email found for Vital user ${event.user_id}`);
+        }
         break;
 
       case 'historical.data.sleep.created':

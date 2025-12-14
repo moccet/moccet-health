@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
     const paymentIntent = await createPaymentIntent(finalAmount, email, {
       plan_type: planType,
       full_name: fullName || '',
+      user_email: email,
+      user_name: fullName || '',
       promo_code: promoCode || '',
     });
 

@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
         event_type: eventType,
       });
 
-    // Send Slack notification when email is submitted
-    if (sendSlackNotification && email && currentScreen === 'email') {
+    // Send Slack notification when user leaves the email screen (i.e., clicks Continue)
+    if (sendSlackNotification && email && currentScreen === 'email' && eventType === 'exit') {
       await notifyOnboardingEmail(
         email,
         product === 'forge' ? 'Forge' : 'Sage',

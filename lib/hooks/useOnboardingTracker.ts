@@ -51,6 +51,19 @@ export function useOnboardingTracker({
 }: UseOnboardingTrackerOptions) {
   const previousScreenRef = useRef<string | null>(null);
   const screenEnterTimeRef = useRef<number>(Date.now());
+  const emailNotificationSentRef = useRef<boolean>(false);
+
+  // Use refs to avoid re-creating the callback on every email/formData change
+  const emailRef = useRef(email);
+  const fullNameRef = useRef(fullName);
+  const formDataSnapshotRef = useRef(formDataSnapshot);
+
+  // Keep refs up to date
+  useEffect(() => {
+    emailRef.current = email;
+    fullNameRef.current = fullName;
+    formDataSnapshotRef.current = formDataSnapshot;
+  }, [email, fullName, formDataSnapshot]);
 
   const trackProgress = useCallback(async (
     screen: string,
@@ -67,12 +80,12 @@ export function useOnboardingTracker({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          email,
+          email: emailRef.current,
           product,
           currentScreen: screen,
           eventType,
-          formDataSnapshot,
-          fullName,
+          formDataSnapshot: formDataSnapshotRef.current,
+          fullName: fullNameRef.current,
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
           referrer: typeof document !== 'undefined' ? document.referrer : undefined,
           sendSlackNotification,
@@ -84,7 +97,7 @@ export function useOnboardingTracker({
       // Silently fail - don't interrupt user flow
       console.error('[Onboarding Tracker] Error:', error);
     }
-  }, [product, email, fullName, formDataSnapshot]);
+  }, [product]); // Only depend on product, use refs for other values
 
   // Track screen changes
   useEffect(() => {
@@ -94,13 +107,17 @@ export function useOnboardingTracker({
       return;
     }
 
-    // Track exit from previous screen
+    // Track exit from previous screen - send Slack notification when LEAVING email screen
     if (previousScreenRef.current && previousScreenRef.current !== currentScreen) {
-      trackProgress(previousScreenRef.current, 'exit');
+      const shouldNotify = previousScreenRef.current === 'email' && !emailNotificationSentRef.current && !!emailRef.current;
+      if (shouldNotify) {
+        emailNotificationSentRef.current = true;
+      }
+      trackProgress(previousScreenRef.current, 'exit', shouldNotify);
     }
 
-    // Track enter to new screen
-    trackProgress(currentScreen, 'enter', currentScreen === 'email');
+    // Track enter to new screen (no Slack notification on enter)
+    trackProgress(currentScreen, 'enter', false);
     screenEnterTimeRef.current = Date.now();
     previousScreenRef.current = currentScreen;
   }, [currentScreen, trackProgress]);

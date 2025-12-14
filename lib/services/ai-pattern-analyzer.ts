@@ -137,54 +137,85 @@ export async function analyzeWithAI(ecosystemData: EcosystemFetchResult): Promis
 
   const openai = getOpenAIClient();
 
-  const prompt = `You are an elite health data analyst. Analyze this person's ecosystem data and generate EXACTLY 5 personalized insights for their health dashboard.
+  const prompt = `You are an elite longevity and performance scientist. Analyze this person's ecosystem data and generate EXACTLY 5 personalized, evidence-based insights focused on ENERGY, RECOVERY, FOCUS, and LONGEVITY.
 
-DO NOT give generic advice like "you work late" or "sleep more". Find specific, personalized insights that connect multiple data points.
+Your insights must be grounded in the latest scientific research. DO NOT give generic advice. Find specific, personalized insights that connect multiple data points.
 
 ${dataSummary}
 
+## CORE FOCUS AREAS (prioritize insights in these domains):
+
+1. **ENERGY** - Mitochondrial health, glucose stability, circadian alignment, ATP production
+2. **RECOVERY** - HRV optimization, sleep architecture, parasympathetic activation, inflammation markers
+3. **FOCUS** - Cognitive performance, dopamine/norepinephrine balance, attention windows, deep work capacity
+4. **LONGEVITY** - Metabolic health markers, cellular stress, autophagy triggers, biological age indicators
+
 ## YOUR TASK
 
-Generate EXACTLY 5 insights, each with a DIFFERENT designCategory. One insight per category:
+Generate EXACTLY 5 insights, each with a DIFFERENT designCategory:
 
-1. **PREDICTION** - Future-focused insight predicting what will happen
-   - Title examples: "Energy crash predicted tomorrow at 3 pm", "Recovery dip expected Wednesday"
+1. **PREDICTION** - Predict an upcoming energy/recovery/focus opportunity
+   - Examples: "Your Best Focus Window Opens Tomorrow at 10am", "A Recovery Boost is Coming Wednesday Morning"
 
-2. **OPTIMIZATION** - Data correlation insight showing how metrics connect
-   - Title examples: "Your inflammation markers correlate with dairy consumption", "Meeting stress amplifies glucose spikes by 40%"
+2. **OPTIMIZATION** - Show how a small change unlocks better performance
+   - Examples: "A Short Walk Could Transform Your Afternoon Energy", "Morning Light Could Be Your Secret to Better Sleep"
 
-3. **ANALYSIS** - Metric analysis insight examining recent data patterns
-   - Title examples: "Your resting heart rate was higher than usual yesterday", "Sleep debt accumulated to 4.5 hours this week"
+3. **ANALYSIS** - Reveal a pattern that empowers better choices
+   - Examples: "Your Body is Asking for a Recovery Day", "Your Deep Sleep Holds the Key to Sharper Thinking"
 
-4. **IKIGAI** - Purpose and meaning insight connecting health to life goals
-   - Title examples: "Your Purpose Drives Better Health Outcomes", "Morning routines align with peak creativity"
+4. **IKIGAI** - Connect health to meaning and peak performance
+   - Examples: "Your Best Ideas Come When You're Well-Rested", "Flow States Are Within Your Reach"
 
-5. **SOCIAL** - Community and social connection insight
-   - Title examples: "Social Workouts give 3x better long-term results", "Evening calls with family improve sleep scores"
+5. **SOCIAL** - Highlight the power of connection for health
+   - Examples: "Working Out Together Could Triple Your Results", "Evening Connection Time Boosts Tomorrow's Energy"
 
 ## CRITICAL RULES
 
-1. **NEVER recommend continuing current behavior.** Every insight MUST suggest a CHANGE or NEW action.
+1. **TITLES must be ELEGANT, POSITIVE, and EASY TO UNDERSTAND**
+   - Write titles like a wellness coach, not a scientist
+   - Use positive, affirming language that inspires action
+   - Keep it simple - no jargon, no complex terms
+   - ❌ BAD: "HRV Drop Detected Post-Late-Night Digital Activity"
+   - ❌ BAD: "Glucose Variability Correlates with Meeting Density"
+   - ✅ GOOD: "Your Body Thrives When You Unplug by 10pm"
+   - ✅ GOOD: "A Short Walk Could Transform Your Afternoon"
+
+2. **CITE SCIENTIFIC EVIDENCE in the description** (not the title):
+   - "This is because..." (mechanism)
+   - "Research shows..." (evidence)
+   - Include journal/year when possible for credibility
+
+3. **NEVER recommend continuing current behavior.** Every insight MUST suggest a CHANGE or NEW action.
    - ❌ BAD: "Keep up the great sleep schedule"
-   - ❌ BAD: "Continue your morning walks"
-   - ❌ BAD: "Maintain your current routine"
-   - ✅ GOOD: "Your sleep could improve recovery by starting 30 min earlier"
-   - ✅ GOOD: "Adding a 5-min stretch post-walk increases HRV by 15%"
+   - ✅ GOOD: "Adding 20min to your sleep could increase HRV by 8%"
 
-2. **Titles must be punchy and data-driven** with specific numbers/times when possible
+4. **Focus on HIGH-LEVERAGE interventions** - small changes with outsized impact on energy/recovery/focus/longevity
 
-3. **Each insight must cite exact numbers** from the data provided
+5. **Be specific with timing and numbers in the description** - but keep the title clean and inspiring
 
-4. **Cross-source insights are preferred** - connect patterns across different data sources
+6. **Connect multiple data sources** - Cross-ecosystem insights are most valuable
 
-Examples of GOOD insights:
-- "Your glucose spikes at 14:00-15:00 coincide with your back-to-back meeting blocks (68%). The stress-cortisol response is likely amplifying post-lunch glucose. Try a 10-min walk between meetings."
-- "Your HRV drops 23% on days following late-night Slack activity (after 11pm). The 2-3am messaging pattern is directly impacting next-day recovery."
+## EVIDENCE-BASED FRAMEWORKS TO APPLY:
 
-Examples of BAD insights (too generic or recommending status quo):
-- "You work after hours which affects sleep" (too generic)
-- "Keep up the great sleep schedule" (recommends status quo)
-- "Your health metrics are good" (no action)
+- **Circadian optimization**: Light exposure, meal timing, temperature
+- **Metabolic flexibility**: Glucose variability, fasting windows, insulin sensitivity
+- **Autonomic balance**: HRV patterns, stress recovery, vagal tone
+- **Sleep architecture**: Deep sleep, REM, sleep efficiency, consistency
+- **Inflammation markers**: CRP, stress indicators, recovery patterns
+- **Hormetic stress**: Exercise timing, cold/heat exposure, fasting
+
+Examples of EXCELLENT insights:
+- Title: "A Short Walk Could Transform Your Afternoon"
+  Finding: "Your 2pm glucose spikes (+45 mg/dL) correlate with afternoon energy dips. A 15-min walk post-lunch activates GLUT4 transporters, potentially reducing this spike by 30% and extending your focus window by 2 hours."
+
+- Title: "Your Body Thrives When You Unplug by 10pm"
+  Finding: "HRV drops 23% after late-night screen time. Blue light suppresses melatonin by 50% (Journal of Pineal Research). Unplugging earlier could add 20 minutes of deep sleep."
+
+Examples of BAD insights:
+- "HRV Drop Detected Post-Late-Night Digital Activity" (too clinical)
+- "Glucose Variability Correlates with Meeting Stress" (jargon-heavy)
+- "Keep up the great sleep schedule" (no action)
+- "Your metrics look good" (not helpful)
 
 Return JSON:
 {

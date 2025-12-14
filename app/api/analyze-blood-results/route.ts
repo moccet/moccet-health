@@ -485,13 +485,20 @@ User Profile Context:
       if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
         try {
           const supabase = await createClient();
+          // Use upsert to create row if it doesn't exist
           await supabase
             .from('sage_onboarding_data')
-            .update({ lab_file_analysis: analysis })
-            .eq('email', email);
+            .upsert(
+              {
+                email,
+                lab_file_analysis: analysis,
+                form_data: { email }
+              },
+              { onConflict: 'email' }
+            );
           console.log('[OK] Blood analysis saved to database\n');
         } catch (error) {
-          console.log('[WARN] Could not save to database\n');
+          console.log('[WARN] Could not save to database:', error);
         }
       }
     }

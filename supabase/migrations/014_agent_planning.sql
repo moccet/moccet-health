@@ -156,7 +156,9 @@ ALTER TABLE agent_tasks
   ADD COLUMN IF NOT EXISTS has_plan BOOLEAN DEFAULT false,
   ADD COLUMN IF NOT EXISTS risk_level TEXT DEFAULT 'medium',
   ADD COLUMN IF NOT EXISTS can_auto_execute BOOLEAN DEFAULT false,
-  ADD COLUMN IF NOT EXISTS planning_status TEXT DEFAULT 'not_started';
+  ADD COLUMN IF NOT EXISTS planning_status TEXT DEFAULT 'not_started',
+  ADD COLUMN IF NOT EXISTS auto_created BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS source_insight_id TEXT;
 
 -- Update valid types to include shopping and planning
 ALTER TABLE agent_tasks DROP CONSTRAINT IF EXISTS valid_type;

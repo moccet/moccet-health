@@ -18,9 +18,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllEcosystemData } from '@/lib/services/ecosystem-fetcher';
 import { analyzeEcosystemPatterns } from '@/lib/services/pattern-analyzer';
-import { analyzeWithAI } from '@/lib/services/ai-pattern-analyzer';
+import { analyzeWithAI, AIInsight } from '@/lib/services/ai-pattern-analyzer';
 import { autoSyncEcosystemData } from '@/lib/services/auto-sync';
 import { validateUnifiedContext, generateQualityMessage } from '@/lib/validators/context-validator';
+
+// ============================================================================
+// AUTO-CREATE AGENT TASKS FROM INSIGHTS
+// ============================================================================
+
+async function autoCreateAgentTasks(email: string, insights: AIInsight[]) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.ai';
+
+  try {
+    const response = await fetch(`${baseUrl}/api/agent/auto-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        insights: insights.map(i => ({
+          id: `insight_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          title: i.title,
+          finding: i.finding,
+          actionableRecommendation: i.actionableRecommendation,
+          designCategory: i.designCategory,
+          impact: i.impact,
+          sources: i.sources
+        }))
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`[AUTO-TASKS] Created ${result.created} tasks, skipped ${result.skipped}`);
+    } else {
+      console.error('[AUTO-TASKS] Failed:', await response.text());
+    }
+  } catch (error) {
+    console.error('[AUTO-TASKS] Error calling auto-create:', error);
+  }
+}
 
 // ============================================================================
 // TYPES
@@ -227,6 +263,13 @@ export async function POST(request: NextRequest) {
     console.log(`[Step 4/6] Generated ${aiAnalysis.insights.length} AI insights`);
     if (aiAnalysis.primaryConcern) {
       console.log(`[Step 4/6] Primary concern: ${aiAnalysis.primaryConcern}`);
+    }
+
+    // Step 5b: Auto-create agent tasks from insights (async, don't await)
+    if (aiAnalysis.insights.length > 0) {
+      autoCreateAgentTasks(email, aiAnalysis.insights).catch(err => {
+        console.error('[Step 4/6] Failed to auto-create agent tasks:', err);
+      });
     }
 
     // Step 5: Validate context quality

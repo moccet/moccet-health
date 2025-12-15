@@ -7,13 +7,14 @@ import { createClient } from '@/lib/supabase/server';
  *
  * Body:
  * - email (required): User email
- * - device_token (required): FCM device token
+ * - device_token (required): FCM or OneSignal device token
  * - platform (required): 'ios' or 'android'
+ * - provider (optional): 'fcm' or 'onesignal' (defaults to 'fcm')
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, device_token, platform } = body;
+    const { email, device_token, platform, provider = 'fcm' } = body;
 
     if (!email || !device_token || !platform) {
       return NextResponse.json(
@@ -29,6 +30,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!['fcm', 'onesignal'].includes(provider)) {
+      return NextResponse.json(
+        { error: 'provider must be fcm or onesignal' },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
     // Upsert the device token (insert or update if exists)
@@ -39,6 +47,7 @@ export async function POST(request: NextRequest) {
           email,
           device_token,
           platform,
+          provider,
           is_active: true,
           updated_at: new Date().toISOString(),
         },
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(`[Device Token API] Registered token for ${email} (${platform})`);
+    console.log(`[Device Token API] Registered ${provider} token for ${email} (${platform})`);
 
     return NextResponse.json({
       success: true,

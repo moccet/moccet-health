@@ -29,20 +29,23 @@ Your analysis should include:
 
 1. **Overall Summary** (2-3 sentences): High-level assessment of the blood work - are markers generally optimal, concerning, or need attention?
 
-2. **Key Biomarkers Analysis**: Extract and analyze AT LEAST 10-15 biomarkers from the results. Include ALL of the following:
-   - Biomarker name
-   - Measured value
+2. **COMPLETE Biomarkers Extraction**: Extract EVERY SINGLE biomarker visible in the document. Do NOT limit yourself to just the "important" ones - extract ALL of them.
+
+   For EACH biomarker include:
+   - Biomarker name (exact name as shown in the report)
+   - Measured value with unit
    - Reference range (if provided in the report)
-   - Status: "Optimal", "Excellent", "Good", "Normal", "Adequate", "Borderline", "High", "Low", "Needs Optimization"
+   - Status: "Optimal", "Excellent", "Good", "Normal", "Adequate", "Borderline", "High", "Low", "Critical", "Needs Optimization"
    - Clinical significance: What does this marker indicate?
    - Health implications: What does the current level mean for health/longevity?
 
-   CRITICAL: You MUST include markers across ALL categories:
-   - Markers that are HIGH (above range)
-   - Markers that are LOW (below range)
-   - Markers that are NORMAL but could be OPTIMIZED for longevity
-   - Markers that are in OPTIMAL/EXCELLENT range
-   - Minimum 10-15 biomarkers total - extract as many as possible from the PDF
+   CRITICAL REQUIREMENTS:
+   - Extract EVERY biomarker you can see - there is NO maximum limit
+   - Include ALL panels: CBC, Metabolic, Lipid, Thyroid, Hormones, Vitamins, Minerals, Liver, Kidney, Inflammatory markers, etc.
+   - Include calculated values (e.g., eGFR, LDL calculated, A/G ratio)
+   - Include ALL individual components of panels (e.g., all WBC differentials, all lipid subfractions)
+   - If a report has 50+ biomarkers, extract ALL 50+
+   - Do NOT summarize or skip "normal" values - extract everything
 
 3. **Areas of Concern**: Any markers that are out of optimal range and need attention
 
@@ -140,11 +143,18 @@ IMPORTANT:
 
 // Helper function to analyze image files using Vision API
 async function analyzeImageWithVision(file: File, openai: OpenAI, userContext: string) {
-  const systemPrompt = `You are an elite clinical laboratory specialist. Analyze this blood test results image and extract all biomarkers.
+  const systemPrompt = `You are an elite clinical laboratory specialist. Analyze this blood test results image and extract EVERY SINGLE biomarker visible.
 
 ${userContext}
 
-Extract ALL visible biomarkers with their values and reference ranges. Return the same JSON structure as specified for PDFs.`;
+CRITICAL: Extract ALL biomarkers you can see in the image - do NOT limit yourself to just the important ones.
+- Extract EVERY row/line item with a value
+- Include ALL panels: CBC, Metabolic, Lipid, Thyroid, Hormones, Vitamins, Minerals, Liver, Kidney, etc.
+- Include calculated values and ratios
+- If you see 30, 40, 50+ biomarkers, extract ALL of them
+- Do NOT skip "normal" values - extract everything
+
+Return the same JSON structure as specified for PDFs with ALL biomarkers included.`;
 
   // Convert image to base64
   const imageBuffer = Buffer.from(await file.arrayBuffer());
@@ -175,7 +185,7 @@ Extract ALL visible biomarkers with their values and reference ranges. Return th
         ]
       }
     ],
-    max_tokens: 4096
+    max_tokens: 16384  // Increased to handle 50+ biomarkers
   });
 
   const responseText = response.choices[0]?.message?.content;

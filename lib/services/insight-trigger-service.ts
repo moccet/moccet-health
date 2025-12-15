@@ -20,7 +20,7 @@ import {
   GmailPatterns,
   SlackPatterns,
 } from './ecosystem-fetcher';
-import { sendInsightNotification } from './fcm-service';
+import { sendInsightNotification } from './onesignal-service';
 
 // ============================================================================
 // TYPES
@@ -659,7 +659,7 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
 
   const insightId = data?.id;
 
-  // Send push notification via FCM
+  // Send push notification via OneSignal
   if (insightId) {
     try {
       const sentCount = await sendInsightNotification(email, {
@@ -681,9 +681,9 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
           })
           .eq('id', insightId);
       }
-    } catch (fcmError) {
-      console.error('[Insight Trigger] Error sending push notification:', fcmError);
-      // Don't fail the whole operation if FCM fails
+    } catch (pushError) {
+      console.error('[Insight Trigger] Error sending push notification:', pushError);
+      // Don't fail the whole operation if push notification fails
     }
   }
 

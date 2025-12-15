@@ -3,10 +3,45 @@ import OpenAI, { toFile } from 'openai';
 import { devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 import { File as NodeFile } from 'node:buffer';
+import { Client } from '@upstash/qstash';
 
 // Polyfill for Node 18
 if (typeof globalThis.File === 'undefined') {
   globalThis.File = NodeFile as unknown as typeof File;
+}
+
+/**
+ * Queue async multi-agent blood analysis via QStash
+ * This is the preferred method for comprehensive analysis
+ */
+async function queueMultiAgentAnalysis(fileUrl: string, email: string): Promise<{ queued: boolean; message: string }> {
+  const qstashToken = process.env.QSTASH_TOKEN;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
+
+  if (!qstashToken) {
+    console.warn('[Blood Analysis] QStash not configured, falling back to sync analysis');
+    return { queued: false, message: 'QStash not configured' };
+  }
+
+  try {
+    const client = new Client({ token: qstashToken });
+
+    await client.publishJSON({
+      url: `${baseUrl}/api/webhooks/qstash/analyze-blood-multi-agent`,
+      body: {
+        fileUrl,
+        email,
+        fileName: fileUrl.split('/').pop()?.split('?')[0] || 'blood_test.pdf'
+      },
+      retries: 2
+    });
+
+    console.log(`[Blood Analysis] Queued multi-agent analysis for ${email}`);
+    return { queued: true, message: 'Analysis queued. You will be notified when complete.' };
+  } catch (error) {
+    console.error('[Blood Analysis] Failed to queue analysis:', error);
+    return { queued: false, message: error instanceof Error ? error.message : 'Queue failed' };
+  }
 }
 
 function getOpenAIClient() {
@@ -329,12 +364,31 @@ export async function POST(request: NextRequest) {
       const jsonBody = await request.json();
       email = jsonBody.email || null;
       const fileUrl = jsonBody.fileUrl;
+      // Default to async (multi-agent) mode, can be disabled with async=false
+      const useAsync = jsonBody.async !== false;
 
       if (!fileUrl) {
         return NextResponse.json(
           { error: 'No fileUrl provided' },
           { status: 400 }
         );
+      }
+
+      // If async mode and we have email, queue for multi-agent processing
+      if (useAsync && email) {
+        console.log(`[Blood Analysis] Async mode enabled, queuing multi-agent analysis for ${email}`);
+        const queueResult = await queueMultiAgentAnalysis(fileUrl, email);
+
+        if (queueResult.queued) {
+          return NextResponse.json({
+            success: true,
+            status: 'processing',
+            message: queueResult.message,
+            async: true
+          });
+        }
+        // If queue failed, fall through to sync analysis
+        console.log(`[Blood Analysis] Queue failed, falling back to sync: ${queueResult.message}`);
       }
 
       console.log(`[Mobile] Fetching file from URL: ${fileUrl}`);

@@ -90,7 +90,15 @@ IMPORTANT:
 - Focus on actionable insights
 - Be evidence-based but not alarmist
 - Consider optimal ranges for longevity, not just "normal" ranges
-- Return ONLY valid JSON, no markdown formatting`;
+- Return ONLY valid JSON, no markdown formatting
+
+CRITICAL - READ EVERY PAGE:
+- This document may have MULTIPLE PAGES - you MUST read ALL pages
+- Do NOT stop at 10-15 biomarkers - extract 30, 40, 50, 70+ if they exist
+- If you see a CBC panel, that alone has 15+ markers - extract ALL of them
+- If you see a metabolic panel, that has 14+ markers - extract ALL of them
+- Your response should have as many biomarkers as exist in the document
+- I repeat: there is NO LIMIT on how many biomarkers to extract`;
 
   // Upload the PDF file to OpenAI
   const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -110,7 +118,7 @@ IMPORTANT:
   const thread = await openai.beta.threads.create({
     messages: [{
       role: 'user',
-      content: 'Please analyze the blood test PDF I uploaded and provide the analysis in the JSON format specified in your instructions.',
+      content: 'Please analyze the blood test PDF I uploaded. IMPORTANT: This document contains 50-100+ biomarkers across multiple pages. You MUST extract EVERY SINGLE biomarker - do not stop at 10 or 15. Read ALL pages of the PDF and extract ALL biomarkers you find. Return the complete analysis in the JSON format specified in your instructions.',
       attachments: [{ file_id: openaiFile.id, tools: [{ type: 'file_search' }] }]
     }]
   });

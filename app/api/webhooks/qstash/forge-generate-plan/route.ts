@@ -1,30 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import { Client } from '@upstash/qstash';
-import OpenAI from 'openai';
 import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
-import { buildFitnessPlanPrompt, buildSystemPrompt } from '@/lib/prompts/unified-context-prompt';
-import { buildForgePlanPrompt } from '@/app/api/generate-forge-plan/route';
+import { generateForgePlan, ForgeOrchestratorInput } from '@/lib/forge-orchestrator';
 
 // This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 // QStash will handle retries if it fails
 export const maxDuration = 800;
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
-  }
-  return new OpenAI({
-    apiKey,
-    timeout: 600000, // 10 minutes timeout for API calls (GPT-5 with reasoning can be slow)
-    maxRetries: 2,   // Retry on transient failures
-  });
-}
-
-// Helper for fetch with timeout (prevents UND_ERR_BODY_TIMEOUT)
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 300000) {
+// Helper for fetch with timeout (for context aggregation)
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 60000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -37,148 +23,6 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   } finally {
     clearTimeout(timeoutId);
   }
-}
-
-/**
- * Attempt to fix common JSON formatting issues
- */
-function attemptJsonFix(jsonString: string): string {
-  let fixed = jsonString;
-
-  // Fix unescaped quotes in strings (common GPT issue)
-  // This is a simple heuristic - look for quotes that aren't properly escaped
-  // Only do this if the string doesn't parse
-  try {
-    JSON.parse(fixed);
-    return fixed; // Already valid, return as-is
-  } catch {
-    // Continue with fixes
-  }
-
-  // Fix common issues:
-  // 1. Remove any stray commas before closing braces/brackets (already done above but let's be thorough)
-  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-
-  // 2. Remove trailing commas at end of arrays/objects
-  fixed = fixed.replace(/,(\s*)\]/g, '$1]');
-  fixed = fixed.replace(/,(\s*)\}/g, '$1}');
-
-  // 3. Fix missing commas between array/object elements (very aggressive, may cause issues)
-  // Skip this for now as it's too risky
-
-  return fixed;
-}
-
-// Inline fitness plan generation to avoid timeout issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function generateFitnessPlanInline(formData: any, bloodAnalysis: any, baseUrl: string) {
-  console.log('[FORGE-PLAN] Generating comprehensive fitness plan...');
-
-  // Step 1: Aggregate unified context from ecosystem
-  console.log('[FORGE-PLAN] Aggregating unified context from ecosystem data...');
-  let unifiedContext = null;
-  const userEmail = formData.email;
-
-  if (userEmail) {
-    try {
-      const contextResponse = await fetchWithTimeout(`${baseUrl}/api/aggregate-context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail,
-          contextType: 'forge',
-          forceRefresh: false,
-        }),
-      }, 60000); // 1 minute timeout for context aggregation
-
-      if (contextResponse.ok) {
-        const contextData = await contextResponse.json();
-        unifiedContext = contextData.context;
-        console.log('[FORGE-PLAN] ✅ Unified context aggregated');
-        console.log(`[FORGE-PLAN] Data Quality: ${contextData.qualityMessage?.split('\n')[0] || 'Unknown'}`);
-      } else {
-        console.log('[FORGE-PLAN] ⚠️ Context aggregation failed, using standard prompt');
-      }
-    } catch (error) {
-      console.error('[FORGE-PLAN] Error aggregating context:', error);
-      console.log('[FORGE-PLAN] Proceeding with standard prompt');
-    }
-  }
-
-  const openai = getOpenAIClient();
-
-  // Build the prompt (ecosystem-enriched or standard)
-  const prompt = unifiedContext
-    ? buildFitnessPlanPrompt(unifiedContext, formData)
-    : buildForgePlanPrompt(formData, bloodAnalysis);
-
-  const systemPrompt = unifiedContext
-    ? buildSystemPrompt()
-    : `You are an elite strength and conditioning coach and fitness expert. You create comprehensive, personalized fitness plans that are safe, effective, and scientifically grounded. You consider the client's complete profile including training history, goals, injuries, available equipment, and biomarkers when available.
-
-Your plans are detailed, progressive, and designed for long-term results. You provide specific exercises, sets, reps, rest periods, and progression strategies. You also include recovery protocols, mobility work, and supplement recommendations when appropriate.`;
-
-  console.log(`[FORGE-PLAN] Using ${unifiedContext ? 'ECOSYSTEM-ENRICHED' : 'STANDARD'} prompt`);
-  console.log(`[FORGE-PLAN] Model: GPT-5 with medium reasoning for faster generation`);
-
-  const completion = await openai.responses.create({
-    model: 'gpt-5',
-    input: `${systemPrompt}\n\n${prompt}`,
-    reasoning: { effort: 'medium' },  // Reduced from 'high' to prevent timeouts
-    text: { verbosity: 'medium' }
-  });
-
-  let planContent = completion.output_text || '{}';
-
-  // Strip markdown code blocks if present
-  planContent = planContent.trim();
-  if (planContent.startsWith('```json')) {
-    planContent = planContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-  } else if (planContent.startsWith('```')) {
-    planContent = planContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
-  }
-  planContent = planContent.trim();
-
-  // Additional JSON sanitization to handle common GPT formatting issues
-  // Remove any trailing commas before closing braces/brackets
-  planContent = planContent.replace(/,(\s*[}\]])/g, '$1');
-  // Remove JavaScript-style comments (// and /* */)
-  planContent = planContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-  // Remove control characters EXCEPT newlines (\n = 0x0A) and carriage returns (\r = 0x0D) which are valid in JSON strings
-  // This removes null bytes, tabs in wrong places, etc. while preserving line breaks
-  planContent = planContent.replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '');
-
-  // Attempt to fix common JSON issues
-  planContent = attemptJsonFix(planContent);
-
-  let plan;
-  try {
-    plan = JSON.parse(planContent);
-    console.log('[FORGE-PLAN] ✅ Fitness plan generated successfully with GPT-5');
-  } catch (parseError) {
-    console.error('[FORGE-PLAN] ❌ Failed to parse GPT-5 response as JSON:', parseError);
-    console.error('[FORGE-PLAN] Error at position:', parseError instanceof SyntaxError ? (parseError as any).message : 'Unknown');
-    console.error('[FORGE-PLAN] Response length:', planContent.length);
-    console.error('[FORGE-PLAN] First 500 chars of response:', planContent.substring(0, 500));
-
-    // Log the area around the error position (11731 in this case)
-    if (parseError instanceof SyntaxError && (parseError as any).message.includes('position')) {
-      const match = (parseError as any).message.match(/position (\d+)/);
-      if (match) {
-        const errorPos = parseInt(match[1]);
-        console.error('[FORGE-PLAN] Chars around error position:', planContent.substring(Math.max(0, errorPos - 100), Math.min(planContent.length, errorPos + 100)));
-      }
-    }
-
-    console.error('[FORGE-PLAN] Last 200 chars of response:', planContent.substring(Math.max(0, planContent.length - 200)));
-    throw new Error(`Failed to parse fitness plan from GPT-5: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
-  }
-
-  return {
-    success: true,
-    plan,
-    unifiedContext // Return the context so specialized agents can use it
-  };
 }
 
 const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
@@ -494,243 +338,60 @@ async function handler(request: NextRequest) {
       throw new Error('No user data found');
     }
 
-    // Generate comprehensive fitness plan (base protocols)
-    console.log('[2/7] Generating base protocols (assessment + recommendations)...');
+    // Aggregate ecosystem context for the orchestrator
+    console.log('[2/5] Aggregating ecosystem context...');
+    let ecosystemData: Record<string, unknown> | undefined;
 
-    // INLINE AI GENERATION - Don't call separate endpoint to avoid timeout issues
-    const planResult = await generateFitnessPlanInline(formData, bloodAnalysisData, baseUrl);
+    if (formData.email) {
+      try {
+        const contextResponse = await fetchWithTimeout(`${baseUrl}/api/aggregate-context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            contextType: 'forge',
+            forceRefresh: false,
+          }),
+        }, 60000);
 
-    console.log('[OK] Base protocols generated');
+        if (contextResponse.ok) {
+          const contextData = await contextResponse.json();
+          ecosystemData = contextData.context;
+          console.log('[OK] Ecosystem context aggregated');
+        }
+      } catch (error) {
+        console.warn('[WARN] Could not aggregate ecosystem context:', error);
+      }
+    }
 
-    // Extract structured data for specialized agents
-    const basePlan = planResult.plan;
-    const unifiedContext = planResult.unifiedContext; // Get the rich ecosystem context
+    // Generate comprehensive fitness plan using the new multi-agent orchestrator
+    console.log('[3/5] Generating fitness plan with multi-agent orchestrator...');
+    console.log('[INFO] Using GPT-4o + GPT-4o-mini agents (cost: ~$0.15-0.20)');
 
-    const userProfile = {
-      name: formData.fullName || formData.name || 'User',
-      age: parseInt(formData.age) || 30,
-      gender: formData.gender || 'not specified',
-      weight: parseFloat(formData.weight) || 70,
-      height: parseFloat(formData.height) || 170,
-      fitnessLevel: formData.fitnessLevel || formData.trainingExperience || 'intermediate',
-      experienceLevel: formData.trainingExperience || 'intermediate',
-      trainingExperience: formData.trainingExperience || 'intermediate',
-      currentBests: formData.currentBests || '', // e.g., "Squat 5RM 100kg; Bench 5RM 80kg; Deadlift 5RM 140kg"
-      currentActivity: formData.currentActivity || 'Not specified',
-      goals: formData.goals || (formData.primaryGoal ? [formData.primaryGoal] : ['general fitness']),
-      equipment: formData.equipment || ['bodyweight'],
-      timeAvailable: parseInt(formData.sessionLength) || 60,
-      sessionsPerWeek: parseInt(formData.trainingDays) || 3,
-      injuries: formData.injuries || [],
-      preferences: formData.preferences || [],
-      activityLevel: formData.activityLevel || 'Moderate',
-      dietaryPreferences: formData.dietaryPreferences || [],
-      allergies: formData.allergies || [],
-      restrictions: formData.dietaryRestrictions || [],
-      lifestyle: formData.lifestyle || 'Standard'
+    const orchestratorInput: ForgeOrchestratorInput = {
+      onboardingData: formData,
+      bloodAnalysis: bloodAnalysisData,
+      ecosystemData,
     };
 
-    const biomarkers = bloodAnalysisData?.biomarkers || {};
-    const recommendations = basePlan?.recommendations || {};
+    const orchestratorResult = await generateForgePlan(orchestratorInput);
 
-    // Ensure nested recommendation structures exist with defaults
-    if (!recommendations.nutrition_protocol) {
-      recommendations.nutrition_protocol = {
-        objectives: ['Optimize nutrition for health and performance'],
-        specificRecommendations: []
-      };
-    }
-    if (!recommendations.training_protocol) {
-      recommendations.training_protocol = {
-        phase: 'General Fitness',
-        recommendations: [
-          {
-            name: 'Balanced Strength Training',
-            frequency_per_week: userProfile.sessionsPerWeek,
-            session_duration_min: userProfile.timeAvailable,
-            intensity: 'Moderate',
-            volume: 'Standard',
-            structure: 'Full body or split routine',
-            instructions: 'Focus on compound movements with progressive overload',
-            causal_rationale: 'Build strength and improve overall fitness based on user goals'
-          }
-        ]
-      };
+    if (!orchestratorResult.success || !orchestratorResult.plan) {
+      throw new Error(orchestratorResult.error || 'Failed to generate fitness plan');
     }
 
-    // Call specialized agents IN PARALLEL with FULL UNIFIED CONTEXT
-    console.log('[3/7] Calling 4 specialized agents in parallel with unified context...');
-    if (unifiedContext) {
-      console.log('[CONTEXT] Passing ecosystem data to specialized agents (Sage journals, health trends, behavioral patterns)');
+    const enhancedPlan = orchestratorResult.plan;
+
+    console.log('[OK] Fitness plan generated successfully');
+    console.log(`[INFO] Generation took ${orchestratorResult.metadata.totalDurationMs}ms`);
+    console.log(`[INFO] Estimated cost: $${orchestratorResult.metadata.costs.total.toFixed(3)}`);
+    console.log(`[INFO] Validation: ${orchestratorResult.metadata.validation.valid ? 'PASSED' : 'HAS ISSUES'}`);
+    if (orchestratorResult.metadata.validation.errorCount > 0) {
+      console.warn(`[WARN] ${orchestratorResult.metadata.validation.errorCount} validation errors`);
     }
-
-    // 5 minute timeout per agent (they run in parallel, so total time is ~5 min not 20 min)
-    const agentTimeoutMs = 300000;
-
-    const [trainingResult, nutritionResult, recoveryResult, adaptationResult] = await Promise.all([
-      // Training Agent
-      fetchWithTimeout(`${baseUrl}/api/forge-generate-training`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userProfile,
-          biomarkers,
-          recommendations,
-          unifiedContext // Pass the full ecosystem context
-        })
-      }, agentTimeoutMs).then(res => res.json()).catch(err => {
-        console.error('[TRAINING-AGENT] Error:', err);
-        return { success: false, error: err.message };
-      }),
-
-      // Nutrition Agent
-      fetchWithTimeout(`${baseUrl}/api/forge-generate-nutrition`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userProfile,
-          biomarkers,
-          recommendations,
-          unifiedContext // Pass the full ecosystem context
-        })
-      }, agentTimeoutMs).then(res => res.json()).catch(err => {
-        console.error('[NUTRITION-AGENT] Error:', err);
-        return { success: false, error: err.message };
-      }),
-
-      // Recovery Agent
-      fetchWithTimeout(`${baseUrl}/api/forge-generate-recovery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userProfile,
-          biomarkers,
-          recommendations,
-          unifiedContext // Pass the full ecosystem context
-        })
-      }, agentTimeoutMs).then(res => res.json()).catch(err => {
-        console.error('[RECOVERY-AGENT] Error:', err);
-        return { success: false, error: err.message };
-      }),
-
-      // Adaptation Agent (needs training program, so we'll use a placeholder for now)
-      fetchWithTimeout(`${baseUrl}/api/forge-generate-adaptation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userProfile,
-          biomarkers,
-          trainingProgram: { weeklyProgram: {} }, // Will be populated after training agent
-          unifiedContext // Pass the full ecosystem context
-        })
-      }, agentTimeoutMs).then(res => res.json()).catch(err => {
-        console.error('[ADAPTATION-AGENT] Error:', err);
-        return { success: false, error: err.message };
-      })
-    ]);
-
-    console.log('[OK] All specialized agents completed');
-    console.log(`  Training: ${trainingResult.success ? '✅' : '❌'}`);
-    console.log(`  Nutrition: ${nutritionResult.success ? '✅' : '❌'}`);
-    console.log(`  Recovery: ${recoveryResult.success ? '✅' : '❌'}`);
-    console.log(`  Adaptation: ${adaptationResult.success ? '✅' : '❌'}`);
-
-    // DEBUG: Log what each agent actually returned
-    console.log('[DEBUG] Training agent returned:', JSON.stringify(trainingResult, null, 2).substring(0, 1000));
-    console.log('[DEBUG] Nutrition agent returned:', JSON.stringify(nutritionResult, null, 2).substring(0, 500));
-    console.log('[DEBUG] Recovery agent returned:', JSON.stringify(recoveryResult, null, 2).substring(0, 500));
-    console.log('[DEBUG] Adaptation agent returned:', JSON.stringify(adaptationResult, null, 2).substring(0, 500));
-
-    // CRITICAL: Check if training agent failed
-    if (!trainingResult.success) {
-      console.error('[CRITICAL] ❌ Training agent FAILED - weeklyProgram will be missing!');
-      console.error('[CRITICAL] Training error:', trainingResult.error || 'Unknown error');
-    }
-    if (trainingResult.success && !trainingResult.weeklyProgram) {
-      console.error('[CRITICAL] ⚠️  Training agent succeeded but returned NO weeklyProgram data!');
-      console.error('[CRITICAL] Full training result:', JSON.stringify(trainingResult, null, 2));
-    }
-
-    // Merge all specialized agent results into the comprehensive plan
-    console.log('[4/7] Merging all agent results into comprehensive plan...');
-
-    // IMPORTANT: Prioritize specialized agent outputs over base plan
-    // Only keep metadata from base plan (profile, insights, safety flags)
-    const enhancedPlan = {
-      // Keep base plan metadata and context
-      profile: basePlan.profile,
-      insights: basePlan.insights,
-      assumptions: basePlan.assumptions,
-      safety_flags: basePlan.safety_flags,
-      contingencies: basePlan.contingencies,
-      data_status: basePlan.data_status,
-      data_gaps_and_requests: basePlan.data_gaps_and_requests,
-      cross_source_integration_notes: basePlan.cross_source_integration_notes,
-      next_steps_week_0: basePlan.next_steps_week_0,
-      derived_metrics: basePlan.derived_metrics,
-
-      // Use specialized agent outputs (agents now return clean, non-nested structure)
-      executiveSummary: trainingResult.success && trainingResult.executiveSummary ?
-        trainingResult.executiveSummary : undefined,
-
-      weeklyProgram: trainingResult.success && trainingResult.weeklyProgram ?
-        trainingResult.weeklyProgram : undefined,
-
-      trainingPhilosophy: trainingResult.success && trainingResult.trainingPhilosophy ?
-        trainingResult.trainingPhilosophy : undefined,
-
-      weeklyStructure: trainingResult.success && trainingResult.weeklyStructure ?
-        trainingResult.weeklyStructure : undefined,
-
-      nutritionGuidance: nutritionResult.success && nutritionResult.nutritionGuidance ?
-        nutritionResult.nutritionGuidance : undefined,
-
-      progressTracking: recoveryResult.success && recoveryResult.progressTracking ?
-        recoveryResult.progressTracking : undefined,
-
-      injuryPrevention: recoveryResult.success && recoveryResult.injuryPrevention ?
-        recoveryResult.injuryPrevention : undefined,
-
-      recoveryProtocol: recoveryResult.success && recoveryResult.recoveryProtocol ?
-        recoveryResult.recoveryProtocol : undefined,
-
-      adaptiveFeatures: adaptationResult.success && adaptationResult.adaptiveFeatures ?
-        adaptationResult.adaptiveFeatures : undefined,
-
-      // Map supplements from nutrition agent (properly structured)
-      supplementRecommendations: nutritionResult.success && nutritionResult.nutritionGuidance?.supplements ? {
-        essentialSupplements: nutritionResult.nutritionGuidance.supplements.filter((s: any) =>
-          ['Omega-3', 'EPA/DHA', 'Fish Oil', 'Vitamin D', 'Vitamin D3', 'Magnesium'].some(name =>
-            s.name.includes(name)
-          )
-        ),
-        optionalSupplements: nutritionResult.nutritionGuidance.supplements.filter((s: any) =>
-          !['Omega-3', 'EPA/DHA', 'Fish Oil', 'Vitamin D', 'Vitamin D3', 'Magnesium'].some(name =>
-            s.name.includes(name)
-          )
-        )
-      } : undefined,
-
-      // Keep the raw base plan data for reference (nested under 'plan')
-      plan: basePlan.plan
-    };
-
-    console.log('[OK] Comprehensive plan assembled with all specialized sections');
-
-    // DEBUG: Log what's actually in the enhanced plan
-    console.log('[DEBUG] Enhanced plan top-level keys:', Object.keys(enhancedPlan));
-    console.log('[DEBUG] Has weeklyProgram:', !!enhancedPlan.weeklyProgram);
-    console.log('[DEBUG] Has nutritionGuidance:', !!enhancedPlan.nutritionGuidance);
-    console.log('[DEBUG] Has progressTracking:', !!enhancedPlan.progressTracking);
-    console.log('[DEBUG] Has injuryPrevention:', !!enhancedPlan.injuryPrevention);
-    console.log('[DEBUG] Has adaptiveFeatures:', !!enhancedPlan.adaptiveFeatures);
-    console.log('[DEBUG] Has sleep_recovery_protocol:', !!enhancedPlan.sleep_recovery_protocol);
-
-    // Content enrichment will be handled as a separate background job after plan delivery
-    console.log('[4.5/7] Skipping inline enrichment - will queue as separate job after email...');
 
     // Store the generated plan
-    console.log('[5/7] Storing comprehensive fitness plan...');
+    console.log('[4/5] Storing comprehensive fitness plan...');
 
     // Store in dev storage
     devPlanStorage.set(uniqueCode, {
@@ -764,7 +425,7 @@ async function handler(request: NextRequest) {
     console.log('[OK] Fitness plan stored successfully');
 
     // Queue enrichment job as a separate QStash task which will send email after enrichment
-    console.log('[6/7] Queuing content enrichment job (will send email after enrichment)...');
+    console.log('[5/5] Queuing content enrichment job (will send email after enrichment)...');
     try {
       const qstashClient = new Client({
         token: process.env.QSTASH_TOKEN!,

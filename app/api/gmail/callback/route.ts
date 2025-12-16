@@ -84,6 +84,11 @@ export async function GET(request: NextRequest) {
 
       if (storeResult.success) {
         console.log(`[Gmail] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''} (Google: ${googleEmail})`);
+
+        // Trigger email draft agent setup in background (don't await - let it run async)
+        setupEmailDraftAgent(userEmail, userCode).catch((err) => {
+          console.error('[Gmail] Background email draft setup error:', err);
+        });
       } else {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }
@@ -272,5 +277,85 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL('/sage-testing?error=auth_failed', fallbackUrl)
     );
+  }
+}
+
+/**
+ * Setup Email Draft Agent in background after Gmail connection
+ * 1. Learn user's email writing style
+ * 2. Setup Gmail watch for real-time notifications
+ */
+async function setupEmailDraftAgent(userEmail: string, userCode?: string): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.ai';
+
+  console.log(`[Gmail] Starting email draft agent setup for ${userEmail}`);
+
+  // Small delay to ensure tokens are fully committed
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  try {
+    // 1. Learn email writing style (analyzes sent emails)
+    console.log(`[Gmail] Learning email style for ${userEmail}...`);
+    const styleResponse = await fetch(`${baseUrl}/api/gmail/learn-style`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: userEmail,
+        code: userCode,
+        maxEmails: 200,
+      }),
+    });
+
+    if (styleResponse.ok) {
+      const styleResult = await styleResponse.json();
+      console.log(`[Gmail] Style learning complete: ${styleResult.emailsAnalyzed} emails analyzed`);
+    } else {
+      console.warn(`[Gmail] Style learning failed: ${styleResponse.status}`);
+    }
+
+    // 2. Setup Gmail watch for push notifications
+    console.log(`[Gmail] Setting up Gmail watch for ${userEmail}...`);
+    const watchResponse = await fetch(`${baseUrl}/api/gmail/setup-watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: userEmail,
+        code: userCode,
+        labelIds: ['INBOX'],
+      }),
+    });
+
+    if (watchResponse.ok) {
+      const watchResult = await watchResponse.json();
+      console.log(`[Gmail] Watch setup complete: expires ${watchResult.expiration}`);
+    } else {
+      console.warn(`[Gmail] Watch setup failed: ${watchResponse.status}`);
+    }
+
+    // 3. Initialize default draft settings if not exists
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const supabase = createAdminClient();
+
+    const { data: existingSettings } = await supabase
+      .from('email_draft_settings')
+      .select('id')
+      .eq('user_email', userEmail)
+      .maybeSingle();
+
+    if (!existingSettings) {
+      await supabase.from('email_draft_settings').insert({
+        user_email: userEmail,
+        user_code: userCode || null,
+        auto_draft_enabled: true,
+        require_approval: false,
+        process_primary_only: true,
+        max_drafts_per_day: 20,
+      });
+      console.log(`[Gmail] Default draft settings created for ${userEmail}`);
+    }
+
+    console.log(`[Gmail] Email draft agent setup complete for ${userEmail}`);
+  } catch (error) {
+    console.error(`[Gmail] Email draft agent setup failed:`, error);
   }
 }

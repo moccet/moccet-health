@@ -206,6 +206,63 @@ export const toolDefinitions: Tool[] = [
     },
   },
 
+  // Email Draft Tools
+  {
+    name: 'email_learn_style',
+    description: 'Learn the user\'s email writing style from their sent emails. Analyzes greetings, sign-offs, tone, and patterns. LOW RISK: Auto-approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        forceRelearn: { type: 'boolean', description: 'Force re-learning even if style exists' },
+        maxEmails: { type: 'number', description: 'Maximum emails to analyze (default 200)' },
+      },
+    },
+  },
+  {
+    name: 'email_create_draft',
+    description: 'Create an email draft in the user\'s Gmail. MEDIUM RISK: Creates visible draft in Gmail, requires approval.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', description: 'Recipient email address' },
+        subject: { type: 'string', description: 'Email subject' },
+        body: { type: 'string', description: 'Email body (plain text)' },
+        threadId: { type: 'string', description: 'Thread ID for reply drafts' },
+        inReplyTo: { type: 'string', description: 'Message ID being replied to' },
+      },
+      required: ['to', 'subject', 'body'],
+    },
+  },
+  {
+    name: 'email_setup_watch',
+    description: 'Setup Gmail push notifications for real-time email monitoring. LOW RISK: Auto-approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        labelIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Gmail labels to watch (default: INBOX)',
+        },
+      },
+    },
+  },
+  {
+    name: 'email_list_drafts',
+    description: 'List AI-generated email drafts. LOW RISK: Auto-approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'created', 'sent', 'discarded', 'all'],
+          description: 'Filter by status',
+        },
+        limit: { type: 'number', description: 'Number of drafts to return' },
+      },
+    },
+  },
+
   // Health Booking Tools
   {
     name: 'booking_find_providers',
@@ -805,4 +862,182 @@ export const toolHandlers: Record<string, ToolHandler> = {
   whatsapp_send_message: whatsappSendMessage,
   whatsapp_list_chats: whatsappListChats,
   whatsapp_get_conversation: whatsappGetConversation,
+
+  // Email Tools
+  email_learn_style: emailLearnStyle,
+  email_create_draft: emailCreateDraft,
+  email_setup_watch: emailSetupWatch,
+  email_list_drafts: emailListDrafts,
 };
+
+// =============================================================================
+// EMAIL TOOL HANDLERS
+// =============================================================================
+
+async function emailLearnStyle(args: Record<string, any>, config: ServerConfig) {
+  try {
+    const response = await fetch(`${config.baseUrl}/api/gmail/learn-style`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: config.userEmail,
+        forceRelearn: args.forceRelearn || false,
+        maxEmails: args.maxEmails || 200,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to learn style' };
+    }
+
+    return {
+      success: true,
+      emailsAnalyzed: data.emailsAnalyzed,
+      profile: data.profile,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+async function emailCreateDraft(args: Record<string, any>, config: ServerConfig) {
+  try {
+    const supabase = getSupabase(config);
+
+    // Get Gmail access token
+    const { data: tokenData } = await supabase
+      .from('integration_tokens')
+      .select('access_token')
+      .eq('user_email', config.userEmail)
+      .eq('provider', 'gmail')
+      .eq('is_active', true)
+      .single();
+
+    if (!tokenData?.access_token) {
+      return { success: false, error: 'Gmail not connected' };
+    }
+
+    const token = Buffer.from(tokenData.access_token, 'base64').toString('utf-8');
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+    oauth2Client.setCredentials({ access_token: token });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    // Build RFC 2822 message
+    const message = [
+      `To: ${args.to}`,
+      `Subject: ${args.subject}`,
+      args.inReplyTo ? `In-Reply-To: ${args.inReplyTo}` : '',
+      args.inReplyTo ? `References: ${args.inReplyTo}` : '',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      args.body,
+    ].filter(Boolean).join('\r\n');
+
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const draft = await gmail.users.drafts.create({
+      userId: 'me',
+      requestBody: {
+        message: {
+          raw: encodedMessage,
+          threadId: args.threadId || undefined,
+        },
+      },
+    });
+
+    // Log the action
+    await supabase.from('agent_action_log').insert({
+      user_email: config.userEmail,
+      action_type: 'email_draft_created',
+      action_name: 'email_create_draft',
+      action_args: { to: args.to, subject: args.subject },
+      action_result: { draftId: draft.data.id },
+      risk_level: 'medium',
+      source: 'mcp_tool',
+    });
+
+    return {
+      success: true,
+      draftId: draft.data.id,
+      messageId: draft.data.message?.id,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+async function emailSetupWatch(args: Record<string, any>, config: ServerConfig) {
+  try {
+    const response = await fetch(`${config.baseUrl}/api/gmail/setup-watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: config.userEmail,
+        labelIds: args.labelIds || ['INBOX'],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Failed to setup watch' };
+    }
+
+    return {
+      success: true,
+      historyId: data.historyId,
+      expiration: data.expiration,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+async function emailListDrafts(args: Record<string, any>, config: ServerConfig) {
+  try {
+    const supabase = getSupabase(config);
+
+    let query = supabase
+      .from('email_drafts')
+      .select('*')
+      .eq('user_email', config.userEmail)
+      .order('created_at', { ascending: false })
+      .limit(args.limit || 20);
+
+    if (args.status && args.status !== 'all') {
+      query = query.eq('status', args.status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      count: data?.length || 0,
+      drafts: (data || []).map((d) => ({
+        id: d.id,
+        originalFrom: d.original_from,
+        originalSubject: d.original_subject,
+        draftSubject: d.draft_subject,
+        status: d.status,
+        gmailDraftId: d.gmail_draft_id,
+        createdAt: d.created_at,
+      })),
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

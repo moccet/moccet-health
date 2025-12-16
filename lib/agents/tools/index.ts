@@ -17,6 +17,7 @@ import { spotifyTools } from './spotify';
 import { supplementTools } from './supplements';
 import { shoppingTools } from './shopping';
 import { bookingTools } from './booking';
+import { emailTools } from './email';
 
 // Export all tools
 export const allTools: ToolDefinition[] = [
@@ -26,6 +27,7 @@ export const allTools: ToolDefinition[] = [
   ...supplementTools,
   ...shoppingTools,
   ...bookingTools,
+  ...emailTools,
 ];
 
 // Tool map for quick lookup
@@ -107,3 +109,4 @@ export { spotifyTools } from './spotify';
 export { supplementTools } from './supplements';
 export { shoppingTools } from './shopping';
 export { bookingTools } from './booking';
+export { emailTools } from './email';

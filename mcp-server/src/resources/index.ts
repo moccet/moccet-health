@@ -330,6 +330,40 @@ export const resourceDefinitions: Resource[] = [
     description: 'Complete memory context for agent personalization.',
     mimeType: 'application/json',
   },
+
+  // =========================================================================
+  // EMAIL RESOURCES (Email Draft Agent)
+  // =========================================================================
+  {
+    uri: 'email://style/profile',
+    name: 'Email Writing Style',
+    description: 'Learned email writing patterns including greetings, sign-offs, tone, and verbosity.',
+    mimeType: 'application/json',
+  },
+  {
+    uri: 'email://drafts/pending',
+    name: 'Pending Email Drafts',
+    description: 'AI-generated email drafts awaiting user review.',
+    mimeType: 'application/json',
+  },
+  {
+    uri: 'email://drafts/all',
+    name: 'All Email Drafts',
+    description: 'All AI-generated email drafts with their status.',
+    mimeType: 'application/json',
+  },
+  {
+    uri: 'email://settings',
+    name: 'Email Draft Settings',
+    description: 'User preferences for automatic email draft generation.',
+    mimeType: 'application/json',
+  },
+  {
+    uri: 'email://watch/status',
+    name: 'Gmail Watch Status',
+    description: 'Status of Gmail push notification subscription.',
+    mimeType: 'application/json',
+  },
 ];
 
 // =============================================================================
@@ -1700,4 +1734,179 @@ export const resourceHandlers: Record<string, ResourceHandler> = {
   'memory://user/style': getMemoryStyle,
   'memory://conversations/recent': getMemoryConversations,
   'memory://context': getMemoryContext,
+
+  // Email Resources
+  'email://style/profile': getEmailStyleProfile,
+  'email://drafts/pending': getEmailDraftsPending,
+  'email://drafts/all': getEmailDraftsAll,
+  'email://settings': getEmailDraftSettings,
+  'email://watch/status': getEmailWatchStatus,
 };
+
+// =============================================================================
+// EMAIL RESOURCE HANDLERS
+// =============================================================================
+
+async function getEmailStyleProfile(config: ServerConfig): Promise<any> {
+  const supabase = getSupabase(config);
+
+  const { data, error } = await supabase
+    .from('user_email_style')
+    .select('*')
+    .eq('user_email', config.userEmail)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      available: false,
+      message: 'Email style not yet learned. Run style learning first.',
+    };
+  }
+
+  return {
+    available: true,
+    greetingPatterns: data.greeting_patterns,
+    signoffPatterns: data.signoff_patterns,
+    toneProfile: data.tone_profile,
+    verbosityLevel: data.verbosity_level,
+    avgEmailLength: data.avg_email_length,
+    usesEmojis: data.uses_emojis,
+    usesBulletPoints: data.uses_bullet_points,
+    commonPhrases: data.common_phrases,
+    sampleEmailsAnalyzed: data.sample_emails_analyzed,
+    confidenceScore: data.confidence_score,
+    lastLearnedAt: data.last_learned_at,
+  };
+}
+
+async function getEmailDraftsPending(config: ServerConfig): Promise<any> {
+  const supabase = getSupabase(config);
+
+  const { data, error } = await supabase
+    .from('email_drafts')
+    .select('*')
+    .eq('user_email', config.userEmail)
+    .in('status', ['pending', 'created'])
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    return { available: false, error: error.message };
+  }
+
+  return {
+    available: true,
+    count: data?.length || 0,
+    drafts: (data || []).map((d) => ({
+      id: d.id,
+      originalFrom: d.original_from,
+      originalSubject: d.original_subject,
+      draftSubject: d.draft_subject,
+      draftBody: d.draft_body?.slice(0, 200) + (d.draft_body?.length > 200 ? '...' : ''),
+      emailType: d.email_type,
+      urgencyLevel: d.urgency_level,
+      status: d.status,
+      gmailDraftId: d.gmail_draft_id,
+      createdAt: d.created_at,
+    })),
+  };
+}
+
+async function getEmailDraftsAll(config: ServerConfig): Promise<any> {
+  const supabase = getSupabase(config);
+
+  const { data, error, count } = await supabase
+    .from('email_drafts')
+    .select('*', { count: 'exact' })
+    .eq('user_email', config.userEmail)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return { available: false, error: error.message };
+  }
+
+  // Group by status
+  const byStatus: Record<string, number> = {};
+  for (const d of data || []) {
+    byStatus[d.status] = (byStatus[d.status] || 0) + 1;
+  }
+
+  return {
+    available: true,
+    total: count || 0,
+    byStatus,
+    recentDrafts: (data || []).slice(0, 10).map((d) => ({
+      id: d.id,
+      originalFrom: d.original_from,
+      originalSubject: d.original_subject,
+      status: d.status,
+      createdAt: d.created_at,
+    })),
+  };
+}
+
+async function getEmailDraftSettings(config: ServerConfig): Promise<any> {
+  const supabase = getSupabase(config);
+
+  const { data, error } = await supabase
+    .from('email_draft_settings')
+    .select('*')
+    .eq('user_email', config.userEmail)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      configured: false,
+      defaults: {
+        autoDraftEnabled: true,
+        requireApproval: false,
+        processPrimaryOnly: true,
+        maxDraftsPerDay: 20,
+      },
+    };
+  }
+
+  return {
+    configured: true,
+    autoDraftEnabled: data.auto_draft_enabled,
+    requireApproval: data.require_approval,
+    processPrimaryOnly: data.process_primary_only,
+    maxDraftsPerDay: data.max_drafts_per_day,
+    excludedSenders: data.excluded_senders,
+    excludedDomains: data.excluded_domains,
+    includeSignature: data.include_signature,
+    signatureConfigured: !!data.signature_text,
+  };
+}
+
+async function getEmailWatchStatus(config: ServerConfig): Promise<any> {
+  const supabase = getSupabase(config);
+
+  const { data, error } = await supabase
+    .from('gmail_watch_subscriptions')
+    .select('*')
+    .eq('user_email', config.userEmail)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      active: false,
+      message: 'Gmail push notifications not configured',
+    };
+  }
+
+  const expiresIn = new Date(data.expiration_timestamp).getTime() - Date.now();
+
+  return {
+    active: true,
+    historyId: data.history_id,
+    expiration: data.expiration_timestamp,
+    expiresInHours: Math.round(expiresIn / 1000 / 60 / 60),
+    lastNotificationAt: data.last_notification_at,
+    notificationCount: data.notification_count,
+    emailsProcessed: data.emails_processed,
+    draftsGenerated: data.drafts_generated,
+  };
+}

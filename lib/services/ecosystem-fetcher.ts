@@ -327,6 +327,64 @@ export interface BloodBiomarkers {
   insights: string[];
 }
 
+export interface SpotifyData {
+  // Recent listening
+  recentTracks: Array<{
+    id: string;
+    name: string;
+    artist: string;
+    playedAt: string;
+    durationMs: number;
+  }>;
+  // Audio features averages (from recent tracks)
+  avgEnergy: number;      // 0-1, higher = more energetic
+  avgValence: number;     // 0-1, higher = more positive/happy
+  avgTempo: number;       // BPM
+  avgDanceability: number; // 0-1
+  // Mood inference
+  inferredMood: 'happy' | 'calm' | 'energetic' | 'melancholy' | 'focused' | 'anxious' | 'mixed';
+  moodConfidence: number; // 0-1
+  // Listening patterns
+  listeningHours: string[]; // Peak hours
+  avgTracksPerDay: number;
+  topGenres: string[];
+  // Stress/wellness indicators
+  moodTrend: 'improving' | 'stable' | 'declining';
+  lateNightListening: boolean; // Listening after 11pm
+  emotionalVolatility: 'low' | 'medium' | 'high'; // variance in valence
+  insights: string[];
+  rawData: unknown;
+}
+
+export interface WhatsAppData {
+  // Communication volume
+  messagesSentToday: number;
+  messagesReceivedToday: number;
+  avgMessagesPerDay: number;
+  // Timing patterns
+  peakMessageHours: string[];
+  afterHoursPercentage: number; // % messages after 9pm
+  lateNightMessages: boolean;
+  // Response behavior
+  avgResponseTimeMinutes: number | null;
+  fastResponderRate: number; // % responses < 5min
+  // Contact patterns
+  activeConversations: number;
+  topContactsCount: number;
+  // Stress indicators
+  stressIndicators: {
+    constantAvailability: boolean;
+    lateNightActivity: boolean;
+    highVolumeDay: boolean;
+    shortResponses: boolean;
+  };
+  // Communication health
+  communicationBalance: 'healthy' | 'high_volume' | 'low_engagement';
+  workLifeBoundary: 'maintained' | 'blurred';
+  insights: string[];
+  rawData: unknown;
+}
+
 export interface EcosystemFetchResult {
   bloodBiomarkers: EcosystemDataSource;
   oura: EcosystemDataSource;
@@ -337,6 +395,8 @@ export interface EcosystemFetchResult {
   outlook: EcosystemDataSource;
   teams: EcosystemDataSource;
   whoop: EcosystemDataSource;
+  spotify: EcosystemDataSource;
+  whatsapp: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -1342,6 +1402,405 @@ export async function fetchBloodBiomarkers(
 }
 
 // ============================================================================
+// SPOTIFY DATA
+// ============================================================================
+
+/**
+ * Fetch Spotify listening data and analyze mood from audio features
+ */
+export async function fetchSpotifyData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    // Get Spotify access token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('user_oauth_connections')
+      .select('access_token')
+      .eq('user_email', email)
+      .eq('provider', 'spotify')
+      .maybeSingle();
+
+    if (tokenError || !tokenData?.access_token) {
+      return {
+        source: 'spotify',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'Spotify not connected',
+      };
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // Fetch recently played tracks
+    const recentlyPlayedResponse = await fetch(
+      'https://api.spotify.com/v1/me/player/recently-played?limit=50',
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!recentlyPlayedResponse.ok) {
+      throw new Error(`Spotify API error: ${recentlyPlayedResponse.status}`);
+    }
+
+    const recentlyPlayed = await recentlyPlayedResponse.json();
+    const items = recentlyPlayed.items || [];
+
+    if (items.length === 0) {
+      return {
+        source: 'spotify',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'No recent listening history',
+      };
+    }
+
+    // Extract track IDs for audio features
+    const trackIds = items.map((item: any) => item.track.id).join(',');
+
+    // Fetch audio features for tracks
+    const audioFeaturesResponse = await fetch(
+      `https://api.spotify.com/v1/audio-features?ids=${trackIds}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    const audioFeaturesData = await audioFeaturesResponse.json();
+    const audioFeatures = audioFeaturesData.audio_features?.filter((f: any) => f) || [];
+
+    // Calculate averages
+    const avgEnergy = audioFeatures.length > 0
+      ? audioFeatures.reduce((sum: number, f: any) => sum + (f.energy || 0), 0) / audioFeatures.length
+      : 0.5;
+    const avgValence = audioFeatures.length > 0
+      ? audioFeatures.reduce((sum: number, f: any) => sum + (f.valence || 0), 0) / audioFeatures.length
+      : 0.5;
+    const avgTempo = audioFeatures.length > 0
+      ? audioFeatures.reduce((sum: number, f: any) => sum + (f.tempo || 0), 0) / audioFeatures.length
+      : 120;
+    const avgDanceability = audioFeatures.length > 0
+      ? audioFeatures.reduce((sum: number, f: any) => sum + (f.danceability || 0), 0) / audioFeatures.length
+      : 0.5;
+
+    // Calculate valence variance for emotional volatility
+    const valenceValues = audioFeatures.map((f: any) => f.valence || 0.5);
+    const valenceVariance = valenceValues.length > 1
+      ? valenceValues.reduce((sum: number, v: number) => sum + Math.pow(v - avgValence, 2), 0) / valenceValues.length
+      : 0;
+    const emotionalVolatility: 'low' | 'medium' | 'high' =
+      valenceVariance < 0.02 ? 'low' : valenceVariance < 0.05 ? 'medium' : 'high';
+
+    // Infer mood from audio features
+    let inferredMood: SpotifyData['inferredMood'] = 'mixed';
+    let moodConfidence = 0.5;
+
+    if (avgValence > 0.6 && avgEnergy > 0.6) {
+      inferredMood = 'happy';
+      moodConfidence = Math.min(avgValence, avgEnergy);
+    } else if (avgValence > 0.6 && avgEnergy < 0.4) {
+      inferredMood = 'calm';
+      moodConfidence = avgValence * (1 - avgEnergy);
+    } else if (avgValence < 0.4 && avgEnergy > 0.6) {
+      inferredMood = 'anxious';
+      moodConfidence = (1 - avgValence) * avgEnergy;
+    } else if (avgValence < 0.4 && avgEnergy < 0.4) {
+      inferredMood = 'melancholy';
+      moodConfidence = (1 - avgValence) * (1 - avgEnergy);
+    } else if (avgEnergy > 0.7) {
+      inferredMood = 'energetic';
+      moodConfidence = avgEnergy;
+    } else if (avgValence > 0.4 && avgValence < 0.6 && avgEnergy > 0.4 && avgEnergy < 0.7) {
+      inferredMood = 'focused';
+      moodConfidence = 0.6;
+    }
+
+    // Analyze listening patterns
+    const playedHours = items.map((item: any) => {
+      const date = new Date(item.played_at);
+      return date.getHours();
+    });
+
+    const hourCounts: Record<number, number> = {};
+    playedHours.forEach((hour: number) => {
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+
+    const sortedHours = Object.entries(hourCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([hour]) => `${hour}:00`);
+
+    // Check for late night listening (after 11pm)
+    const lateNightCount = playedHours.filter((h: number) => h >= 23 || h < 5).length;
+    const lateNightListening = lateNightCount > items.length * 0.2;
+
+    // Build recent tracks array
+    const recentTracks = items.slice(0, 20).map((item: any) => ({
+      id: item.track.id,
+      name: item.track.name,
+      artist: item.track.artists.map((a: any) => a.name).join(', '),
+      playedAt: item.played_at,
+      durationMs: item.track.duration_ms,
+    }));
+
+    // Generate insights
+    const insights: string[] = [];
+
+    if (avgValence < 0.3) {
+      insights.push(`Recent music choices reflect lower mood (valence ${Math.round(avgValence * 100)}%) — music can influence and reflect emotional state`);
+    } else if (avgValence > 0.7) {
+      insights.push(`High-valence music selections (${Math.round(avgValence * 100)}%) suggest positive emotional state`);
+    }
+
+    if (lateNightListening) {
+      insights.push('Significant late-night listening activity detected — may indicate sleep difficulties or stress');
+    }
+
+    if (emotionalVolatility === 'high') {
+      insights.push('High variability in music mood — could reflect emotional fluctuations');
+    }
+
+    if (avgEnergy > 0.8) {
+      insights.push(`High-energy music preference (${Math.round(avgEnergy * 100)}%) — great for motivation, but consider calming music before sleep`);
+    }
+
+    const processedData: SpotifyData = {
+      recentTracks,
+      avgEnergy: Math.round(avgEnergy * 100) / 100,
+      avgValence: Math.round(avgValence * 100) / 100,
+      avgTempo: Math.round(avgTempo),
+      avgDanceability: Math.round(avgDanceability * 100) / 100,
+      inferredMood,
+      moodConfidence: Math.round(moodConfidence * 100) / 100,
+      listeningHours: sortedHours,
+      avgTracksPerDay: Math.round(items.length / 7), // Approximate
+      topGenres: [], // Would need additional API call
+      moodTrend: 'stable', // Would need historical comparison
+      lateNightListening,
+      emotionalVolatility,
+      insights,
+      rawData: { recentlyPlayed, audioFeatures },
+    };
+
+    return {
+      source: 'spotify',
+      available: true,
+      data: processedData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: items.length,
+    };
+  } catch (error) {
+    console.error('[Ecosystem Fetcher] Error fetching Spotify data:', error);
+    return {
+      source: 'spotify',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============================================================================
+// WHATSAPP DATA
+// ============================================================================
+
+/**
+ * Fetch WhatsApp communication patterns via Wassenger API
+ */
+export async function fetchWhatsAppData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const wassengerApiKey = process.env.WASSENGER_API_KEY;
+
+    if (!wassengerApiKey) {
+      return {
+        source: 'whatsapp',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'Wassenger API key not configured',
+      };
+    }
+
+    // Fetch recent chats
+    const chatsResponse = await fetch('https://api.wassenger.com/v1/chats?limit=50', {
+      headers: { 'Token': wassengerApiKey },
+    });
+
+    if (!chatsResponse.ok) {
+      throw new Error(`Wassenger API error: ${chatsResponse.status}`);
+    }
+
+    const chats = await chatsResponse.json();
+
+    if (!chats || chats.length === 0) {
+      return {
+        source: 'whatsapp',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'No WhatsApp chats found',
+      };
+    }
+
+    // Analyze message patterns from chat metadata
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let messagesSentToday = 0;
+    let messagesReceivedToday = 0;
+    let totalMessages = 0;
+    const messageHours: number[] = [];
+    let lateNightCount = 0;
+    let afterHoursCount = 0;
+
+    // Process each chat for patterns
+    for (const chat of chats.slice(0, 20)) {
+      // Fetch recent messages from this chat
+      try {
+        const messagesResponse = await fetch(
+          `https://api.wassenger.com/v1/chats/${chat.id}/messages?limit=50`,
+          { headers: { 'Token': wassengerApiKey } }
+        );
+
+        if (messagesResponse.ok) {
+          const messages = await messagesResponse.json();
+
+          for (const msg of messages || []) {
+            const msgDate = new Date(msg.timestamp || msg.created_at);
+            const hour = msgDate.getHours();
+            messageHours.push(hour);
+            totalMessages++;
+
+            // Count today's messages
+            if (msgDate >= todayStart) {
+              if (msg.fromMe) {
+                messagesSentToday++;
+              } else {
+                messagesReceivedToday++;
+              }
+            }
+
+            // Late night (11pm - 5am)
+            if (hour >= 23 || hour < 5) {
+              lateNightCount++;
+            }
+
+            // After hours (9pm+)
+            if (hour >= 21) {
+              afterHoursCount++;
+            }
+          }
+        }
+      } catch {
+        // Skip this chat if messages can't be fetched
+      }
+    }
+
+    // Calculate peak hours
+    const hourCounts: Record<number, number> = {};
+    messageHours.forEach(hour => {
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+
+    const peakMessageHours = Object.entries(hourCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([hour]) => `${hour}:00`);
+
+    // Calculate metrics
+    const avgMessagesPerDay = totalMessages > 0 ? Math.round(totalMessages / 7) : 0;
+    const afterHoursPercentage = totalMessages > 0
+      ? Math.round((afterHoursCount / totalMessages) * 100)
+      : 0;
+    const lateNightMessages = lateNightCount > totalMessages * 0.1;
+
+    // Determine stress indicators
+    const constantAvailability = peakMessageHours.length >= 3 &&
+      messageHours.filter(h => h >= 8 && h <= 22).length > totalMessages * 0.8;
+    const highVolumeDay = messagesSentToday > avgMessagesPerDay * 1.5;
+
+    // Determine communication balance
+    let communicationBalance: WhatsAppData['communicationBalance'] = 'healthy';
+    if (avgMessagesPerDay > 100) {
+      communicationBalance = 'high_volume';
+    } else if (avgMessagesPerDay < 5) {
+      communicationBalance = 'low_engagement';
+    }
+
+    // Determine work-life boundary
+    const workLifeBoundary: WhatsAppData['workLifeBoundary'] =
+      afterHoursPercentage > 30 ? 'blurred' : 'maintained';
+
+    // Generate insights
+    const insights: string[] = [];
+
+    if (lateNightMessages) {
+      insights.push('Late-night WhatsApp activity may affect sleep quality — consider setting messaging boundaries');
+    }
+
+    if (afterHoursPercentage > 40) {
+      insights.push(`${afterHoursPercentage}% of messages sent after 9pm — work-life boundary appears blurred`);
+    }
+
+    if (highVolumeDay) {
+      insights.push(`High message volume today (${messagesSentToday} sent) — ensure you\'re taking breaks`);
+    }
+
+    if (constantAvailability) {
+      insights.push('Constant messaging availability detected — digital detox periods could benefit mental wellness');
+    }
+
+    const processedData: WhatsAppData = {
+      messagesSentToday,
+      messagesReceivedToday,
+      avgMessagesPerDay,
+      peakMessageHours,
+      afterHoursPercentage,
+      lateNightMessages,
+      avgResponseTimeMinutes: null, // Would need more detailed analysis
+      fastResponderRate: 0,
+      activeConversations: chats.length,
+      topContactsCount: Math.min(chats.length, 10),
+      stressIndicators: {
+        constantAvailability,
+        lateNightActivity: lateNightMessages,
+        highVolumeDay,
+        shortResponses: false, // Would need message length analysis
+      },
+      communicationBalance,
+      workLifeBoundary,
+      insights,
+      rawData: { chatCount: chats.length, totalMessages },
+    };
+
+    return {
+      source: 'whatsapp',
+      available: true,
+      data: processedData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: totalMessages,
+    };
+  } catch (error) {
+    console.error('[Ecosystem Fetcher] Error fetching WhatsApp data:', error);
+    return {
+      source: 'whatsapp',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============================================================================
 // MAIN FETCH FUNCTION
 // ============================================================================
 
@@ -1373,7 +1832,7 @@ export async function fetchAllEcosystemData(
   const startTime = Date.now();
 
   // Fetch all data sources in parallel
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop] = await Promise.all([
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, whatsapp] = await Promise.all([
     fetchBloodBiomarkers(email, planType),
     fetchOuraData(email, options?.startDate, options?.endDate),
     fetchDexcomData(email, options?.startDate, options?.endDate),
@@ -1383,6 +1842,8 @@ export async function fetchAllEcosystemData(
     fetchOutlookPatterns(email),
     fetchTeamsPatterns(email),
     fetchWhoopData(email),
+    fetchSpotifyData(email),
+    fetchWhatsAppData(email),
   ]);
 
   const result: EcosystemFetchResult = {
@@ -1395,9 +1856,11 @@ export async function fetchAllEcosystemData(
     outlook,
     teams,
     whoop,
+    spotify,
+    whatsapp,
     fetchTimestamp: new Date().toISOString(),
-    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop].filter(s => s.available).length,
-    totalSources: 9,
+    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, whatsapp].filter(s => s.available).length,
+    totalSources: 11,
   };
 
   const duration = Date.now() - startTime;

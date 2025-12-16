@@ -14,11 +14,15 @@ import {
   fetchWhoopData,
   fetchGmailPatterns,
   fetchSlackPatterns,
+  fetchSpotifyData,
+  fetchWhatsAppData,
   OuraData,
   DexcomData,
   WhoopData,
   GmailPatterns,
   SlackPatterns,
+  SpotifyData,
+  WhatsAppData,
 } from './ecosystem-fetcher';
 import { sendInsightNotification } from './onesignal-service';
 
@@ -42,7 +46,9 @@ export type InsightType =
   | 'deep_focus_window'
   | 'energy_prediction'
   | 'sleep_improvement'
-  | 'general_health';
+  | 'general_health'
+  | 'mood_indicator'
+  | 'communication_pattern';
 
 export type InsightSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -625,6 +631,183 @@ async function generateSlackInsights(
   return insights;
 }
 
+/**
+ * Generate Spotify mood insights from listening patterns
+ */
+async function generateSpotifyInsights(
+  email: string,
+  spotifyData: SpotifyData
+): Promise<GeneratedInsight[]> {
+  const insights: GeneratedInsight[] = [];
+
+  // Low valence (sad/melancholy music)
+  if (spotifyData.avgValence < 0.3) {
+    insights.push({
+      insight_type: 'mood_indicator',
+      title: 'Music Reflects Lower Mood',
+      message: `Your recent music choices show a preference for melancholy tracks (valence ${Math.round(spotifyData.avgValence * 100)}%). Music both reflects and influences emotional state.`,
+      severity: 'medium',
+      actionable_recommendation:
+        'Consider creating a playlist with more uplifting music to positively influence mood.',
+      source_provider: 'spotify',
+      source_data_type: 'listening_history',
+      context_data: {
+        avgValence: spotifyData.avgValence,
+        avgEnergy: spotifyData.avgEnergy,
+        inferredMood: spotifyData.inferredMood,
+        moodConfidence: spotifyData.moodConfidence,
+      },
+    });
+  }
+
+  // High emotional volatility
+  if (spotifyData.emotionalVolatility === 'high') {
+    insights.push({
+      insight_type: 'mood_indicator',
+      title: 'Varied Emotional Music Choices',
+      message:
+        'Your music selections show high emotional variability — this may reflect mood fluctuations or diverse listening contexts.',
+      severity: 'low',
+      actionable_recommendation:
+        'If you notice mood swings, consider journaling alongside your music listening patterns.',
+      source_provider: 'spotify',
+      source_data_type: 'audio_features',
+      context_data: {
+        emotionalVolatility: spotifyData.emotionalVolatility,
+        avgValence: spotifyData.avgValence,
+      },
+    });
+  }
+
+  // Late night listening
+  if (spotifyData.lateNightListening) {
+    insights.push({
+      insight_type: 'sleep_alert',
+      title: 'Late Night Music Activity',
+      message:
+        'Significant listening activity detected after 11pm — this may indicate difficulty sleeping or late-night stress.',
+      severity: 'low',
+      actionable_recommendation:
+        'Try calming music 30 minutes before bed, then silence for optimal sleep onset.',
+      source_provider: 'spotify',
+      source_data_type: 'listening_history',
+      context_data: {
+        lateNightListening: true,
+        listeningHours: spotifyData.listeningHours,
+      },
+    });
+  }
+
+  // Anxious mood (low valence + high energy)
+  if (spotifyData.inferredMood === 'anxious' && spotifyData.moodConfidence > 0.6) {
+    insights.push({
+      insight_type: 'stress_indicator',
+      title: 'Music Suggests Anxious State',
+      message:
+        'Your recent music has high energy but low positivity — a pattern often associated with stress or anxiety.',
+      severity: 'medium',
+      actionable_recommendation:
+        'Consider trying calming ambient music or guided meditation tracks.',
+      source_provider: 'spotify',
+      source_data_type: 'audio_features',
+      context_data: {
+        inferredMood: spotifyData.inferredMood,
+        avgEnergy: spotifyData.avgEnergy,
+        avgValence: spotifyData.avgValence,
+      },
+    });
+  }
+
+  return insights;
+}
+
+/**
+ * Generate WhatsApp communication pattern insights
+ */
+async function generateWhatsAppInsights(
+  email: string,
+  whatsappData: WhatsAppData
+): Promise<GeneratedInsight[]> {
+  const insights: GeneratedInsight[] = [];
+
+  // Constant availability stress
+  if (whatsappData.stressIndicators.constantAvailability) {
+    insights.push({
+      insight_type: 'communication_pattern',
+      title: 'Always-On Messaging Pattern',
+      message:
+        'Your WhatsApp activity suggests constant availability throughout the day, which can contribute to decision fatigue.',
+      severity: 'medium',
+      actionable_recommendation:
+        'Consider setting specific times for checking messages and using "Do Not Disturb" mode during focus periods.',
+      source_provider: 'whatsapp',
+      source_data_type: 'messages',
+      context_data: {
+        constantAvailability: true,
+        peakHours: whatsappData.peakMessageHours,
+        avgMessagesPerDay: whatsappData.avgMessagesPerDay,
+      },
+    });
+  }
+
+  // Late night messaging
+  if (whatsappData.stressIndicators.lateNightActivity) {
+    insights.push({
+      insight_type: 'sleep_alert',
+      title: 'Late Night WhatsApp Activity',
+      message:
+        'Messaging activity detected after 11pm may be affecting your sleep quality and circadian rhythm.',
+      severity: 'medium',
+      actionable_recommendation:
+        'Try to complete important conversations by 10pm and enable "Do Not Disturb" after.',
+      source_provider: 'whatsapp',
+      source_data_type: 'messages',
+      context_data: {
+        lateNightActivity: true,
+        afterHoursPercentage: whatsappData.afterHoursPercentage,
+      },
+    });
+  }
+
+  // High volume day
+  if (whatsappData.stressIndicators.highVolumeDay) {
+    insights.push({
+      insight_type: 'stress_indicator',
+      title: 'High Communication Volume Today',
+      message: `You've sent ${whatsappData.messagesSentToday} messages today, which is above your typical volume. Ensure you're taking breaks.`,
+      severity: 'low',
+      actionable_recommendation:
+        'Take a 5-minute break every hour to reduce cognitive load from constant communication.',
+      source_provider: 'whatsapp',
+      source_data_type: 'messages',
+      context_data: {
+        messagesSentToday: whatsappData.messagesSentToday,
+        avgMessagesPerDay: whatsappData.avgMessagesPerDay,
+      },
+    });
+  }
+
+  // Blurred work-life boundary
+  if (whatsappData.workLifeBoundary === 'blurred') {
+    insights.push({
+      insight_type: 'communication_pattern',
+      title: 'Work-Life Communication Boundary',
+      message: `${whatsappData.afterHoursPercentage}% of your messages are sent after 9pm — this suggests blurred boundaries between work and personal time.`,
+      severity: 'medium',
+      actionable_recommendation:
+        'Consider setting clear communication cutoff times to protect personal recovery time.',
+      source_provider: 'whatsapp',
+      source_data_type: 'messages',
+      context_data: {
+        workLifeBoundary: whatsappData.workLifeBoundary,
+        afterHoursPercentage: whatsappData.afterHoursPercentage,
+      },
+    });
+  }
+
+  return insights;
+}
+
 // ============================================================================
 // MAIN TRIGGER FUNCTIONS
 // ============================================================================
@@ -704,7 +887,7 @@ export async function processAllProviders(email: string): Promise<{
   const errors: string[] = [];
 
   // Fetch data from all providers in parallel
-  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult] = await Promise.all([
+  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, whatsappResult] = await Promise.all([
     fetchOuraData(email).catch((e) => {
       errors.push(`Oura: ${e.message}`);
       return null;
@@ -723,6 +906,14 @@ export async function processAllProviders(email: string): Promise<{
     }),
     fetchSlackPatterns(email).catch((e) => {
       errors.push(`Slack: ${e.message}`);
+      return null;
+    }),
+    fetchSpotifyData(email).catch((e) => {
+      errors.push(`Spotify: ${e.message}`);
+      return null;
+    }),
+    fetchWhatsAppData(email).catch((e) => {
+      errors.push(`WhatsApp: ${e.message}`);
       return null;
     }),
   ]);
@@ -760,6 +951,22 @@ export async function processAllProviders(email: string): Promise<{
       slackResult.data as SlackPatterns
     );
     allInsights.push(...slackInsights);
+  }
+
+  if (spotifyResult?.available && spotifyResult.data) {
+    const spotifyInsights = await generateSpotifyInsights(
+      email,
+      spotifyResult.data as SpotifyData
+    );
+    allInsights.push(...spotifyInsights);
+  }
+
+  if (whatsappResult?.available && whatsappResult.data) {
+    const whatsappInsights = await generateWhatsAppInsights(
+      email,
+      whatsappResult.data as WhatsAppData
+    );
+    allInsights.push(...whatsappInsights);
   }
 
   // Store all generated insights

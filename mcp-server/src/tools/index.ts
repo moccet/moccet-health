@@ -170,6 +170,42 @@ export const toolDefinitions: Tool[] = [
     },
   },
 
+  // WhatsApp Tools (via Wassenger)
+  {
+    name: 'whatsapp_send_message',
+    description: 'Send a WhatsApp message to a patient/contact. HIGH RISK: Requires explicit user approval before sending.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phone: { type: 'string', description: 'Phone number with country code (e.g., +1234567890)' },
+        message: { type: 'string', description: 'Message text to send' },
+      },
+      required: ['phone', 'message'],
+    },
+  },
+  {
+    name: 'whatsapp_list_chats',
+    description: 'List recent WhatsApp conversations. LOW RISK: Auto-approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of chats to return (default 50)' },
+      },
+    },
+  },
+  {
+    name: 'whatsapp_get_conversation',
+    description: 'Get messages from a specific WhatsApp conversation. LOW RISK: Auto-approved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chatId: { type: 'string', description: 'Chat/conversation ID' },
+        limit: { type: 'number', description: 'Number of messages to return (default 100)' },
+      },
+      required: ['chatId'],
+    },
+  },
+
   // Health Booking Tools
   {
     name: 'booking_find_providers',
@@ -667,6 +703,89 @@ async function bookingSchedule(args: Record<string, any>, config: ServerConfig) 
 }
 
 // =============================================================================
+// WHATSAPP HANDLERS (via Wassenger)
+// =============================================================================
+
+function getWassengerApiKey(): string {
+  return process.env.WASSENGER_API_KEY || '';
+}
+
+// WhatsApp: Send Message
+async function whatsappSendMessage(args: Record<string, any>, config: ServerConfig) {
+  const { phone, message } = args;
+  const apiKey = getWassengerApiKey();
+
+  if (!apiKey) {
+    return { success: false, error: 'Wassenger API key not configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.wassenger.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Token': apiKey,
+      },
+      body: JSON.stringify({ phone, message }),
+    });
+
+    const result = await response.json();
+
+    // Log action
+    const supabase = getSupabase(config);
+    await supabase.from('agent_action_log').insert({
+      user_email: config.userEmail,
+      action_type: 'whatsapp_message_sent',
+      details: { phone, messagePreview: message.substring(0, 50) },
+    });
+
+    return { success: true, messageId: result.id, status: result.status };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// WhatsApp: List Chats
+async function whatsappListChats(args: Record<string, any>, config: ServerConfig) {
+  const { limit = 50 } = args;
+  const apiKey = getWassengerApiKey();
+
+  if (!apiKey) {
+    return { success: false, error: 'Wassenger API key not configured' };
+  }
+
+  try {
+    const response = await fetch(`https://api.wassenger.com/v1/chats?limit=${limit}`, {
+      headers: { 'Token': apiKey },
+    });
+    const chats = await response.json();
+    return { success: true, chats, count: chats.length };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// WhatsApp: Get Conversation
+async function whatsappGetConversation(args: Record<string, any>, config: ServerConfig) {
+  const { chatId, limit = 100 } = args;
+  const apiKey = getWassengerApiKey();
+
+  if (!apiKey) {
+    return { success: false, error: 'Wassenger API key not configured' };
+  }
+
+  try {
+    const response = await fetch(`https://api.wassenger.com/v1/chats/${chatId}/messages?limit=${limit}`, {
+      headers: { 'Token': apiKey },
+    });
+    const messages = await response.json();
+    return { success: true, messages, count: messages.length };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// =============================================================================
 // EXPORT HANDLERS
 // =============================================================================
 
@@ -683,4 +802,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   booking_find_providers: bookingFindProviders,
   booking_check_insurance: bookingCheckInsurance,
   booking_schedule: bookingSchedule,
+  whatsapp_send_message: whatsappSendMessage,
+  whatsapp_list_chats: whatsappListChats,
+  whatsapp_get_conversation: whatsappGetConversation,
 };

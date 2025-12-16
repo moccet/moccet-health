@@ -66,9 +66,17 @@ function detectEmptyOrPlaceholderSections(plan: any): string[] {
       issues.push('Nutrition Guidance > Overview is too brief or empty');
     }
 
-    // Check word count (not character count) - should be 30-50 words
-    const wordCount = ng.calorieGuidance?.split(/\s+/).filter(w => w.length > 0).length || 0;
-    if (!ng.calorieGuidance || wordCount < 20) {
+    // Check calorie guidance - can be string or object with target/range/rationale
+    let calorieText = '';
+    if (typeof ng.calorieGuidance === 'string') {
+      calorieText = ng.calorieGuidance;
+    } else if (ng.calorieGuidance && typeof ng.calorieGuidance === 'object') {
+      // New format: { target, range, rationale }
+      const cg = ng.calorieGuidance as { target?: string; range?: string; rationale?: string };
+      calorieText = [cg.target, cg.range, cg.rationale].filter(Boolean).join(' ');
+    }
+    const wordCount = calorieText.split(/\s+/).filter((w: string) => w.length > 0).length;
+    if (!calorieText || wordCount < 10) {
       issues.push('Nutrition Guidance > Calorie Guidance is missing or too brief');
     }
   }

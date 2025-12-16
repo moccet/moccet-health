@@ -47,7 +47,7 @@ export interface HistoryChange {
 
 // Gmail Pub/Sub topic - must be created in Google Cloud Console
 // Format: projects/{project-id}/topics/{topic-name}
-const PUBSUB_TOPIC = process.env.GMAIL_PUBSUB_TOPIC || 'projects/moccet-project/topics/gmail-notifications';
+const PUBSUB_TOPIC = process.env.GMAIL_PUBSUB_TOPIC || 'projects/moccet-bdae2/topics/gmail-notifications';
 
 // Watch expiration is 7 days, renew 1 day before
 const WATCH_RENEWAL_BUFFER_MS = 24 * 60 * 60 * 1000; // 1 day

@@ -237,7 +237,7 @@ async function storeEmailDraft(
       confidence_score: classification?.confidence || null,
       status: gmailDraftId ? 'created' : 'pending',
       reasoning_steps: [draft.reasoning],
-      generation_model: 'claude-3-5-sonnet-20241022',
+      generation_model: 'claude-sonnet-4-20250514',
       gmail_created_at: gmailDraftId ? new Date().toISOString() : null,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     })
@@ -389,7 +389,7 @@ Respond with ONLY the JSON object.`;
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     });

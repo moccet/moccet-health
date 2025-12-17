@@ -525,6 +525,48 @@ function isEmailFromSelf(fromEmail: string, userEmail: string): boolean {
 }
 
 /**
+ * Check if user has replied in a thread after a specific message
+ * Used to determine if an email should be "Awaiting Reply" instead of "To Respond"
+ */
+async function hasUserRepliedInThread(
+  gmail: gmail_v1.Gmail,
+  threadId: string,
+  messageInternalDate: string,
+  userEmail: string
+): Promise<boolean> {
+  try {
+    // Get full thread
+    const threadResponse = await gmail.users.threads.get({
+      userId: 'me',
+      id: threadId,
+      format: 'metadata',
+      metadataHeaders: ['From', 'Date'],
+    });
+
+    const messages = threadResponse.data.messages || [];
+    const messageDate = parseInt(messageInternalDate);
+
+    // Check if any message after this one is from the user
+    for (const msg of messages) {
+      const msgDate = parseInt(msg.internalDate || '0');
+      if (msgDate <= messageDate) continue; // Skip messages before/at current
+
+      const headers = msg.payload?.headers || [];
+      const fromHeader = headers.find(h => h.name?.toLowerCase() === 'from')?.value || '';
+
+      if (isEmailFromSelf(fromHeader, userEmail)) {
+        return true; // User replied after this email
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error('[LabelManager] Error checking thread replies:', error);
+    return false;
+  }
+}
+
+/**
  * Backfill labels for existing emails
  * Called after label setup to label recent emails
  */
@@ -627,11 +669,31 @@ export async function backfillExistingEmails(
         // Classify email
         const classification = await classifyEmailWithLabeling(emailToClassify);
 
+        // Check if user has already replied in this thread
+        // If so, override to "awaiting_reply" regardless of classification
+        let finalLabel = classification.moccetLabel;
+        let labelReasoning = classification.labelReasoning;
+
+        if (emailResponse.data.threadId && emailResponse.data.internalDate) {
+          const userReplied = await hasUserRepliedInThread(
+            gmail,
+            emailResponse.data.threadId,
+            emailResponse.data.internalDate,
+            userEmail
+          );
+
+          if (userReplied) {
+            finalLabel = 'awaiting_reply';
+            labelReasoning = 'User has already replied in this thread';
+            console.log(`[LabelManager] Override to awaiting_reply - user replied in thread: ${subject.slice(0, 30)}`);
+          }
+        }
+
         // Apply label
         const applyResult = await applyLabelToEmail(
           userEmail,
           msg.id,
-          classification.moccetLabel,
+          finalLabel,
           userCode,
           {
             from: fromEmail,
@@ -639,13 +701,13 @@ export async function backfillExistingEmails(
             threadId: emailResponse.data.threadId || '',
             source: 'heuristic',
             confidence: classification.confidence,
-            reasoning: `Backfill: ${classification.labelReasoning}`,
+            reasoning: `Backfill: ${labelReasoning}`,
           }
         );
 
         if (applyResult.success) {
           labeled++;
-          console.log(`[LabelManager] Labeled "${subject.slice(0, 30)}..." as ${classification.moccetLabel}`);
+          console.log(`[LabelManager] Labeled "${subject.slice(0, 30)}..." as ${finalLabel}`);
         } else {
           errors.push(`Failed to label ${msg.id}: ${applyResult.error}`);
         }

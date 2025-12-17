@@ -60,9 +60,12 @@ async function createGmailClient(
   userEmail: string,
   userCode?: string
 ): Promise<gmail_v1.Gmail | null> {
+  console.log(`[GmailPush] Creating Gmail client for ${userEmail} (code: ${userCode || 'none'})`);
+
   const { token, error } = await getAccessToken(userEmail, 'gmail', userCode);
   if (!token || error) {
-    console.error('[GmailPush] Failed to get token:', error);
+    console.error(`[GmailPush] Failed to get token for ${userEmail}:`, error);
+    console.error(`[GmailPush] This usually means: 1) Token expired and no refresh token, 2) Token not found for this email/code`);
     return null;
   }
 

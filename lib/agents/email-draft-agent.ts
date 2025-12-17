@@ -14,9 +14,9 @@
 
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import OpenAI from 'openai';
-import { google, gmail_v1 } from 'googleapis';
+import { gmail_v1 } from 'googleapis';
 import { createAdminClient } from '@/lib/supabase/server';
-import { getAccessToken } from '@/lib/services/token-manager';
+import { createValidatedGmailClient } from '@/lib/services/gmail-client';
 import { EmailStyleProfile, getEmailStyle } from '@/lib/services/email-style-learner';
 import { EmailClassification, EmailToClassify, classifyEmail } from '@/lib/services/email-classifier';
 import { getUserFineTunedModel } from '@/lib/services/email-fine-tuning';
@@ -150,19 +150,19 @@ async function createGmailClient(
   userEmail: string,
   userCode?: string
 ): Promise<gmail_v1.Gmail | null> {
-  const { token, error } = await getAccessToken(userEmail, 'gmail', userCode);
-  if (!token || error) {
+  // Use validated client to ensure token actually works
+  const { gmail, error, wasRefreshed } = await createValidatedGmailClient(userEmail, userCode);
+
+  if (!gmail) {
     console.error('[EmailDraftAgent] Failed to get Gmail token:', error);
     return null;
   }
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
-  oauth2Client.setCredentials({ access_token: token });
+  if (wasRefreshed) {
+    console.log(`[EmailDraftAgent] Token was auto-refreshed for ${userEmail}`);
+  }
 
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+  return gmail;
 }
 
 /**
@@ -465,10 +465,45 @@ async function initializeNode(state: EmailDraftState): Promise<Partial<EmailDraf
 }
 
 /**
+ * Check if there's already a pending draft for this thread
+ */
+async function hasPendingDraftForThread(
+  userEmail: string,
+  threadId: string
+): Promise<boolean> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from('email_drafts')
+    .select('id')
+    .eq('user_email', userEmail)
+    .eq('original_thread_id', threadId)
+    .in('status', ['pending', 'created'])
+    .limit(1)
+    .maybeSingle();
+
+  return !!data;
+}
+
+/**
  * Classify node - Determine if email needs response
  */
 async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
   console.log('[EmailDraftAgent] Classifying email...');
+
+  // Check if there's already a pending draft for this thread
+  const hasPendingDraft = await hasPendingDraftForThread(
+    state.userEmail,
+    state.originalEmail.threadId
+  );
+
+  if (hasPendingDraft) {
+    console.log(`[EmailDraftAgent] Skipping - already have pending draft for thread ${state.originalEmail.threadId}`);
+    return {
+      status: 'skipped',
+      reasoning: ['Already have a pending draft for this thread - skipping to avoid duplicates'],
+    };
+  }
 
   const emailToClassify: EmailToClassify = {
     ...state.originalEmail,
@@ -559,6 +594,11 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     const gmail = await createGmailClient(state.userEmail, state.userCode);
     if (gmail) {
       gmailDraftId = await createGmailDraft(gmail, state.originalEmail, state.generatedDraft);
+      if (!gmailDraftId) {
+        console.error(`[EmailDraftAgent] Failed to create Gmail draft for ${state.userEmail} - draft will be stored locally only`);
+      }
+    } else {
+      console.error(`[EmailDraftAgent] Gmail client creation failed for ${state.userEmail} - token may be expired`);
     }
   }
 

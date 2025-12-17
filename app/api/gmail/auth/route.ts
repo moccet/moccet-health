@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const scopes = [
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.compose', // Allow creating drafts
+      'https://www.googleapis.com/auth/gmail.labels',  // Create/manage labels
+      'https://www.googleapis.com/auth/gmail.modify',  // Apply labels to messages
       'https://www.googleapis.com/auth/calendar.readonly',
       'https://www.googleapis.com/auth/calendar.events', // Allow creating/editing calendar events
       'https://www.googleapis.com/auth/userinfo.email'

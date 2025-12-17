@@ -20,11 +20,14 @@ import {
   getWatchSubscription,
   getHistoryChanges,
   filterNewInboxMessages,
+  filterSentMessages,
   updateHistoryId,
   HistoryChange,
 } from '@/lib/services/gmail-push';
-import { classifyEmail, EmailToClassify } from '@/lib/services/email-classifier';
+import { classifyEmailWithLabeling, LabeledEmailClassification } from '@/lib/services/email-classifier';
 import { runEmailDraftAgent, OriginalEmail } from '@/lib/agents/email-draft-agent';
+import { applyLabelToEmail, hasLabelsSetup, setupUserLabels } from '@/lib/services/gmail-label-manager';
+import { processSentMessage, processIncomingForReplyTracking } from '@/lib/services/sent-email-tracker';
 
 // =========================================================================
 // TYPES
@@ -132,12 +135,14 @@ async function getUserDraftSettings(userEmail: string): Promise<{
   maxDraftsPerDay: number;
   excludedSenders: string[];
   excludedDomains: string[];
+  autoLabelingEnabled: boolean;
+  trackSentForAwaitingReply: boolean;
 }> {
   const supabase = createAdminClient();
 
   const { data } = await supabase
     .from('email_draft_settings')
-    .select('auto_draft_enabled, max_drafts_per_day, excluded_senders, excluded_domains')
+    .select('auto_draft_enabled, max_drafts_per_day, excluded_senders, excluded_domains, auto_labeling_enabled, track_sent_for_awaiting_reply')
     .eq('user_email', userEmail)
     .maybeSingle();
 
@@ -146,6 +151,8 @@ async function getUserDraftSettings(userEmail: string): Promise<{
     maxDraftsPerDay: data?.max_drafts_per_day ?? 20,
     excludedSenders: data?.excluded_senders ?? [],
     excludedDomains: data?.excluded_domains ?? [],
+    autoLabelingEnabled: data?.auto_labeling_enabled ?? true,
+    trackSentForAwaitingReply: data?.track_sent_for_awaiting_reply ?? true,
   };
 }
 
@@ -192,28 +199,102 @@ function isSenderExcluded(
 }
 
 /**
- * Process a single new email
+ * Process a single new email with labeling
  */
 async function processNewEmail(
   userEmail: string,
   email: OriginalEmail,
-  userCode?: string
+  userCode?: string,
+  applyLabel: boolean = true
 ): Promise<void> {
   console.log(`[Webhook] Processing email: ${email.subject} from ${email.from}`);
 
   try {
-    // Run the draft agent
-    const result = await runEmailDraftAgent(userEmail, email, userCode);
+    // 1. Classify email with label
+    const emailToClassify = {
+      messageId: email.messageId,
+      threadId: email.threadId,
+      from: email.from,
+      fromName: email.fromName,
+      to: email.to,
+      subject: email.subject,
+      body: email.body,
+      snippet: email.snippet,
+      labels: email.labels,
+      receivedAt: email.receivedAt,
+      isUnread: true,
+    };
 
-    if (result.success) {
-      console.log(`[Webhook] Draft created for email ${email.messageId}`);
-    } else if (result.skipped) {
-      console.log(`[Webhook] Email skipped: ${result.reasoning.join(', ')}`);
+    const classification = await classifyEmailWithLabeling(emailToClassify);
+
+    // 2. Check if this is a reply to a tracked thread (Awaiting Reply)
+    const replyTracking = await processIncomingForReplyTracking(
+      userEmail,
+      email.messageId,
+      email.threadId,
+      userCode
+    );
+
+    // If this was a reply to a tracked thread, the label might need adjustment
+    let finalLabel = classification.moccetLabel;
+    if (replyTracking.wasAwaiting) {
+      console.log(`[Webhook] Reply received for tracked thread ${email.threadId}`);
+      // Keep the classification label - it will handle actioned detection
+    }
+
+    // 3. Apply label to Gmail
+    if (applyLabel) {
+      const labelResult = await applyLabelToEmail(userEmail, email.messageId, finalLabel, userCode, {
+        from: email.from,
+        subject: email.subject,
+        threadId: email.threadId,
+        source: classification.labelSource,
+        confidence: classification.confidence,
+        reasoning: classification.labelReasoning,
+      });
+
+      if (labelResult.success) {
+        console.log(`[Webhook] Applied label "${finalLabel}" to ${email.messageId}`);
+      } else {
+        console.warn(`[Webhook] Failed to apply label: ${labelResult.error}`);
+      }
+    }
+
+    // 4. Run draft agent if email needs response
+    if (classification.needsResponse) {
+      const result = await runEmailDraftAgent(userEmail, email, userCode);
+
+      if (result.success) {
+        console.log(`[Webhook] Draft created for email ${email.messageId}`);
+      } else if (result.skipped) {
+        console.log(`[Webhook] Email skipped: ${result.reasoning.join(', ')}`);
+      } else {
+        console.error(`[Webhook] Draft generation failed: ${result.error}`);
+      }
     } else {
-      console.error(`[Webhook] Draft generation failed: ${result.error}`);
+      console.log(`[Webhook] No response needed, label: ${finalLabel}`);
     }
   } catch (error) {
     console.error(`[Webhook] Error processing email ${email.messageId}:`, error);
+  }
+}
+
+/**
+ * Process a sent email for "Awaiting Reply" tracking
+ */
+async function processSentEmail(
+  userEmail: string,
+  messageId: string,
+  threadId: string,
+  userCode?: string
+): Promise<void> {
+  console.log(`[Webhook] Processing sent email ${messageId}`);
+
+  try {
+    await processSentMessage(userEmail, messageId, threadId, userCode);
+    console.log(`[Webhook] Tracked sent email ${messageId} for reply`);
+  } catch (error) {
+    console.error(`[Webhook] Error tracking sent email ${messageId}:`, error);
   }
 }
 
@@ -253,17 +334,6 @@ export async function POST(request: NextRequest) {
     // Check user settings
     const settings = await getUserDraftSettings(userEmail);
 
-    if (!settings.enabled) {
-      console.log(`[Webhook] Auto-drafting disabled for ${userEmail}`);
-      return NextResponse.json({ success: true });
-    }
-
-    // Check daily limit
-    if (await hasHitDailyLimit(userEmail, settings.maxDraftsPerDay)) {
-      console.log(`[Webhook] Daily limit reached for ${userEmail}`);
-      return NextResponse.json({ success: true });
-    }
-
     // Get history changes since last processed
     const historyResult = await getHistoryChanges(
       userEmail,
@@ -276,11 +346,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Filter to new inbox messages only
-    const newMessages = filterNewInboxMessages(historyResult.changes);
+    // Filter to new inbox messages and sent messages
+    const newInboxMessages = filterNewInboxMessages(historyResult.changes);
+    const newSentMessages = settings.trackSentForAwaitingReply
+      ? filterSentMessages(historyResult.changes)
+      : [];
 
-    if (newMessages.length === 0) {
-      console.log('[Webhook] No new inbox messages to process');
+    if (newInboxMessages.length === 0 && newSentMessages.length === 0) {
+      console.log('[Webhook] No new messages to process');
 
       // Update history ID anyway
       if (historyResult.newHistoryId) {
@@ -290,7 +363,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    console.log(`[Webhook] Found ${newMessages.length} new messages to process`);
+    console.log(
+      `[Webhook] Found ${newInboxMessages.length} inbox, ${newSentMessages.length} sent messages`
+    );
 
     // Create Gmail client
     const gmail = await createGmailClient(userEmail, subscription.userCode);
@@ -300,9 +375,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Process each new message (limit concurrent processing)
-    const processingLimit = 3; // Process max 3 emails per notification
-    const messagesToProcess = newMessages.slice(0, processingLimit);
+    // Ensure labels are set up if labeling is enabled
+    if (settings.autoLabelingEnabled) {
+      const labelsReady = await hasLabelsSetup(userEmail);
+      if (!labelsReady) {
+        console.log(`[Webhook] Setting up labels for ${userEmail}`);
+        await setupUserLabels(userEmail, subscription.userCode);
+      }
+    }
+
+    // Process sent messages first (for Awaiting Reply tracking)
+    for (const change of newSentMessages.slice(0, 5)) {
+      processSentEmail(userEmail, change.messageId, change.threadId, subscription.userCode).catch(
+        (err) => console.error(`[Webhook] Sent email tracking error:`, err)
+      );
+    }
+
+    // Check daily limit for draft generation
+    const hitDraftLimit = await hasHitDailyLimit(userEmail, settings.maxDraftsPerDay);
+
+    // Process inbox messages
+    const processingLimit = 3;
+    const messagesToProcess = newInboxMessages.slice(0, processingLimit);
 
     for (const change of messagesToProcess) {
       // Fetch email content
@@ -318,9 +412,16 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Process the email (don't await - run in background)
-      // Note: In production, you'd want to use a proper queue system
-      processNewEmail(userEmail, email, subscription.userCode).catch((err) => {
+      // Process the email with labeling
+      // Skip draft generation if disabled or hit limit, but still apply labels
+      const shouldGenerateDraft = settings.enabled && !hitDraftLimit;
+
+      processNewEmail(
+        userEmail,
+        email,
+        subscription.userCode,
+        settings.autoLabelingEnabled
+      ).catch((err) => {
         console.error(`[Webhook] Background processing error:`, err);
       });
     }
@@ -333,7 +434,8 @@ export async function POST(request: NextRequest) {
     // Return 200 OK immediately (required by Pub/Sub)
     return NextResponse.json({
       success: true,
-      processed: messagesToProcess.length,
+      inboxProcessed: messagesToProcess.length,
+      sentTracked: newSentMessages.length,
     });
   } catch (error) {
     console.error('[Webhook] Error processing notification:', error);

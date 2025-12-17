@@ -3,11 +3,13 @@
  *
  * Determines if an email requires a response and classifies its type.
  * Uses a combination of heuristics and AI analysis.
+ * Maps classifications to Moccet labels for Gmail integration.
  *
  * @module lib/services/email-classifier
  */
 
 import OpenAI from 'openai';
+import { MoccetLabelName } from '@/lib/services/gmail-label-manager';
 
 // =========================================================================
 // TYPES
@@ -21,6 +23,12 @@ export interface EmailClassification {
   suggestedResponsePoints: string[];
   confidence: number;
   reasoning: string;
+}
+
+export interface LabeledEmailClassification extends EmailClassification {
+  moccetLabel: MoccetLabelName;
+  labelSource: 'ai' | 'heuristic';
+  labelReasoning: string;
 }
 
 export interface EmailToClassify {
@@ -216,6 +224,192 @@ function detectUrgencyLevel(text: string, subject: string): 'low' | 'medium' | '
   }
 
   return 'low';
+}
+
+// =========================================================================
+// LABEL-SPECIFIC HEURISTIC DETECTION
+// =========================================================================
+
+/**
+ * Detect if email is an automated notification
+ */
+function detectNotificationEmail(email: EmailToClassify): boolean {
+  const from = email.from.toLowerCase();
+  const subject = email.subject.toLowerCase();
+
+  const notificationSenders = [
+    'noreply', 'no-reply', 'donotreply', 'notifications@', 'alert@', 'alerts@',
+    'notify@', 'notification@', 'system@', 'automated@', 'mailer-daemon',
+    'postmaster@', 'bounce@', 'support@', 'info@', 'admin@',
+  ];
+
+  const notificationSubjects = [
+    'password reset', 'verify your', 'confirm your', 'your export',
+    'security alert', 'login attempt', 'account activity', 'subscription',
+    'your order', 'shipping update', 'delivery', 'receipt',
+  ];
+
+  const isNotificationSender = notificationSenders.some((s) => from.includes(s));
+  const isNotificationSubject = notificationSubjects.some((s) => subject.includes(s));
+
+  return isNotificationSender || isNotificationSubject;
+}
+
+/**
+ * Detect if email is a comment/mention from collaborative tools
+ */
+function detectCommentEmail(email: EmailToClassify): boolean {
+  const from = email.from.toLowerCase();
+  const subject = email.subject.toLowerCase();
+  const body = email.body.toLowerCase();
+
+  const commentSenders = [
+    'docs-noreply@google.com', 'comments-noreply@google.com',
+    'notify@figma.com', 'noreply@notion.so', 'notifications@linear.app',
+    'noreply@asana.com', 'noreply@monday.com', 'noreply@trello.com',
+    'noreply@miro.com', 'no-reply@slack.com', 'notifications@github.com',
+    'jira@', 'confluence@', '@atlassian.net', '@clickup.com',
+  ];
+
+  const commentPatterns = [
+    /mentioned you/i, /commented on/i, /replied to your comment/i,
+    /assigned you/i, /tagged you/i, /shared.*with you/i,
+    /left a comment/i, /new comment/i, /added a comment/i,
+  ];
+
+  const isCommentSender = commentSenders.some((s) => from.includes(s));
+  const hasCommentPattern = commentPatterns.some((p) => p.test(subject) || p.test(body));
+
+  return isCommentSender || hasCommentPattern;
+}
+
+/**
+ * Detect if email is a calendar/meeting update
+ */
+function detectMeetingUpdateEmail(email: EmailToClassify): boolean {
+  const subject = email.subject.toLowerCase();
+  const from = email.from.toLowerCase();
+
+  const meetingPatterns = [
+    /^invitation:/i, /^updated invitation:/i, /^canceled:/i,
+    /^accepted:/i, /^declined:/i, /^tentative:/i,
+    /event (updated|canceled|cancelled)/i, /meeting (request|invite)/i,
+    /calendar invite/i, /rescheduled/i, /new time/i,
+  ];
+
+  const calendarSenders = [
+    'calendar-notification@google.com', 'noreply@calendar.google.com',
+    '@outlook.com', '@microsoft.com', 'calendly', 'cal.com',
+  ];
+
+  const isMeetingSubject = meetingPatterns.some((p) => p.test(subject));
+  const isCalendarSender = calendarSenders.some((s) => from.includes(s));
+
+  return isMeetingSubject || isCalendarSender;
+}
+
+/**
+ * Detect if email is marketing/promotional
+ */
+function detectMarketingEmail(email: EmailToClassify): boolean {
+  const subject = email.subject.toLowerCase();
+  const body = email.body.toLowerCase();
+  const labels = email.labels;
+
+  // Check Gmail category
+  if (labels.includes('CATEGORY_PROMOTIONS')) {
+    return true;
+  }
+
+  const marketingPatterns = [
+    /unsubscribe/i, /opt.?out/i, /manage.*preferences/i,
+    /\d+%\s*off/i, /sale/i, /deal/i, /discount/i,
+    /limited time/i, /exclusive offer/i, /don't miss/i,
+    /newsletter/i, /weekly digest/i, /monthly update/i,
+  ];
+
+  return marketingPatterns.some((p) => p.test(subject) || p.test(body));
+}
+
+/**
+ * Detect if email indicates conversation is finished (Actioned)
+ */
+function detectActionedEmail(email: EmailToClassify): boolean {
+  const body = email.body.toLowerCase().trim();
+  const subject = email.subject.toLowerCase();
+
+  // Short acknowledgment patterns (typically < 100 chars)
+  const shortAcknowledgments = body.length < 150;
+
+  const closurePatterns = [
+    /^thanks?[!.\s]*$/i, /^thank you[!.\s]*$/i, /^cheers[!.\s]*$/i,
+    /^got it[!.\s]*$/i, /^will do[!.\s]*$/i, /^sounds good[!.\s]*$/i,
+    /^perfect[!.\s]*$/i, /^great[!.\s]*$/i, /^awesome[!.\s]*$/i,
+    /all good/i, /no further action/i, /this is resolved/i,
+    /issue fixed/i, /problem solved/i, /that's all/i,
+    /^approved[!.\s]*$/i, /^confirmed[!.\s]*$/i, /^done[!.\s]*$/i,
+    /^completed[!.\s]*$/i, /^noted[!.\s]*$/i, /^received[!.\s]*$/i,
+  ];
+
+  // Closure with thanks pattern
+  const thanksWithClosure = /thank.*(?:all good|perfect|great|sorted|resolved)/i.test(body);
+
+  // Check for closure patterns
+  const hasClosure = closurePatterns.some((p) => p.test(body));
+
+  // Short acknowledgment with closure-like content
+  if (shortAcknowledgments && hasClosure) {
+    return true;
+  }
+
+  if (thanksWithClosure) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Map classification result to Moccet label using heuristics
+ */
+function mapToLabelHeuristic(
+  email: EmailToClassify,
+  classification: EmailClassification
+): { label: MoccetLabelName; reasoning: string } {
+  // Check specific types first (order matters - more specific first)
+
+  // 1. Meeting updates
+  if (detectMeetingUpdateEmail(email)) {
+    return { label: 'meeting_update', reasoning: 'Calendar/meeting related email' };
+  }
+
+  // 2. Comments from collaborative tools
+  if (detectCommentEmail(email)) {
+    return { label: 'comment', reasoning: 'Comment/mention from collaborative tool' };
+  }
+
+  // 3. Marketing/promotional
+  if (detectMarketingEmail(email)) {
+    return { label: 'marketing', reasoning: 'Marketing/promotional content' };
+  }
+
+  // 4. Automated notifications
+  if (detectNotificationEmail(email)) {
+    return { label: 'notifications', reasoning: 'Automated system notification' };
+  }
+
+  // 5. Actioned/closed conversation
+  if (detectActionedEmail(email)) {
+    return { label: 'actioned', reasoning: 'Conversation appears resolved' };
+  }
+
+  // 6. Based on classification result
+  if (classification.needsResponse) {
+    return { label: 'to_respond', reasoning: 'Requires reply or action' };
+  }
+
+  // 7. Default to FYI
+  return { label: 'fyi', reasoning: 'Informational, no response needed' };
 }
 
 // =========================================================================
@@ -438,3 +632,42 @@ export async function classifyEmails(
 
   return results;
 }
+
+// =========================================================================
+// LABELED CLASSIFICATION (with Moccet label mapping)
+// =========================================================================
+
+/**
+ * Classify an email and return with Moccet label
+ * This is the main function to use for the labeling system
+ */
+export async function classifyEmailWithLabeling(
+  email: EmailToClassify,
+  options?: ClassificationOptions
+): Promise<LabeledEmailClassification> {
+  // Get base classification
+  const classification = await classifyEmail(email, options);
+
+  // Map to Moccet label using heuristics
+  const { label, reasoning } = mapToLabelHeuristic(email, classification);
+
+  console.log(`[EmailClassifier] Label: ${label} - ${reasoning}`);
+
+  return {
+    ...classification,
+    moccetLabel: label,
+    labelSource: 'heuristic',
+    labelReasoning: reasoning,
+  };
+}
+
+/**
+ * Re-export label detection functions for external use
+ */
+export {
+  detectNotificationEmail,
+  detectCommentEmail,
+  detectMeetingUpdateEmail,
+  detectMarketingEmail,
+  detectActionedEmail,
+};

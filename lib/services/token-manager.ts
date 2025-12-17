@@ -219,12 +219,13 @@ export async function getAccessToken(
 
     // Check if token is expired and needs refresh
     if (tokenRecord.is_expired && tokenRecord.refresh_token) {
-      console.log(`[TokenManager] Token expired, attempting refresh for ${provider}`);
+      console.log(`[TokenManager] Token expired (expires_at check), attempting refresh for ${provider}`);
       // Pass userCode from the token record if available
       const refreshResult = await refreshToken(userEmail, provider, tokenRecord.user_code || userCode);
 
       if (!refreshResult.success) {
-        return { token: null, error: 'Token expired and refresh failed' };
+        console.error(`[TokenManager] Token refresh failed for ${userEmail}/${provider}: ${refreshResult.error}`);
+        return { token: null, error: `Token expired and refresh failed: ${refreshResult.error}` };
       }
 
       // Return the newly refreshed token
@@ -233,7 +234,13 @@ export async function getAccessToken(
 
     // Decrypt and return the access token
     const decryptedToken = decryptToken(tokenRecord.access_token);
-    return { token: decryptedToken };
+
+    // If expires_at is null or missing, log a warning (token expiry won't be detected)
+    if (!tokenRecord.expires_at) {
+      console.warn(`[TokenManager] Token for ${userEmail}/${provider} has no expires_at - expiry detection disabled`);
+    }
+
+    return { token: decryptedToken, refreshToken: tokenRecord.refresh_token ? decryptToken(tokenRecord.refresh_token) : undefined };
   } catch (error) {
     console.error('[TokenManager] Exception retrieving token:', error);
     return {
@@ -450,6 +457,61 @@ async function callProviderRefresh(
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  }
+}
+
+/**
+ * Get access token with validation - tries to use the token and refreshes if it fails
+ * Use this when you need to ensure the token actually works
+ */
+export async function getValidatedAccessToken(
+  userEmail: string,
+  provider: Provider,
+  userCode?: string,
+  validateFn?: (token: string) => Promise<boolean>
+): Promise<{ token: string | null; error?: string; wasRefreshed?: boolean }> {
+  // First, get the token normally
+  const result = await getAccessToken(userEmail, provider, userCode);
+
+  if (!result.token) {
+    return { token: null, error: result.error };
+  }
+
+  // If no validation function provided, return the token as-is
+  if (!validateFn) {
+    return { token: result.token, wasRefreshed: false };
+  }
+
+  // Try to validate the token
+  try {
+    const isValid = await validateFn(result.token);
+
+    if (isValid) {
+      return { token: result.token, wasRefreshed: false };
+    }
+
+    // Token is invalid, try to refresh
+    console.log(`[TokenManager] Token validation failed for ${userEmail}/${provider}, attempting refresh`);
+
+    const refreshResult = await refreshToken(userEmail, provider, userCode);
+
+    if (!refreshResult.success) {
+      console.error(`[TokenManager] Proactive refresh failed: ${refreshResult.error}`);
+      return { token: null, error: `Token invalid and refresh failed: ${refreshResult.error}` };
+    }
+
+    return { token: refreshResult.accessToken!, wasRefreshed: true };
+  } catch (error) {
+    // Validation threw an error - likely token is invalid
+    console.log(`[TokenManager] Token validation error for ${userEmail}/${provider}, attempting refresh`);
+
+    const refreshResult = await refreshToken(userEmail, provider, userCode);
+
+    if (!refreshResult.success) {
+      return { token: null, error: `Token validation error and refresh failed: ${refreshResult.error}` };
+    }
+
+    return { token: refreshResult.accessToken!, wasRefreshed: true };
   }
 }
 

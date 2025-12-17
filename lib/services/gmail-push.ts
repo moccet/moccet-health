@@ -7,9 +7,9 @@
  * @module lib/services/gmail-push
  */
 
-import { google, gmail_v1 } from 'googleapis';
-import { getAccessToken } from '@/lib/services/token-manager';
+import { gmail_v1 } from 'googleapis';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createValidatedGmailClient } from '@/lib/services/gmail-client';
 
 // =========================================================================
 // TYPES
@@ -62,20 +62,21 @@ async function createGmailClient(
 ): Promise<gmail_v1.Gmail | null> {
   console.log(`[GmailPush] Creating Gmail client for ${userEmail} (code: ${userCode || 'none'})`);
 
-  const { token, error } = await getAccessToken(userEmail, 'gmail', userCode);
-  if (!token || error) {
-    console.error(`[GmailPush] Failed to get token for ${userEmail}:`, error);
-    console.error(`[GmailPush] This usually means: 1) Token expired and no refresh token, 2) Token not found for this email/code`);
+  // Use validated client to ensure token actually works
+  // This will automatically refresh if the token is invalid
+  const { gmail, error, wasRefreshed } = await createValidatedGmailClient(userEmail, userCode);
+
+  if (!gmail) {
+    console.error(`[GmailPush] Failed to get Gmail client for ${userEmail}:`, error);
+    console.error(`[GmailPush] This usually means: 1) Token expired and refresh failed, 2) Token not found for this email/code`);
     return null;
   }
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
-  oauth2Client.setCredentials({ access_token: token });
+  if (wasRefreshed) {
+    console.log(`[GmailPush] Token was auto-refreshed for ${userEmail}`);
+  }
 
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+  return gmail;
 }
 
 // =========================================================================
@@ -87,13 +88,13 @@ async function createGmailClient(
  *
  * @param userEmail - User's email address
  * @param userCode - Optional user code
- * @param labelIds - Gmail labels to watch (default: INBOX)
+ * @param labelIds - Gmail labels to watch (default: INBOX and SENT for reply tracking)
  * @returns Watch result with historyId and expiration
  */
 export async function setupGmailWatch(
   userEmail: string,
   userCode?: string,
-  labelIds: string[] = ['INBOX']
+  labelIds: string[] = ['INBOX', 'SENT']
 ): Promise<WatchResult> {
   console.log(`[GmailPush] Setting up watch for ${userEmail}`);
 
@@ -292,6 +293,28 @@ export function filterNewInboxMessages(changes: HistoryChange[]): HistoryChange[
 
     // Exclude SPAM
     if (change.labelIds.includes('SPAM')) return false;
+
+    // Exclude TRASH
+    if (change.labelIds.includes('TRASH')) return false;
+
+    return true;
+  });
+}
+
+/**
+ * Filter changes to only include sent messages (user's outgoing emails)
+ * Used for tracking "Awaiting Reply" status
+ */
+export function filterSentMessages(changes: HistoryChange[]): HistoryChange[] {
+  return changes.filter((change) => {
+    // Only messageAdded
+    if (change.action !== 'messageAdded') return false;
+
+    // Must be in SENT
+    if (!change.labelIds.includes('SENT')) return false;
+
+    // Exclude DRAFT (not actually sent yet)
+    if (change.labelIds.includes('DRAFT')) return false;
 
     // Exclude TRASH
     if (change.labelIds.includes('TRASH')) return false;

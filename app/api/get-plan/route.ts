@@ -1,6 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// Transform nested biomarkers object to flat array for frontend
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformBloodAnalysis(analysis: any) {
+  if (!analysis) return null;
+
+  // If biomarkers is already an array, return as-is
+  if (Array.isArray(analysis.biomarkers)) {
+    return analysis;
+  }
+
+  // Transform nested object to flat array
+  if (analysis.biomarkers && typeof analysis.biomarkers === 'object') {
+    const flatBiomarkers: Array<{
+      name: string;
+      value: number | string | null;
+      unit?: string;
+      status: string;
+      category: string;
+      referenceRange?: string;
+    }> = [];
+
+    for (const [category, markers] of Object.entries(analysis.biomarkers)) {
+      if (markers && typeof markers === 'object') {
+        for (const [name, data] of Object.entries(markers as Record<string, any>)) {
+          if (data && typeof data === 'object') {
+            flatBiomarkers.push({
+              name,
+              value: data.value,
+              unit: data.unit,
+              status: data.status || 'Normal',
+              category,
+              referenceRange: data.referenceRange || data.range,
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      ...analysis,
+      biomarkers: flatBiomarkers,
+    };
+  }
+
+  return analysis;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -42,9 +89,9 @@ export async function GET(request: NextRequest) {
       console.log('[GET-PLAN DEBUG] Sample sage records:', debugQuery.data?.map(d => ({ email: d.email, uniqueCode: d.form_data?.uniqueCode })));
     }
 
-    // If not found in sage table, try forge table
-    if (error || !data) {
-      console.log('[GET-PLAN] Not found in sage table, trying forge table...');
+    // If not found in sage table OR sage has no plan, try forge table
+    if (error || !data || !data.sage_plan) {
+      console.log('[GET-PLAN] Not found in sage table or no sage_plan, trying forge table...');
       const forgeQuery = supabase
         .from('forge_onboarding_data')
         .select('forge_plan, lab_file_analysis, plan_generation_status, plan_generation_error, form_data, email');
@@ -88,7 +135,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         plan: forgeResult.data.forge_plan,
-        bloodAnalysis: forgeResult.data.lab_file_analysis,
+        bloodAnalysis: transformBloodAnalysis(forgeResult.data.lab_file_analysis),
         status: forgeResult.data.plan_generation_status || 'completed',
         error: forgeResult.data.plan_generation_error,
         gender: forgeResult.data.form_data?.gender,
@@ -101,7 +148,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       plan: data.sage_plan,
-      bloodAnalysis: data.lab_file_analysis,
+      bloodAnalysis: transformBloodAnalysis(data.lab_file_analysis),
       mealPlan: data.meal_plan,
       micronutrients: data.micronutrients,
       lifestyleIntegration: data.lifestyle_integration,

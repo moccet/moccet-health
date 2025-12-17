@@ -15,12 +15,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
+import { Client } from '@upstash/qstash';
 import {
   runAndSaveAnalysis,
   fetchFileFromUrl,
   AnalysisJobPayload
 } from '@/lib/services/blood-analyzer';
 import { sendPushNotification } from '@/lib/services/onesignal-service';
+import { createClient } from '@/lib/supabase/server';
 
 // This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 export const maxDuration = 800;
@@ -70,6 +72,60 @@ async function handler(request: NextRequest): Promise<NextResponse> {
       }
     });
 
+    // Step 7: Trigger plan generation now that blood analysis is ready
+    // This is the EVENT-DRIVEN approach - blood analysis completion triggers plan generation
+    console.log('[Step 4/4] Triggering plan generation with blood data...');
+    let planQueued = false;
+
+    try {
+      const supabase = await createClient();
+
+      // Get user's onboarding data to check if plan generation should be triggered
+      const { data: userData } = await supabase
+        .from('sage_onboarding_data')
+        .select('form_data, plan_generation_status, sage_plan')
+        .eq('email', email)
+        .single();
+
+      // Only trigger plan generation if:
+      // 1. We have user data with a uniqueCode
+      // 2. Plan hasn't already been generated
+      // 3. Plan isn't already in progress
+      const uniqueCode = userData?.form_data?.uniqueCode;
+      const fullName = userData?.form_data?.fullName || userData?.form_data?.name || 'User';
+      const status = userData?.plan_generation_status;
+      const hasPlan = userData?.sage_plan;
+
+      if (uniqueCode && !hasPlan && status !== 'completed' && status !== 'processing') {
+        const qstashToken = process.env.QSTASH_TOKEN;
+        if (qstashToken) {
+          const client = new Client({ token: qstashToken });
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
+
+          // Update status to queued
+          await supabase
+            .from('sage_onboarding_data')
+            .update({ plan_generation_status: 'queued' })
+            .eq('email', email);
+
+          // Queue plan generation - blood data is now ready!
+          await client.publishJSON({
+            url: `${baseUrl}/api/webhooks/qstash/generate-plan`,
+            body: { email, uniqueCode, fullName },
+            retries: 2,
+          });
+
+          planQueued = true;
+          console.log(`[Blood Analyzer] Plan generation queued for ${email} (blood data ready)`);
+        }
+      } else {
+        console.log(`[Blood Analyzer] Skipping plan generation - status: ${status}, hasPlan: ${!!hasPlan}, uniqueCode: ${!!uniqueCode}`);
+      }
+    } catch (planError) {
+      console.warn('[Blood Analyzer] Could not trigger plan generation:', planError);
+      // Don't fail the blood analysis if plan queueing fails
+    }
+
     const totalTimeMs = Date.now() - startTime;
     const totalTimeSec = (totalTimeMs / 1000).toFixed(1);
 
@@ -80,6 +136,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     console.log(`  Concerns: ${result.concerns.length}`);
     console.log(`  Processing time: ${totalTimeSec}s`);
     console.log(`  Notification sent: ${notificationSent > 0 ? 'Yes' : 'No'}`);
+    console.log(`  Plan generation queued: ${planQueued ? 'Yes' : 'No'}`);
     console.log(`========================================\n`);
 
     return NextResponse.json({
@@ -88,7 +145,8 @@ async function handler(request: NextRequest): Promise<NextResponse> {
       confidence: result.confidence,
       concernsCount: result.concerns.length,
       processingTimeMs: totalTimeMs,
-      notificationSent: notificationSent > 0
+      notificationSent: notificationSent > 0,
+      planQueued
     });
 
   } catch (error) {

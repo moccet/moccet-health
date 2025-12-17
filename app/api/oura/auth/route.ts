@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.OURA_CLIENT_ID;
-    const redirectUri = process.env.OURA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/oura/callback`;
+    // Use www.moccet.ai to match Oura developer portal redirect URI
+    const redirectUri = process.env.OURA_REDIRECT_URI || 'https://www.moccet.ai/api/oura/callback';
 
     // Get params from query
     const searchParams = request.nextUrl.searchParams;
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
-    // Request all available Oura scopes for comprehensive health data
+    // Request all available Oura scopes
     authUrl.searchParams.append('scope', 'email personal daily heartrate tag workout session spo2 ring_configuration stress heart_health');
     authUrl.searchParams.append('state', state);
 

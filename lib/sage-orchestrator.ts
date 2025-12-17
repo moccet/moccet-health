@@ -161,10 +161,16 @@ export async function runSageOrchestrator(
   console.log('[Sage Orchestrator] Lifestyle protocols complete');
 
   // ========================================================================
-  // PHASE 3: Meal Generation (Sequential - Planner then Enricher)
+  // PHASE 3: Meal Generation + Micronutrients (Parallel optimization)
   // ========================================================================
-  console.log('\n[Phase 3] Meal Plan Generation');
+  console.log('\n[Phase 3] Meal Plan + Micronutrients (Parallel)');
   console.log('-'.repeat(40));
+
+  // Micronutrients only needs biomarkerAnalysis, so run it in parallel with meal plan
+  const micronutrientInput: MicronutrientSpecialistInput = {
+    clientProfile,
+    biomarkerAnalysis,
+  };
 
   // Meal planner needs nutrition framework and biomarker analysis
   const mealPlannerInput: MealPlannerInput = {
@@ -173,12 +179,19 @@ export async function runSageOrchestrator(
     biomarkerAnalysis,
   };
 
-  const mealPlanResult = await runMealPlanner(mealPlannerInput);
+  // Run meal planner and micronutrients in parallel
+  const [mealPlanResult, micronutrients] = await Promise.all([
+    runMealPlanner(mealPlannerInput),
+    runMicronutrientSpecialist(micronutrientInput),
+  ]);
+
   costs.mealPlanner = ESTIMATED_COSTS.mealPlanner;
+  costs.micronutrientSpecialist = ESTIMATED_COSTS.micronutrientSpecialist;
 
   console.log('[Sage Orchestrator] Meal plan skeleton complete');
+  console.log('[Sage Orchestrator] Micronutrient recommendations complete');
 
-  // Recipe enricher adds detailed ingredients and instructions
+  // Recipe enricher adds detailed ingredients and instructions (sequential - needs meal plan)
   const recipeEnricherInput: RecipeEnricherInput = {
     clientProfile,
     mealPlanSkeleton: mealPlanResult.sampleMealPlan,
@@ -190,25 +203,9 @@ export async function runSageOrchestrator(
   console.log('[Sage Orchestrator] Recipe enrichment complete');
 
   // ========================================================================
-  // PHASE 4: Micronutrients (Can run parallel with recipe enrichment in future)
+  // PHASE 4: Final Assembly (Chief Nutritionist)
   // ========================================================================
-  console.log('\n[Phase 4] Micronutrient Analysis');
-  console.log('-'.repeat(40));
-
-  const micronutrientInput: MicronutrientSpecialistInput = {
-    clientProfile,
-    biomarkerAnalysis,
-  };
-
-  const micronutrients = await runMicronutrientSpecialist(micronutrientInput);
-  costs.micronutrientSpecialist = ESTIMATED_COSTS.micronutrientSpecialist;
-
-  console.log('[Sage Orchestrator] Micronutrient recommendations complete');
-
-  // ========================================================================
-  // PHASE 5: Final Assembly (Chief Nutritionist)
-  // ========================================================================
-  console.log('\n[Phase 5] Final Assembly');
+  console.log('\n[Phase 4] Final Assembly');
   console.log('-'.repeat(40));
 
   const chiefInput: ChiefNutritionistInput = {
@@ -226,9 +223,9 @@ export async function runSageOrchestrator(
   console.log('[Sage Orchestrator] Final assembly complete');
 
   // ========================================================================
-  // PHASE 6: Assemble Final Plan
+  // PHASE 5: Assemble Final Plan
   // ========================================================================
-  console.log('\n[Phase 6] Plan Assembly & Validation');
+  console.log('\n[Phase 5] Plan Assembly & Validation');
   console.log('-'.repeat(40));
 
   const rawPlan = assembleFinalPlan(

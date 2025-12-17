@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
 
     const clientId = process.env.OURA_CLIENT_ID;
     const clientSecret = process.env.OURA_CLIENT_SECRET;
-    const redirectUri = process.env.OURA_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL}/api/oura/callback`;
+    // Use www.moccet.ai to match Oura developer portal redirect URI
+    const redirectUri = process.env.OURA_REDIRECT_URI || 'https://www.moccet.ai/api/oura/callback';
 
     if (!clientId || !clientSecret) {
       throw new Error('Oura credentials not configured');

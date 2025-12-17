@@ -381,6 +381,97 @@ export async function notifyPaymentSuccess(
 }
 
 /**
+ * Sends Forge onboarding completion notification to Slack
+ */
+export async function notifyForgeOnboardingComplete(
+  email: string,
+  formData: {
+    fullName?: string;
+    age?: string;
+    gender?: string;
+    primaryGoal?: string;
+    trainingDays?: string;
+    trainingExperience?: string;
+    hasLabFile?: boolean;
+    uniqueCode: string;
+  }
+): Promise<boolean> {
+  const payload = {
+    text: `💪 New Forge Plan Submission: ${email}`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: '💪 New Forge Plan Submission',
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Name:*\n${formData.fullName || 'Not provided'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n${email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Age:*\n${formData.age || 'N/A'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Gender:*\n${formData.gender || 'N/A'}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Primary Goal:*\n${formData.primaryGoal || 'N/A'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Training Days:*\n${formData.trainingDays || 'N/A'} days/week`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Experience:*\n${formData.trainingExperience || 'N/A'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Lab File:*\n${formData.hasLabFile ? '✅ Uploaded' : '❌ None'}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Plan Code:* \`${formData.uniqueCode}\``,
+        },
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Submitted: <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return sendSlackNotification(payload);
+}
+
+/**
  * Sends plan generation queued notification to Slack
  */
 export async function notifyPlanQueued(

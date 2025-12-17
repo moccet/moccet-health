@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { devOnboardingStorage } from '@/lib/dev-storage';
+import { notifyForgeOnboardingComplete } from '@/lib/slack';
 
 // Generate a unique 8-character code
 function generateUniqueCode(): string {
@@ -219,6 +220,18 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('Onboarding data stored successfully in Supabase:', insertedData);
+
+      // Send Slack notification (don't await to not block response)
+      notifyForgeOnboardingComplete(data.email, {
+        fullName: data.fullName,
+        age: data.age,
+        gender: data.gender,
+        primaryGoal: data.primaryGoal,
+        trainingDays: data.trainingDays,
+        trainingExperience: data.trainingExperience,
+        hasLabFile: !!data.labFile,
+        uniqueCode: uniqueCode,
+      }).catch(err => console.error('[Slack] Failed to send notification:', err));
 
       // Return success response
       return NextResponse.json(

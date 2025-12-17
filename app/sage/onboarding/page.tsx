@@ -2096,8 +2096,11 @@ export default function SageOnboarding() {
       const uniqueCode = result.data?.uniqueCode;
       const userFirstName = formData.fullName.split(' ')[0];
 
-      // If lab files uploaded, analyze them first (on frontend)
-      if (formData.labFiles.length > 0) {
+      // If lab files uploaded, analyze them first
+      // Blood analysis completion will trigger plan generation automatically
+      const hasLabFiles = formData.labFiles.length > 0;
+
+      if (hasLabFiles) {
         console.log(`Uploading and analyzing ${formData.labFiles.length} lab file(s)...`);
         const labFormData = new FormData();
 
@@ -2112,36 +2115,41 @@ export default function SageOnboarding() {
             method: 'POST',
             body: labFormData,
           });
-          console.log('✅ Lab file analysis completed');
+          console.log('✅ Lab file analysis queued - plan generation will start when analysis completes');
         } catch (err) {
           console.error('Error analyzing lab files:', err);
-          // Continue anyway
+          // Continue anyway - will queue plan without blood data
         }
       }
 
-      // Queue async plan generation via QStash (doesn't include lab file anymore)
-      console.log('Queueing plan generation...');
+      // Only queue plan generation immediately if NO lab files were uploaded
+      // If lab files exist, the blood analysis completion webhook will trigger plan generation
+      if (!hasLabFiles) {
+        console.log('Queueing plan generation (no lab files)...');
 
-      const planFormData = new FormData();
-      planFormData.append('email', formData.email);
-      planFormData.append('uniqueCode', uniqueCode);
-      planFormData.append('fullName', userFirstName);
+        const planFormData = new FormData();
+        planFormData.append('email', formData.email);
+        planFormData.append('uniqueCode', uniqueCode);
+        planFormData.append('fullName', userFirstName);
 
-      const planResponse = await fetch('/api/generate-plan-async', {
-        method: 'POST',
-        body: planFormData,
-      });
+        const planResponse = await fetch('/api/generate-plan-async', {
+          method: 'POST',
+          body: planFormData,
+        });
 
-      if (!planResponse.ok) {
-        console.error('Failed to queue plan generation');
-        clearInterval(progressInterval);
-        setIsLoading(false);
-        alert('Failed to queue plan generation - please try again');
-        return;
+        if (!planResponse.ok) {
+          console.error('Failed to queue plan generation');
+          clearInterval(progressInterval);
+          setIsLoading(false);
+          alert('Failed to queue plan generation - please try again');
+          return;
+        }
+
+        const planResult = await planResponse.json();
+        console.log('✅ Plan generation queued:', planResult.message);
+      } else {
+        console.log('✅ Plan will be generated after blood analysis completes');
       }
-
-      const planResult = await planResponse.json();
-      console.log('✅ Plan generation queued:', planResult.message);
       setLoadingProgress(100);
 
       // Show success message - user will receive email when plan is ready

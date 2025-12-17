@@ -75,89 +75,44 @@ async function handler(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moccet.ai';
     const planUrl = `${baseUrl}/sage/personalised-plan?code=${uniqueCode}`;
 
-    // Step 0: Wait for blood analysis to complete (if uploaded)
-    console.log('[0/5] Checking for health data analysis...');
+    // Step 0: Check if blood analysis is available (no polling needed)
+    // EVENT-DRIVEN: This webhook is now triggered by blood analysis completion if lab files were uploaded
+    // Or immediately if no lab files were uploaded - so no waiting needed!
+    console.log('[0/3] Checking for blood analysis data...');
 
-    let bloodAnalysisComplete = false;
-    let pollCount = 0;
-    const maxPolls = 20; // 20 polls * 30 seconds = 10 minutes max wait
+    // Quick check if blood data exists (no waiting)
+    let hasBloodAnalysis = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const devData = devOnboardingStorage.get(email) as any;
 
-    while (!bloodAnalysisComplete && pollCount < maxPolls) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let hasBloodAnalysis = false;
+    if (devData?.blood_analysis) {
+      hasBloodAnalysis = true;
+      console.log('[OK] Blood analysis found in dev storage');
+    } else {
+      const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          const { data } = await supabase
+            .from('sage_onboarding_data')
+            .select('lab_file_analysis')
+            .eq('email', email)
+            .single();
 
-      // Check dev storage first using EMAIL
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const devData = devOnboardingStorage.get(email) as any;
-      if (devData?.blood_analysis) {
-        hasBloodAnalysis = true;
-        console.log('[OK] Blood analysis found in dev storage');
-      } else {
-        // Check Supabase
-        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-          try {
-            const supabase = await createClient();
-            const { data } = await supabase
-              .from('sage_onboarding_data')
-              .select('lab_file_analysis')
-              .eq('email', email)
-              .single();
-
-            if (data?.lab_file_analysis) {
-              hasBloodAnalysis = true;
-              console.log('[OK] Blood analysis found in Supabase');
-            }
-          } catch (error) {
-            // No blood analysis yet or no Supabase
+          if (data?.lab_file_analysis) {
+            hasBloodAnalysis = true;
+            console.log('[OK] Blood analysis found in database');
           }
+        } catch {
+          // No blood analysis available
         }
-      }
-
-      // Check if user even uploaded a lab file
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userData = devData || (async () => {
-        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-          try {
-            const supabase = await createClient();
-            const { data } = await supabase
-              .from('sage_onboarding_data')
-              .select('*')
-              .eq('email', email)
-              .single();
-            return data;
-          } catch {
-            return null;
-          }
-        }
-        return null;
-      })();
-
-      const hasLabFile = userData?.form_data?.hasLabFile || devData?.form_data?.hasLabFile;
-
-      if (!hasLabFile) {
-        console.log('[INFO] No lab file uploaded, skipping blood analysis wait');
-        bloodAnalysisComplete = true;
-        break;
-      }
-
-      if (hasBloodAnalysis) {
-        bloodAnalysisComplete = true;
-        break;
-      }
-
-      pollCount++;
-      if (pollCount < maxPolls) {
-        console.log(`[INFO] Blood analysis not ready yet, waiting 30 seconds... (attempt ${pollCount}/${maxPolls})`);
-        await new Promise(resolve => setTimeout(resolve, 30000));
       }
     }
 
-    if (!bloodAnalysisComplete && pollCount >= maxPolls) {
-      console.log('[WARN] Blood analysis did not complete within 10 minutes, proceeding without it');
+    if (hasBloodAnalysis) {
+      console.log('[OK] Proceeding with blood analysis data');
     } else {
-      console.log('[OK] Ready to generate plan with all available data');
+      console.log('[INFO] No blood analysis data - generating plan without it');
     }
 
     // Import the generation functions directly

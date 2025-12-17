@@ -240,54 +240,15 @@ async function handler(request: NextRequest) {
     } else if (hasExistingAnalysis) {
       console.log('[OK] Blood analysis already available, proceeding immediately');
     } else {
-      // Only poll if a lab file was uploaded but analysis isn't ready yet
-      let bloodAnalysisComplete = false;
-      let pollCount = 0;
-      const maxPolls = 20; // 20 polls * 30 seconds = 10 minutes max wait
+      // EVENT-DRIVEN: This webhook is triggered by blood analysis completion if lab files were uploaded
+      // No polling needed - if we get here with a lab file, blood analysis should be ready
+      // (or the user wants to proceed without it)
+      console.log('[INFO] Lab file was uploaded - checking if blood analysis is ready...');
 
       if (initialUserData?.lab_file_analysis) {
-        bloodAnalysisComplete = true;
-        console.log('[OK] Blood analysis already available');
-      }
-
-      while (!bloodAnalysisComplete && pollCount < maxPolls) {
-        pollCount++;
-        console.log(`[INFO] Blood analysis not ready yet, waiting 30 seconds... (attempt ${pollCount}/${maxPolls})`);
-        await new Promise(resolve => setTimeout(resolve, 30000));
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const devData = devOnboardingStorage.get(email) as any;
-        if (devData?.lab_file_analysis) {
-          bloodAnalysisComplete = true;
-          console.log('[OK] Blood analysis found in dev storage');
-          break;
-        }
-
-        const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (hasSupabase && process.env.FORCE_DEV_MODE !== 'true') {
-          try {
-            const supabase = await createClient();
-            const { data } = await supabase
-              .from('sage_onboarding_data')
-              .select('lab_file_analysis')
-              .eq('email', email)
-              .single();
-
-            if (data?.lab_file_analysis) {
-              bloodAnalysisComplete = true;
-              console.log('[OK] Blood analysis found in Supabase');
-              break;
-            }
-          } catch {
-            // Continue polling
-          }
-        }
-      }
-
-      if (!bloodAnalysisComplete && pollCount >= maxPolls) {
-        console.log('[WARN] Blood analysis did not complete within 10 minutes, proceeding without it');
-      } else if (bloodAnalysisComplete) {
-        console.log('[OK] Ready to generate plan with blood analysis data');
+        console.log('[OK] Blood analysis already available - proceeding with data');
+      } else {
+        console.log('[INFO] Blood analysis not yet available - proceeding without it');
       }
     }
 
@@ -333,6 +294,7 @@ async function handler(request: NextRequest) {
     }
 
     // Aggregate ecosystem context for the orchestrator
+    // OPTIMIZED: Reduced timeout from 60s to 15s - context is nice to have but not critical
     console.log('[2/4] Aggregating ecosystem context...');
     let ecosystemData: Record<string, unknown> | undefined;
 
@@ -346,7 +308,7 @@ async function handler(request: NextRequest) {
             contextType: 'sage',
             forceRefresh: false,
           }),
-        }, 60000);
+        }, 15000); // Reduced from 60s to 15s
 
         if (contextResponse.ok) {
           const contextData = await contextResponse.json();
@@ -354,7 +316,7 @@ async function handler(request: NextRequest) {
           console.log('[OK] Ecosystem context aggregated');
         }
       } catch (error) {
-        console.warn('[WARN] Could not aggregate ecosystem context:', error);
+        console.warn('[WARN] Ecosystem context timed out or failed, proceeding without it');
       }
     }
 

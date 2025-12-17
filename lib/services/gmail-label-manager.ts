@@ -43,13 +43,13 @@ export const MOCCET_LABELS = {
   notifications: {
     displayName: 'Notifications',
     description: 'Automated system messages',
-    backgroundColor: '#a4bdfc', // Light blue
+    backgroundColor: '#a4c2f4', // Light blue (Gmail allowed)
     textColor: '#000000',
   },
   comment: {
     displayName: 'Comment',
     description: 'Comments/mentions from collaborative tools',
-    backgroundColor: '#dbadff', // Purple
+    backgroundColor: '#b694e8', // Purple (Gmail allowed)
     textColor: '#000000',
   },
   meeting_update: {
@@ -127,7 +127,7 @@ async function createGmailClient(
 export async function setupUserLabels(
   userEmail: string,
   userCode?: string,
-  labelPrefix: string = 'Moccet'
+  labelPrefix: string = 'moccet'
 ): Promise<SetupResult> {
   console.log(`[LabelManager] Setting up labels for ${userEmail}`);
 

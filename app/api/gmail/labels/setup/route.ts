@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     console.log(`[Labels Setup API] Setting up labels for ${email}`);
 
     // Step 1: Create labels in Gmail
-    const result = await setupUserLabels(email, code, labelPrefix || 'Moccet');
+    const result = await setupUserLabels(email, code, labelPrefix || 'moccet');
 
     if (!result.success && result.errors.length > 0) {
       return NextResponse.json(

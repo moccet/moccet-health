@@ -3854,7 +3854,16 @@ export default function SageOnboarding() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div className="typeform-content">
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          justifyContent: 'center',
+          paddingLeft: '40px',
+          paddingRight: '40px'
+        }}>
           <h1 style={{
             fontFamily: '"SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize: 'clamp(32px, 6vw, 48px)',
@@ -3864,7 +3873,7 @@ export default function SageOnboarding() {
             lineHeight: '1.15',
             letterSpacing: '0.5px',
             marginBottom: 'clamp(20px, 4vw, 32px)',
-            textAlign: 'left',
+            textAlign: 'center',
             textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
             padding: '0 20px'
           }}>

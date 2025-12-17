@@ -1486,7 +1486,7 @@ export default function PersonalisedPlanPage() {
                           marginBottom: '12px'
                         }}>
                           <div style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '8px' }}>
-                            {exercise.exercise}
+                            {exercise.name || exercise.exercise}
                           </div>
                           <div style={{
                             display: 'grid',

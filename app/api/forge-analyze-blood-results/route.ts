@@ -445,18 +445,28 @@ User Profile Context:
             .eq('email', email)
             .single();
 
-          // Update both lab_file_analysis AND set hasLabFile flag in form_data
-          const updatedFormData = currentData?.form_data
-            ? { ...currentData.form_data, hasLabFile: true }
-            : { hasLabFile: true };
-
-          await supabase
-            .from('forge_onboarding_data')
-            .update({
-              lab_file_analysis: analysis,
-              form_data: updatedFormData
-            })
-            .eq('email', email);
+          // Only update form_data if it exists (avoid race condition where
+          // blood analysis saves before main onboarding data)
+          if (currentData?.form_data && Object.keys(currentData.form_data).length > 1) {
+            // form_data exists with actual data, safe to merge
+            const updatedFormData = { ...currentData.form_data, hasLabFile: true };
+            await supabase
+              .from('forge_onboarding_data')
+              .update({
+                lab_file_analysis: analysis,
+                form_data: updatedFormData
+              })
+              .eq('email', email);
+          } else {
+            // form_data doesn't exist or is empty - only update lab_file_analysis
+            // The hasLabFile flag will be set by forge-onboarding when it saves
+            await supabase
+              .from('forge_onboarding_data')
+              .update({
+                lab_file_analysis: analysis
+              })
+              .eq('email', email);
+          }
           console.log('[OK] Blood analysis saved to database\n');
         } catch (error) {
           console.log('[WARN] Could not save to database:', error);

@@ -49,7 +49,7 @@ function getOpenAIClient(): OpenAI {
 
 const SYSTEM_PROMPT = `You are a Professional Meal Planner — an expert at creating practical, delicious meal plans that hit nutritional targets while respecting dietary constraints.
 
-Your task is to create a complete 7-day meal plan with specific meals for each day.
+Your task is to create a complete 7-day meal plan with MULTIPLE meals for EACH day.
 
 CRITICAL RULES:
 1. NEVER use colons (:) in meal names or descriptions — use em dashes (—) instead
@@ -60,14 +60,20 @@ CRITICAL RULES:
 6. Make meals practical based on their cooking skill and time availability
 7. Use their preferred protein sources
 
+CRITICAL MEAL COUNT REQUIREMENT:
+- You MUST generate the EXACT number of meals specified per day (typically 3)
+- Each day's "meals" array MUST contain MULTIPLE meals (breakfast + lunch + dinner)
+- DO NOT generate just one meal per day — that is WRONG
+- Example for 3 meals/day — day1.meals MUST have 3 separate meal objects
+
 MEAL STRUCTURE:
-- Each day should have the number of meals specified
+- Each day MUST have ALL meals specified (breakfast, lunch, dinner)
 - Include snacks if needed to hit targets
 - Balance macros throughout the day
 - Front-load protein earlier in the day
 
 OUTPUT FORMAT:
-Return valid JSON with this structure:
+Return valid JSON with this structure. NOTE — each day has MULTIPLE meals in the meals array:
 {
   "sampleMealPlan": {
     "profileSummary": {
@@ -87,6 +93,26 @@ Return valid JSON with this structure:
           "difficulty": "simple",
           "prepType": "quick",
           "biomarkerNotes": "High in choline for liver health"
+        },
+        {
+          "time": "12:30 PM",
+          "name": "Grilled Chicken Salad",
+          "description": "Grilled chicken breast over mixed greens with olive oil",
+          "macros": "550 cal | 45g protein | 20g carbs | 30g fat | 8g fiber",
+          "prepTime": "15 minutes",
+          "difficulty": "simple",
+          "prepType": "quick",
+          "biomarkerNotes": "Lean protein for muscle maintenance"
+        },
+        {
+          "time": "7:00 PM",
+          "name": "Salmon with Roasted Vegetables",
+          "description": "Baked salmon with seasonal roasted vegetables",
+          "macros": "650 cal | 42g protein | 35g carbs | 38g fat | 10g fiber",
+          "prepTime": "25 minutes",
+          "difficulty": "moderate",
+          "prepType": "standard",
+          "biomarkerNotes": "Omega-3s for inflammation"
         }
       ],
       "dailyTotals": {
@@ -97,12 +123,12 @@ Return valid JSON with this structure:
         "fat": 80
       }
     },
-    "day2": { ... },
-    "day3": { ... },
-    "day4": { ... },
-    "day5": { ... },
-    "day6": { ... },
-    "day7": { ... }
+    "day2": { "meals": [breakfast, lunch, dinner], ... },
+    "day3": { "meals": [breakfast, lunch, dinner], ... },
+    "day4": { "meals": [breakfast, lunch, dinner], ... },
+    "day5": { "meals": [breakfast, lunch, dinner], ... },
+    "day6": { "meals": [breakfast, lunch, dinner], ... },
+    "day7": { "meals": [breakfast, lunch, dinner], ... }
   }
 }
 
@@ -135,10 +161,16 @@ function buildUserPrompt(input: MealPlannerInput): string {
 - Fat — ${computedMetrics.fatTargetGrams}g
 - Fiber — ${computedMetrics.fiberTargetGrams}g minimum
 
-## Meals Per Day
-- ${profile.mealsPerDay} meals per day
+## Meals Per Day — MANDATORY REQUIREMENT
+- ${profile.mealsPerDay} meals per day — YOU MUST INCLUDE ALL ${profile.mealsPerDay} MEALS FOR EACH DAY
 - First meal timing — ${profile.firstMealTiming}
 ${profile.lastMealTiming ? `- Last meal timing — ${profile.lastMealTiming}` : ''}
+
+CRITICAL — Each day's meals array MUST contain EXACTLY ${profile.mealsPerDay} separate meals:
+- Day 1 meals array = [Meal 1 around breakfast time, Meal 2 around lunch time, Meal 3 around dinner time]
+- Day 2 meals array = [Meal 1, Meal 2, Meal 3]
+- And so on for all 7 days
+- DO NOT generate just one meal per day rotating through times — that is WRONG
 
 ## Eating Style
 - ${profile.eatingStyle}
@@ -218,7 +250,9 @@ Create a complete 7-day meal plan that:
 4. Uses their preferred proteins
 5. Matches their cooking skill and time availability
 6. Provides variety across the week
-7. Includes ${profile.mealsPerDay} meals per day
+7. CRITICAL — Each day MUST have EXACTLY ${profile.mealsPerDay} separate meals in the meals array (breakfast + lunch + dinner)
+
+FINAL REMINDER — Your response MUST have ${profile.mealsPerDay} meals in EVERY day's meals array. Not 1 meal, but ${profile.mealsPerDay} meals per day.
 
 Return the JSON structure as specified.`;
 
@@ -245,7 +279,7 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
       ],
       response_format: { type: 'json_object' },
       temperature: 0.8, // Higher for variety
-      max_tokens: 8000, // Large output for 7 days
+      max_tokens: 16000, // Large output for 7 days x 3 meals each
     });
 
     const content = response.choices[0]?.message?.content;
@@ -260,6 +294,26 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
 
     // Validate and normalize
     const normalizedPlan = normalizeMealPlan(result.sampleMealPlan, input);
+
+    // Validate that each day has the expected number of meals
+    const expectedMeals = input.clientProfile.profile.mealsPerDay || 3;
+    const dayKeys = ['day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'] as const;
+    let hasMealCountIssue = false;
+
+    for (const dayKey of dayKeys) {
+      const day = normalizedPlan[dayKey];
+      if (!day?.meals || day.meals.length < expectedMeals) {
+        console.warn(`[Meal Planner] ${dayKey} has only ${day?.meals?.length || 0} meals, expected ${expectedMeals}`);
+        hasMealCountIssue = true;
+        break;
+      }
+    }
+
+    // If meal count is wrong, use the reliable fallback
+    if (hasMealCountIssue) {
+      console.log('[Meal Planner] Meal count validation failed — using fallback meal plan');
+      return { sampleMealPlan: createFallbackMealPlan(input) };
+    }
 
     return { sampleMealPlan: normalizedPlan };
   } catch (error) {

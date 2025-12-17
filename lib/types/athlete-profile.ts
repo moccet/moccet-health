@@ -156,6 +156,7 @@ export interface AthleteProfileCard {
     whoopData: boolean;
     calendarData: boolean;
     slackData: boolean;
+    outlookData: boolean;
   };
 }
 

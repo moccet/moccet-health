@@ -68,11 +68,18 @@ CRITICAL RULES:
 4. Keep tone warm, professional, and encouraging
 5. Cross-references should feel natural, not forced
 6. The executive summary should make the athlete excited to start
+7. IMPORTANT — If ecosystem insights are provided (Whoop, Gmail, Slack, Outlook, Oura), you MUST reference at least 2-3 of them specifically in the executive summary. This makes the plan feel truly personalized.
+
+EXECUTIVE SUMMARY REQUIREMENTS:
+- Mention specific data points from connected services (e.g., "Your Whoop data shows 72% recovery", "Your calendar shows back-to-back meetings")
+- Connect ecosystem insights to the training approach (e.g., "Given your high meeting density, we've scheduled evening workouts")
+- Reference biomarker data if available
+- Make the athlete feel that their connected data made a real difference
 
 CROSS-REFERENCE EXAMPLES:
-- "Your leg day on Monday aligns with your highest Oura readiness scores"
-- "The pre-workout meal timing accounts for your early morning training preference"
-- "Recovery protocols target the stress patterns we see in your calendar data"
+- "Your leg day on Monday aligns with your highest Whoop recovery scores"
+- "We've scheduled lighter sessions on days when your Outlook shows high meeting density"
+- "Recovery protocols target the stress patterns from your Slack after-hours activity"
 - "Supplement timing coordinates with your training schedule for maximum benefit"
 
 OUTPUT FORMAT:

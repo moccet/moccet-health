@@ -1026,14 +1026,32 @@ export default function PersonalisedPlanPage() {
                   </tr>
                 </thead>
                 <tbody style={{ display: 'table-row-group' }}>
-                  {bloodAnalysis.biomarkers.map((marker, idx) => (
-                    <tr key={idx} style={{ display: 'table-row', borderBottom: '1px solid #f0f0f0' }}>
-                      <td className="biomarker-name" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.name}</td>
-                      <td className="biomarker-value" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.value}</td>
-                      <td className="biomarker-range" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.referenceRange || 'N/A'}</td>
-                      <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`} style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.status}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // Filter to show only relevant biomarkers (max 15)
+                    // Priority: 1) Abnormal markers, 2) Key health markers
+                    const abnormalMarkers = bloodAnalysis.biomarkers.filter(m =>
+                      !['normal', 'optimal', 'within range'].includes(m.status.toLowerCase())
+                    );
+                    const normalMarkers = bloodAnalysis.biomarkers.filter(m =>
+                      ['normal', 'optimal', 'within range'].includes(m.status.toLowerCase())
+                    );
+                    // Key markers to include even if normal
+                    const keyMarkerNames = ['glucose', 'hba1c', 'cholesterol', 'ldl', 'hdl', 'triglyceride', 'vitamin d', 'iron', 'ferritin', 'crp', 'tsh'];
+                    const keyNormalMarkers = normalMarkers.filter(m =>
+                      keyMarkerNames.some(key => m.name.toLowerCase().includes(key))
+                    );
+                    // Combine: all abnormal + key normal markers, max 15
+                    const relevantMarkers = [...abnormalMarkers, ...keyNormalMarkers.filter(m => !abnormalMarkers.includes(m))].slice(0, 15);
+
+                    return relevantMarkers.map((marker, idx) => (
+                      <tr key={idx} style={{ display: 'table-row', borderBottom: '1px solid #f0f0f0' }}>
+                        <td className="biomarker-name" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.name}</td>
+                        <td className="biomarker-value" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.value}</td>
+                        <td className="biomarker-range" style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', color: '#000000', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.referenceRange || 'N/A'}</td>
+                        <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`} style={{ display: 'table-cell', padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '12px' : '12px 24px', fontWeight: 400, fontSize: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : '18px' }}>{marker.status}</td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -2171,8 +2189,7 @@ export default function PersonalisedPlanPage() {
                 backgroundColor: '#f8f9fa',
                 padding: '15px',
                 borderRadius: '8px',
-                marginBottom: '20px',
-                borderLeft: '4px solid #007bff'
+                marginBottom: '20px'
               }}>
                 <p style={{ margin: 0, lineHeight: '1.6' }}>{plan.nutritionGuidance.personalizedIntro}</p>
               </div>
@@ -2291,6 +2308,7 @@ export default function PersonalisedPlanPage() {
           </div>
 
           {/* Progress Tracking & Injury Prevention */}
+          {plan.progressTracking && (
           <section className="plan-section">
             <h2 className="section-title">Progress Tracking</h2>
             <div className="recommendations-grid">
@@ -2298,7 +2316,7 @@ export default function PersonalisedPlanPage() {
                 <h3>Metrics to Track</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(plan.progressTracking.weeklyMetrics || plan.progressTracking.metrics || []).map((metric: any, idx: number) => (
+                  {(plan.progressTracking?.weeklyMetrics || plan.progressTracking?.metrics || []).map((metric: any, idx: number) => (
                     <li key={idx}>
                       {typeof metric === 'string' ? metric : (
                         <div>
@@ -2318,7 +2336,7 @@ export default function PersonalisedPlanPage() {
                 <h3>Performance Benchmarks</h3>
                 <ul>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(plan.progressTracking.performanceBenchmarks || plan.progressTracking.benchmarks || []).map((benchmark: any, idx: number) => (
+                  {(plan.progressTracking?.performanceBenchmarks || plan.progressTracking?.benchmarks || []).map((benchmark: any, idx: number) => (
                     <li key={idx}>
                       {typeof benchmark === 'string' ? benchmark : (
                         <div>
@@ -2333,13 +2351,14 @@ export default function PersonalisedPlanPage() {
                 </ul>
               </div>
             </div>
-            {(plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess) && (
+            {(plan.progressTracking?.reassessmentSchedule || plan.progressTracking?.whenToReassess) && (
               <div className="recommendation-card" style={{ marginTop: '20px' }}>
                 <h3>When to Reassess</h3>
-                <p>{plan.progressTracking.reassessmentSchedule || plan.progressTracking.whenToReassess}</p>
+                <p>{plan.progressTracking?.reassessmentSchedule || plan.progressTracking?.whenToReassess}</p>
               </div>
             )}
           </section>
+          )}
 
           {/* Decorative Image 4 */}
           <div className="plan-image-container">

@@ -378,12 +378,19 @@ export async function updateHistoryId(
 ): Promise<void> {
   const supabase = createAdminClient();
 
+  // First get current count, then increment
+  const { data: current } = await supabase
+    .from('gmail_watch_subscriptions')
+    .select('notification_count')
+    .eq('user_email', userEmail)
+    .single();
+
   await supabase
     .from('gmail_watch_subscriptions')
     .update({
       history_id: newHistoryId,
       last_notification_at: new Date().toISOString(),
-      notification_count: supabase.sql`notification_count + 1`,
+      notification_count: (current?.notification_count || 0) + 1,
     })
     .eq('user_email', userEmail);
 }

@@ -345,8 +345,22 @@ function assembleFinalPlan(input: AssembleInput): ForgeFitnessPlan {
     recoveryProtocol,
     supplementRecommendations: nutrition.supplementRecommendations,
     nutritionGuidance,
-    progressTracking: recovery.progressTracking,
-    injuryPrevention: recovery.injuryPrevention,
+    progressTracking: recovery.progressTracking || {
+      metricsOverview: 'Track your progress consistently to ensure you are moving toward your goals.',
+      weeklyMetrics: ['Training volume', 'Energy levels', 'Sleep quality', 'Soreness levels'],
+      monthlyMetrics: ['Body measurements', 'Progress photos', 'Performance benchmarks'],
+      performanceBenchmarks: ['Push-ups to failure', 'Plank hold time', 'Main lift progress'],
+      biometricTargets: 'Monitor resting heart rate and body composition if relevant to your goals.',
+      reassessmentSchedule: 'Full program reassessment every 8-12 weeks.',
+    },
+    injuryPrevention: recovery.injuryPrevention || {
+      personalizedRiskAssessment: 'Prevention is always better than cure. Listen to your body and maintain proper form.',
+      commonRisks: ['Overuse injuries', 'Form breakdown when fatigued', 'Insufficient warm-up'],
+      preventionStrategies: ['Always warm up', 'Stop sets before failure on compound exercises', 'Include mobility work'],
+      warningSignals: ['Sharp pain during movement', 'Joint pain after warming up', 'Persistent fatigue'],
+      injuryProtocol: 'If you experience pain, stop immediately and rest. Consult a healthcare professional if pain persists.',
+      mobilityPrescription: 'Daily 10 minutes of targeted mobility work focusing on hips, thoracic spine, and shoulders.',
+    },
     adaptiveFeatures: chiefOutput.adaptiveFeatures,
   };
 }

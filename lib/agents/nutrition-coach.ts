@@ -75,18 +75,42 @@ Return valid JSON with this exact structure:
   "supplementRecommendations": {
     "essential": [
       {
-        "supplement": "Name",
-        "dosage": "Amount",
-        "timing": "When to take",
-        "rationale": "Why recommended",
-        "duration": "How long to take"
+        "supplement": "Creatine Monohydrate",
+        "dosage": "5g daily",
+        "timing": "Any time — consistency matters",
+        "rationale": "Most researched supplement for strength and power",
+        "duration": "Ongoing"
+      },
+      {
+        "supplement": "Vitamin D3",
+        "dosage": "2000-4000 IU",
+        "timing": "With a meal containing fat",
+        "rationale": "Supports immune function and bone health",
+        "duration": "Ongoing"
+      },
+      {
+        "supplement": "Omega-3 Fish Oil",
+        "dosage": "2-3g EPA+DHA",
+        "timing": "With meals",
+        "rationale": "Supports recovery and reduces inflammation",
+        "duration": "Ongoing"
       }
     ],
-    "optional": [...],
+    "optional": [
+      {
+        "supplement": "Magnesium",
+        "dosage": "200-400mg",
+        "timing": "Evening",
+        "rationale": "Supports sleep and muscle function",
+        "duration": "Ongoing"
+      }
+    ],
     "considerations": "Any warnings or interactions",
     "personalizedNotes": "Notes specific to this athlete"
   }
-}`;
+}
+
+IMPORTANT: Always recommend AT LEAST 3 essential supplements (Creatine, Vitamin D3, and Omega-3 are baseline for most athletes) and 1-2 optional supplements based on their specific needs.`;
 
 // ============================================================================
 // BUILD USER PROMPT

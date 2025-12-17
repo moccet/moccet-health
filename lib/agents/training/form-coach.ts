@@ -315,6 +315,14 @@ function validateAndFix(weeklyProgram: WeeklyProgram, athleteProfile: AthletePro
       fixed[day].dayName = day.charAt(0).toUpperCase() + day.slice(1);
     }
 
+    // Ensure duration is set
+    if (!fixed[day].duration) {
+      const isRestDay = fixed[day].isRestDay ||
+        fixed[day].focus?.toLowerCase().includes('rest') ||
+        !fixed[day].mainWorkout?.length;
+      fixed[day].duration = isRestDay ? 'N/A' : `${athleteProfile.profile.sessionLengthMinutes || 60} minutes`;
+    }
+
     // Fix each exercise
     if (fixed[day].mainWorkout && Array.isArray(fixed[day].mainWorkout)) {
       fixed[day].mainWorkout = fixed[day].mainWorkout.map(exercise => {

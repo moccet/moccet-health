@@ -243,6 +243,104 @@ function parseEcosystemInsights(ecosystemData?: Record<string, unknown>): Ecosys
         });
       }
     }
+    // Check for message patterns
+    if (slack.summary || slack.patterns) {
+      const summary = String(slack.summary || slack.patterns || '');
+      if (summary.length > 10) {
+        insights.push({
+          source: 'slack',
+          insight: summary.substring(0, 150),
+          dataPoint: 'Slack activity',
+          impact: 'general',
+          priority: 'medium',
+        });
+      }
+    }
+  }
+
+  // Parse Whoop data
+  if (ecosystemData.whoop) {
+    const whoop = ecosystemData.whoop as Record<string, unknown>;
+    if (whoop.recoveryScore || whoop.recovery) {
+      const recovery = parseFloat(String(whoop.recoveryScore || whoop.recovery || 0));
+      insights.push({
+        source: 'whoop',
+        insight: `Whoop recovery score: ${recovery}% — ${recovery < 50 ? 'prioritize rest today' : recovery > 80 ? 'ready for intense training' : 'moderate intensity recommended'}`,
+        dataPoint: `${recovery}% recovery`,
+        impact: 'recovery',
+        priority: recovery < 50 ? 'high' : 'medium',
+      });
+    }
+    if (whoop.strain || whoop.strainScore) {
+      const strain = parseFloat(String(whoop.strain || whoop.strainScore || 0));
+      insights.push({
+        source: 'whoop',
+        insight: `Average strain: ${strain.toFixed(1)} — ${strain > 15 ? 'high training load detected' : 'moderate training load'}`,
+        dataPoint: `${strain.toFixed(1)} strain`,
+        impact: 'training',
+        priority: strain > 18 ? 'high' : 'low',
+      });
+    }
+    if (whoop.hrv || whoop.hrvAvg) {
+      const hrv = parseFloat(String(whoop.hrv || whoop.hrvAvg || 0));
+      insights.push({
+        source: 'whoop',
+        insight: `HRV average: ${hrv}ms — ${hrv < 40 ? 'stress/fatigue indicators present' : hrv > 70 ? 'excellent recovery capacity' : 'normal recovery range'}`,
+        dataPoint: `${hrv}ms HRV`,
+        impact: 'recovery',
+        priority: hrv < 40 ? 'high' : 'low',
+      });
+    }
+    if (whoop.sleepPerformance || whoop.sleepScore) {
+      const sleep = parseFloat(String(whoop.sleepPerformance || whoop.sleepScore || 0));
+      insights.push({
+        source: 'whoop',
+        insight: `Sleep performance: ${sleep}% — ${sleep < 70 ? 'sleep optimization needed' : 'sleep quality is good'}`,
+        dataPoint: `${sleep}% sleep`,
+        impact: 'recovery',
+        priority: sleep < 70 ? 'high' : 'low',
+      });
+    }
+  }
+
+  // Parse Outlook data
+  if (ecosystemData.outlook) {
+    const outlook = ecosystemData.outlook as Record<string, unknown>;
+    if (outlook.meetingHoursPerDay || outlook.meetingDensity) {
+      const hours = parseFloat(String(outlook.meetingHoursPerDay || outlook.meetingDensity || 0));
+      if (hours > 4) {
+        insights.push({
+          source: 'outlook',
+          insight: `${hours.toFixed(1)} hours of meetings per day — schedule training around peak meeting times`,
+          dataPoint: `${hours.toFixed(1)}h meetings/day`,
+          impact: 'general',
+          priority: 'medium',
+        });
+      }
+    }
+    if (outlook.backToBackMeetings) {
+      const b2b = parseFloat(String(outlook.backToBackMeetings || 0));
+      if (b2b > 50) {
+        insights.push({
+          source: 'outlook',
+          insight: `${b2b}% back-to-back meetings — stress management is critical, consider walking meetings`,
+          dataPoint: `${b2b}% back-to-back`,
+          impact: 'recovery',
+          priority: 'high',
+        });
+      }
+    }
+  }
+
+  // Parse raw summary if available (catches any ecosystem data structure)
+  if (ecosystemData.summary && typeof ecosystemData.summary === 'string') {
+    insights.push({
+      source: 'ecosystem',
+      insight: String(ecosystemData.summary).substring(0, 200),
+      dataPoint: 'Ecosystem summary',
+      impact: 'general',
+      priority: 'medium',
+    });
   }
 
   return insights;
@@ -490,6 +588,7 @@ export async function runCoordinatorAgent(input: CoordinatorInput): Promise<Coor
         whoopData: !!ecosystemData?.whoop,
         calendarData: !!ecosystemData?.calendar || !!ecosystemData?.gmail,
         slackData: !!ecosystemData?.slack,
+        outlookData: !!ecosystemData?.outlook,
       },
     };
 

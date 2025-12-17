@@ -13,13 +13,13 @@
  */
 
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
-import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { google, gmail_v1 } from 'googleapis';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { EmailStyleProfile, getEmailStyle } from '@/lib/services/email-style-learner';
 import { EmailClassification, EmailToClassify, classifyEmail } from '@/lib/services/email-classifier';
+import { getUserFineTunedModel } from '@/lib/services/email-fine-tuning';
 
 // =========================================================================
 // TYPES
@@ -123,6 +123,16 @@ const EmailDraftStateAnnotation = Annotation.Root({
     default: () => null,
   }),
 
+  // Model tracking
+  modelUsed: Annotation<string>({
+    reducer: (_, y) => y,
+    default: () => 'gpt-4o-mini',
+  }),
+  isFineTuned: Annotation<boolean>({
+    reducer: (_, y) => y,
+    default: () => false,
+  }),
+
   // Execution tracking
   reasoning: Annotation<string[]>({
     reducer: (x, y) => x.concat(y),
@@ -209,6 +219,7 @@ async function storeEmailDraft(
   draft: GeneratedDraft,
   classification: EmailClassification | null,
   gmailDraftId: string | null,
+  modelUsed: string,
   userCode?: string
 ): Promise<string | null> {
   const supabase = createAdminClient();
@@ -237,7 +248,7 @@ async function storeEmailDraft(
       confidence_score: classification?.confidence || null,
       status: gmailDraftId ? 'created' : 'pending',
       reasoning_steps: [draft.reasoning],
-      generation_model: 'claude-sonnet-4-20250514',
+      generation_model: modelUsed,
       gmail_created_at: gmailDraftId ? new Date().toISOString() : null,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     })
@@ -252,7 +263,7 @@ async function storeEmailDraft(
   return data?.id || null;
 }
 
-async function getUserSettings(userEmail: string, userCode?: string): Promise<DraftSettings> {
+async function getUserSettings(userEmail: string, _userCode?: string): Promise<DraftSettings> {
   const supabase = createAdminClient();
 
   const { data } = await supabase
@@ -306,100 +317,103 @@ async function getUserMemoryContext(userEmail: string): Promise<MemoryContext | 
 }
 
 // =========================================================================
-// DRAFT GENERATION WITH CLAUDE
+// DRAFT GENERATION WITH OPENAI (Supports Fine-Tuned Models)
 // =========================================================================
 
-async function generateDraftWithClaude(
+const BASE_MODEL = 'gpt-4o-mini';
+
+interface GenerationResult extends GeneratedDraft {
+  modelUsed: string;
+  isFineTuned: boolean;
+}
+
+async function generateDraftWithOpenAI(
+  userEmail: string,
   originalEmail: OriginalEmail,
   classification: EmailClassification,
   emailStyle: EmailStyleProfile | null,
   memoryContext: MemoryContext | null,
   settings: DraftSettings
-): Promise<GeneratedDraft> {
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
+): Promise<GenerationResult> {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
   });
 
-  // Build style guidance
-  let styleGuidance = '';
-  if (emailStyle) {
-    styleGuidance = `
-## User's Writing Style (IMPORTANT - Match this exactly)
-- Greeting patterns: ${emailStyle.greetingPatterns.join(', ') || 'Standard greetings'}
-- Sign-off patterns: ${emailStyle.signoffPatterns.join(', ') || 'Standard sign-offs'}
+  // Check for fine-tuned model
+  const fineTunedModel = await getUserFineTunedModel(userEmail);
+  const modelToUse = fineTunedModel || BASE_MODEL;
+  const isFineTuned = !!fineTunedModel;
+
+  console.log(`[EmailDraftAgent] Using model: ${modelToUse} (fine-tuned: ${isFineTuned})`);
+
+  // Build system message - shorter for fine-tuned models since style is learned
+  let systemMessage: string;
+  if (isFineTuned) {
+    systemMessage = `You are an email assistant that writes replies in the user's personal style. Write natural, helpful responses.`;
+  } else {
+    // For base model, include style guidance
+    let styleGuidance = '';
+    if (emailStyle) {
+      styleGuidance = `
+Match the user's writing style:
+- Greetings: ${emailStyle.greetingPatterns.join(', ') || 'Standard'}
+- Sign-offs: ${emailStyle.signoffPatterns.join(', ') || 'Standard'}
 - Tone: ${emailStyle.toneProfile.formality > 0.6 ? 'Formal' : emailStyle.toneProfile.formality > 0.4 ? 'Semi-formal' : 'Casual'}
-- Warmth: ${emailStyle.toneProfile.warmth > 0.6 ? 'Warm and friendly' : emailStyle.toneProfile.warmth > 0.4 ? 'Professional but personable' : 'Direct and business-like'}
-- Verbosity: ${emailStyle.verbosityLevel}
-- Average email length: ~${emailStyle.avgEmailLength} words
-- Uses emojis: ${emailStyle.usesEmojis ? 'Yes, occasionally' : 'No'}
-- Uses bullet points: ${emailStyle.usesBulletPoints ? 'Yes, when listing' : 'Rarely'}
-- Common phrases: ${emailStyle.commonPhrases.slice(0, 5).join(', ') || 'N/A'}
-`;
-  }
-
-  // Build memory context
-  let memoryGuidance = '';
-  if (memoryContext && memoryContext.facts.length > 0) {
-    memoryGuidance = `
-## Known Facts About the User
-${memoryContext.facts.map((f) => `- ${f.factKey}: ${f.factValue}`).join('\n')}
-`;
-  }
-
-  // Build signature
-  let signatureText = '';
-  if (settings.includeSignature && settings.signatureText) {
-    signatureText = `\n\n${settings.signatureText}`;
-  }
-
-  const prompt = `You are drafting an email response on behalf of the user. Your goal is to sound EXACTLY like the user would write it.
-
-## Original Email to Respond To
-FROM: ${originalEmail.from}
-SUBJECT: ${originalEmail.subject}
-BODY:
-${originalEmail.body.slice(0, 2000)}
-
-## Classification
-Type: ${classification.emailType}
-Urgency: ${classification.urgencyLevel}
-Key points to address:
-${classification.suggestedResponsePoints.map((p) => `- ${p}`).join('\n')}
-
-${styleGuidance}
-
-${memoryGuidance}
-
-## Instructions
-1. Draft a response that addresses ALL the points requiring response
-2. Match the user's writing style EXACTLY (greeting, tone, sign-off)
-3. Keep the response ${settings.maxResponseLength < 200 ? 'brief' : settings.maxResponseLength < 400 ? 'moderate length' : 'detailed as needed'}
-4. Be helpful and complete - don't leave anything unanswered
-5. Sound natural and human - avoid AI-like language
-${settings.includeSignature ? '6. Do NOT include a signature - it will be added automatically' : ''}
-
-Respond with JSON:
-{
-  "subject": "Re: [original subject or modified if needed]",
-  "body": "The email body text",
-  "reasoning": "Brief explanation of your draft approach"
-}
-
-Respond with ONLY the JSON object.`;
-
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type');
+- Warmth: ${emailStyle.toneProfile.warmth > 0.6 ? 'Warm' : emailStyle.toneProfile.warmth > 0.4 ? 'Professional' : 'Direct'}
+- Length: ${emailStyle.verbosityLevel} (~${emailStyle.avgEmailLength} words)
+- Uses emojis: ${emailStyle.usesEmojis ? 'Yes' : 'No'}`;
     }
 
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    systemMessage = `You are an email assistant that writes replies matching the user's personal style exactly.
+${styleGuidance}
+
+Write natural responses that sound like the user wrote them. Avoid AI-like language.`;
+  }
+
+  // Build user prompt
+  let userPrompt = `Write a reply to this email.
+
+FROM: ${originalEmail.from}
+SUBJECT: ${originalEmail.subject}
+BODY: ${originalEmail.body.slice(0, 1500)}
+
+Email Type: ${classification.emailType}
+Urgency: ${classification.urgencyLevel}
+Key points to address:
+${classification.suggestedResponsePoints.map((p) => `- ${p}`).join('\n')}`;
+
+  // Add memory context if available
+  if (memoryContext && memoryContext.facts.length > 0) {
+    userPrompt += `
+
+Context about user:
+${memoryContext.facts.slice(0, 5).map((f) => `- ${f.factKey}: ${f.factValue}`).join('\n')}`;
+  }
+
+  userPrompt += `
+
+${settings.includeSignature ? 'Do NOT include a signature - it will be added automatically.' : ''}
+
+Respond with JSON only:
+{"subject": "Re: ...", "body": "email body", "reasoning": "brief explanation"}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: modelToUse,
+      max_tokens: 1500,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: systemMessage },
+        { role: 'user', content: userPrompt },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response content');
+    }
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Failed to extract JSON from response');
     }
@@ -416,9 +430,11 @@ Respond with ONLY the JSON object.`;
       subject: parsed.subject || `Re: ${originalEmail.subject}`,
       body,
       reasoning: parsed.reasoning || 'Generated draft response',
+      modelUsed: modelToUse,
+      isFineTuned,
     };
   } catch (error) {
-    console.error('[EmailDraftAgent] Claude generation failed:', error);
+    console.error('[EmailDraftAgent] OpenAI generation failed:', error);
     throw error;
   }
 }
@@ -480,7 +496,7 @@ async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftS
 }
 
 /**
- * Generate node - Create draft response
+ * Generate node - Create draft response using OpenAI (with fine-tuned model if available)
  */
 async function generateNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
   console.log('[EmailDraftAgent] Generating draft...');
@@ -493,7 +509,8 @@ async function generateNode(state: EmailDraftState): Promise<Partial<EmailDraftS
   }
 
   try {
-    const draft = await generateDraftWithClaude(
+    const result = await generateDraftWithOpenAI(
+      state.userEmail,
       state.originalEmail,
       state.classification,
       state.emailStyle,
@@ -502,9 +519,17 @@ async function generateNode(state: EmailDraftState): Promise<Partial<EmailDraftS
     );
 
     return {
-      generatedDraft: draft,
+      generatedDraft: {
+        subject: result.subject,
+        body: result.body,
+        reasoning: result.reasoning,
+      },
+      modelUsed: result.modelUsed,
+      isFineTuned: result.isFineTuned,
       status: 'creating_draft',
-      reasoning: [`Generated draft: ${draft.reasoning}`],
+      reasoning: [
+        `Generated draft using ${result.isFineTuned ? 'fine-tuned' : 'base'} model (${result.modelUsed}): ${result.reasoning}`,
+      ],
     };
   } catch (error) {
     return {
@@ -544,6 +569,7 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     state.generatedDraft,
     state.classification,
     gmailDraftId,
+    state.modelUsed,
     state.userCode
   );
 
@@ -553,7 +579,7 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     status: 'completed',
     reasoning: [
       gmailDraftId
-        ? `Created Gmail draft (ID: ${gmailDraftId})`
+        ? `Created Gmail draft (ID: ${gmailDraftId}) using ${state.isFineTuned ? 'fine-tuned' : 'base'} model`
         : 'Stored draft locally (Gmail creation skipped or failed)',
     ],
   };
@@ -607,6 +633,8 @@ export interface EmailDraftResult {
   gmailDraftId?: string;
   draft?: GeneratedDraft;
   classification?: EmailClassification;
+  modelUsed?: string;
+  isFineTuned?: boolean;
   error?: string;
   reasoning: string[];
 }
@@ -645,6 +673,8 @@ export async function runEmailDraftAgent(
       gmailDraftId: result.gmailDraftId || undefined,
       draft: result.generatedDraft || undefined,
       classification: result.classification || undefined,
+      modelUsed: result.modelUsed || undefined,
+      isFineTuned: result.isFineTuned || false,
       error: result.error || undefined,
       reasoning: result.reasoning,
     };

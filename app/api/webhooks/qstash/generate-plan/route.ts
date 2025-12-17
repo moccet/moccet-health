@@ -1,156 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
-import OpenAI from 'openai';
-import { devPlanStorage, devOnboardingStorage } from '@/lib/dev-storage';
+import { devOnboardingStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
 
 // This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 // QStash will handle retries if it fails
 export const maxDuration = 800;
-
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
-  }
-  return new OpenAI({
-    apiKey,
-  });
-}
-
-const EMAIL_TEMPLATE = (name: string, planUrl: string) => `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sage - Your Personalized Plan is Ready</title>
-    <meta name="description" content="sage - Personalized nutrition plans based on your biology, metabolic data, and microbiome" />
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a;">
-
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
-        <tr>
-            <td align="center" style="padding: 0;">
-
-                <!-- Hero Image - Full Width -->
-                <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 0; text-align: center; background-color: #f5f5f5;">
-                            <img src="https://c.animaapp.com/ArhZSyxG/img/frank-sepulveda-st9ymbaqqg4-unsplash.jpg" alt="sage gradient" style="width: 100%; max-width: 100%; height: 240px; object-fit: cover; display: block;" />
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Content Container -->
-                <table role="presentation" style="max-width: 560px; width: 100%; margin: 0 auto; border-collapse: collapse;">
-
-                    <!-- Logo -->
-                    <tr>
-                        <td style="padding: 48px 20px 40px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: 400; letter-spacing: -0.3px; color: #000000;">sage</h1>
-                        </td>
-                    </tr>
-
-                    <!-- Body -->
-                    <tr>
-                        <td style="padding: 0 20px;">
-
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                Hi ${name}, your personalized nutrition plan is ready.
-                            </p>
-
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                We've analyzed your profile, health data, and goals to create a comprehensive plan tailored specifically for you. Your plan includes personalized meal recommendations, micronutrient guidance, and lifestyle integration strategies.
-                            </p>
-
-                            <!-- CTA Button -->
-                            <table role="presentation" style="margin: 0 0 32px 0;">
-                                <tr>
-                                    <td style="background-color: #000000; border-radius: 4px; text-align: center;">
-                                        <a href="${planUrl}" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none;">
-                                            View Your Plan
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <p style="margin: 0 0 4px 0; font-size: 16px; line-height: 1.6; color: #1a1a1a;">
-                                <strong>moccet</strong>
-                            </p>
-
-                        </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 48px 20px 32px; text-align: center;">
-                            <p style="margin: 0; font-size: 13px; color: #666666;">
-                                <a href="<%asm_group_unsubscribe_raw_url%>" style="color: #666666; text-decoration: none;">Unsubscribe</a>
-                            </p>
-                        </td>
-                    </tr>
-
-                </table>
-
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>`;
-
-async function sendPlanReadyEmail(email: string, name: string, planUrl: string) {
-  const sendGridApiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'team@moccet.com';
-
-  if (!sendGridApiKey) {
-    console.error('SENDGRID_API_KEY is not configured');
-    return false;
-  }
-
-  try {
-    const sendGridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${sendGridApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email }],
-            subject: 'Your Personalized sage Plan is Ready',
-          },
-        ],
-        from: {
-          email: fromEmail,
-          name: 'sage',
-        },
-        reply_to: {
-          email: fromEmail,
-        },
-        content: [
-          {
-            type: 'text/html',
-            value: EMAIL_TEMPLATE(name, planUrl),
-          },
-        ],
-      }),
-    });
-
-    if (!sendGridResponse.ok) {
-      const errorText = await sendGridResponse.text();
-      console.error('Failed to send email via SendGrid:', errorText);
-      return false;
-    }
-
-    console.log(`✅ Plan ready email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error('Error sending plan ready email:', error);
-    return false;
-  }
-}
 
 async function updateJobStatus(email: string, status: 'processing' | 'completed' | 'failed', error?: string) {
   try {
@@ -326,6 +181,20 @@ async function handler(request: NextRequest) {
 
     // Queue all additional generation jobs to run in parallel
     const qstashToken = process.env.QSTASH_TOKEN;
+    const supabase = await createClient();
+
+    // Initialize component statuses to 'pending' before queueing jobs
+    await supabase
+      .from('sage_onboarding_data')
+      .update({
+        meal_plan_status: 'pending',
+        micronutrients_status: 'pending',
+        lifestyle_status: 'pending',
+        completion_check_count: 0,
+        email_sent_at: null
+      })
+      .eq('email', email);
+
     if (qstashToken) {
       try {
         const { Client } = await import('@upstash/qstash');
@@ -357,69 +226,32 @@ async function handler(request: NextRequest) {
           retries: 2,
         });
         console.log(`[OK] Lifestyle generation job queued (messageId: ${lifestyleResult.messageId})`);
+
+        // Queue completion checker with 3-minute delay
+        // This will check if all components are done and send the email
+        const completionCheckUrl = `${baseUrl}/api/webhooks/qstash/check-sage-completion`;
+        const completionResult = await client.publishJSON({
+          url: completionCheckUrl,
+          body: { email, uniqueCode, fullName },
+          delay: 180, // 3 minutes delay to allow components to complete
+          retries: 0, // No retries - components will trigger their own checks
+        });
+        console.log(`[OK] Completion checker queued with 3-min delay (messageId: ${completionResult.messageId})`);
+
       } catch (error) {
         console.error('[WARN] Failed to queue background jobs:', error);
-        // Continue anyway - jobs are not critical for initial email
+        // Continue anyway - main plan is generated
       }
     } else {
       console.log('[WARN] QSTASH_TOKEN not configured, skipping background jobs');
     }
 
-    // Wait for background jobs to complete before sending email
-    console.log('[3/3] Waiting for all components to complete...');
-    const supabase = await createClient();
-    const maxWaitTime = 15 * 60 * 1000; // 15 minutes
-    const pollInterval = 15000; // 15 seconds
-    const startTime = Date.now();
-    let allComplete = false;
-
-    while (Date.now() - startTime < maxWaitTime) {
-      const { data: checkData, error: checkError } = await supabase
-        .from('sage_onboarding_data')
-        .select('micronutrients, meal_plan, lifestyle_integration')
-        .eq('email', email)
-        .single();
-
-      if (!checkError && checkData) {
-        const hasMicronutrients = !!checkData.micronutrients;
-        const hasMealPlan = !!checkData.meal_plan;
-        const hasLifestyle = !!checkData.lifestyle_integration;
-
-        console.log(`[POLL] Micronutrients: ${hasMicronutrients ? '✓' : '✗'}, Meal Plan: ${hasMealPlan ? '✓' : '✗'}, Lifestyle: ${hasLifestyle ? '✓' : '✗'}`);
-
-        if (hasMicronutrients && hasMealPlan && hasLifestyle) {
-          allComplete = true;
-          console.log('[OK] All components complete!');
-          break;
-        }
-      }
-
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-
-    if (!allComplete) {
-      console.warn('[WARN] Timeout waiting for components, sending email anyway');
-    }
-
-    // Send email notification
-    console.log('[4/4] Sending plan ready email...');
-    console.log(`Email details: to=${email}, name=${fullName}, planUrl=${planUrl}`);
-    const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
-
-    // Update status to completed
-    await updateJobStatus(email, 'completed');
-
-    if (emailSent) {
-      console.log(`\n✅ [QSTASH] Complete plan generation finished and email sent to ${email}`);
-    } else {
-      console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
-      console.error('Check: 1) SENDGRID_API_KEY is set, 2) SENDGRID_FROM_EMAIL is verified in SendGrid dashboard');
-    }
+    // Return immediately - completion checker will send email when all components are ready
+    console.log(`[OK] Main plan generated, component jobs queued. Completion checker will send email.`);
 
     return NextResponse.json({
       success: true,
-      message: 'Plan generation completed successfully',
+      message: 'Main plan generated, component generation in progress',
     });
 
   } catch (error) {

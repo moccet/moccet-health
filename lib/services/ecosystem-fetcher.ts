@@ -356,35 +356,6 @@ export interface SpotifyData {
   rawData: unknown;
 }
 
-export interface WhatsAppData {
-  // Communication volume
-  messagesSentToday: number;
-  messagesReceivedToday: number;
-  avgMessagesPerDay: number;
-  // Timing patterns
-  peakMessageHours: string[];
-  afterHoursPercentage: number; // % messages after 9pm
-  lateNightMessages: boolean;
-  // Response behavior
-  avgResponseTimeMinutes: number | null;
-  fastResponderRate: number; // % responses < 5min
-  // Contact patterns
-  activeConversations: number;
-  topContactsCount: number;
-  // Stress indicators
-  stressIndicators: {
-    constantAvailability: boolean;
-    lateNightActivity: boolean;
-    highVolumeDay: boolean;
-    shortResponses: boolean;
-  };
-  // Communication health
-  communicationBalance: 'healthy' | 'high_volume' | 'low_engagement';
-  workLifeBoundary: 'maintained' | 'blurred';
-  insights: string[];
-  rawData: unknown;
-}
-
 export interface EcosystemFetchResult {
   bloodBiomarkers: EcosystemDataSource;
   oura: EcosystemDataSource;
@@ -396,7 +367,6 @@ export interface EcosystemFetchResult {
   teams: EcosystemDataSource;
   whoop: EcosystemDataSource;
   spotify: EcosystemDataSource;
-  whatsapp: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -1605,202 +1575,6 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
 }
 
 // ============================================================================
-// WHATSAPP DATA
-// ============================================================================
-
-/**
- * Fetch WhatsApp communication patterns via Wassenger API
- */
-export async function fetchWhatsAppData(email: string): Promise<EcosystemDataSource> {
-  try {
-    const wassengerApiKey = process.env.WASSENGER_API_KEY;
-
-    if (!wassengerApiKey) {
-      return {
-        source: 'whatsapp',
-        available: false,
-        data: null,
-        insights: [],
-        fetchedAt: new Date().toISOString(),
-        error: 'Wassenger API key not configured',
-      };
-    }
-
-    // Fetch recent chats
-    const chatsResponse = await fetch('https://api.wassenger.com/v1/chats?limit=50', {
-      headers: { 'Token': wassengerApiKey },
-    });
-
-    if (!chatsResponse.ok) {
-      throw new Error(`Wassenger API error: ${chatsResponse.status}`);
-    }
-
-    const chats = await chatsResponse.json();
-
-    if (!chats || chats.length === 0) {
-      return {
-        source: 'whatsapp',
-        available: false,
-        data: null,
-        insights: [],
-        fetchedAt: new Date().toISOString(),
-        error: 'No WhatsApp chats found',
-      };
-    }
-
-    // Analyze message patterns from chat metadata
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let messagesSentToday = 0;
-    let messagesReceivedToday = 0;
-    let totalMessages = 0;
-    const messageHours: number[] = [];
-    let lateNightCount = 0;
-    let afterHoursCount = 0;
-
-    // Process each chat for patterns
-    for (const chat of chats.slice(0, 20)) {
-      // Fetch recent messages from this chat
-      try {
-        const messagesResponse = await fetch(
-          `https://api.wassenger.com/v1/chats/${chat.id}/messages?limit=50`,
-          { headers: { 'Token': wassengerApiKey } }
-        );
-
-        if (messagesResponse.ok) {
-          const messages = await messagesResponse.json();
-
-          for (const msg of messages || []) {
-            const msgDate = new Date(msg.timestamp || msg.created_at);
-            const hour = msgDate.getHours();
-            messageHours.push(hour);
-            totalMessages++;
-
-            // Count today's messages
-            if (msgDate >= todayStart) {
-              if (msg.fromMe) {
-                messagesSentToday++;
-              } else {
-                messagesReceivedToday++;
-              }
-            }
-
-            // Late night (11pm - 5am)
-            if (hour >= 23 || hour < 5) {
-              lateNightCount++;
-            }
-
-            // After hours (9pm+)
-            if (hour >= 21) {
-              afterHoursCount++;
-            }
-          }
-        }
-      } catch {
-        // Skip this chat if messages can't be fetched
-      }
-    }
-
-    // Calculate peak hours
-    const hourCounts: Record<number, number> = {};
-    messageHours.forEach(hour => {
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-    });
-
-    const peakMessageHours = Object.entries(hourCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([hour]) => `${hour}:00`);
-
-    // Calculate metrics
-    const avgMessagesPerDay = totalMessages > 0 ? Math.round(totalMessages / 7) : 0;
-    const afterHoursPercentage = totalMessages > 0
-      ? Math.round((afterHoursCount / totalMessages) * 100)
-      : 0;
-    const lateNightMessages = lateNightCount > totalMessages * 0.1;
-
-    // Determine stress indicators
-    const constantAvailability = peakMessageHours.length >= 3 &&
-      messageHours.filter(h => h >= 8 && h <= 22).length > totalMessages * 0.8;
-    const highVolumeDay = messagesSentToday > avgMessagesPerDay * 1.5;
-
-    // Determine communication balance
-    let communicationBalance: WhatsAppData['communicationBalance'] = 'healthy';
-    if (avgMessagesPerDay > 100) {
-      communicationBalance = 'high_volume';
-    } else if (avgMessagesPerDay < 5) {
-      communicationBalance = 'low_engagement';
-    }
-
-    // Determine work-life boundary
-    const workLifeBoundary: WhatsAppData['workLifeBoundary'] =
-      afterHoursPercentage > 30 ? 'blurred' : 'maintained';
-
-    // Generate insights
-    const insights: string[] = [];
-
-    if (lateNightMessages) {
-      insights.push('Late-night WhatsApp activity may affect sleep quality — consider setting messaging boundaries');
-    }
-
-    if (afterHoursPercentage > 40) {
-      insights.push(`${afterHoursPercentage}% of messages sent after 9pm — work-life boundary appears blurred`);
-    }
-
-    if (highVolumeDay) {
-      insights.push(`High message volume today (${messagesSentToday} sent) — ensure you\'re taking breaks`);
-    }
-
-    if (constantAvailability) {
-      insights.push('Constant messaging availability detected — digital detox periods could benefit mental wellness');
-    }
-
-    const processedData: WhatsAppData = {
-      messagesSentToday,
-      messagesReceivedToday,
-      avgMessagesPerDay,
-      peakMessageHours,
-      afterHoursPercentage,
-      lateNightMessages,
-      avgResponseTimeMinutes: null, // Would need more detailed analysis
-      fastResponderRate: 0,
-      activeConversations: chats.length,
-      topContactsCount: Math.min(chats.length, 10),
-      stressIndicators: {
-        constantAvailability,
-        lateNightActivity: lateNightMessages,
-        highVolumeDay,
-        shortResponses: false, // Would need message length analysis
-      },
-      communicationBalance,
-      workLifeBoundary,
-      insights,
-      rawData: { chatCount: chats.length, totalMessages },
-    };
-
-    return {
-      source: 'whatsapp',
-      available: true,
-      data: processedData,
-      insights,
-      fetchedAt: new Date().toISOString(),
-      recordCount: totalMessages,
-    };
-  } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching WhatsApp data:', error);
-    return {
-      source: 'whatsapp',
-      available: false,
-      data: null,
-      insights: [],
-      fetchedAt: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-// ============================================================================
 // MAIN FETCH FUNCTION
 // ============================================================================
 
@@ -1832,7 +1606,7 @@ export async function fetchAllEcosystemData(
   const startTime = Date.now();
 
   // Fetch all data sources in parallel
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, whatsapp] = await Promise.all([
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify] = await Promise.all([
     fetchBloodBiomarkers(email, planType),
     fetchOuraData(email, options?.startDate, options?.endDate),
     fetchDexcomData(email, options?.startDate, options?.endDate),
@@ -1843,7 +1617,6 @@ export async function fetchAllEcosystemData(
     fetchTeamsPatterns(email),
     fetchWhoopData(email),
     fetchSpotifyData(email),
-    fetchWhatsAppData(email),
   ]);
 
   const result: EcosystemFetchResult = {
@@ -1857,10 +1630,9 @@ export async function fetchAllEcosystemData(
     teams,
     whoop,
     spotify,
-    whatsapp,
     fetchTimestamp: new Date().toISOString(),
-    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, whatsapp].filter(s => s.available).length,
-    totalSources: 11,
+    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify].filter(s => s.available).length,
+    totalSources: 10,
   };
 
   const duration = Date.now() - startTime;

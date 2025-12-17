@@ -118,6 +118,7 @@ export default function SageOnboarding() {
   const [uploadModalType, setUploadModalType] = useState<'oura-ring' | 'whoop' | 'cgm' | 'flo' | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGoogleWarningModal, setShowGoogleWarningModal] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [asyncGenerationStarted, setAsyncGenerationStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -509,7 +510,7 @@ export default function SageOnboarding() {
     if (savedProgress) {
       try {
         const progress = JSON.parse(savedProgress);
-        const expiryTime = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const expiryTime = 15 * 60 * 1000; // 15 minutes
 
         // Check if progress hasn't expired
         if (progress.expiresAt && Date.now() < progress.expiresAt) {
@@ -669,7 +670,7 @@ export default function SageOnboarding() {
             outlookEmail
           },
           timestamp: Date.now(),
-          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
+          expiresAt: Date.now() + (15 * 60 * 1000) // 15 minutes
         };
 
         localStorage.setItem('sage_onboarding_progress', JSON.stringify(progressData));
@@ -699,7 +700,14 @@ export default function SageOnboarding() {
     outlookEmail
   ]);
 
-  const handleConnectGmail = async () => {
+  // Show warning modal before connecting Gmail
+  const handleConnectGmail = () => {
+    setShowGoogleWarningModal(true);
+  };
+
+  // Actually proceed with Gmail connection after user acknowledges
+  const proceedWithGmailConnection = async () => {
+    setShowGoogleWarningModal(false);
     try {
       // Set user_email and user_code cookies so the callback can store the token
       if (formData.email) {
@@ -3880,6 +3888,131 @@ export default function SageOnboarding() {
           }}>sage</div>
         </div>
       </div>
+
+      {/* Google Verification Warning Modal */}
+      {showGoogleWarningModal && (
+        <div
+          className="upload-modal-overlay"
+          onClick={() => setShowGoogleWarningModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: 'clamp(24px, 5vw, 32px)',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => setShowGoogleWarningModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#666',
+                padding: '4px',
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <h2 style={{
+                fontSize: 'clamp(18px, 4vw, 22px)',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: '0 0 8px 0',
+                fontFamily: '"Playfair Display", Georgia, serif',
+              }}>
+                Google Verification Pending
+              </h2>
+            </div>
+
+            <p style={{
+              fontSize: '15px',
+              lineHeight: 1.6,
+              color: '#4a4a4a',
+              margin: '0 0 20px 0',
+              textAlign: 'center',
+            }}>
+              We are currently awaiting verification from Google. Your data remains private and is only used to create your personalised plan.
+            </p>
+
+            <div style={{
+              backgroundColor: '#F9FAFB',
+              borderRadius: '10px',
+              padding: '16px',
+              marginBottom: '24px',
+            }}>
+              <p style={{
+                fontSize: '14px',
+                lineHeight: 1.5,
+                color: '#374151',
+                margin: 0,
+              }}>
+                <strong>To proceed:</strong> When you see &quot;Google hasn&apos;t verified this app&quot;, click <strong>Advanced</strong>, then click <strong>Go to moccet.ai</strong>.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setShowGoogleWarningModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '14px 20px',
+                  backgroundColor: '#f5f5f5',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={proceedWithGmailConnection}
+                style={{
+                  flex: 1,
+                  padding: '14px 20px',
+                  backgroundColor: '#3d5a3d',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Health Data Upload Modal */}
       {uploadModalOpen && uploadModalType && (

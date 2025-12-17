@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let formData: any;
+    let bloodAnalysisData: any = null;
 
     // Check dev storage first
     console.log(`[DEBUG] Checking dev storage for identifier: ${identifier}`);
@@ -50,7 +51,9 @@ export async function GET(request: NextRequest) {
 
     if (devData) {
       formData = devData.form_data;
+      bloodAnalysisData = devData.lab_file_analysis;
       console.log('[OK] Onboarding data retrieved from dev storage');
+      console.log(`[OK] Blood analysis data: ${bloodAnalysisData ? 'Available' : 'Not available'}`);
     } else {
       // Try Supabase if configured
       const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -84,7 +87,9 @@ export async function GET(request: NextRequest) {
           }
 
           formData = data.form_data;
+          bloodAnalysisData = data.lab_file_analysis;
           console.log('[OK] Onboarding data retrieved from Supabase');
+          console.log(`[OK] Blood analysis data: ${bloodAnalysisData ? 'Available' : 'Not available'}`);
         } catch (error) {
           console.error('Error fetching from Supabase:', error);
           return NextResponse.json(
@@ -227,9 +232,22 @@ export async function GET(request: NextRequest) {
     console.log(`[3/5] Generating personalized nutrition plan with AI...`);
     const openai = getOpenAIClient();
 
+    // Build blood analysis section to append to any prompt
+    const bloodAnalysisSection = bloodAnalysisData ? `
+
+ADDITIONAL BLOOD ANALYSIS DATA (MUST BE USED):
+Summary: ${bloodAnalysisData.summary || 'Available'}
+${bloodAnalysisData.biomarkers ? `Biomarkers: ${JSON.stringify(bloodAnalysisData.biomarkers, null, 2)}` : ''}
+${bloodAnalysisData.concerns?.length ? `Key Concerns: ${bloodAnalysisData.concerns.join(', ')}` : ''}
+${bloodAnalysisData.positives?.length ? `Positives: ${bloodAnalysisData.positives.join(', ')}` : ''}
+${bloodAnalysisData.recommendations?.length ? `Recommendations: ${bloodAnalysisData.recommendations.join(', ')}` : ''}
+
+⚠️ CRITICAL: This user HAS provided lab results. You MUST reference specific biomarker values (like magnesium, folate, hsCRP, etc.) in your executiveSummary and recommendations. Do NOT say "no lab or wearable data connected" - their blood analysis is above.
+` : '';
+
     // Build comprehensive prompt with unified context
     const prompt = unifiedContext
-      ? buildNutritionPlanPrompt(unifiedContext, formData)
+      ? buildNutritionPlanPrompt(unifiedContext, formData) + bloodAnalysisSection
       : `Create a comprehensive, personalized Sage Nutrition Plan for ${formData.fullName}.
 
 CLIENT PROFILE:
@@ -259,7 +277,16 @@ Nutrition Profile (The Fuel):
 - Alcohol Consumption: ${formData.alcoholConsumption}
 
 Connected Integrations: ${formData.integrations.join(', ') || 'None yet'}
-${formData.hasLabFile ? 'Lab results: Uploaded (analysis pending)' : 'Lab results: Not uploaded'}
+${bloodAnalysisData ? `
+BLOOD ANALYSIS RESULTS (IMPORTANT - USE THIS DATA):
+Summary: ${bloodAnalysisData.summary || 'Available'}
+${bloodAnalysisData.biomarkers ? `Biomarkers: ${JSON.stringify(bloodAnalysisData.biomarkers, null, 2)}` : ''}
+${bloodAnalysisData.concerns?.length ? `Key Concerns: ${bloodAnalysisData.concerns.join(', ')}` : ''}
+${bloodAnalysisData.positives?.length ? `Positives: ${bloodAnalysisData.positives.join(', ')}` : ''}
+${bloodAnalysisData.recommendations?.length ? `Recommendations: ${bloodAnalysisData.recommendations.join(', ')}` : ''}
+
+IMPORTANT: This user HAS lab results. Reference specific biomarker values in your recommendations. Do NOT say "no lab or wearable data" - the blood analysis above shows their actual lab results.
+` : 'Lab results: Not uploaded'}
 
 Generate a complete nutrition plan that addresses their specific goals, health conditions, lifestyle, and preferences. The plan should be:
 1. Evidence-based and scientifically sound

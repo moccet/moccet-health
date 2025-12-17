@@ -285,21 +285,15 @@ async function handler(request: NextRequest) {
     // Update job status to completed
     await updateJobStatus(email, 'completed');
 
-    // Send email notification with the fully enriched plan
-    console.log('[FORGE-ENRICHMENT] Sending plan ready email...');
-    const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
-
-    if (emailSent) {
-      console.log(`[FORGE-ENRICHMENT] ✅ Email sent successfully to ${email}`);
-    } else {
-      console.error(`[FORGE-ENRICHMENT] ⚠️ Email failed for ${email}`);
-    }
+    // NOTE: Email sending disabled - plans should be reviewed before sending
+    // To send email manually, create a /api/send-forge-email endpoint
+    console.log(`[FORGE-ENRICHMENT] ✅ Plan ready for ${email} (email disabled - manual review required)`);
 
     return NextResponse.json({
       success: true,
-      message: 'Content enrichment completed and email sent',
+      message: 'Content enrichment completed (email disabled - manual review required)',
       sectionsEnriched: enrichmentResult.issuesFound,
-      emailSent
+      emailSent: false
     });
 
   } catch (error) {

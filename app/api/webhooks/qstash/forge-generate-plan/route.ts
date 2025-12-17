@@ -441,27 +441,23 @@ async function handler(request: NextRequest) {
         },
       });
 
-      console.log('[OK] Content enrichment job queued - will enrich plan and then send email');
+      console.log('[OK] Content enrichment job queued - will enrich plan');
     } catch (enrichQueueError) {
-      console.error('[ERROR] Failed to queue enrichment job - falling back to direct email:', enrichQueueError);
+      console.error('[ERROR] Failed to queue enrichment job:', enrichQueueError);
 
-      // Fallback: send email directly if queueing fails
+      // Fallback: just mark as completed without email
       await updateJobStatus(email, 'completed');
-      const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 
-      if (emailSent) {
-        console.log(`\n✅ [QSTASH] Plan generated and email sent (enrichment skipped due to queue error) to ${email}`);
-      } else {
-        console.error(`\n⚠️ [QSTASH] Plan generated but EMAIL FAILED for ${email}`);
-      }
+      // NOTE: Email sending disabled - plans should be reviewed before sending
+      console.log(`\n✅ [QSTASH] Plan generated for ${email} (enrichment skipped, email disabled - manual review required)`);
 
       return NextResponse.json({
         success: true,
-        message: 'Fitness plan generation completed (enrichment skipped)',
+        message: 'Fitness plan generation completed (enrichment skipped, email disabled)',
       });
     }
 
-    console.log(`\n✅ [QSTASH] Fitness plan generation completed - enrichment and email will be handled by next job for ${email}`);
+    console.log(`\n✅ [QSTASH] Fitness plan generation completed for ${email} (email disabled - manual review required)`);
 
     return NextResponse.json({
       success: true,

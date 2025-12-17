@@ -483,58 +483,12 @@ export default function ForgeOnboarding() {
     clearCartOnStart();
   }, []); // Run once on mount
 
-  // Check if integrations are already connected on mount
-  useEffect(() => {
-    const cookies = document.cookie.split(';');
-    const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
-    const slackTeamCookie = cookies.find(c => c.trim().startsWith('slack_team='));
-    const appleHealthCookie = cookies.find(c => c.trim().startsWith('apple_health_connected='));
-    const appleCalendarCookie = cookies.find(c => c.trim().startsWith('apple_calendar_connected='));
-    const outlookEmailCookie = cookies.find(c => c.trim().startsWith('outlook_email='));
-
-    if (gmailEmailCookie) {
-      const email = gmailEmailCookie.split('=')[1];
-      setGmailConnected(true);
-      setGmailEmail(decodeURIComponent(email));
-    }
-
-    if (slackTeamCookie) {
-      const team = slackTeamCookie.split('=')[1];
-      setSlackConnected(true);
-      setSlackTeam(decodeURIComponent(team));
-    }
-
-    if (appleHealthCookie) {
-      setAppleHealthConnected(true);
-    }
-
-    if (appleCalendarCookie) {
-      setAppleCalendarConnected(true);
-    }
-
-    if (outlookEmailCookie) {
-      const email = outlookEmailCookie.split('=')[1];
-      setOutlookConnected(true);
-      setOutlookEmail(decodeURIComponent(email));
-    }
-
-    const ouraUserIdCookie = cookies.find(c => c.trim().startsWith('oura_user_id='));
-    if (ouraUserIdCookie) {
-      setOuraConnected(true);
-    }
-
-    const dexcomConnectedCookie = cookies.find(c => c.trim().startsWith('dexcom_connected='));
-    if (dexcomConnectedCookie) {
-      setDexcomConnected(true);
-    }
-
-    const teamsEmailCookie = cookies.find(c => c.trim().startsWith('teams_user_email='));
-    if (teamsEmailCookie) {
-      const email = teamsEmailCookie.split('=')[1];
-      setTeamsConnected(true);
-      setTeamsEmail(decodeURIComponent(email));
-    }
-  }, []);
+  // NOTE: We intentionally do NOT auto-detect connector status from cookies here.
+  // This prevents connectors from appearing "connected" when starting a new onboarding
+  // after completing a different product's onboarding (e.g., Sage -> Forge).
+  // Connectors should only show as connected when explicitly connected during THIS session.
+  // The actual tokens remain stored and will be used when fetching data.
+  // Connector state is restored from forge_onboarding_progress localStorage above if resuming.
 
   // Check URL parameters for OAuth callback (mobile redirect)
   useEffect(() => {

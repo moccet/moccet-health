@@ -375,19 +375,16 @@ async function handler(request: NextRequest) {
 
     console.log('[OK] Nutrition plan stored successfully');
 
-    // Update status and send email
+    // Update status to completed
     await updateJobStatus(email, 'completed');
-    const emailSent = await sendPlanReadyEmail(email, fullName, planUrl);
 
-    if (emailSent) {
-      console.log(`\n✅ [QSTASH] Nutrition plan generated and email sent to ${email}`);
-    } else {
-      console.error(`\n⚠️ [QSTASH] Nutrition plan generated but EMAIL FAILED for ${email}`);
-    }
+    // NOTE: Email sending disabled - plans should be reviewed before sending
+    // To send email manually, use the /api/send-sage-email endpoint
+    console.log(`\n✅ [QSTASH] Nutrition plan generated for ${email} (email disabled - manual review required)`);
 
     return NextResponse.json({
       success: true,
-      message: 'Nutrition plan generation completed successfully',
+      message: 'Nutrition plan generation completed successfully (email disabled)',
       metadata: {
         estimatedCost: orchestratorResult.metadata.agentCosts.total,
         validationPassed: orchestratorResult.metadata.validationResult.isValid,

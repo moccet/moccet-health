@@ -192,45 +192,37 @@ async function handler(request: NextRequest) {
     console.log(`[CHECK-COMPLETION] Status: meal=${data.meal_plan_status}, micro=${data.micronutrients_status}, lifestyle=${data.lifestyle_status}`);
     console.log(`[CHECK-COMPLETION] Check count: ${checkCount}, All complete: ${allComplete}, Has sage plan: ${hasSagePlan}`);
 
-    // Decision logic: send email if all complete OR after max checks (20 = ~10 minutes)
+    // Decision logic: mark complete if all done OR after max checks (20 = ~10 minutes)
     const MAX_CHECKS = 20;
-    const shouldSendEmail = allComplete || (checkCount >= MAX_CHECKS && hasSagePlan);
+    const shouldComplete = allComplete || (checkCount >= MAX_CHECKS && hasSagePlan);
 
-    if (shouldSendEmail) {
+    if (shouldComplete) {
       // Determine if partial (any component failed OR not all done)
       const isPartial = !allComplete ||
         data.meal_plan_status === 'failed' ||
         data.micronutrients_status === 'failed' ||
         data.lifestyle_status === 'failed';
 
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.moccet.ai';
-      const planUrl = `${baseUrl}/sage/personalised-plan?code=${uniqueCode}`;
-
-      // Get user name from fullName param or form_data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formData = data.form_data as any;
-      const userName = fullName || formData?.fullName || 'there';
-
-      // Send email
-      const emailSent = await sendPlanReadyEmail(email, userName, planUrl, isPartial);
-
-      // Update database
+      // Update database - mark as completed but DON'T send email
       const finalStatus = allComplete ? 'completed' : 'partial';
       await supabase
         .from('sage_onboarding_data')
         .update({
-          plan_generation_status: finalStatus,
-          email_sent_at: new Date().toISOString()
+          plan_generation_status: finalStatus
+          // NOTE: email_sent_at not set - email disabled for manual review
         })
         .eq('email', email);
 
-      console.log(`[CHECK-COMPLETION] Final status: ${finalStatus}, email sent: ${emailSent}`);
+      // NOTE: Email sending disabled - plans should be reviewed before sending
+      // To send email manually, use the /api/send-sage-email endpoint
+      console.log(`[CHECK-COMPLETION] Final status: ${finalStatus} (email disabled - manual review required)`);
 
       return NextResponse.json({
         success: true,
         status: finalStatus,
-        emailSent,
-        isPartial
+        emailSent: false,
+        isPartial,
+        message: 'Email disabled - manual review required'
       });
     }
 

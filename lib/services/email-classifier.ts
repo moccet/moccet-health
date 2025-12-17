@@ -7,7 +7,7 @@
  * @module lib/services/email-classifier
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 // =========================================================================
 // TYPES
@@ -145,6 +145,15 @@ function hasQuestionIndicators(text: string): boolean {
     /\bis there\b/i,
     /\blet me know\b/i,
     /\bthoughts\??\b/i,
+    /\bif that'?s? ok\b/i,
+    /\bif that works\b/i,
+    /\bdoes that work\b/i,
+    /\bsound good\b/i,
+    /\bsounds good\?/i,
+    /\bwork for you\b/i,
+    /\bavailable\b/i,
+    /\bconfirm\b/i,
+    /\bget back to\b/i,
   ];
 
   return questionPatterns.some((pattern) => pattern.test(text));
@@ -214,59 +223,68 @@ function detectUrgencyLevel(text: string, subject: string): 'low' | 'medium' | '
 // =========================================================================
 
 /**
- * Use Claude to classify email and extract key points
+ * Use OpenAI to classify email and extract key points
  */
-async function classifyWithClaude(email: EmailToClassify): Promise<EmailClassification> {
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
+async function classifyWithAI(email: EmailToClassify): Promise<EmailClassification> {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const prompt = `Analyze this email and determine if it requires a response.
+  const systemPrompt = `You are an email classifier. Analyze emails and determine if they require a response.
+
+IMPORTANT - Be LIBERAL about what needs a response:
+- If there's ANY question mark (?), it needs a response
+- If someone is confirming something ("is that ok?", "does that work?", "if that's ok"), it needs a response
+- Short emails with questions still need responses
+- Calendar invite confirmations asking for confirmation need a response
+- Simple yes/no questions still need a response
+- Only skip OBVIOUS automated emails (receipts, shipping notifications, newsletters, noreply senders)
+- When in doubt, mark needsResponse as TRUE
+
+Respond with ONLY a JSON object.`;
+
+  const userPrompt = `Analyze this email:
 
 FROM: ${email.from}
 SUBJECT: ${email.subject}
 BODY:
 ${email.body.slice(0, 2000)}
 
-Provide your analysis as JSON:
+Respond with JSON:
 {
-  "needsResponse": true/false (Does this email require a reply from the recipient?),
-  "emailType": "question" | "request" | "action_item" | "follow_up" | "informational" (What type of email is this?),
-  "urgencyLevel": "low" | "medium" | "high" (How urgent is a response?),
-  "keyPoints": ["List the main points or questions in the email"],
-  "suggestedResponsePoints": ["If needs response, what should the response address?"],
-  "confidence": 0.0-1.0 (How confident are you in this classification?),
-  "reasoning": "Brief explanation of why this email does/doesn't need a response"
-}
-
-Consider:
-- Automated notifications, newsletters, and receipts don't need responses
-- Questions, requests for action, and deadlines typically need responses
-- "FYI" or informational emails usually don't need responses
-- Personal/professional emails asking for input need responses
-
-Respond with ONLY the JSON object.`;
+  "needsResponse": true/false,
+  "emailType": "question" | "request" | "action_item" | "follow_up" | "informational",
+  "urgencyLevel": "low" | "medium" | "high",
+  "keyPoints": ["main points"],
+  "suggestedResponsePoints": ["what to address in response"],
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation"
+}`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
       max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
     });
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type');
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response content');
     }
 
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Failed to extract JSON');
     }
 
     return JSON.parse(jsonMatch[0]);
   } catch (error) {
-    console.error('[EmailClassifier] Claude classification failed:', error);
+    console.error('[EmailClassifier] OpenAI classification failed:', error);
     // Fall back to heuristic-only classification
     return heuristicClassification(email);
   }
@@ -373,8 +391,8 @@ export async function classifyEmail(
     }
   }
 
-  // Use AI classification
-  const classification = await classifyWithClaude(email);
+  // Use AI classification (OpenAI)
+  const classification = await classifyWithAI(email);
 
   // Check confidence threshold
   if (classification.confidence < minConfidence) {

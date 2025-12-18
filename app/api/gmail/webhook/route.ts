@@ -335,6 +335,7 @@ export async function POST(request: NextRequest) {
     const settings = await getUserDraftSettings(userEmail);
 
     // Get history changes since last processed
+    console.log(`[Webhook] Fetching history for ${userEmail} (code: ${subscription.userCode || 'none'}, historyId: ${subscription.historyId})`);
     const historyResult = await getHistoryChanges(
       userEmail,
       subscription.historyId,
@@ -342,7 +343,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (!historyResult.success) {
-      console.error(`[Webhook] Failed to get history: ${historyResult.error}`);
+      console.error(`[Webhook] FAILED to get history for ${userEmail} (code: ${subscription.userCode || 'none'}): ${historyResult.error}`);
+      console.error(`[Webhook] This likely means the Gmail OAuth token is expired/invalid and refresh failed. User may need to re-authenticate.`);
       return NextResponse.json({ success: true });
     }
 

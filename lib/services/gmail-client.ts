@@ -101,21 +101,24 @@ export async function createValidatedGmailClient(
   userCode?: string,
   skipValidation: boolean = false
 ): Promise<GmailClientResult> {
-  console.log(`[GmailClient] Creating client for ${userEmail} (validate: ${!skipValidation})`);
+  console.log(`[GmailClient] Creating client for ${userEmail} (code: ${userCode || 'none'}, validate: ${!skipValidation})`);
 
   let token: string | null = null;
   let wasRefreshed = false;
 
   if (skipValidation) {
     // Fast path - just get token without validation
+    console.log(`[GmailClient] Attempting fast token lookup for ${userEmail}`);
     const result = await getAccessToken(userEmail, 'gmail', userCode);
     if (!result.token || result.error) {
-      console.error(`[GmailClient] Failed to get token for ${userEmail}:`, result.error);
+      console.error(`[GmailClient] FAILED - No token found for ${userEmail} (code: ${userCode || 'none'}). Error: ${result.error}`);
       return { gmail: null, error: result.error || 'No token found' };
     }
+    console.log(`[GmailClient] SUCCESS - Token retrieved for ${userEmail}`);
     token = result.token;
   } else {
     // Validated path - checks token actually works
+    console.log(`[GmailClient] Attempting validated token lookup for ${userEmail}`);
     const result = await getValidatedAccessToken(
       userEmail,
       'gmail',
@@ -124,16 +127,14 @@ export async function createValidatedGmailClient(
     );
 
     if (!result.token) {
-      console.error(`[GmailClient] Failed to get validated token for ${userEmail}:`, result.error);
+      console.error(`[GmailClient] FAILED - Token validation failed for ${userEmail} (code: ${userCode || 'none'}). Error: ${result.error}`);
       return { gmail: null, error: result.error || 'Token validation failed' };
     }
 
     token = result.token;
     wasRefreshed = result.wasRefreshed || false;
 
-    if (wasRefreshed) {
-      console.log(`[GmailClient] Token was refreshed for ${userEmail}`);
-    }
+    console.log(`[GmailClient] SUCCESS - Validated token for ${userEmail} (wasRefreshed: ${wasRefreshed})`);
   }
 
   // Create OAuth client

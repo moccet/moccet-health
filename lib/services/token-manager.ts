@@ -470,12 +470,17 @@ export async function getValidatedAccessToken(
   userCode?: string,
   validateFn?: (token: string) => Promise<boolean>
 ): Promise<{ token: string | null; error?: string; wasRefreshed?: boolean }> {
+  console.log(`[TokenManager] getValidatedAccessToken called for ${userEmail}/${provider} (code: ${userCode || 'none'})`);
+
   // First, get the token normally
   const result = await getAccessToken(userEmail, provider, userCode);
 
   if (!result.token) {
+    console.error(`[TokenManager] FAILED - No token found for ${userEmail}/${provider}. Error: ${result.error}`);
     return { token: null, error: result.error };
   }
+
+  console.log(`[TokenManager] Token retrieved for ${userEmail}/${provider}, proceeding with validation`);
 
   // If no validation function provided, return the token as-is
   if (!validateFn) {
@@ -484,33 +489,39 @@ export async function getValidatedAccessToken(
 
   // Try to validate the token
   try {
+    console.log(`[TokenManager] Validating token for ${userEmail}/${provider}...`);
     const isValid = await validateFn(result.token);
 
     if (isValid) {
+      console.log(`[TokenManager] Token validation SUCCESS for ${userEmail}/${provider}`);
       return { token: result.token, wasRefreshed: false };
     }
 
     // Token is invalid, try to refresh
-    console.log(`[TokenManager] Token validation failed for ${userEmail}/${provider}, attempting refresh`);
+    console.log(`[TokenManager] Token validation FAILED for ${userEmail}/${provider}, attempting refresh`);
 
     const refreshResult = await refreshToken(userEmail, provider, userCode);
 
     if (!refreshResult.success) {
-      console.error(`[TokenManager] Proactive refresh failed: ${refreshResult.error}`);
+      console.error(`[TokenManager] FAILED - Refresh failed for ${userEmail}/${provider}: ${refreshResult.error}`);
       return { token: null, error: `Token invalid and refresh failed: ${refreshResult.error}` };
     }
 
+    console.log(`[TokenManager] SUCCESS - Token refreshed for ${userEmail}/${provider}`);
     return { token: refreshResult.accessToken!, wasRefreshed: true };
   } catch (error) {
     // Validation threw an error - likely token is invalid
-    console.log(`[TokenManager] Token validation error for ${userEmail}/${provider}, attempting refresh`);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.log(`[TokenManager] Token validation threw error for ${userEmail}/${provider}: ${errorMsg}, attempting refresh`);
 
     const refreshResult = await refreshToken(userEmail, provider, userCode);
 
     if (!refreshResult.success) {
+      console.error(`[TokenManager] FAILED - Refresh after validation error failed for ${userEmail}/${provider}: ${refreshResult.error}`);
       return { token: null, error: `Token validation error and refresh failed: ${refreshResult.error}` };
     }
 
+    console.log(`[TokenManager] SUCCESS - Token refreshed after validation error for ${userEmail}/${provider}`);
     return { token: refreshResult.accessToken!, wasRefreshed: true };
   }
 }

@@ -217,10 +217,14 @@ export async function getHistoryChanges(
   newHistoryId?: string;
   error?: string;
 }> {
+  console.log(`[GmailPush] getHistoryChanges called for ${userEmail} (code: ${userCode || 'none'}, startHistoryId: ${startHistoryId})`);
   const gmail = await createGmailClient(userEmail, userCode);
   if (!gmail) {
+    console.error(`[GmailPush] FAILED - Could not create Gmail client for ${userEmail}. Token lookup or refresh failed.`);
     return { success: false, changes: [], error: 'Failed to authenticate' };
   }
+  console.log(`[GmailPush] Gmail client created successfully for ${userEmail}`);
+
 
   try {
     const response = await gmail.users.history.list({

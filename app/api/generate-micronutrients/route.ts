@@ -235,7 +235,7 @@ IMPORTANT REQUIREMENTS:
    - Make it sound like you analyzed their unique biology - be specific, not generic
    - Example tone: "Based on your blood work showing elevated LDL cholesterol (145 mg/dL) and your goal of improving athletic performance, these micronutrients are specifically chosen to support cardiovascular health and optimize your training recovery..."
 
-2. Create a comprehensive micronutrient table with 10-15 key nutrients they should focus on
+2. Create a focused micronutrient table with a MAXIMUM of 10 key nutrients they should focus on (prioritize the most impactful ones)
 3. Each nutrient must have:
    - Daily Goal (with unit: mcg, mg, IU, etc.)
    - Food Sources from their allowed foods (consider protein preferences, allergies, eating style)
@@ -321,6 +321,15 @@ ECOSYSTEM-ENRICHED REQUIREMENTS:
     responseText = responseText.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
     const micronutrientData = JSON.parse(responseText);
+
+    // Enforce maximum of 10 micronutrients
+    if (micronutrientData.micronutrients && Array.isArray(micronutrientData.micronutrients)) {
+      if (micronutrientData.micronutrients.length > 10) {
+        console.log(`[INFO] Limiting micronutrients from ${micronutrientData.micronutrients.length} to 10`);
+        micronutrientData.micronutrients = micronutrientData.micronutrients.slice(0, 10);
+      }
+    }
+
     console.log('[OK] Micronutrient recommendations generated successfully\n');
 
     // Store in cache

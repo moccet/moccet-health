@@ -2,17 +2,60 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 // Transform nested biomarkers object to flat array for frontend
+// Also handles different formats from image vs PDF blood work uploads
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformBloodAnalysis(analysis: any) {
   if (!analysis) return null;
 
-  // If biomarkers is already an array, return as-is
-  if (Array.isArray(analysis.biomarkers)) {
-    return analysis;
+  const result = { ...analysis };
+
+  // Transform concerns from object to array if needed
+  // e.g., {"folate": "High normal", "magnesium": "Low"} -> ["High normal folate", "Low magnesium"]
+  if (result.concerns && typeof result.concerns === 'object' && !Array.isArray(result.concerns)) {
+    result.concerns = Object.entries(result.concerns).map(([marker, status]) =>
+      `${status} ${marker}`.replace(/\s+/g, ' ').trim()
+    );
   }
 
-  // Transform nested object to flat array
-  if (analysis.biomarkers && typeof analysis.biomarkers === 'object') {
+  // Transform positives from object to array if needed
+  // e.g., {"iron": "Optimal", "ferritin": "Optimal"} -> ["Optimal iron", "Optimal ferritin"]
+  if (result.positives && typeof result.positives === 'object' && !Array.isArray(result.positives)) {
+    result.positives = Object.entries(result.positives).map(([marker, status]) =>
+      `${status} ${marker}`.replace(/\s+/g, ' ').trim()
+    );
+  }
+
+  // Transform recommendations if it's in simple format
+  if (result.recommendations && typeof result.recommendations === 'object') {
+    const recs = result.recommendations;
+    // Convert string values to arrays if needed
+    if (typeof recs.lifestyle === 'string') {
+      recs.lifestyle = [recs.lifestyle];
+    }
+    if (typeof recs.nutrition === 'string') {
+      recs.dietary = recs.dietary || [recs.nutrition];
+    }
+    if (typeof recs.dietary === 'string') {
+      recs.dietary = [recs.dietary];
+    }
+    if (typeof recs.supplements === 'string') {
+      recs.supplements = [recs.supplements];
+    }
+    // Ensure arrays exist
+    recs.lifestyle = recs.lifestyle || [];
+    recs.dietary = recs.dietary || [];
+    recs.supplements = recs.supplements || [];
+    recs.followUp = recs.followUp || [];
+    recs.retestTiming = recs.retestTiming || '';
+  }
+
+  // If biomarkers is already an array, return the transformed result
+  if (Array.isArray(result.biomarkers)) {
+    return result;
+  }
+
+  // Transform nested biomarkers object to flat array
+  if (result.biomarkers && typeof result.biomarkers === 'object') {
     const flatBiomarkers: Array<{
       name: string;
       value: number | string | null;
@@ -22,16 +65,50 @@ function transformBloodAnalysis(analysis: any) {
       referenceRange?: string;
     }> = [];
 
-    for (const [category, markers] of Object.entries(analysis.biomarkers)) {
+    // Determine status from concerns/positives objects (original format before transformation)
+    const getStatusForMarker = (markerName: string): string => {
+      const lowerName = markerName.toLowerCase();
+      // Check if it's in concerns
+      if (analysis.concerns && typeof analysis.concerns === 'object' && !Array.isArray(analysis.concerns)) {
+        for (const [key, value] of Object.entries(analysis.concerns)) {
+          if (key.toLowerCase() === lowerName) {
+            return String(value);
+          }
+        }
+      }
+      // Check if it's in positives
+      if (analysis.positives && typeof analysis.positives === 'object' && !Array.isArray(analysis.positives)) {
+        for (const [key, value] of Object.entries(analysis.positives)) {
+          if (key.toLowerCase() === lowerName) {
+            return String(value);
+          }
+        }
+      }
+      return 'Normal';
+    };
+
+    for (const [category, markers] of Object.entries(result.biomarkers)) {
       if (markers && typeof markers === 'object') {
         for (const [name, data] of Object.entries(markers as Record<string, any>)) {
-          if (data && typeof data === 'object') {
+          // Handle case where data is a string (e.g., "8 ng/mL") instead of an object
+          if (typeof data === 'string') {
+            // Parse value and unit from string like "8 ng/mL" or "134 mcg/dL"
+            const match = data.match(/^([\d.]+)\s*(.*)$/);
             flatBiomarkers.push({
-              name,
+              name: name.replace(/([A-Z])/g, ' $1').trim(), // Convert camelCase to readable
+              value: match ? match[1] : data,
+              unit: match ? match[2] : undefined,
+              status: getStatusForMarker(name),
+              category: category.replace(/([A-Z])/g, ' $1').trim(),
+              referenceRange: undefined,
+            });
+          } else if (data && typeof data === 'object') {
+            flatBiomarkers.push({
+              name: name.replace(/([A-Z])/g, ' $1').trim(),
               value: data.value,
               unit: data.unit,
-              status: data.status || 'Normal',
-              category,
+              status: data.status || getStatusForMarker(name),
+              category: category.replace(/([A-Z])/g, ' $1').trim(),
               referenceRange: data.referenceRange || data.range,
             });
           }
@@ -39,13 +116,10 @@ function transformBloodAnalysis(analysis: any) {
       }
     }
 
-    return {
-      ...analysis,
-      biomarkers: flatBiomarkers,
-    };
+    result.biomarkers = flatBiomarkers;
   }
 
-  return analysis;
+  return result;
 }
 
 export async function GET(request: NextRequest) {

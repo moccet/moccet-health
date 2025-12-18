@@ -7,8 +7,8 @@
  */
 
 // Reuse ecosystem insights and biomarker types from athlete-profile
-export { EcosystemInsight, BiomarkerFlag } from './athlete-profile';
-import { EcosystemInsight, BiomarkerFlag } from './athlete-profile';
+export { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
+import { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
 
 // ============================================================================
 // BASIC PROFILE SECTION
@@ -143,6 +143,9 @@ export interface ClientProfileCard {
   constraints: ClientConstraints;
   biomarkerFlags: NutritionBiomarkerFlag[];
   keyInsights: EcosystemInsight[];
+
+  // Detailed ecosystem metrics for personalized recommendations
+  ecosystemMetrics?: DetailedEcosystemMetrics;
 
   // Raw Data References
   rawDataAvailable: {

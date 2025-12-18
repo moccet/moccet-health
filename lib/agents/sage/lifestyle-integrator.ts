@@ -42,10 +42,18 @@ Your task is to create comprehensive lifestyle recommendations based on the clie
 CRITICAL RULES:
 1. NEVER use colons (:) in your text — use em dashes (—) instead
 2. Use "you" and "your" when addressing the client
-3. Reference their specific data (sleep score, stress level, activity level)
+3. Reference their specific data WITH ACTUAL NUMBERS (sleep hours, HRV, recovery score)
 4. Keep recommendations practical and achievable
-5. Consider ecosystem data (Whoop, Oura) if available
+5. MUST use ecosystem data (Whoop, Oura, Gmail/Slack) when available — reference specific numbers
 6. Align recommendations with their nutrition plan
+
+ECOSYSTEM DATA INTEGRATION:
+When detailed wearable data is provided, use SPECIFIC numbers:
+- Sleep — "Your 6.2h average with 5h sleep debt suggests we need to prioritize sleep extension"
+- HRV — "Your HRV of 42ms (15% below baseline) indicates nervous system fatigue — focus on recovery"
+- Recovery — "With Whoop showing 65% recovery, we'll include more parasympathetic practices"
+- Work patterns — "Your 5.2 meetings/day average means we need efficient stress practices"
+- After-hours work — "Your after-hours activity suggests work-life boundaries need attention"
 
 OUTPUT FORMAT:
 Return valid JSON with this structure:
@@ -94,7 +102,7 @@ IMPORTANT:
 // ============================================================================
 
 function buildUserPrompt(clientProfile: ClientProfileCard): string {
-  const { profile, computedMetrics, keyInsights, biomarkerFlags, constraints } = clientProfile;
+  const { profile, computedMetrics, keyInsights, biomarkerFlags, constraints, ecosystemMetrics } = clientProfile;
 
   let prompt = `# CLIENT LIFESTYLE PROFILE
 
@@ -104,12 +112,105 @@ function buildUserPrompt(clientProfile: ClientProfileCard): string {
 - Primary Goal — ${profile.drivingGoal}
 - Time Horizon — ${profile.timeHorizon}
 
-## Current Status
+## Current Status (Questionnaire)
 - Sleep Quality Score — ${profile.sleepQuality}/10 (${computedMetrics.sleepScore})
 - Stress Level — ${profile.stressLevel}/10 (${computedMetrics.stressScore})
 - Activity Level — ${profile.activityLevel}
 - Metabolic Health — ${computedMetrics.metabolicHealth}
+`;
 
+  // Add detailed ecosystem metrics if available
+  if (ecosystemMetrics) {
+    const { recovery, schedule } = ecosystemMetrics;
+
+    prompt += `\n## DETAILED WEARABLE DATA (Use these specific numbers in your recommendations)\n`;
+
+    // Recovery data
+    if (recovery.whoopRecoveryScore) {
+      prompt += `- Whoop Recovery — ${recovery.whoopRecoveryScore}%`;
+      if (recovery.whoopRecoveryScore < 50) {
+        prompt += ` (LOW — prioritize recovery-focused protocols)`;
+      } else if (recovery.whoopRecoveryScore >= 80) {
+        prompt += ` (HIGH — good recovery capacity)`;
+      }
+      prompt += `\n`;
+    }
+
+    if (recovery.ouraReadinessScore) {
+      prompt += `- Oura Readiness — ${recovery.ouraReadinessScore}%\n`;
+    }
+
+    // HRV data
+    if (recovery.hrvCurrent) {
+      prompt += `- HRV — ${recovery.hrvCurrent}ms`;
+      if (recovery.hrvBaseline) {
+        prompt += ` (baseline ${recovery.hrvBaseline}ms)`;
+        if (recovery.hrvPercentOfBaseline && recovery.hrvPercentOfBaseline < 85) {
+          prompt += ` — ${100 - recovery.hrvPercentOfBaseline}% BELOW baseline — nervous system fatigue`;
+        }
+      }
+      prompt += `\n`;
+    }
+
+    // Sleep data
+    if (recovery.sleepHoursAvg) {
+      prompt += `- Sleep Average — ${recovery.sleepHoursAvg}h`;
+      if (recovery.sleepDebtHours && recovery.sleepDebtHours > 3) {
+        prompt += ` (${recovery.sleepDebtHours}h sleep debt — PRIORITY: sleep extension strategies)`;
+      }
+      prompt += `\n`;
+    }
+
+    if (recovery.sleepEfficiency) {
+      prompt += `- Sleep Efficiency — ${recovery.sleepEfficiency}%\n`;
+    }
+
+    if (recovery.deepSleepPercent) {
+      prompt += `- Sleep Architecture — ${recovery.deepSleepPercent}% deep sleep, ${recovery.remSleepPercent || 'unknown'}% REM`;
+      if (recovery.deepSleepPercent < 15) {
+        prompt += ` — LOW deep sleep, prioritize sleep quality interventions`;
+      }
+      prompt += `\n`;
+    }
+
+    // Training strain
+    if (recovery.strainScore) {
+      prompt += `- Training Strain — ${recovery.strainScore}/21`;
+      if (recovery.weeklyStrain) {
+        prompt += ` (${recovery.weeklyStrain} weekly)`;
+      }
+      if (recovery.overtrainingRisk === 'high') {
+        prompt += ` — OVERTRAINING RISK, emphasize recovery`;
+      }
+      prompt += `\n`;
+    }
+
+    // Work/schedule data
+    if (schedule.meetingDensity) {
+      prompt += `- Meeting Load — ${schedule.meetingDensity}`;
+      if (schedule.avgMeetingsPerDay) {
+        prompt += ` (${schedule.avgMeetingsPerDay} meetings/day)`;
+      }
+      prompt += `\n`;
+    }
+
+    if (schedule.workStressIndicators) {
+      const stressFactors: string[] = [];
+      if (schedule.workStressIndicators.afterHoursWork) stressFactors.push('after-hours work detected');
+      if (schedule.workStressIndicators.backToBackMeetings) stressFactors.push('back-to-back meetings');
+      if (schedule.workStressIndicators.shortBreaks) stressFactors.push('insufficient breaks');
+      if (stressFactors.length > 0) {
+        prompt += `- Work Stress Signals — ${stressFactors.join(', ')}\n`;
+      }
+    }
+
+    // Data sources
+    if (ecosystemMetrics.dataFreshness?.dataSources.length > 0) {
+      prompt += `- Connected Sources — ${ecosystemMetrics.dataFreshness.dataSources.join(', ')}\n`;
+    }
+  }
+
+  prompt += `
 ## Eating Patterns
 - First Meal — ${profile.firstMealTiming}
 ${profile.lastMealTiming ? `- Last Meal — ${profile.lastMealTiming}` : ''}
@@ -119,7 +220,7 @@ ${profile.caffeineConsumption ? `- Caffeine Consumption — ${profile.caffeineCo
 
 `;
 
-  // Add ecosystem insights (Whoop, Oura data)
+  // Add ecosystem insights (text summaries as backup)
   const sleepInsights = keyInsights.filter(i =>
     i.source.toLowerCase().includes('oura') ||
     i.insight.toLowerCase().includes('sleep') ||
@@ -141,7 +242,7 @@ ${profile.caffeineConsumption ? `- Caffeine Consumption — ${profile.caffeineCo
   );
 
   if (sleepInsights.length > 0) {
-    prompt += `## Sleep Data (from connected devices)\n`;
+    prompt += `## Additional Sleep Insights\n`;
     for (const insight of sleepInsights.slice(0, 3)) {
       prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
     }
@@ -149,7 +250,7 @@ ${profile.caffeineConsumption ? `- Caffeine Consumption — ${profile.caffeineCo
   }
 
   if (activityInsights.length > 0) {
-    prompt += `## Activity Data (from connected devices)\n`;
+    prompt += `## Additional Activity Insights\n`;
     for (const insight of activityInsights.slice(0, 3)) {
       prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
     }
@@ -157,7 +258,7 @@ ${profile.caffeineConsumption ? `- Caffeine Consumption — ${profile.caffeineCo
   }
 
   if (stressInsights.length > 0) {
-    prompt += `## Stress Indicators (from connected data)\n`;
+    prompt += `## Additional Stress Indicators\n`;
     for (const insight of stressInsights.slice(0, 3)) {
       prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
     }

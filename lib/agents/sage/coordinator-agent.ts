@@ -20,7 +20,7 @@ import {
   SageCoordinatorInput,
   SageCoordinatorOutput,
 } from '../../types/client-profile';
-import { EcosystemInsight } from '../../types/athlete-profile';
+import { EcosystemInsight, DetailedEcosystemMetrics, RecoveryMetrics, ScheduleMetrics } from '../../types/athlete-profile';
 
 // ============================================================================
 // CALCULATION FUNCTIONS (adapted from Forge coordinator)
@@ -219,6 +219,198 @@ function parseEcosystemInsights(ecosystemData?: Record<string, unknown>): Ecosys
   }
 
   return insights;
+}
+
+// ============================================================================
+// PARSE DETAILED ECOSYSTEM METRICS (for Sage agents)
+// ============================================================================
+
+function parseDetailedEcosystemMetrics(
+  ecosystemData?: Record<string, unknown>
+): DetailedEcosystemMetrics | undefined {
+  if (!ecosystemData) return undefined;
+
+  const recovery: RecoveryMetrics = {};
+  const schedule: ScheduleMetrics = {};
+  const dataSources: string[] = [];
+
+  // Parse Whoop data
+  if (ecosystemData.whoop) {
+    const whoop = ecosystemData.whoop as Record<string, unknown>;
+    dataSources.push('whoop');
+
+    // Recovery score
+    if (whoop.avgRecoveryScore !== undefined) {
+      recovery.whoopRecoveryScore = parseFloat(String(whoop.avgRecoveryScore));
+    } else if (whoop.recoveryScore !== undefined) {
+      recovery.whoopRecoveryScore = parseFloat(String(whoop.recoveryScore));
+    } else if (whoop.recovery !== undefined) {
+      recovery.whoopRecoveryScore = parseFloat(String(whoop.recovery));
+    }
+
+    // Strain score
+    if (whoop.avgStrainScore !== undefined) {
+      recovery.strainScore = parseFloat(String(whoop.avgStrainScore));
+    } else if (whoop.strainScore !== undefined) {
+      recovery.strainScore = parseFloat(String(whoop.strainScore));
+    } else if (whoop.strain !== undefined) {
+      recovery.strainScore = parseFloat(String(whoop.strain));
+    }
+
+    // Training load data
+    const trainingLoad = whoop.trainingLoad as Record<string, unknown> | undefined;
+    if (trainingLoad) {
+      recovery.weeklyStrain = trainingLoad.weeklyStrain ? parseFloat(String(trainingLoad.weeklyStrain)) : undefined;
+      recovery.overtrainingRisk = trainingLoad.overtrainingRisk as RecoveryMetrics['overtrainingRisk'];
+    }
+
+    // HRV patterns
+    const hrvPatterns = whoop.hrvPatterns as Record<string, unknown> | undefined;
+    if (hrvPatterns) {
+      recovery.hrvCurrent = hrvPatterns.currentWeekAvg ? parseFloat(String(hrvPatterns.currentWeekAvg)) : undefined;
+      recovery.hrvBaseline = hrvPatterns.baseline ? parseFloat(String(hrvPatterns.baseline)) : undefined;
+      recovery.hrvTrend = hrvPatterns.trend as RecoveryMetrics['hrvTrend'];
+      if (recovery.hrvBaseline && recovery.hrvBaseline > 0 && recovery.hrvCurrent) {
+        recovery.hrvPercentOfBaseline = Math.round((recovery.hrvCurrent / recovery.hrvBaseline) * 100);
+      }
+    } else if (whoop.hrv !== undefined || whoop.hrvAvg !== undefined) {
+      recovery.hrvCurrent = parseFloat(String(whoop.hrv || whoop.hrvAvg));
+    }
+
+    // Sleep data
+    const whoopSleep = whoop.whoopSleep as Record<string, unknown> | undefined;
+    if (whoopSleep) {
+      recovery.sleepHoursAvg = whoopSleep.avgSleepHours ? parseFloat(String(whoopSleep.avgSleepHours)) : undefined;
+      recovery.sleepEfficiency = whoopSleep.avgSleepEfficiency ? parseFloat(String(whoopSleep.avgSleepEfficiency)) : undefined;
+      recovery.sleepDebtHours = whoopSleep.sleepDebtHours ? parseFloat(String(whoopSleep.sleepDebtHours)) : undefined;
+    }
+  }
+
+  // Parse Oura data
+  if (ecosystemData.oura) {
+    const oura = ecosystemData.oura as Record<string, unknown>;
+    dataSources.push('oura');
+
+    // Readiness score
+    if (oura.avgReadinessScore !== undefined) {
+      recovery.ouraReadinessScore = parseFloat(String(oura.avgReadinessScore));
+    } else if (oura.readinessScore !== undefined) {
+      recovery.ouraReadinessScore = parseFloat(String(oura.readinessScore));
+    }
+
+    // HRV (use if not already set from Whoop)
+    const hrvAnalysis = oura.hrvAnalysis as Record<string, unknown> | undefined;
+    if (hrvAnalysis && !recovery.hrvCurrent) {
+      recovery.hrvCurrent = hrvAnalysis.currentAvg ? parseFloat(String(hrvAnalysis.currentAvg)) : undefined;
+      recovery.hrvBaseline = hrvAnalysis.baseline ? parseFloat(String(hrvAnalysis.baseline)) : undefined;
+      recovery.hrvTrend = hrvAnalysis.trend as RecoveryMetrics['hrvTrend'];
+      if (recovery.hrvBaseline && recovery.hrvBaseline > 0 && recovery.hrvCurrent) {
+        recovery.hrvPercentOfBaseline = Math.round((recovery.hrvCurrent / recovery.hrvBaseline) * 100);
+      }
+    } else if (!recovery.hrvCurrent && oura.avgHRV !== undefined) {
+      recovery.hrvCurrent = parseFloat(String(oura.avgHRV));
+    }
+
+    // Sleep architecture
+    const sleepArchitecture = oura.sleepArchitecture as Record<string, unknown> | undefined;
+    if (sleepArchitecture) {
+      recovery.deepSleepPercent = sleepArchitecture.deepSleepPercent ? parseFloat(String(sleepArchitecture.deepSleepPercent)) : undefined;
+      recovery.remSleepPercent = sleepArchitecture.remSleepPercent ? parseFloat(String(sleepArchitecture.remSleepPercent)) : undefined;
+      if (!recovery.sleepEfficiency && sleepArchitecture.sleepEfficiency) {
+        recovery.sleepEfficiency = parseFloat(String(sleepArchitecture.sleepEfficiency));
+      }
+    }
+
+    // Sleep debt
+    const sleepDebt = oura.sleepDebt as Record<string, unknown> | undefined;
+    if (sleepDebt && !recovery.sleepDebtHours) {
+      recovery.sleepDebtHours = sleepDebt.weeklyDeficit ? parseFloat(String(sleepDebt.weeklyDeficit)) : undefined;
+    }
+
+    // Average sleep hours
+    if (!recovery.sleepHoursAvg && oura.avgSleepHours !== undefined) {
+      recovery.sleepHoursAvg = parseFloat(String(oura.avgSleepHours));
+    }
+  }
+
+  // Calculate combined recovery score if multiple sources
+  if (recovery.whoopRecoveryScore && recovery.ouraReadinessScore) {
+    recovery.combinedRecoveryScore = Math.round(
+      (recovery.whoopRecoveryScore + recovery.ouraReadinessScore) / 2
+    );
+  } else {
+    recovery.combinedRecoveryScore = recovery.whoopRecoveryScore || recovery.ouraReadinessScore;
+  }
+
+  // Parse Gmail/Outlook calendar patterns
+  const calendarData = (ecosystemData.gmail || ecosystemData.outlook || ecosystemData.calendar) as Record<string, unknown> | undefined;
+  if (calendarData) {
+    dataSources.push(ecosystemData.gmail ? 'gmail' : ecosystemData.outlook ? 'outlook' : 'calendar');
+
+    const meetingDensity = calendarData.meetingDensity as Record<string, unknown> | undefined;
+    if (meetingDensity && meetingDensity.avgMeetingsPerDay !== undefined) {
+      const avgMeetings = parseFloat(String(meetingDensity.avgMeetingsPerDay));
+      schedule.avgMeetingsPerDay = avgMeetings;
+      schedule.meetingDensity = avgMeetings <= 2 ? 'low'
+        : avgMeetings <= 4 ? 'moderate'
+        : avgMeetings <= 6 ? 'high'
+        : 'very-high';
+    }
+
+    const stressIndicators = calendarData.stressIndicators as Record<string, unknown> | undefined;
+    if (stressIndicators) {
+      schedule.workStressIndicators = {
+        afterHoursWork: !!stressIndicators.frequentAfterHoursWork,
+        backToBackMeetings: !!stressIndicators.shortMeetingBreaks,
+        shortBreaks: (meetingDensity?.backToBackPercentage ? parseFloat(String(meetingDensity.backToBackPercentage)) : 0) > 50,
+      };
+    }
+
+    // Optimal meal/training windows
+    if (calendarData.optimalMealWindows && Array.isArray(calendarData.optimalMealWindows)) {
+      schedule.optimalTrainingWindows = calendarData.optimalMealWindows.map(String);
+    }
+  }
+
+  // Parse Slack/Teams patterns for additional stress signals
+  const chatData = (ecosystemData.slack || ecosystemData.teams) as Record<string, unknown> | undefined;
+  if (chatData) {
+    dataSources.push(ecosystemData.slack ? 'slack' : 'teams');
+
+    const stressIndicators = chatData.stressIndicators as Record<string, unknown> | undefined;
+    if (stressIndicators) {
+      if (!schedule.workStressIndicators) {
+        schedule.workStressIndicators = { afterHoursWork: false, backToBackMeetings: false, shortBreaks: false };
+      }
+      schedule.workStressIndicators.afterHoursWork =
+        schedule.workStressIndicators.afterHoursWork ||
+        !!stressIndicators.constantAvailability ||
+        !!stressIndicators.lateNightMessages;
+    }
+
+    // Also check afterHoursPercentage
+    if (chatData.afterHoursPercentage) {
+      const afterHours = parseFloat(String(chatData.afterHoursPercentage));
+      if (afterHours > 30) {
+        if (!schedule.workStressIndicators) {
+          schedule.workStressIndicators = { afterHoursWork: false, backToBackMeetings: false, shortBreaks: false };
+        }
+        schedule.workStressIndicators.afterHoursWork = true;
+      }
+    }
+  }
+
+  // Only return if we have meaningful data
+  if (dataSources.length === 0) return undefined;
+
+  return {
+    recovery,
+    schedule,
+    dataFreshness: {
+      dataSources,
+      lastWearableSync: ecosystemData.fetchTimestamp as string | undefined,
+    },
+  };
 }
 
 // ============================================================================
@@ -489,6 +681,9 @@ export async function runSageCoordinator(input: SageCoordinatorInput): Promise<S
     // Parse ecosystem insights
     const keyInsights = parseEcosystemInsights(ecosystemData);
 
+    // Parse detailed ecosystem metrics for Sage agents
+    const ecosystemMetrics = parseDetailedEcosystemMetrics(ecosystemData);
+
     // Build the client profile card
     const clientProfile: ClientProfileCard = {
       generatedAt: new Date().toISOString(),
@@ -498,6 +693,7 @@ export async function runSageCoordinator(input: SageCoordinatorInput): Promise<S
       constraints,
       biomarkerFlags,
       keyInsights,
+      ecosystemMetrics,
       rawDataAvailable: {
         bloodAnalysis: !!bloodAnalysis,
         ouraData: !!ecosystemData?.oura,

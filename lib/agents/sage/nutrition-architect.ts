@@ -43,10 +43,19 @@ Your task is to create the foundational nutrition philosophy and framework that 
 CRITICAL RULES:
 1. NEVER use colons (:) in your text — use em dashes (—) instead
 2. Use "you" and "your" when addressing the client
-3. Reference SPECIFIC data from their profile (biomarkers, metrics, goals)
+3. Reference SPECIFIC data from their profile (biomarkers, metrics, goals) WITH ACTUAL NUMBERS
 4. Keep recommendations evidence-based and practical
 5. Consider biomarker flags when designing the approach
 6. Respect ALL dietary constraints (allergies, intolerances, preferences)
+7. When ecosystem data is provided, use it to personalize timing and recommendations
+
+ECOSYSTEM DATA INTEGRATION:
+When wearable/ecosystem data is provided, incorporate it into the nutrition philosophy:
+- Recovery scores — adjust nutrition intensity and recovery foods
+- Sleep debt — recommend sleep-supporting nutrients (magnesium, tryptophan)
+- Work schedule — design meal timing around busy periods
+- Stress indicators — include stress-reducing foods (omega-3s, adaptogens)
+- Training strain — ensure adequate protein and carb timing for recovery
 
 OUTPUT FORMAT:
 Return valid JSON with this exact structure:
@@ -124,7 +133,7 @@ IMPORTANT GUIDELINES:
 // ============================================================================
 
 function buildUserPrompt(clientProfile: ClientProfileCard): string {
-  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights } = clientProfile;
+  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights, ecosystemMetrics } = clientProfile;
 
   // Calculate macro percentages
   const totalCals = computedMetrics.targetCalories;
@@ -155,7 +164,67 @@ function buildUserPrompt(clientProfile: ClientProfileCard): string {
 - Sleep Quality — ${computedMetrics.sleepScore} (${profile.sleepQuality}/10)
 - Stress Level — ${computedMetrics.stressScore} (${profile.stressLevel}/10)
 - Metabolic Health — ${computedMetrics.metabolicHealth}
+`;
 
+  // Add detailed ecosystem metrics if available
+  if (ecosystemMetrics) {
+    const { recovery, schedule } = ecosystemMetrics;
+
+    prompt += `\n## Wearable Data (Use to personalize nutrition timing)\n`;
+
+    if (recovery.whoopRecoveryScore) {
+      prompt += `- Whoop Recovery — ${recovery.whoopRecoveryScore}%`;
+      if (recovery.whoopRecoveryScore < 50) {
+        prompt += ` (LOW — emphasize recovery nutrition, anti-inflammatory foods)`;
+      }
+      prompt += `\n`;
+    }
+    if (recovery.ouraReadinessScore) {
+      prompt += `- Oura Readiness — ${recovery.ouraReadinessScore}%\n`;
+    }
+
+    if (recovery.sleepHoursAvg) {
+      prompt += `- Sleep Average — ${recovery.sleepHoursAvg}h`;
+      if (recovery.sleepDebtHours && recovery.sleepDebtHours > 3) {
+        prompt += ` (${recovery.sleepDebtHours}h sleep debt — include sleep-supporting foods)`;
+      }
+      prompt += `\n`;
+    }
+
+    if (recovery.strainScore) {
+      prompt += `- Training Strain — ${recovery.strainScore}/21`;
+      if (recovery.strainScore > 14) {
+        prompt += ` (HIGH — ensure adequate carbs and protein for recovery)`;
+      }
+      prompt += `\n`;
+    }
+
+    if (schedule.meetingDensity) {
+      prompt += `- Meeting Load — ${schedule.meetingDensity}`;
+      if (schedule.avgMeetingsPerDay) {
+        prompt += ` (${schedule.avgMeetingsPerDay} meetings/day)`;
+      }
+      if (schedule.meetingDensity === 'high' || schedule.meetingDensity === 'very-high') {
+        prompt += ` — design easy-prep meals for busy days`;
+      }
+      prompt += `\n`;
+    }
+
+    if (schedule.workStressIndicators) {
+      const stressFactors: string[] = [];
+      if (schedule.workStressIndicators.afterHoursWork) stressFactors.push('after-hours work');
+      if (schedule.workStressIndicators.backToBackMeetings) stressFactors.push('back-to-back meetings');
+      if (stressFactors.length > 0) {
+        prompt += `- Work Stress — ${stressFactors.join(', ')} — include stress-reducing nutrition\n`;
+      }
+    }
+
+    if (schedule.optimalTrainingWindows && schedule.optimalTrainingWindows.length > 0) {
+      prompt += `- Optimal Meal Windows — ${schedule.optimalTrainingWindows.join(', ')}\n`;
+    }
+  }
+
+  prompt += `
 ## Eating Patterns
 - Eating Style — ${profile.eatingStyle}
 - First Meal — ${profile.firstMealTiming}

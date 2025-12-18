@@ -503,202 +503,14 @@ export default function SageOnboarding() {
     }
   }, []);
 
-  // Restore progress from localStorage (general persistence)
-  useEffect(() => {
-    const savedProgress = localStorage.getItem('sage_onboarding_progress');
+  // NOTE: localStorage persistence removed - users start fresh each time they visit onboarding
 
-    if (savedProgress) {
-      try {
-        const progress = JSON.parse(savedProgress);
-        const expiryTime = 15 * 60 * 1000; // 15 minutes
-
-        // Check if progress hasn't expired
-        if (progress.expiresAt && Date.now() < progress.expiresAt) {
-          console.log('[Sage Onboarding] Restoring saved progress');
-
-          // Restore form data
-          if (progress.formData) {
-            setFormData(prev => ({ ...prev, ...progress.formData, labFiles: [] })); // Can't restore files
-          }
-
-          // Restore current screen
-          if (progress.currentScreen) {
-            setCurrentScreen(progress.currentScreen);
-          }
-
-          // Restore integration states
-          if (progress.integrationStates) {
-            setStravaConnected(progress.integrationStates.stravaConnected || false);
-            setFitbitConnected(progress.integrationStates.fitbitConnected || false);
-            setOuraConnected(progress.integrationStates.ouraConnected || false);
-            setSlackConnected(progress.integrationStates.slackConnected || false);
-            setTeamsConnected(progress.integrationStates.teamsConnected || false);
-            setOutlookConnected(progress.integrationStates.outlookConnected || false);
-            setGmailConnected(progress.integrationStates.gmailConnected || false);
-            setVitalConnected(progress.integrationStates.vitalConnected || false);
-            setDexcomConnected(progress.integrationStates.dexcomConnected || false);
-            setAppleHealthConnected(progress.integrationStates.appleHealthConnected || false);
-            setAppleCalendarConnected(progress.integrationStates.appleCalendarConnected || false);
-          }
-
-          // Restore integration data
-          if (progress.integrationData) {
-            setGmailEmail(progress.integrationData.gmailEmail || '');
-            setSlackTeam(progress.integrationData.slackTeam || '');
-            setOutlookEmail(progress.integrationData.outlookEmail || '');
-          }
-        } else {
-          // Expired, clear it
-          localStorage.removeItem('sage_onboarding_progress');
-        }
-      } catch (err) {
-        console.error('Error restoring progress:', err);
-        localStorage.removeItem('sage_onboarding_progress');
-      }
-    }
-  }, []);
-
-  // Check if integrations are already connected on mount
-  // Restore onboarding state after OAuth redirect (mobile) - LEGACY for 30-min window
-  useEffect(() => {
-    const savedState = localStorage.getItem('sage_onboarding_state');
-    const pendingIntegration = localStorage.getItem('sage_onboarding_pending_integration');
-
-    if (savedState && pendingIntegration) {
-      try {
-        const state = JSON.parse(savedState);
-        // Check if state is less than 30 minutes old
-        if (Date.now() - state.timestamp < 30 * 60 * 1000) {
-          // Restore all state
-          setFormData(state.formData);
-          setCurrentScreen(state.currentScreen);
-          setStravaConnected(state.stravaConnected);
-          setFitbitConnected(state.fitbitConnected);
-          setOuraConnected(state.ouraConnected);
-          setWhoopConnected(state.whoopConnected);
-          setSlackConnected(state.slackConnected);
-          setTeamsConnected(state.teamsConnected);
-          setOutlookConnected(state.outlookConnected);
-          setGmailConnected(state.gmailConnected);
-          setVitalConnected(state.vitalConnected);
-          setDexcomConnected(state.dexcomConnected);
-
-          // Mark the integration as connected
-          if (pendingIntegration === 'strava') {
-            setStravaConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('strava')
-                ? prev.integrations
-                : [...prev.integrations, 'strava']
-            }));
-          } else if (pendingIntegration === 'fitbit') {
-            setFitbitConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('fitbit')
-                ? prev.integrations
-                : [...prev.integrations, 'fitbit']
-            }));
-          } else if (pendingIntegration === 'oura') {
-            setOuraConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('oura')
-                ? prev.integrations
-                : [...prev.integrations, 'oura']
-            }));
-          } else if (pendingIntegration === 'whoop') {
-            setWhoopConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('whoop')
-                ? prev.integrations
-                : [...prev.integrations, 'whoop']
-            }));
-          }
-        }
-      } catch (err) {
-        console.error('Error restoring onboarding state:', err);
-      }
-
-      // Clear saved state
-      localStorage.removeItem('sage_onboarding_state');
-      localStorage.removeItem('sage_onboarding_pending_integration');
-    }
-  }, []);
 
   // NOTE: We intentionally do NOT auto-detect connector status from cookies here.
   // This prevents connectors from appearing "connected" when starting a new onboarding
   // after completing a different product's onboarding (e.g., Forge -> Sage).
   // Connectors should only show as connected when explicitly connected during THIS session.
   // The actual tokens remain stored and will be used when fetching data.
-  // Connector state is restored from sage_onboarding_progress localStorage above if resuming.
-
-  // Auto-save progress to localStorage (debounced)
-  useEffect(() => {
-    // Skip auto-save on intro/welcome screens or if completed
-    if (['intro', 'welcome', 'final-completion'].includes(currentScreen)) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      try {
-        const progressData = {
-          formData: {
-            ...formData,
-            labFiles: [] // Can't serialize File objects
-          },
-          currentScreen,
-          integrationStates: {
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected
-          },
-          integrationData: {
-            gmailEmail,
-            slackTeam,
-            outlookEmail
-          },
-          timestamp: Date.now(),
-          expiresAt: Date.now() + (15 * 60 * 1000) // 15 minutes
-        };
-
-        localStorage.setItem('sage_onboarding_progress', JSON.stringify(progressData));
-        console.log('[Sage Onboarding] Progress auto-saved');
-      } catch (err) {
-        console.error('Error saving progress:', err);
-      }
-    }, 500); // Debounce for 500ms
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    formData,
-    currentScreen,
-    stravaConnected,
-    fitbitConnected,
-    ouraConnected,
-    slackConnected,
-    teamsConnected,
-    outlookConnected,
-    gmailConnected,
-    vitalConnected,
-    dexcomConnected,
-    appleHealthConnected,
-    appleCalendarConnected,
-    gmailEmail,
-    slackTeam,
-    outlookEmail
-  ]);
 
   // Show warning modal before connecting Gmail
   const handleConnectGmail = () => {
@@ -1073,22 +885,7 @@ export default function SageOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('sage_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('sage_onboarding_pending_integration', 'oura');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           const width = 600;
@@ -1230,22 +1027,7 @@ export default function SageOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('sage_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('sage_onboarding_pending_integration', 'fitbit');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           const width = 600;
@@ -1312,25 +1094,7 @@ export default function SageOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          // Save onboarding state to localStorage before redirect
-          localStorage.setItem('sage_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('sage_onboarding_pending_integration', 'strava');
-
-          // Redirect in same window on mobile
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Desktop: Open in popup window
@@ -1402,22 +1166,7 @@ export default function SageOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('sage_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('sage_onboarding_pending_integration', 'whoop');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window

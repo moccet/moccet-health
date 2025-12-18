@@ -527,254 +527,7 @@ export default function ForgeOnboarding() {
     }
   }, []);
 
-  // Restore progress from localStorage (general persistence)
-  useEffect(() => {
-    const savedProgress = localStorage.getItem('forge_onboarding_progress');
-
-    if (savedProgress) {
-      try {
-        const progress = JSON.parse(savedProgress);
-
-        // Check if progress hasn't expired (15 minutes)
-        if (progress.expiresAt && Date.now() < progress.expiresAt) {
-          console.log('[Forge Onboarding] Restoring saved progress');
-
-          // Restore form data
-          if (progress.formData) {
-            setFormData(prev => ({ ...prev, ...progress.formData, labFiles: [] }));
-          }
-
-          // Restore current screen
-          if (progress.currentScreen) {
-            setCurrentScreen(progress.currentScreen);
-          }
-
-          // Restore integration states
-          if (progress.integrationStates) {
-            setStravaConnected(progress.integrationStates.stravaConnected || false);
-            setFitbitConnected(progress.integrationStates.fitbitConnected || false);
-            setOuraConnected(progress.integrationStates.ouraConnected || false);
-            setSlackConnected(progress.integrationStates.slackConnected || false);
-            setTeamsConnected(progress.integrationStates.teamsConnected || false);
-            setOutlookConnected(progress.integrationStates.outlookConnected || false);
-            setGmailConnected(progress.integrationStates.gmailConnected || false);
-            setVitalConnected(progress.integrationStates.vitalConnected || false);
-            setDexcomConnected(progress.integrationStates.dexcomConnected || false);
-            setAppleHealthConnected(progress.integrationStates.appleHealthConnected || false);
-            setAppleCalendarConnected(progress.integrationStates.appleCalendarConnected || false);
-          }
-
-          // Restore integration data
-          if (progress.integrationData) {
-            setGmailEmail(progress.integrationData.gmailEmail || '');
-            setSlackTeam(progress.integrationData.slackTeam || '');
-            setOutlookEmail(progress.integrationData.outlookEmail || '');
-            setTeamsEmail(progress.integrationData.teamsEmail || '');
-          }
-        } else {
-          // Expired, clear it
-          localStorage.removeItem('forge_onboarding_progress');
-        }
-      } catch (err) {
-        console.error('Error restoring progress:', err);
-        localStorage.removeItem('forge_onboarding_progress');
-      }
-    }
-  }, []);
-
-  // Restore onboarding state after OAuth redirect (mobile) - LEGACY for 30-min window
-  useEffect(() => {
-    const savedState = localStorage.getItem('forge_onboarding_state');
-    const pendingIntegration = localStorage.getItem('forge_onboarding_pending_integration');
-
-    if (savedState && pendingIntegration) {
-      try {
-        const state = JSON.parse(savedState);
-        // Check if state is less than 30 minutes old
-        if (Date.now() - state.timestamp < 30 * 60 * 1000) {
-          // Restore all state
-          setFormData(state.formData);
-          setCurrentScreen(state.currentScreen);
-          setStravaConnected(state.stravaConnected);
-          setFitbitConnected(state.fitbitConnected);
-          setOuraConnected(state.ouraConnected);
-          setWhoopConnected(state.whoopConnected);
-          setSlackConnected(state.slackConnected);
-          setTeamsConnected(state.teamsConnected);
-          setOutlookConnected(state.outlookConnected);
-          setGmailConnected(state.gmailConnected);
-          setVitalConnected(state.vitalConnected);
-          setDexcomConnected(state.dexcomConnected);
-          setAppleHealthConnected(state.appleHealthConnected);
-          setAppleCalendarConnected(state.appleCalendarConnected);
-
-          // Mark the integration as connected
-          if (pendingIntegration === 'strava') {
-            setStravaConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('strava')
-                ? prev.integrations
-                : [...prev.integrations, 'strava']
-            }));
-          } else if (pendingIntegration === 'fitbit') {
-            setFitbitConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('fitbit')
-                ? prev.integrations
-                : [...prev.integrations, 'fitbit']
-            }));
-          } else if (pendingIntegration === 'oura') {
-            setOuraConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('oura-ring')
-                ? prev.integrations
-                : [...prev.integrations, 'oura-ring']
-            }));
-          } else if (pendingIntegration === 'whoop') {
-            setWhoopConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('whoop')
-                ? prev.integrations
-                : [...prev.integrations, 'whoop']
-            }));
-          } else if (pendingIntegration === 'dexcom') {
-            setDexcomConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('dexcom')
-                ? prev.integrations
-                : [...prev.integrations, 'dexcom']
-            }));
-          } else if (pendingIntegration === 'vital') {
-            setVitalConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('vital')
-                ? prev.integrations
-                : [...prev.integrations, 'vital']
-            }));
-          } else if (pendingIntegration === 'gmail') {
-            setGmailConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('google-calendar')
-                ? prev.integrations
-                : [...prev.integrations, 'google-calendar']
-            }));
-          } else if (pendingIntegration === 'slack') {
-            setSlackConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('slack')
-                ? prev.integrations
-                : [...prev.integrations, 'slack']
-            }));
-          } else if (pendingIntegration === 'apple-calendar') {
-            setAppleCalendarConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('apple-calendar')
-                ? prev.integrations
-                : [...prev.integrations, 'apple-calendar']
-            }));
-          } else if (pendingIntegration === 'outlook') {
-            setOutlookConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('outlook')
-                ? prev.integrations
-                : [...prev.integrations, 'outlook']
-            }));
-          } else if (pendingIntegration === 'teams') {
-            setTeamsConnected(true);
-            setFormData(prev => ({
-              ...prev,
-              integrations: prev.integrations.includes('teams')
-                ? prev.integrations
-                : [...prev.integrations, 'teams']
-            }));
-          }
-        }
-      } catch (err) {
-        console.error('Error restoring onboarding state:', err);
-      }
-
-      // Clear saved state
-      localStorage.removeItem('forge_onboarding_state');
-      localStorage.removeItem('forge_onboarding_pending_integration');
-    }
-  }, []);
-
-  // Auto-save progress to localStorage (debounced)
-  useEffect(() => {
-    // Skip auto-save on intro/welcome screens or if completed
-    if (['intro', 'welcome', 'final-completion'].includes(currentScreen)) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      try {
-        const progressData = {
-          formData: {
-            ...formData,
-            labFiles: [] // Can't serialize File objects
-          },
-          currentScreen,
-          integrationStates: {
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected
-          },
-          integrationData: {
-            gmailEmail,
-            slackTeam,
-            outlookEmail,
-            teamsEmail
-          },
-          timestamp: Date.now(),
-          expiresAt: Date.now() + (15 * 60 * 1000) // 15 minutes
-        };
-
-        localStorage.setItem('forge_onboarding_progress', JSON.stringify(progressData));
-        console.log('[Forge Onboarding] Progress auto-saved');
-      } catch (err) {
-        console.error('Error saving progress:', err);
-      }
-    }, 500); // Debounce for 500ms
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    formData,
-    currentScreen,
-    stravaConnected,
-    fitbitConnected,
-    ouraConnected,
-    slackConnected,
-    teamsConnected,
-    outlookConnected,
-    gmailConnected,
-    vitalConnected,
-    dexcomConnected,
-    appleHealthConnected,
-    appleCalendarConnected,
-    gmailEmail,
-    slackTeam,
-    outlookEmail,
-    teamsEmail
-  ]);
+  // NOTE: localStorage persistence removed - users start fresh each time they visit onboarding
 
   // Show warning modal before connecting Gmail
   const handleConnectGmail = () => {
@@ -800,24 +553,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'gmail');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -900,24 +636,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'slack');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1052,24 +771,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'apple-calendar');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1143,24 +845,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'outlook');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1255,24 +940,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'oura');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1370,24 +1038,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'dexcom');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1463,24 +1114,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'fitbit');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1548,24 +1182,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'strava');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1637,24 +1254,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'whoop');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window
@@ -1757,24 +1357,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'vital');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = linkUrl;
         } else {
           const width = 600;
@@ -1867,24 +1450,7 @@ export default function ForgeOnboarding() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         if (isMobile) {
-          localStorage.setItem('forge_onboarding_state', JSON.stringify({
-            formData,
-            currentScreen,
-            stravaConnected,
-            fitbitConnected,
-            ouraConnected,
-            whoopConnected,
-            slackConnected,
-            teamsConnected,
-            outlookConnected,
-            gmailConnected,
-            vitalConnected,
-            dexcomConnected,
-            appleHealthConnected,
-            appleCalendarConnected,
-            timestamp: Date.now()
-          }));
-          localStorage.setItem('forge_onboarding_pending_integration', 'teams');
+          // Mobile redirect - user will need to reconnect if they leave
           window.location.href = data.authUrl;
         } else {
           // Open in a new window

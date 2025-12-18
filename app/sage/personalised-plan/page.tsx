@@ -925,7 +925,7 @@ export default function PersonalisedPlanPage() {
                   <li key={idx}>
                     {typeof item === 'string' ? item : (
                       <div>
-                        <strong>{item.time}</strong> - {item.action}
+                        {item.time && <strong>{item.time}</strong>}{item.time ? ' - ' : ''}{item.action}
                         {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
                       </div>
                     )}
@@ -942,7 +942,7 @@ export default function PersonalisedPlanPage() {
                   ? plan.dailyRecommendations.empowerGut
                   : plan.dailyRecommendations.empowerGut.items || []
                 ).map((item: any, idx: number) => (
-                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time ? item.time + ' - ' : ''}${item.action}`}</li>
                 ))}
               </ul>
             </div>
@@ -958,7 +958,7 @@ export default function PersonalisedPlanPage() {
                   <li key={idx}>
                     {typeof item === 'string' ? item : (
                       <div>
-                        <strong>{item.time}</strong> - {item.action}
+                        {item.time && <strong>{item.time}</strong>}{item.time ? ' - ' : ''}{item.action}
                         {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
                       </div>
                     )}
@@ -975,7 +975,7 @@ export default function PersonalisedPlanPage() {
                   ? plan.dailyRecommendations.energyOptimization
                   : plan.dailyRecommendations.energyOptimization.items || []
                 ).map((item: any, idx: number) => (
-                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time ? item.time + ' - ' : ''}${item.action}`}</li>
                 ))}
               </ul>
             </div>
@@ -988,7 +988,7 @@ export default function PersonalisedPlanPage() {
                   ? plan.dailyRecommendations.middayMastery
                   : plan.dailyRecommendations.middayMastery.items || []
                 ).map((item: any, idx: number) => (
-                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time ? item.time + ' - ' : ''}${item.action}`}</li>
                 ))}
               </ul>
             </div>
@@ -1001,7 +1001,7 @@ export default function PersonalisedPlanPage() {
                   ? plan.dailyRecommendations.eveningNourishment
                   : plan.dailyRecommendations.eveningNourishment.items || []
                 ).map((item: any, idx: number) => (
-                  <li key={idx}>{typeof item === 'string' ? item : `${item.time} - ${item.action}`}</li>
+                  <li key={idx}>{typeof item === 'string' ? item : `${item.time ? item.time + ' - ' : ''}${item.action}`}</li>
                 ))}
               </ul>
             </div>
@@ -1017,7 +1017,7 @@ export default function PersonalisedPlanPage() {
                   <li key={idx}>
                     {typeof item === 'string' ? item : (
                       <div>
-                        <strong>{item.time}</strong> - {item.action}
+                        {item.time && <strong>{item.time}</strong>}{item.time ? ' - ' : ''}{item.action}
                         {item.description && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}>{item.description}</div>}
                       </div>
                     )}
@@ -1171,7 +1171,7 @@ export default function PersonalisedPlanPage() {
           </>
         )}
 
-        {!loadingMicronutrients && !micronutrients && plan.micronutrientFocus && (
+        {!loadingMicronutrients && (!micronutrients || !micronutrients.micronutrients || micronutrients.micronutrients.length === 0) && plan.micronutrientFocus && plan.micronutrientFocus.length > 0 && (
           <>
             {/* Personalized intro for fallback micronutrients */}
             <p className="micronutrients-intro">
@@ -1205,6 +1205,13 @@ export default function PersonalisedPlanPage() {
             </table>
           </div>
           </>
+        )}
+
+        {/* Fallback when no micronutrient data from either source */}
+        {!loadingMicronutrients && (!micronutrients || !micronutrients.micronutrients || micronutrients.micronutrients.length === 0) && (!plan.micronutrientFocus || plan.micronutrientFocus.length === 0) && (
+          <p className="micronutrients-intro" style={{ color: '#666' }}>
+            Micronutrient recommendations are being personalized for you. Please check back soon.
+          </p>
         )}
       </section>
 

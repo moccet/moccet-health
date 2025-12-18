@@ -434,8 +434,8 @@ function createDefaultGutHealth() {
   return {
     title: 'Gut Health Focus',
     items: [
-      { action: 'Include fermented foods daily', description: 'Yogurt, kefir, sauerkraut, or kimchi' },
-      { action: 'Eat diverse plant foods', description: 'Aim for 30+ different plants weekly' },
+      { time: 'With meals', action: 'Include fermented foods daily', description: 'Yogurt, kefir, sauerkraut, or kimchi' },
+      { time: 'Throughout day', action: 'Eat diverse plant foods', description: 'Aim for 30+ different plants weekly' },
     ],
   };
 }
@@ -445,7 +445,7 @@ function createDefaultAfternoon() {
     title: 'Afternoon Vitality',
     items: [
       { time: '2-3 PM', action: 'Protein-rich snack if needed', description: 'Prevent energy crashes' },
-      { action: 'Stay hydrated', description: 'Continue water intake through the day' },
+      { time: 'Every 1-2 hours', action: 'Stay hydrated', description: 'Continue water intake through the day' },
     ],
   };
 }
@@ -454,8 +454,8 @@ function createDefaultEnergy() {
   return {
     title: 'Energy Optimization',
     items: [
-      { action: 'Balance macros at each meal', description: 'Combine protein, healthy fats, and complex carbs' },
-      { action: 'Avoid large sugar spikes', description: 'Choose low-glycemic carbohydrate sources' },
+      { time: 'Each meal', action: 'Balance macros at each meal', description: 'Combine protein, healthy fats, and complex carbs' },
+      { time: 'Throughout day', action: 'Avoid large sugar spikes', description: 'Choose low-glycemic carbohydrate sources' },
     ],
   };
 }
@@ -465,7 +465,7 @@ function createDefaultEvening() {
     title: 'Evening Nourishment',
     items: [
       { time: '3+ hours before bed', action: 'Complete your last meal', description: 'Allow proper digestion' },
-      { action: 'Include magnesium-rich foods', description: 'Support sleep quality' },
+      { time: 'With dinner', action: 'Include magnesium-rich foods', description: 'Support sleep quality' },
     ],
   };
 }

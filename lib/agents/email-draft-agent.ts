@@ -213,8 +213,8 @@ async function createGmailDraft(
 // DATABASE OPERATIONS
 // =========================================================================
 
-async function storeEmailDraft(
-  userEmail: string,
+async function updateEmailDraft(
+  existingDraftId: string,
   originalEmail: OriginalEmail,
   draft: GeneratedDraft,
   classification: EmailClassification | null,
@@ -224,14 +224,11 @@ async function storeEmailDraft(
 ): Promise<string | null> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
+  // Update the existing placeholder record with full draft data
+  const { error } = await supabase
     .from('email_drafts')
-    .insert({
-      user_email: userEmail,
+    .update({
       user_code: userCode || null,
-      original_message_id: originalEmail.messageId,
-      original_thread_id: originalEmail.threadId,
-      original_subject: originalEmail.subject,
       original_from: originalEmail.from,
       original_from_name: originalEmail.fromName || null,
       original_snippet: originalEmail.snippet || null,
@@ -250,17 +247,15 @@ async function storeEmailDraft(
       reasoning_steps: [draft.reasoning],
       generation_model: modelUsed,
       gmail_created_at: gmailDraftId ? new Date().toISOString() : null,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
     })
-    .select('id')
-    .single();
+    .eq('id', existingDraftId);
 
   if (error) {
-    console.error('[EmailDraftAgent] Failed to store draft:', error);
+    console.error('[EmailDraftAgent] Failed to update draft:', error);
     return null;
   }
 
-  return data?.id || null;
+  return existingDraftId;
 }
 
 async function getUserSettings(userEmail: string, _userCode?: string): Promise<DraftSettings> {
@@ -486,25 +481,50 @@ async function initializeNode(state: EmailDraftState): Promise<Partial<EmailDraf
 }
 
 /**
- * Check if there's already a pending draft for this specific message
- * Only skip if we already have a draft for THIS message, not older messages in the thread
+ * Try to acquire a processing lock for this message by inserting a placeholder record.
+ * This prevents race conditions where multiple webhook calls try to create drafts simultaneously.
+ * Returns true if lock acquired (we should process), false if already being processed.
  */
-async function hasPendingDraftForMessage(
+async function tryAcquireProcessingLock(
   userEmail: string,
-  messageId: string
-): Promise<boolean> {
+  messageId: string,
+  threadId: string,
+  subject: string
+): Promise<{ acquired: boolean; existingDraftId?: string }> {
   const supabase = createAdminClient();
 
-  const { data } = await supabase
+  // Try to insert a placeholder with status 'processing'
+  // If it fails due to unique constraint, another process is already handling it
+  const { data, error } = await supabase
     .from('email_drafts')
+    .insert({
+      user_email: userEmail,
+      original_message_id: messageId,
+      original_thread_id: threadId,
+      original_subject: subject,
+      original_from: '',
+      original_received_at: new Date().toISOString(),
+      original_labels: [],
+      draft_subject: '',
+      draft_body: '',
+      status: 'processing',
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    })
     .select('id')
-    .eq('user_email', userEmail)
-    .eq('original_message_id', messageId)
-    .in('status', ['pending', 'created'])
-    .limit(1)
-    .maybeSingle();
+    .single();
 
-  return !!data;
+  if (error) {
+    if (error.code === '23505') {
+      // Duplicate key - another process is handling this or it's already done
+      console.log(`[EmailDraftAgent] Lock not acquired - message ${messageId} already being processed`);
+      return { acquired: false };
+    }
+    console.error('[EmailDraftAgent] Error acquiring lock:', error);
+    return { acquired: false };
+  }
+
+  console.log(`[EmailDraftAgent] Lock acquired for message ${messageId}`);
+  return { acquired: true, existingDraftId: data?.id };
 }
 
 /**
@@ -513,20 +533,25 @@ async function hasPendingDraftForMessage(
 async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
   console.log('[EmailDraftAgent] Classifying email...');
 
-  // Check if there's already a pending draft for this specific message
-  // We now check by messageId, not threadId, so new messages in a thread get drafts
-  const hasPendingDraft = await hasPendingDraftForMessage(
+  // Try to acquire a processing lock - this prevents race conditions
+  // where multiple webhook calls try to create drafts for the same message
+  const lockResult = await tryAcquireProcessingLock(
     state.userEmail,
-    state.originalEmail.messageId
+    state.originalEmail.messageId,
+    state.originalEmail.threadId,
+    state.originalEmail.subject
   );
 
-  if (hasPendingDraft) {
-    console.log(`[EmailDraftAgent] Skipping - already have pending draft for message ${state.originalEmail.messageId}`);
+  if (!lockResult.acquired) {
+    console.log(`[EmailDraftAgent] Skipping - another process is handling message ${state.originalEmail.messageId}`);
     return {
       status: 'skipped',
-      reasoning: ['Already have a pending draft for this message - skipping to avoid duplicates'],
+      reasoning: ['Another process is already handling this message - skipping to avoid duplicates'],
     };
   }
+
+  // Store the draft record ID so we can update it later
+  const draftRecordId = lockResult.existingDraftId || null;
 
   const emailToClassify: EmailToClassify = {
     ...state.originalEmail,
@@ -539,6 +564,11 @@ async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftS
   });
 
   if (!classification.needsResponse) {
+    // Delete the placeholder record since we won't be creating a draft
+    if (draftRecordId) {
+      const supabase = createAdminClient();
+      await supabase.from('email_drafts').delete().eq('id', draftRecordId);
+    }
     return {
       classification,
       status: 'skipped',
@@ -548,6 +578,7 @@ async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftS
 
   return {
     classification,
+    draftRecordId, // Pass the record ID so we can update it later
     status: 'generating',
     reasoning: [`Email classified as ${classification.emailType} with ${classification.urgencyLevel} urgency`],
   };
@@ -610,6 +641,13 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     };
   }
 
+  if (!state.draftRecordId) {
+    return {
+      status: 'failed',
+      error: 'No draft record ID - lock was not acquired',
+    };
+  }
+
   let gmailDraftId: string | null = null;
 
   // Create Gmail draft if enabled and not requiring approval
@@ -625,9 +663,9 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     }
   }
 
-  // Store in database
-  const draftRecordId = await storeEmailDraft(
-    state.userEmail,
+  // Update the existing draft record (created during lock acquisition)
+  const draftRecordId = await updateEmailDraft(
+    state.draftRecordId,
     state.originalEmail,
     state.generatedDraft,
     state.classification,

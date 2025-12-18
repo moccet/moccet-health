@@ -28,7 +28,7 @@ export default function SageClient() {
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAKCAIAAAAYbLhkAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAyUlEQVR4nAG+AEH/AP+jTv+UQft9JehQALsiAH8XAAD/1oT/2IX/z3v/p1LpVQKfGAAA/++f/+aV/+mZ/+mW/6ZQyzgAAP+yXP+GK/+vVv/qmf/IdedZAgDiUACjFwC9RQL/umT/o0rYRAAAox4APQkgKQIjoysA0jwAixcAAJkdACoFJhAANDsEH1AIFS0HJgDKNwBVDBMYADENADUMADUIADYA7l0GryEAXw0POQkiLgYmLgYmAPt2HeFDALUhAIYYAGkQC1kOFC/XRY2Tszt+AAAAAElFTkSuQmCC"
           />
         </div>
-        <Link href="/" className="logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -103,7 +103,7 @@ export default function SageClient() {
               href="https://x.com/moccet"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on X (formerly Twitter)"
+              aria-label="Visit moccet on X (formerly Twitter)"
             >
               <img
                 className="social-link"
@@ -115,7 +115,7 @@ export default function SageClient() {
               href="https://www.linkedin.com/company/moccet/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on LinkedIn"
+              aria-label="Visit moccet on LinkedIn"
             >
               <img
                 className="social-link"

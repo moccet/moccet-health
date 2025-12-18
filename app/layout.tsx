@@ -24,14 +24,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: "Moccet - Autonomous Health AI Platform",
-    template: "%s | Moccet"
+    default: "moccet - Autonomous Health AI Platform",
+    template: "%s | moccet"
   },
   description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and specialized programs. AI agents that monitor, recommend, and coordinate with clinicians.",
   keywords: "autonomous health AI, health AI platform, AI health agents, continuous health monitoring, predictive health AI, personalized nutrition, AI nutrition plan, metabolic health, blood biomarker analysis, CGM nutrition, microbiome diet, personalized fitness, HRV training, AI physician consult, family health monitoring, caregiver health alerts, surgery preparation AI, travel health AI, early disease detection, clinical AI integration",
-  authors: [{ name: "Moccet" }],
-  creator: "Moccet",
-  publisher: "Moccet Inc",
+  authors: [{ name: "moccet" }],
+  creator: "moccet",
+  publisher: "moccet Inc",
   robots: {
     index: true,
     follow: true,
@@ -71,10 +71,10 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: "Moccet - Autonomous Health AI Platform",
+    title: "moccet - Autonomous Health AI Platform",
     description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and AI agents that monitor, recommend, and coordinate with clinicians.",
     type: "website",
-    siteName: "Moccet",
+    siteName: "moccet",
     locale: "en_US",
     url: "https://www.moccet.ai",
     images: [
@@ -82,14 +82,14 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Moccet - Autonomous Health AI Platform',
+        alt: 'moccet - Autonomous Health AI Platform',
       }
     ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@moccet",
-    title: "Moccet - Autonomous Health AI Platform",
+    title: "moccet - Autonomous Health AI Platform",
     description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, and AI agents that monitor, recommend, and coordinate with clinicians.",
     images: ['/og-image.png'],
   },

@@ -1,14 +1,14 @@
 /**
  * Health-focused Schema.org JSON-LD schemas for SEO and AI discoverability
- * These schemas help search engines and AI assistants understand Moccet's health offerings
+ * These schemas help search engines and AI assistants understand moccet's health offerings
  */
 
 // Organization Schema - Enhanced for full health AI platform
 export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "Moccet",
-  "alternateName": "Moccet Inc",
+  "name": "moccet",
+  "alternateName": "moccet Inc",
   "description": "Autonomous health AI platform that embeds AI agents into daily life, relationships, and clinical workflows. Combines continuous health monitoring, personalized AI recommendations, and deep clinical integration for proactive, personalized care.",
   "url": "https://www.moccet.ai",
   "logo": "https://www.moccet.ai/logo.png",
@@ -80,7 +80,7 @@ export const sageProductSchema = {
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Moccet Sage",
+      "name": "moccet sage",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web",
       "description": "AI-powered personalized nutrition planning based on metabolic data, blood biomarkers, and microbiome analysis",
@@ -92,7 +92,7 @@ export const sageProductSchema = {
       },
       "provider": {
         "@type": "Organization",
-        "name": "Moccet",
+        "name": "moccet",
         "url": "https://www.moccet.ai"
       },
       "featureList": [
@@ -144,7 +144,7 @@ export const forgeProductSchema = {
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Moccet Forge",
+      "name": "moccet forge",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web",
       "description": "AI-powered personalized fitness programming based on biomarkers, HRV, and recovery data",
@@ -156,7 +156,7 @@ export const forgeProductSchema = {
       },
       "provider": {
         "@type": "Organization",
-        "name": "Moccet",
+        "name": "moccet",
         "url": "https://www.moccet.ai"
       },
       "featureList": [
@@ -286,8 +286,8 @@ export const forgeFAQSchema = {
 export const sageHowToSchema = {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  "name": "How to Get Your Personalized Nutrition Plan from Moccet Sage",
-  "description": "Step-by-step guide to creating your personalized nutrition plan based on metabolic data using Moccet Sage",
+  "name": "How to Get Your Personalized Nutrition Plan from moccet sage",
+  "description": "Step-by-step guide to creating your personalized nutrition plan based on metabolic data using moccet sage",
   "totalTime": "PT15M",
   "step": [
     {
@@ -327,8 +327,8 @@ export const sageHowToSchema = {
 export const forgeHowToSchema = {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  "name": "How to Get Your Personalized Training Program from Moccet Forge",
-  "description": "Step-by-step guide to creating your personalized fitness program based on biomarkers and recovery data using Moccet Forge",
+  "name": "How to Get Your Personalized Training Program from moccet forge",
+  "description": "Step-by-step guide to creating your personalized fitness program based on biomarkers and recovery data using moccet forge",
   "totalTime": "PT15M",
   "step": [
     {
@@ -368,8 +368,8 @@ export const forgeHowToSchema = {
 export const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "Moccet",
-  "alternateName": "Moccet - Autonomous Health AI Platform",
+  "name": "moccet",
+  "alternateName": "moccet - Autonomous Health AI Platform",
   "url": "https://www.moccet.ai",
   "description": "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and specialized health programs.",
   "potentialAction": {
@@ -379,17 +379,17 @@ export const websiteSchema = {
   }
 };
 
-// Moccet Agent Schema - Core Platform AI
+// moccet Agent Schema - Core Platform AI
 export const moccetAgentSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "The Moccet Agent",
+  "name": "The moccet Agent",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Web",
   "description": "Core AI agent that continuously monitors health data, surfaces actionable insights, and coordinates with specialized agents and human clinicians.",
   "provider": {
     "@type": "Organization",
-    "name": "Moccet",
+    "name": "moccet",
     "url": "https://www.moccet.ai"
   },
   "featureList": [
@@ -401,13 +401,13 @@ export const moccetAgentSchema = {
   ]
 };
 
-// Moccet-Medic Schema - AI Health Agent
+// moccet-Medic Schema - AI Health Agent
 export const moccetMedicSchema = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "MedicalWebPage",
-      "name": "Moccet-Medic - AI Health Agent",
+      "name": "moccet-Medic - AI Health Agent",
       "description": "AI health agent that conducts AI-to-AI physician consultations, enables early detection, and seamlessly escalates to human clinicians.",
       "specialty": {
         "@type": "MedicalSpecialty",
@@ -416,13 +416,13 @@ export const moccetMedicSchema = {
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Moccet-Medic",
+      "name": "moccet-Medic",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web",
       "description": "AI health agent with AI-to-AI physician consultations, early detection through pattern analysis, and human clinician escalation",
       "provider": {
         "@type": "Organization",
-        "name": "Moccet",
+        "name": "moccet",
         "url": "https://www.moccet.ai"
       },
       "featureList": [
@@ -437,17 +437,17 @@ export const moccetMedicSchema = {
   ]
 };
 
-// Moccet Share Schema - Family Health Coordination
+// moccet Share Schema - Family Health Coordination
 export const moccetShareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Moccet Share",
+  "name": "moccet Share",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Web",
   "description": "Family health coordination platform with shared health views, baseline-aware alerts, and fine-grained privacy controls for caregivers and families.",
   "provider": {
     "@type": "Organization",
-    "name": "Moccet",
+    "name": "moccet",
     "url": "https://www.moccet.ai"
   },
   "featureList": [
@@ -460,17 +460,17 @@ export const moccetShareSchema = {
   ]
 };
 
-// Moccet Connect Schema - Social Health Coordination
+// moccet Connect Schema - Social Health Coordination
 export const moccetConnectSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Moccet Connect",
+  "name": "moccet Connect",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Web",
   "description": "Social health coordination that matches users for workouts and activities based on schedules, fitness levels, and health goals.",
   "provider": {
     "@type": "Organization",
-    "name": "Moccet",
+    "name": "moccet",
     "url": "https://www.moccet.ai"
   },
   "featureList": [
@@ -497,13 +497,13 @@ export const surgicalKeySchema = {
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Moccet Surgical Key",
+      "name": "moccet Surgical Key",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web",
       "description": "Peri-operative health platform for surgery preparation, recovery optimization, and care team coordination",
       "provider": {
         "@type": "Organization",
-        "name": "Moccet",
+        "name": "moccet",
         "url": "https://www.moccet.ai"
       },
       "featureList": [
@@ -522,13 +522,13 @@ export const surgicalKeySchema = {
 export const flightPassSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Moccet Flight Pass",
+  "name": "moccet Flight Pass",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Web",
   "description": "Travel health management with readiness assessment, jet lag protocols, and health optimization for flights and travel.",
   "provider": {
     "@type": "Organization",
-    "name": "Moccet",
+    "name": "moccet",
     "url": "https://www.moccet.ai"
   },
   "featureList": [
@@ -547,34 +547,34 @@ export const platformFAQSchema = {
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "What is Moccet?",
+      "name": "What is moccet?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Moccet is an autonomous health AI platform that embeds AI agents into daily life, relationships, and clinical workflows. It combines continuous health monitoring, personalized AI recommendations, and deep clinical integration to deliver proactive, personalized care. Products include Sage (nutrition AI), Forge (fitness AI), Moccet-Medic (clinical AI), Share (family health), Connect (social health), Surgical Key (surgery preparation), and Flight Pass (travel health)."
+        "text": "moccet is an autonomous health AI platform that embeds AI agents into daily life, relationships, and clinical workflows. It combines continuous health monitoring, personalized AI recommendations, and deep clinical integration to deliver proactive, personalized care. Products include Sage (nutrition AI), Forge (fitness AI), moccet-Medic (clinical AI), Share (family health), Connect (social health), Surgical Key (surgery preparation), and Flight Pass (travel health)."
       }
     },
     {
       "@type": "Question",
-      "name": "How is Moccet different from other health apps?",
+      "name": "How is moccet different from other health apps?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Moccet uses actual biological data (blood tests, CGM, microbiome, HRV, wearables) with autonomous AI agents, rather than questionnaires or generic formulas. The platform models health as a dynamic system with continuous trajectory monitoring, enabling prevention and early intervention. It also integrates deeply with clinical workflows and human clinicians."
+        "text": "moccet uses actual biological data (blood tests, CGM, microbiome, HRV, wearables) with autonomous AI agents, rather than questionnaires or generic formulas. The platform models health as a dynamic system with continuous trajectory monitoring, enabling prevention and early intervention. It also integrates deeply with clinical workflows and human clinicians."
       }
     },
     {
       "@type": "Question",
-      "name": "What data does Moccet integrate with?",
+      "name": "What data does moccet integrate with?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Moccet integrates with Apple Health, Fitbit, Oura Ring, Garmin, Whoop, Strava, Dexcom CGM, blood test results, microbiome tests, calendar apps (Apple, Google, Outlook), and medical records where available. Each additional data source improves the precision of recommendations."
+        "text": "moccet integrates with Apple Health, Fitbit, Oura Ring, Garmin, Whoop, Strava, Dexcom CGM, blood test results, microbiome tests, calendar apps (Apple, Google, Outlook), and medical records where available. Each additional data source improves the precision of recommendations."
       }
     },
     {
       "@type": "Question",
-      "name": "Is Moccet a medical device?",
+      "name": "Is moccet a medical device?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Moccet provides health insights and recommendations based on your data but is not a medical device. It does not diagnose, treat, or prevent disease. The platform is designed to work alongside healthcare providers, with seamless escalation to human clinicians when appropriate."
+        "text": "moccet provides health insights and recommendations based on your data but is not a medical device. It does not diagnose, treat, or prevent disease. The platform is designed to work alongside healthcare providers, with seamless escalation to human clinicians when appropriate."
       }
     }
   ]

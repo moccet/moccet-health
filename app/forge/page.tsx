@@ -4,11 +4,11 @@ import { StructuredData } from '../components/SEOHead';
 import { forgeProductSchema, forgeFAQSchema, forgeHowToSchema } from '@/lib/schemas/health-schemas';
 
 export const metadata: Metadata = {
-  title: 'Forge - AI-Powered Personalized Training Programs',
+  title: 'forge - AI-Powered Personalized Training Programs',
   description: 'Get fitness and training programs built from your biomarkers, HRV data, and recovery patterns. AI fitness planning that adapts to your biology for optimal results.',
   keywords: 'personalized training program, AI fitness, HRV training, biomarker workout, personalized exercise plan, recovery optimization, fitness AI, personalized workout, heart rate variability training, overtraining prevention, adaptive fitness program',
   openGraph: {
-    title: 'Forge - AI-Powered Personalized Training Programs | Moccet',
+    title: 'forge - AI-Powered Personalized Training Programs | moccet',
     description: 'Get fitness and training programs built from your biomarkers, HRV data, and recovery patterns. AI that adapts to your biology.',
     url: 'https://www.moccet.ai/forge',
     type: 'website',
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
         url: '/images/forge-og.png',
         width: 1200,
         height: 630,
-        alt: 'Moccet Forge - Personalized Fitness AI',
+        alt: 'moccet forge - Personalized Fitness AI',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Forge - AI-Powered Personalized Training Programs',
+    title: 'forge - AI-Powered Personalized Training Programs',
     description: 'Get fitness and training programs built from your biomarkers, HRV data, and recovery patterns.',
     images: ['/images/forge-og.png'],
   },

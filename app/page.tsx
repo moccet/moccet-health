@@ -67,7 +67,7 @@ export default function LandingPage() {
         },
         body: JSON.stringify({
           email,
-          source: 'Moccet Landing Page',
+          source: 'moccet Landing Page',
         }),
       });
     } catch (error) {
@@ -98,7 +98,7 @@ export default function LandingPage() {
   return (
     <main className="landing-page-moccet">
       <section className="first-page">
-        <Link href="/" className="logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -196,7 +196,7 @@ export default function LandingPage() {
               href="https://x.com/moccet"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on X (formerly Twitter)"
+              aria-label="Visit moccet on X (formerly Twitter)"
             >
               <img
                 className="social-link"
@@ -208,7 +208,7 @@ export default function LandingPage() {
               href="https://www.linkedin.com/company/moccet/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on LinkedIn"
+              aria-label="Visit moccet on LinkedIn"
             >
               <svg
                 className="linkedin-icon"

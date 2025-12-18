@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="privacy-page">
       {/* Navigation */}
       <nav className="privacy-nav">
-        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="nav-logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>

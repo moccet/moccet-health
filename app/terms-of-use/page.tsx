@@ -11,7 +11,7 @@ export default function TermsOfUsePage() {
     <main className="terms-page">
       {/* Navigation */}
       <nav className="terms-nav">
-        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="nav-logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>

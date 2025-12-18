@@ -105,7 +105,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
     return (
       <main className="blog-detail-page">
         <nav className="news-nav">
-          <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+          <Link href="/" className="nav-logo" role="img" aria-label="moccet logo">
             <div className="ellipse"></div>
             <div className="div"></div>
             <div className="ellipse-2"></div>
@@ -151,7 +151,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
       )}
 
       <nav className="news-nav">
-        <Link href="/" className="nav-logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="nav-logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>

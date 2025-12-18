@@ -28,7 +28,7 @@ export default function ForgeClient() {
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAKCAIAAAD3rtNaAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA50lEQVR4nAHcACP/AMtUS7EDAJAAHmEADV8AAHIAAHUAAAD/3Mr2vYrLV1GxMktzAABTAABoAAAA7t3/vImM2o9/vUBRiAAAZgAAVgAAANS215tFYXkAFY8oO5QvGZUeAIAAAACnX4OqTGKHAABoAAB1AACdOCmYJCIAokNYeQAYpzEglwACeQAAggAAgQAXAP/c18BpZaU6N580HqE2M4QAAIEAAAD/+P/czt/Qo6+hSC6kYVWwZmKJAAAA1p2n1crofitPuF1vbwATXgAFjT9EAFgBM6SXr4ZHYX0ALqQ8WFsAAEEAACdbTCkY+R3SAAAAAElFTkSuQmCC"
           />
         </div>
-        <Link href="/" className="logo" role="img" aria-label="Moccet logo">
+        <Link href="/" className="logo" role="img" aria-label="moccet logo">
           <div className="ellipse"></div>
           <div className="div"></div>
           <div className="ellipse-2"></div>
@@ -103,7 +103,7 @@ export default function ForgeClient() {
               href="https://x.com/moccet"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on X (formerly Twitter)"
+              aria-label="Visit moccet on X (formerly Twitter)"
             >
               <img
                 className="social-link"
@@ -115,7 +115,7 @@ export default function ForgeClient() {
               href="https://www.linkedin.com/company/moccet/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Visit Moccet on LinkedIn"
+              aria-label="Visit moccet on LinkedIn"
             >
               <img
                 className="social-link"

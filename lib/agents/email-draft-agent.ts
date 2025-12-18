@@ -486,11 +486,12 @@ async function initializeNode(state: EmailDraftState): Promise<Partial<EmailDraf
 }
 
 /**
- * Check if there's already a pending draft for this thread
+ * Check if there's already a pending draft for this specific message
+ * Only skip if we already have a draft for THIS message, not older messages in the thread
  */
-async function hasPendingDraftForThread(
+async function hasPendingDraftForMessage(
   userEmail: string,
-  threadId: string
+  messageId: string
 ): Promise<boolean> {
   const supabase = createAdminClient();
 
@@ -498,7 +499,7 @@ async function hasPendingDraftForThread(
     .from('email_drafts')
     .select('id')
     .eq('user_email', userEmail)
-    .eq('original_thread_id', threadId)
+    .eq('original_message_id', messageId)
     .in('status', ['pending', 'created'])
     .limit(1)
     .maybeSingle();
@@ -512,17 +513,18 @@ async function hasPendingDraftForThread(
 async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
   console.log('[EmailDraftAgent] Classifying email...');
 
-  // Check if there's already a pending draft for this thread
-  const hasPendingDraft = await hasPendingDraftForThread(
+  // Check if there's already a pending draft for this specific message
+  // We now check by messageId, not threadId, so new messages in a thread get drafts
+  const hasPendingDraft = await hasPendingDraftForMessage(
     state.userEmail,
-    state.originalEmail.threadId
+    state.originalEmail.messageId
   );
 
   if (hasPendingDraft) {
-    console.log(`[EmailDraftAgent] Skipping - already have pending draft for thread ${state.originalEmail.threadId}`);
+    console.log(`[EmailDraftAgent] Skipping - already have pending draft for message ${state.originalEmail.messageId}`);
     return {
       status: 'skipped',
-      reasoning: ['Already have a pending draft for this thread - skipping to avoid duplicates'],
+      reasoning: ['Already have a pending draft for this message - skipping to avoid duplicates'],
     };
   }
 

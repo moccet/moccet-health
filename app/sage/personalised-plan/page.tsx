@@ -2017,7 +2017,17 @@ export default function PersonalisedPlanPage() {
 
             {/* Use lifestyleIntegration state (from separate column) OR fall back to plan.lifestyleIntegration */}
             {(() => {
-              const lifestyle = lifestyleIntegration || (plan as any).lifestyleIntegration;
+              // Check if lifestyleIntegration state has the expected structure (old format)
+              // If not, fall back to plan.lifestyleIntegration which may have the correct structure
+              const hasExpectedStructure = (data: any) => {
+                return data && (data.sleepOptimization || data.exerciseProtocol || data.stressManagement || data.sleep || data.exercise);
+              };
+
+              // Prefer lifestyleIntegration state if it has expected structure, otherwise use plan.lifestyleIntegration
+              const lifestyle = hasExpectedStructure(lifestyleIntegration)
+                ? lifestyleIntegration
+                : ((plan as any)?.lifestyleIntegration || lifestyleIntegration);
+
               if (!lifestyle) return null;
 
               return (
@@ -2227,7 +2237,7 @@ export default function PersonalisedPlanPage() {
                     )}
 
                     {/* Primary Interventions */}
-                    {lifestyle.stressManagement.primaryInterventions && lifestyleIntegration.stressManagement.primaryInterventions.length > 0 && (
+                    {lifestyle.stressManagement.primaryInterventions && lifestyle.stressManagement.primaryInterventions.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Key Strategies:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -2262,7 +2272,7 @@ export default function PersonalisedPlanPage() {
                     )}
 
                     {/* Daily Practices (legacy format) */}
-                    {lifestyle.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
+                    {lifestyle.stressManagement.dailyPractices && lifestyle.stressManagement.dailyPractices.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Daily Practices:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -2314,7 +2324,7 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {lifestyle.cholesterolManagement.keyStrategies && lifestyleIntegration.cholesterolManagement.keyStrategies.length > 0 && (
+                    {lifestyle.cholesterolManagement.keyStrategies && lifestyle.cholesterolManagement.keyStrategies.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Key Strategies:</strong></p>
                         <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
@@ -2346,7 +2356,7 @@ export default function PersonalisedPlanPage() {
                       <p className="lifestyle-subtitle">{lifestyle.skinImprovement.personalizedIntro}</p>
                     )}
 
-                    {lifestyle.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
+                    {lifestyle.skinImprovement.morningRoutine && lifestyle.skinImprovement.morningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Morning Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -2359,7 +2369,7 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {lifestyle.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
+                    {lifestyle.skinImprovement.eveningRoutine && lifestyle.skinImprovement.eveningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Evening Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

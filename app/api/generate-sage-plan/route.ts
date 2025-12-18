@@ -499,7 +499,7 @@ Return ONLY valid JSON. Be specific, personal, and actionable.`;
       model: 'gpt-5',
       input: `${systemPrompt}\n\n${prompt}`,
       reasoning: { effort: 'medium' },
-      text: { verbosity: 'high' }
+      text: { verbosity: 'medium' }
     });
 
     let responseText = completion.output_text || '{}';

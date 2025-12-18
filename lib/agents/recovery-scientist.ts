@@ -43,11 +43,23 @@ Your task is to create personalized recovery protocols based on the athlete's:
 - Training load
 - Injury history
 - Recovery capacity
+- Wearable data (Whoop, Oura) when available
+
+ECOSYSTEM DATA INTEGRATION:
+When wearable/ecosystem data is provided, use it to personalize recommendations:
+- Recovery Score < 50: Emphasize active recovery, reduce training intensity recommendations
+- HRV below baseline: Focus on parasympathetic activation (breathing, meditation)
+- Sleep debt > 5 hours: Prioritize sleep extension strategies
+- High strain score: Recommend longer recovery periods between sessions
+- Elevated resting HR: Suggest nervous system recovery protocols
+- Work stress indicators: Include stress management for busy professionals
+
+Always reference specific metrics when available (e.g., "Your Whoop shows 42% recovery" not just "low recovery").
 
 CRITICAL RULES:
 1. NEVER use colons (:) in your text — use em dashes (—) instead
 2. Use "you" and "your" when addressing the athlete
-3. Reference specific data from their profile
+3. Reference specific data from their profile and wearables
 4. Keep recommendations practical and actionable
 5. All text should be warm, encouraging, and professional
 
@@ -89,7 +101,7 @@ Return valid JSON with this exact structure:
 // ============================================================================
 
 function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
-  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights } = athleteProfile;
+  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights, ecosystemMetrics } = athleteProfile;
 
   let prompt = `# ATHLETE RECOVERY PROFILE
 
@@ -99,15 +111,116 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
 - Training Days — ${profile.trainingDays} per week
 - Primary Goal — ${profile.primaryGoal}
 
-## Recovery Metrics
+## Recovery Metrics (Computed)
 - Sleep Quality — ${computedMetrics.sleepScore}/10
 - Stress Level — ${computedMetrics.stressScore}
 - Recovery Capacity — ${computedMetrics.recoveryCapacity}
 - HRV Trend — ${computedMetrics.hrvTrend}
 - Overtraining Risk — ${computedMetrics.overtrainingRisk}
-
-## Constraints
 `;
+
+  // Add detailed ecosystem metrics if available
+  if (ecosystemMetrics) {
+    const { recovery, schedule } = ecosystemMetrics;
+
+    if (recovery.combinedRecoveryScore || recovery.hrvCurrent || recovery.sleepHoursAvg || recovery.strainScore) {
+      prompt += `\n## Wearable Recovery Data (Real-time)\n`;
+
+      if (recovery.whoopRecoveryScore) {
+        prompt += `- Whoop Recovery — ${recovery.whoopRecoveryScore}%`;
+        if (recovery.whoopRecoveryScore < 50) {
+          prompt += ` (LOW — prioritize recovery strategies)`;
+        } else if (recovery.whoopRecoveryScore >= 80) {
+          prompt += ` (HIGH — good recovery capacity)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.ouraReadinessScore) {
+        prompt += `- Oura Readiness — ${recovery.ouraReadinessScore}%`;
+        if (recovery.ouraReadinessScore < 60) {
+          prompt += ` (BELOW OPTIMAL)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.hrvCurrent) {
+        prompt += `- HRV — ${recovery.hrvCurrent}ms`;
+        if (recovery.hrvBaseline) {
+          prompt += ` (baseline ${recovery.hrvBaseline}ms, ${recovery.hrvTrend || 'unknown'})`;
+          if (recovery.hrvPercentOfBaseline && recovery.hrvPercentOfBaseline < 85) {
+            prompt += `\n  * HRV is ${100 - recovery.hrvPercentOfBaseline}% below baseline — nervous system fatigue present`;
+          }
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.restingHRElevated) {
+        prompt += `- Resting HR — ELEVATED at ${recovery.restingHR}bpm (baseline ${recovery.restingHRBaseline}bpm)\n`;
+        prompt += `  * Elevated resting HR indicates incomplete recovery\n`;
+      }
+
+      if (recovery.sleepHoursAvg) {
+        prompt += `- Sleep Average — ${recovery.sleepHoursAvg}h`;
+        if (recovery.sleepDebtHours && recovery.sleepDebtHours > 3) {
+          prompt += ` (${recovery.sleepDebtHours}h sleep debt accumulated)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.sleepEfficiency) {
+        prompt += `- Sleep Efficiency — ${recovery.sleepEfficiency}%\n`;
+      }
+
+      if (recovery.deepSleepPercent) {
+        prompt += `- Sleep Architecture — ${recovery.deepSleepPercent}% deep sleep, ${recovery.remSleepPercent || 'unknown'}% REM\n`;
+        if (recovery.deepSleepPercent < 15) {
+          prompt += `  * Low deep sleep — physical recovery compromised\n`;
+        }
+        if (recovery.remSleepPercent && recovery.remSleepPercent < 20) {
+          prompt += `  * Low REM sleep — cognitive recovery may be affected\n`;
+        }
+      }
+
+      if (recovery.strainScore) {
+        prompt += `- Training Strain — ${recovery.strainScore}/21`;
+        if (recovery.weeklyStrain) {
+          prompt += ` (${recovery.weeklyStrain} weekly)`;
+        }
+        prompt += `\n`;
+        if (recovery.overtrainingRisk === 'high') {
+          prompt += `  * OVERTRAINING RISK HIGH — ${recovery.recommendedRestDays || 2} extra rest days needed\n`;
+        } else if (recovery.overtrainingRisk === 'moderate') {
+          prompt += `  * Moderate overtraining risk — monitor closely\n`;
+        }
+      }
+    }
+
+    if (schedule.meetingDensity || schedule.workStressIndicators) {
+      prompt += `\n## Work/Life Stress Patterns\n`;
+
+      if (schedule.meetingDensity) {
+        prompt += `- Meeting Load — ${schedule.meetingDensity}`;
+        if (schedule.avgMeetingsPerDay) {
+          prompt += ` (${schedule.avgMeetingsPerDay} meetings/day)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (schedule.workStressIndicators) {
+        const stressFactors: string[] = [];
+        if (schedule.workStressIndicators.afterHoursWork) stressFactors.push('after-hours work detected');
+        if (schedule.workStressIndicators.backToBackMeetings) stressFactors.push('back-to-back meetings');
+        if (schedule.workStressIndicators.shortBreaks) stressFactors.push('insufficient breaks');
+        if (stressFactors.length > 0) {
+          prompt += `- Work Stress Signals — ${stressFactors.join(', ')}\n`;
+          prompt += `  * Consider stress management protocols for high-demand professionals\n`;
+        }
+      }
+    }
+  }
+
+  prompt += `\n## Constraints\n`;
 
   if (constraints.injuries.length > 0) {
     prompt += `### Injuries\n`;
@@ -120,10 +233,10 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
     prompt += `### Medical Conditions\n- ${constraints.medicalConditions.join('\n- ')}\n`;
   }
 
-  // Add ecosystem insights related to recovery
+  // Add ecosystem insights related to recovery (text summaries)
   const recoveryInsights = keyInsights.filter(i => i.impact === 'recovery' || i.impact === 'general');
   if (recoveryInsights.length > 0) {
-    prompt += `\n## Ecosystem Insights\n`;
+    prompt += `\n## Additional Ecosystem Insights\n`;
     for (const insight of recoveryInsights) {
       prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
     }
@@ -140,10 +253,26 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
   prompt += `
 ## Your Task
 Create a comprehensive recovery plan that:
-1. Addresses their ${computedMetrics.stressScore} stress level
-2. Improves their ${computedMetrics.sleepScore}/10 sleep quality
-3. Works around any injuries or limitations
-4. Matches their ${computedMetrics.recoveryCapacity} recovery capacity
+1. Addresses their ${computedMetrics.stressScore} stress level`;
+
+  // Add ecosystem-specific tasks
+  if (ecosystemMetrics?.recovery.combinedRecoveryScore && ecosystemMetrics.recovery.combinedRecoveryScore < 50) {
+    prompt += `\n2. PRIORITY — Recovery score is LOW (${ecosystemMetrics.recovery.combinedRecoveryScore}%) — emphasize immediate recovery interventions`;
+  }
+  if (ecosystemMetrics?.recovery.sleepDebtHours && ecosystemMetrics.recovery.sleepDebtHours > 5) {
+    prompt += `\n3. PRIORITY — ${ecosystemMetrics.recovery.sleepDebtHours}h sleep debt — include sleep extension strategies`;
+  }
+  if (ecosystemMetrics?.recovery.hrvPercentOfBaseline && ecosystemMetrics.recovery.hrvPercentOfBaseline < 85) {
+    prompt += `\n4. PRIORITY — HRV ${100 - ecosystemMetrics.recovery.hrvPercentOfBaseline}% below baseline — focus on parasympathetic recovery`;
+  }
+  if (ecosystemMetrics?.schedule.meetingDensity === 'very-high' || ecosystemMetrics?.schedule.meetingDensity === 'high') {
+    prompt += `\n5. Include stress management for high-demand work schedule`;
+  }
+
+  prompt += `
+6. Improves their ${computedMetrics.sleepScore}/10 sleep quality
+7. Works around any injuries or limitations
+8. Matches their ${computedMetrics.recoveryCapacity} recovery capacity
 
 Return the JSON structure as specified.`;
 

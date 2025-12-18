@@ -108,6 +108,65 @@ export interface EcosystemInsight {
 }
 
 // ============================================================================
+// DETAILED ECOSYSTEM METRICS (for training agents)
+// ============================================================================
+
+export interface RecoveryMetrics {
+  // Wearable Recovery Scores
+  whoopRecoveryScore?: number;      // 0-100
+  ouraReadinessScore?: number;      // 0-100
+  combinedRecoveryScore?: number;   // Weighted average if multiple sources
+
+  // HRV Data
+  hrvCurrent?: number;              // Current/recent HRV in ms
+  hrvBaseline?: number;             // 7-day baseline HRV
+  hrvTrend?: 'improving' | 'stable' | 'declining';
+  hrvPercentOfBaseline?: number;    // e.g., 85 means 85% of baseline
+
+  // Resting Heart Rate
+  restingHR?: number;               // Current resting HR
+  restingHRBaseline?: number;       // Baseline resting HR
+  restingHRElevated?: boolean;      // True if > baseline + 5bpm
+
+  // Sleep Metrics
+  sleepHoursLast?: number;          // Last night's sleep
+  sleepHoursAvg?: number;           // 7-day average
+  sleepEfficiency?: number;         // Percentage
+  deepSleepPercent?: number;
+  remSleepPercent?: number;
+  sleepDebtHours?: number;          // Accumulated debt
+
+  // Training Load (from Whoop)
+  strainScore?: number;             // 0-21
+  weeklyStrain?: number;
+  overtrainingRisk?: 'low' | 'moderate' | 'high';
+  recommendedRestDays?: number;
+}
+
+export interface ScheduleMetrics {
+  // Work/Life Patterns (from Gmail/Slack/Outlook)
+  meetingDensity?: 'low' | 'moderate' | 'high' | 'very-high';
+  avgMeetingsPerDay?: number;
+  workStressIndicators?: {
+    afterHoursWork: boolean;
+    backToBackMeetings: boolean;
+    shortBreaks: boolean;
+  };
+  optimalTrainingWindows?: string[];  // e.g., ["07:00-09:00", "18:00-20:00"]
+  busyDays?: string[];                // Day names with heavy commitments
+}
+
+export interface DetailedEcosystemMetrics {
+  recovery: RecoveryMetrics;
+  schedule: ScheduleMetrics;
+  dataFreshness: {
+    lastWearableSync?: string;        // ISO timestamp
+    lastCalendarSync?: string;
+    dataSources: string[];            // Active sources
+  };
+}
+
+// ============================================================================
 // TRAINING HISTORY (from Strava/Whoop/etc)
 // ============================================================================
 
@@ -147,6 +206,9 @@ export interface AthleteProfileCard {
   biomarkerFlags: BiomarkerFlag[];
   keyInsights: EcosystemInsight[];
   trainingHistory?: TrainingHistory;
+
+  // Detailed ecosystem metrics for training agents
+  ecosystemMetrics?: DetailedEcosystemMetrics;
 
   // Raw Data References (for agents that need more detail)
   rawDataAvailable: {

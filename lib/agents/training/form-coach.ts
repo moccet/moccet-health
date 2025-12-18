@@ -141,7 +141,7 @@ CRITICAL RULES:
 1. Notes field is MAX 15 words - concise form cues only
 2. ProgressionNotes field is MAX 15 words - how to advance
 3. Use beginner-friendly language - no jargon
-4. NEVER use colons (:) - use em dashes (—) instead
+4. NEVER use colons (:) - no em dashes (—)
 5. Every exercise MUST have both notes and progressionNotes
 6. Weight must NEVER be empty - verify and fix if needed
 

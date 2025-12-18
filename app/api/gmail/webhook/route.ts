@@ -385,11 +385,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Process sent messages first (for Awaiting Reply tracking)
-    for (const change of newSentMessages.slice(0, 5)) {
+    const sentPromises = newSentMessages.slice(0, 5).map((change) =>
       processSentEmail(userEmail, change.messageId, change.threadId, subscription.userCode).catch(
         (err) => console.error(`[Webhook] Sent email tracking error:`, err)
-      );
-    }
+      )
+    );
+    await Promise.all(sentPromises);
 
     // Check daily limit for draft generation
     const hitDraftLimit = await hasHitDailyLimit(userEmail, settings.maxDraftsPerDay);
@@ -397,6 +398,9 @@ export async function POST(request: NextRequest) {
     // Process inbox messages
     const processingLimit = 3;
     const messagesToProcess = newInboxMessages.slice(0, processingLimit);
+
+    // Collect all processing promises to await them
+    const processingPromises: Promise<void>[] = [];
 
     for (const change of messagesToProcess) {
       // Fetch email content
@@ -412,26 +416,29 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Process the email with labeling
-      // Skip draft generation if disabled or hit limit, but still apply labels
-      const shouldGenerateDraft = settings.enabled && !hitDraftLimit;
-
-      processNewEmail(
-        userEmail,
-        email,
-        subscription.userCode,
-        settings.autoLabelingEnabled
-      ).catch((err) => {
-        console.error(`[Webhook] Background processing error:`, err);
-      });
+      // Process the email with labeling - MUST await or Vercel will kill it
+      processingPromises.push(
+        processNewEmail(
+          userEmail,
+          email,
+          subscription.userCode,
+          settings.autoLabelingEnabled
+        ).catch((err) => {
+          console.error(`[Webhook] Processing error for ${email.messageId}:`, err);
+        })
+      );
     }
+
+    // Wait for all email processing to complete before returning
+    // This is critical - Vercel kills async work after response is sent
+    await Promise.all(processingPromises);
 
     // Update history ID
     if (historyResult.newHistoryId) {
       await updateHistoryId(userEmail, historyResult.newHistoryId);
     }
 
-    // Return 200 OK immediately (required by Pub/Sub)
+    // Return 200 OK after processing completes
     return NextResponse.json({
       success: true,
       inboxProcessed: messagesToProcess.length,

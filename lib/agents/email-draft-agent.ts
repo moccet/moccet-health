@@ -449,11 +449,32 @@ Respond with JSON only:
 async function initializeNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
   console.log('[EmailDraftAgent] Initializing...');
 
+  // Run with individual logging to identify hangs
+  console.log('[EmailDraftAgent] Fetching email style...');
+  const emailStylePromise = getEmailStyle(state.userEmail, state.userCode).then(r => {
+    console.log('[EmailDraftAgent] Email style loaded');
+    return r;
+  });
+
+  console.log('[EmailDraftAgent] Fetching memory context...');
+  const memoryPromise = getUserMemoryContext(state.userEmail).then(r => {
+    console.log('[EmailDraftAgent] Memory context loaded');
+    return r;
+  });
+
+  console.log('[EmailDraftAgent] Fetching settings...');
+  const settingsPromise = getUserSettings(state.userEmail, state.userCode).then(r => {
+    console.log('[EmailDraftAgent] Settings loaded');
+    return r;
+  });
+
   const [emailStyle, memoryContext, settings] = await Promise.all([
-    getEmailStyle(state.userEmail, state.userCode),
-    getUserMemoryContext(state.userEmail),
-    getUserSettings(state.userEmail, state.userCode),
+    emailStylePromise,
+    memoryPromise,
+    settingsPromise,
   ]);
+
+  console.log('[EmailDraftAgent] Initialization complete');
 
   return {
     emailStyle,

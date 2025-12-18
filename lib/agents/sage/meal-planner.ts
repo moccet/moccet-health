@@ -279,7 +279,7 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
       ],
       response_format: { type: 'json_object' },
       temperature: 0.8, // Higher for variety
-      max_tokens: 16000, // Large output for 7 days x 3 meals each
+      max_tokens: 12000, // Reduced from 16000 for faster generation
     });
 
     const content = response.choices[0]?.message?.content;

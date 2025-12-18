@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
-import { devOnboardingStorage } from '@/lib/dev-storage';
+import { devOnboardingStorage, devPlanStorage } from '@/lib/dev-storage';
 import { createClient } from '@/lib/supabase/server';
+import { runSageOrchestrator, SageOrchestratorInput } from '@/lib/sage-orchestrator';
 
 // This endpoint can run for up to 13 minutes 20 seconds on Vercel Pro (800s max)
 // QStash will handle retries if it fails
 export const maxDuration = 800;
+
+// Helper for fetch with timeout (for context aggregation)
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 60000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 async function updateJobStatus(email: string, status: 'processing' | 'completed' | 'failed', error?: string) {
   try {
@@ -115,24 +132,115 @@ async function handler(request: NextRequest) {
       console.log('[INFO] No blood analysis data - generating plan without it');
     }
 
-    // Import the generation functions directly
-    const generateSagePlan = (await import('../../../generate-sage-plan/route')).GET;
+    // Fetch user's onboarding data from storage
+    console.log('[1/4] Fetching user onboarding data...');
 
-    console.log('[1/3] Generating main sage plan (with blood analysis data)...');
+    let formData;
+    let bloodAnalysisData;
 
-    // Create mock request objects for API calls
-    const mockRequest = {
-      url: `${baseUrl}/api/generate-sage-plan?code=${uniqueCode}`,
-      nextUrl: new URL(`${baseUrl}/api/generate-sage-plan?code=${uniqueCode}`)
-    } as unknown as NextRequest;
+    // Check dev storage first
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userData = devOnboardingStorage.get(email) as any;
+    if (userData) {
+      formData = userData.form_data;
+      bloodAnalysisData = userData.lab_file_analysis;
+      console.log('[OK] Retrieved data from dev storage');
+    } else {
+      // Try Supabase
+      const hasSupabaseConfig = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (hasSupabaseConfig && process.env.FORCE_DEV_MODE !== 'true') {
+        try {
+          const supabase = await createClient();
+          const { data } = await supabase
+            .from('sage_onboarding_data')
+            .select('*')
+            .eq('email', email)
+            .single();
 
-    const sagePlanResponse = await generateSagePlan(mockRequest);
-    if (sagePlanResponse.status !== 200) {
-      throw new Error('Failed to generate sage plan');
+          if (data) {
+            formData = data.form_data;
+            bloodAnalysisData = data.lab_file_analysis;
+            console.log('[OK] Retrieved data from Supabase');
+          }
+        } catch (error) {
+          console.error('Error fetching from Supabase:', error);
+          throw new Error('Could not fetch user data');
+        }
+      }
     }
-    console.log('[OK] Main sage plan generated');
 
-    console.log('[2/3] Queueing additional plan generation jobs...');
+    if (!formData) {
+      throw new Error('No user data found');
+    }
+
+    // Aggregate ecosystem context for the orchestrator
+    console.log('[2/4] Aggregating ecosystem context...');
+    let ecosystemData: Record<string, unknown> | undefined;
+
+    if (formData.email) {
+      try {
+        const contextResponse = await fetchWithTimeout(`${baseUrl}/api/aggregate-context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            contextType: 'sage',
+            forceRefresh: false,
+          }),
+        }, 15000); // 15s timeout - context is nice to have but not critical
+
+        if (contextResponse.ok) {
+          const contextData = await contextResponse.json();
+          ecosystemData = contextData.context;
+          console.log('[OK] Ecosystem context aggregated');
+        }
+      } catch (error) {
+        console.warn('[WARN] Ecosystem context timed out or failed, proceeding without it');
+      }
+    }
+
+    // Generate comprehensive nutrition plan using multi-agent orchestrator
+    console.log('[3/4] Generating nutrition plan with multi-agent orchestrator...');
+    console.log('[INFO] Using GPT-4o + GPT-4o-mini agents (cost: ~$0.15-0.20)');
+
+    const orchestratorInput: SageOrchestratorInput = {
+      onboardingData: formData,
+      bloodAnalysis: bloodAnalysisData,
+      ecosystemData,
+    };
+
+    const orchestratorResult = await runSageOrchestrator(orchestratorInput);
+    const sagePlan = orchestratorResult.plan;
+
+    console.log('[OK] Main sage plan generated');
+    console.log(`[INFO] Estimated cost: $${orchestratorResult.metadata.agentCosts.total.toFixed(4)}`);
+    console.log(`[INFO] Validation: ${orchestratorResult.metadata.validationResult.isValid ? 'PASSED' : 'HAS ISSUES'}`);
+
+    // Store the generated plan
+    console.log('[4/4] Storing plan and queueing additional jobs...');
+
+    // Store in dev storage
+    devPlanStorage.set(uniqueCode, sagePlan);
+
+    // Store in Supabase
+    const hasSupabaseForStore = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (hasSupabaseForStore && process.env.FORCE_DEV_MODE !== 'true') {
+      try {
+        const supabase = await createClient();
+        await supabase
+          .from('sage_onboarding_data')
+          .update({
+            sage_plan: sagePlan,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', email);
+        console.log('[OK] Plan stored in Supabase');
+      } catch (error) {
+        console.error('Error storing in Supabase:', error);
+      }
+    }
+
+    console.log('[OK] Queueing additional plan generation jobs...');
 
     // Queue all additional generation jobs to run in parallel
     const qstashToken = process.env.QSTASH_TOKEN;

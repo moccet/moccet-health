@@ -2,8 +2,8 @@
  * Biomarker Analyst Agent
  *
  * Purpose: Deep interpretation of blood work with nutritional recommendations
- * Model: GPT-4o (requires reasoning to correlate markers and prioritize interventions)
- * Cost: ~$0.03 per call
+ * Model: GPT-4o-mini (structured output for biomarker analysis)
+ * Cost: ~$0.005 per call
  *
  * This agent analyzes blood work results and provides actionable nutritional
  * strategies to address any concerns. It identifies patterns, correlations,
@@ -226,7 +226,7 @@ export async function runBiomarkerAnalyst(
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },

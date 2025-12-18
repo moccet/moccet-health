@@ -29,13 +29,20 @@ import { validateUnifiedContext, generateQualityMessage } from '@/lib/validators
 async function autoCreateAgentTasks(email: string, insights: AIInsight[]) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.ai';
 
+  // Ensure insights is an array before mapping
+  const safeInsights = Array.isArray(insights) ? insights : [];
+  if (safeInsights.length === 0) {
+    console.log('[AUTO-TASKS] No valid insights to create tasks from');
+    return;
+  }
+
   try {
     const response = await fetch(`${baseUrl}/api/agent/auto-create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
-        insights: insights.map(i => ({
+        insights: safeInsights.map(i => ({
           id: `insight_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           title: i.title,
           finding: i.finding,
@@ -309,7 +316,9 @@ export async function POST(request: NextRequest) {
         glucose: {
           avgGlucose: analysisResult.glucosePatterns.avgGlucose,
           variability: analysisResult.glucosePatterns.variability,
-          spikePatterns: analysisResult.glucosePatterns.spikeCorrelations.map(c => c.trigger),
+          spikePatterns: Array.isArray(analysisResult.glucosePatterns.spikeCorrelations)
+            ? analysisResult.glucosePatterns.spikeCorrelations.map(c => c.trigger)
+            : [],
           status: analysisResult.glucosePatterns.status,
         },
         recovery: {
@@ -337,8 +346,11 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Compile key insights
-    const keyInsights = analysisResult.crossSourceInsights.map(insight => ({
+    // Compile key insights (ensure array before mapping)
+    const crossSourceInsights = Array.isArray(analysisResult.crossSourceInsights)
+      ? analysisResult.crossSourceInsights
+      : [];
+    const keyInsights = crossSourceInsights.map(insight => ({
       insight: insight.insight,
       sources: insight.sources,
       confidence: insight.confidence,
@@ -348,32 +360,47 @@ export async function POST(request: NextRequest) {
     }));
 
     // Add individual pattern insights
-    if (analysisResult.glucosePatterns.insights.length > 0) {
+    const glucoseInsights = Array.isArray(analysisResult.glucosePatterns.insights)
+      ? analysisResult.glucosePatterns.insights
+      : [];
+    const glucoseSpikeCorrelations = Array.isArray(analysisResult.glucosePatterns.spikeCorrelations)
+      ? analysisResult.glucosePatterns.spikeCorrelations
+      : [];
+    if (glucoseInsights.length > 0) {
       keyInsights.push({
-        insight: analysisResult.glucosePatterns.insights.join('. '),
+        insight: glucoseInsights.join('. '),
         sources: ['dexcom'],
         confidence: 0.85,
         impact: 'medium' as const,
         dataPoints: [`Average: ${analysisResult.glucosePatterns.avgGlucose} mg/dL`],
-        recommendation: analysisResult.glucosePatterns.spikeCorrelations[0]?.recommendation,
+        recommendation: glucoseSpikeCorrelations[0]?.recommendation,
       });
     }
 
-    // Identify priority areas
+    // Identify priority areas (ensure insights arrays are valid)
     const priorityAreas = [];
+    const sleepInsights = Array.isArray(analysisResult.sleepPatterns.insights)
+      ? analysisResult.sleepPatterns.insights
+      : [];
+    const activityInsights = Array.isArray(analysisResult.activityRecoveryPatterns.insights)
+      ? analysisResult.activityRecoveryPatterns.insights
+      : [];
+    const workStressInsights = Array.isArray(analysisResult.workStressPatterns.insights)
+      ? analysisResult.workStressPatterns.insights
+      : [];
 
     if (analysisResult.glucosePatterns.status === 'concerning') {
       priorityAreas.push({
         area: 'Blood sugar stabilization',
         severity: 'critical',
-        dataPoints: analysisResult.glucosePatterns.insights,
+        dataPoints: glucoseInsights,
         priority: 1,
       });
     } else if (analysisResult.glucosePatterns.status === 'needs_attention') {
       priorityAreas.push({
         area: 'Blood sugar optimization',
         severity: 'high',
-        dataPoints: analysisResult.glucosePatterns.insights,
+        dataPoints: glucoseInsights,
         priority: 2,
       });
     }
@@ -382,14 +409,14 @@ export async function POST(request: NextRequest) {
       priorityAreas.push({
         area: 'Sleep optimization',
         severity: 'critical',
-        dataPoints: analysisResult.sleepPatterns.insights,
+        dataPoints: sleepInsights,
         priority: 1,
       });
     } else if (analysisResult.sleepPatterns.status === 'suboptimal') {
       priorityAreas.push({
         area: 'Sleep quality improvement',
         severity: 'medium',
-        dataPoints: analysisResult.sleepPatterns.insights,
+        dataPoints: sleepInsights,
         priority: 3,
       });
     }
@@ -398,7 +425,7 @@ export async function POST(request: NextRequest) {
       priorityAreas.push({
         area: 'Overtraining prevention',
         severity: 'critical',
-        dataPoints: analysisResult.activityRecoveryPatterns.insights,
+        dataPoints: activityInsights,
         priority: 1,
       });
     }
@@ -407,7 +434,7 @@ export async function POST(request: NextRequest) {
       priorityAreas.push({
         area: 'Stress management',
         severity: 'high',
-        dataPoints: analysisResult.workStressPatterns.insights,
+        dataPoints: workStressInsights,
         priority: 2,
       });
     }

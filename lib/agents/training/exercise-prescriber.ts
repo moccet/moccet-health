@@ -85,13 +85,35 @@ function calculateStartingWeight(
   athleteProfile: AthleteProfileCard,
   intensity: 'light' | 'moderate' | 'heavy'
 ): string {
-  const { profile, computedMetrics } = athleteProfile;
+  // Guard against undefined exercise name
+  if (!exercise) {
+    return 'Moderate weight';
+  }
+
+  const { profile, ecosystemMetrics } = athleteProfile;
   const bodyweight = profile.weightKg;
-  const isBeginnerOrIntermediate = profile.trainingAge !== 'advanced';
 
   // Multipliers based on experience and intensity
   const expMultiplier = profile.trainingAge === 'beginner' ? 0.6 : profile.trainingAge === 'intermediate' ? 0.8 : 1.0;
   const intensityMultiplier = intensity === 'light' ? 0.6 : intensity === 'moderate' ? 0.75 : 0.85;
+
+  // Recovery-based adjustment (from ecosystem data)
+  let recoveryMultiplier = 1.0;
+  if (ecosystemMetrics?.recovery.combinedRecoveryScore) {
+    const score = ecosystemMetrics.recovery.combinedRecoveryScore;
+    if (score < 40) {
+      recoveryMultiplier = 0.85; // 15% reduction for low recovery
+    } else if (score < 60) {
+      recoveryMultiplier = 0.92; // 8% reduction for moderate recovery
+    } else if (score >= 80) {
+      recoveryMultiplier = 1.05; // Can push slightly harder with high recovery
+    }
+  }
+
+  // HRV-based adjustment (stacks with recovery)
+  if (ecosystemMetrics?.recovery.hrvPercentOfBaseline && ecosystemMetrics.recovery.hrvPercentOfBaseline < 85) {
+    recoveryMultiplier *= 0.95; // Additional 5% reduction if HRV below baseline
+  }
 
   // Base percentages of bodyweight for common exercises
   const exerciseMultipliers: Record<string, number> = {
@@ -107,11 +129,12 @@ function calculateStartingWeight(
   };
 
   const baseMultiplier = exerciseMultipliers[exercise] || 0.3;
-  const calculatedWeight = Math.round(bodyweight * baseMultiplier * expMultiplier * intensityMultiplier / 2.5) * 2.5;
+  const calculatedWeight = Math.round(bodyweight * baseMultiplier * expMultiplier * intensityMultiplier * recoveryMultiplier / 2.5) * 2.5;
 
   // Check if exercise is bodyweight
   const bodyweightExercises = ['Push-ups', 'Pull-ups', 'Dips', 'Plank', 'Lunges', 'Bodyweight Squat'];
-  if (bodyweightExercises.some(bw => exercise.toLowerCase().includes(bw.toLowerCase()))) {
+  const exerciseLower = exercise.toLowerCase();
+  if (bodyweightExercises.some(bw => exerciseLower.includes(bw.toLowerCase()))) {
     return 'Bodyweight';
   }
 
@@ -147,6 +170,17 @@ EXERCISE SELECTION RULES:
 - Match complexity to experience level
 - Each training day should have 5-8 main exercises
 
+TRAINING DAY STRUCTURE:
+For training days, use this structure:
+{
+  "dayName": "Monday",
+  "focus": "Lower Body Strength",
+  "duration": "45-60 minutes",
+  "warmup": { "description": "Dynamic warmup", "exercises": [...] },
+  "mainWorkout": [...],
+  "cooldown": { "description": "Static stretching", "exercises": [...] }
+}
+
 REST DAY STRUCTURE:
 For rest days, use this minimal structure:
 {
@@ -157,6 +191,8 @@ For rest days, use this minimal structure:
   "mainWorkout": [],
   "cooldown": { "description": "Optional stretching", "exercises": [] }
 }
+
+CRITICAL: Every day MUST have a "duration" field. Training days use the athlete's session length (e.g., "45-60 minutes"). Rest days use "N/A".
 
 OUTPUT FORMAT:
 Return valid JSON with this exact structure:
@@ -174,7 +210,7 @@ Return valid JSON with this exact structure:
 
 function buildUserPrompt(input: ExercisePrescriberInput): string {
   const { athleteProfile, programDesign } = input;
-  const { profile, constraints } = athleteProfile;
+  const { profile, constraints, ecosystemMetrics } = athleteProfile;
 
   let prompt = `# PROGRAM DESIGN TO FILL
 
@@ -197,17 +233,64 @@ ${Object.entries(programDesign.dayFocusAssignments)
     }
   }
 
-  prompt += `
-## Weight Guidelines
+  prompt += `\n## Weight Guidelines
 - Athlete weighs ${profile.weightKg} kg
 - Experience level: ${profile.trainingAge}
 - Always provide specific weights (e.g., "60 kg", "20 kg each hand", "Bodyweight")
+`;
 
+  // Add recovery-based intensity guidance
+  if (ecosystemMetrics?.recovery) {
+    const { recovery } = ecosystemMetrics;
+    prompt += `\n## Recovery-Based Adjustments\n`;
+
+    let intensityModifier = 'normal';
+
+    if (recovery.combinedRecoveryScore) {
+      if (recovery.combinedRecoveryScore < 40) {
+        intensityModifier = 'light';
+        prompt += `- Recovery Score: ${recovery.combinedRecoveryScore}/100 (LOW)\n`;
+        prompt += `  * Reduce starting weights by 10-15%\n`;
+        prompt += `  * Use "Easy to moderate effort" for intensity descriptions\n`;
+        prompt += `  * Add extra rest between sets (+30 seconds)\n`;
+      } else if (recovery.combinedRecoveryScore < 60) {
+        intensityModifier = 'moderate';
+        prompt += `- Recovery Score: ${recovery.combinedRecoveryScore}/100 (MODERATE)\n`;
+        prompt += `  * Use conservative weight estimates\n`;
+        prompt += `  * Include notes about scaling down if needed\n`;
+      } else if (recovery.combinedRecoveryScore >= 80) {
+        intensityModifier = 'high';
+        prompt += `- Recovery Score: ${recovery.combinedRecoveryScore}/100 (HIGH)\n`;
+        prompt += `  * Can prescribe challenging weights\n`;
+        prompt += `  * "Challenging but doable" to "Very challenging" intensity is appropriate\n`;
+      }
+    }
+
+    if (recovery.hrvPercentOfBaseline && recovery.hrvPercentOfBaseline < 85) {
+      prompt += `- HRV: ${recovery.hrvPercentOfBaseline}% of baseline (BELOW NORMAL)\n`;
+      prompt += `  * Avoid prescribing maximal efforts\n`;
+      prompt += `  * Keep 2-3 reps in reserve on all working sets\n`;
+    }
+
+    if (recovery.sleepDebtHours && recovery.sleepDebtHours > 5) {
+      prompt += `- Sleep Debt: ${recovery.sleepDebtHours} hours accumulated\n`;
+      prompt += `  * Add "reduce weight if feeling fatigued" to exercise notes\n`;
+    }
+
+    prompt += `\n**Apply ${intensityModifier} intensity based on recovery data.**\n`;
+  }
+
+  prompt += `
 ## Your Task
 Fill in the complete weeklyProgram with all 7 days. Each training day needs:
+- dayName (capitalized day name)
+- focus (e.g., "Lower Body Strength")
+- duration (use "${profile.sessionLengthMinutes} minutes" for training days, "N/A" for rest days)
 - 3-5 warmup exercises
 - 5-8 main exercises with full details
 - 2-4 cooldown stretches
+
+IMPORTANT: Every day MUST include a "duration" field.
 
 Return the JSON structure as specified.`;
 
@@ -298,31 +381,39 @@ function createRestDay(dayName: string): DayWorkout {
 }
 
 function fixMissingWeights(day: DayWorkout, athleteProfile: AthleteProfileCard): DayWorkout {
+  // Fix missing duration
+  if (!day.duration) {
+    const isRestDay = day.focus?.toLowerCase().includes('rest') || day.focus?.toLowerCase().includes('recovery') || !day.mainWorkout?.length;
+    day.duration = isRestDay ? 'N/A' : `${athleteProfile.profile.sessionLengthMinutes || 45}-${(athleteProfile.profile.sessionLengthMinutes || 45) + 15} minutes`;
+  }
+
   if (!day.mainWorkout || !Array.isArray(day.mainWorkout)) {
     return day;
   }
 
-  day.mainWorkout = day.mainWorkout.map((exercise) => {
-    if (!exercise.weight || exercise.weight === '' || exercise.weight === 'undefined') {
-      exercise.weight = calculateStartingWeight(exercise.exercise, athleteProfile, 'moderate');
-    }
+  day.mainWorkout = day.mainWorkout
+    .filter((exercise) => exercise && exercise.exercise) // Filter out invalid exercises
+    .map((exercise) => {
+      if (!exercise.weight || exercise.weight === '' || exercise.weight === 'undefined') {
+        exercise.weight = calculateStartingWeight(exercise.exercise, athleteProfile, 'moderate');
+      }
 
-    // Fix tempo if it's in notation format
-    if (exercise.tempo && /^\d+-\d+-\d+/.test(exercise.tempo)) {
-      const parts = exercise.tempo.split('-').map(Number);
-      exercise.tempo = `Lower ${parts[0]} sec, pause ${parts[1]} sec, lift ${parts[2]} sec`;
-    }
+      // Fix tempo if it's in notation format
+      if (exercise.tempo && /^\d+-\d+-\d+/.test(exercise.tempo)) {
+        const parts = exercise.tempo.split('-').map(Number);
+        exercise.tempo = `Lower ${parts[0]} sec, pause ${parts[1]} sec, lift ${parts[2]} sec`;
+      }
 
-    // Fix intensity if it's RPE format
-    if (exercise.intensity && /^RPE\s*\d+/i.test(exercise.intensity)) {
-      const rpe = parseInt(exercise.intensity.replace(/\D/g, ''));
-      if (rpe <= 6) exercise.intensity = 'Moderate effort — could do several more reps';
-      else if (rpe <= 8) exercise.intensity = 'Challenging but doable — leave 2-3 reps in reserve';
-      else exercise.intensity = 'Very challenging — pushing close to your limit';
-    }
+      // Fix intensity if it's RPE format
+      if (exercise.intensity && /^RPE\s*\d+/i.test(exercise.intensity)) {
+        const rpe = parseInt(exercise.intensity.replace(/\D/g, ''));
+        if (rpe <= 6) exercise.intensity = 'Moderate effort — could do several more reps';
+        else if (rpe <= 8) exercise.intensity = 'Challenging but doable — leave 2-3 reps in reserve';
+        else exercise.intensity = 'Very challenging — pushing close to your limit';
+      }
 
-    return exercise;
-  });
+      return exercise;
+    });
 
   return day;
 }
@@ -334,9 +425,9 @@ function createFallbackProgram(input: ExercisePrescriberInput): ExercisePrescrib
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
   for (const day of days) {
-    const focus = programDesign.dayFocusAssignments[day];
+    const focus = programDesign.dayFocusAssignments?.[day] || '';
 
-    if (focus.toLowerCase().includes('rest') || focus.toLowerCase().includes('recovery')) {
+    if (!focus || focus.toLowerCase().includes('rest') || focus.toLowerCase().includes('recovery')) {
       weeklyProgram[day] = createRestDay(day);
     } else {
       weeklyProgram[day] = createTrainingDay(day, focus, athleteProfile);
@@ -348,9 +439,10 @@ function createFallbackProgram(input: ExercisePrescriberInput): ExercisePrescrib
 
 function createTrainingDay(dayName: string, focus: string, athleteProfile: AthleteProfileCard): DayWorkout {
   const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-  const isLowerBody = focus.toLowerCase().includes('lower') || focus.toLowerCase().includes('leg');
-  const isUpperPush = focus.toLowerCase().includes('push') || focus.toLowerCase().includes('chest');
-  const isUpperPull = focus.toLowerCase().includes('pull') || focus.toLowerCase().includes('back');
+  const focusLower = (focus || '').toLowerCase();
+  const isLowerBody = focusLower.includes('lower') || focusLower.includes('leg');
+  const isUpperPush = focusLower.includes('push') || focusLower.includes('chest');
+  const isUpperPull = focusLower.includes('pull') || focusLower.includes('back');
 
   let mainExercises: MainExercise[];
 

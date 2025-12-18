@@ -42,11 +42,21 @@ Your task is to design the HIGH-LEVEL ARCHITECTURE of a training program. You wi
 2. Determine volume and intensity distribution
 3. Assign focus areas to each day (e.g., "Lower Body Strength", "Upper Push", "Rest & Recovery")
 
+ECOSYSTEM DATA INTEGRATION:
+When ecosystem data is provided, use it to inform your decisions:
+- Recovery Score < 50: Reduce weekly volume by 20-30%, add extra rest day
+- HRV below baseline (< 85%): Keep intensity moderate, avoid max efforts
+- Sleep debt > 5 hours: Prioritize sleep-promoting session timing (not too late)
+- High meeting density: Place training sessions in identified optimal windows
+- Overtraining risk HIGH: Include deload protocol, reduce training days by 1
+
+Always explain HOW the ecosystem data influenced your programming decisions in the trainingPhilosophy.approach section.
+
 CRITICAL RULES:
 - Write in a warm, encouraging but professional tone
 - Use "you" and "your" when addressing the athlete
 - Reference specific data from their profile (e.g., "Based on your 4 available training days...")
-- NEVER use colons (:) in your text - use em dashes (—) instead
+- NEVER use colons (:) in your text - never use em dashes (—)
 - Keep all text concise and actionable
 
 OUTPUT FORMAT:
@@ -83,7 +93,7 @@ You must return valid JSON matching this structure exactly:
 // ============================================================================
 
 function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
-  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights, trainingHistory } = athleteProfile;
+  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights, trainingHistory, ecosystemMetrics } = athleteProfile;
 
   let prompt = `# ATHLETE PROFILE
 
@@ -103,14 +113,102 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
 - Preferred Training Time — ${profile.preferredExerciseTime}
 - Time Horizon — ${profile.timeHorizon}
 
-## Recovery & Readiness
+## Recovery & Readiness (Computed)
 - Sleep Score — ${computedMetrics.sleepScore}/10
 - Stress Level — ${computedMetrics.stressScore}
 - Recovery Capacity — ${computedMetrics.recoveryCapacity}
 - Overtraining Risk — ${computedMetrics.overtrainingRisk}
 - Recommended Intensity — ${computedMetrics.recommendedIntensity}
+`;
 
-## Constraints
+  // Add detailed ecosystem metrics if available
+  if (ecosystemMetrics) {
+    const { recovery, schedule } = ecosystemMetrics;
+
+    if (recovery.combinedRecoveryScore || recovery.hrvCurrent || recovery.sleepHoursAvg) {
+      prompt += `\n## Wearable Recovery Data (Real-time)\n`;
+
+      if (recovery.combinedRecoveryScore) {
+        prompt += `- Recovery Score — ${recovery.combinedRecoveryScore}/100`;
+        if (recovery.combinedRecoveryScore < 50) {
+          prompt += ` (LOW — reduce volume/intensity)`;
+        } else if (recovery.combinedRecoveryScore >= 80) {
+          prompt += ` (HIGH — can push harder)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.hrvCurrent && recovery.hrvBaseline) {
+        prompt += `- HRV — ${recovery.hrvCurrent}ms (baseline ${recovery.hrvBaseline}ms, ${recovery.hrvTrend || 'unknown'})\n`;
+        if (recovery.hrvPercentOfBaseline && recovery.hrvPercentOfBaseline < 85) {
+          prompt += `  * HRV is ${100 - recovery.hrvPercentOfBaseline}% below baseline — nervous system fatigue detected\n`;
+        }
+      } else if (recovery.hrvCurrent) {
+        prompt += `- HRV — ${recovery.hrvCurrent}ms\n`;
+      }
+
+      if (recovery.restingHRElevated) {
+        prompt += `- Resting HR — ELEVATED at ${recovery.restingHR}bpm (baseline ${recovery.restingHRBaseline}bpm) — incomplete recovery\n`;
+      }
+
+      if (recovery.sleepHoursAvg) {
+        prompt += `- Sleep — ${recovery.sleepHoursAvg}h average`;
+        if (recovery.sleepDebtHours && recovery.sleepDebtHours > 3) {
+          prompt += ` (${recovery.sleepDebtHours}h sleep debt accumulated)`;
+        }
+        prompt += `\n`;
+
+        if (recovery.deepSleepPercent) {
+          prompt += `- Sleep Architecture — ${recovery.deepSleepPercent}% deep, ${recovery.remSleepPercent || 'unknown'}% REM\n`;
+          if (recovery.deepSleepPercent < 15) {
+            prompt += `  * Low deep sleep — physical recovery compromised\n`;
+          }
+        }
+      }
+
+      if (recovery.strainScore) {
+        prompt += `- Training Strain — ${recovery.strainScore}/21 daily`;
+        if (recovery.weeklyStrain) {
+          prompt += ` (${recovery.weeklyStrain} weekly)`;
+        }
+        prompt += `\n`;
+        if (recovery.overtrainingRisk === 'high') {
+          prompt += `  * OVERTRAINING RISK HIGH — ${recovery.recommendedRestDays || 2} extra rest days recommended\n`;
+        }
+      }
+    }
+
+    if (schedule.meetingDensity || schedule.workStressIndicators) {
+      prompt += `\n## Work/Schedule Patterns\n`;
+
+      if (schedule.meetingDensity) {
+        prompt += `- Meeting Load — ${schedule.meetingDensity}`;
+        if (schedule.avgMeetingsPerDay) {
+          prompt += ` (${schedule.avgMeetingsPerDay} meetings/day avg)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (schedule.workStressIndicators) {
+        const stressFactors: string[] = [];
+        if (schedule.workStressIndicators.afterHoursWork) stressFactors.push('after-hours work');
+        if (schedule.workStressIndicators.backToBackMeetings) stressFactors.push('back-to-back meetings');
+        if (stressFactors.length > 0) {
+          prompt += `- Work Stress Signals — ${stressFactors.join(', ')}\n`;
+        }
+      }
+
+      if (schedule.optimalTrainingWindows && schedule.optimalTrainingWindows.length > 0) {
+        prompt += `- Optimal Training Windows — ${schedule.optimalTrainingWindows.join(', ')}\n`;
+      }
+
+      if (schedule.busyDays && schedule.busyDays.length > 0) {
+        prompt += `- High-Commitment Days — ${schedule.busyDays.join(', ')} (consider rest/lighter sessions)\n`;
+      }
+    }
+  }
+
+  prompt += `\n## Constraints
 - Training Location — ${constraints.trainingLocation}
 - Available Equipment — ${constraints.equipment.join(', ')}
 `;
@@ -123,9 +221,9 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
     prompt += `- Medical Conditions — ${constraints.medicalConditions.join(', ')}\n`;
   }
 
-  // Add ecosystem insights
+  // Add ecosystem insights (text summaries)
   if (keyInsights.length > 0) {
-    prompt += `\n## Ecosystem Insights (from connected apps)\n`;
+    prompt += `\n## Additional Ecosystem Insights\n`;
     for (const insight of keyInsights) {
       prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
     }
@@ -152,10 +250,25 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
 ## Your Task
 Design a ${profile.trainingDays}-day per week training program that:
 1. Aligns with their primary goal of "${profile.primaryGoal}"
-2. Respects their ${computedMetrics.recoveryCapacity} recovery capacity
-3. Fits within ${profile.sessionLengthMinutes}-minute sessions
-4. Works around any injuries or limitations
-5. Considers insights from their ecosystem data
+2. Respects their ${computedMetrics.recoveryCapacity} recovery capacity`;
+
+  // Add ecosystem-informed instructions
+  if (ecosystemMetrics?.recovery.combinedRecoveryScore && ecosystemMetrics.recovery.combinedRecoveryScore < 50) {
+    prompt += `\n3. IMPORTANT — Current recovery score is LOW (${ecosystemMetrics.recovery.combinedRecoveryScore}/100) — design a conservative volume week with built-in deload options`;
+  } else if (ecosystemMetrics?.recovery.overtrainingRisk === 'high') {
+    prompt += `\n3. IMPORTANT — Overtraining risk is HIGH — include ${ecosystemMetrics.recovery.recommendedRestDays || 2} rest days and reduce weekly volume by 20-30%`;
+  } else if (ecosystemMetrics?.recovery.hrvPercentOfBaseline && ecosystemMetrics.recovery.hrvPercentOfBaseline < 85) {
+    prompt += `\n3. IMPORTANT — HRV is ${100 - ecosystemMetrics.recovery.hrvPercentOfBaseline}% below baseline — prioritize recovery and keep intensity moderate`;
+  }
+
+  if (ecosystemMetrics?.schedule.meetingDensity === 'very-high') {
+    prompt += `\n4. Work schedule is extremely demanding — prioritize shorter, efficient sessions and strategic rest day placement`;
+  }
+
+  prompt += `
+5. Fits within ${profile.sessionLengthMinutes}-minute sessions
+6. Works around any injuries or limitations
+7. Considers insights from their ecosystem data
 
 Return the JSON structure as specified in the system prompt.`;
 

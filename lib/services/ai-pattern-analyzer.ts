@@ -276,13 +276,17 @@ REMEMBER: Exactly 5 insights, each with a UNIQUE designCategory. Be brutally spe
       };
     }
 
-    console.log(`[AI-PATTERN-ANALYZER] Generated ${parsed.insights?.length || 0} AI insights`);
+    // Ensure insights is always an array (AI might return object/string unexpectedly)
+    const insights = Array.isArray(parsed.insights) ? parsed.insights : [];
+    const hiddenPatterns = Array.isArray(parsed.hiddenPatterns) ? parsed.hiddenPatterns : [];
+
+    console.log(`[AI-PATTERN-ANALYZER] Generated ${insights.length} AI insights`);
 
     return {
-      insights: parsed.insights || [],
+      insights,
       summary: parsed.summary || '',
       primaryConcern: parsed.primaryConcern || null,
-      hiddenPatterns: parsed.hiddenPatterns || [],
+      hiddenPatterns,
     };
 
   } catch (error) {

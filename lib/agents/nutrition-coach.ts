@@ -36,6 +36,18 @@ Your task is to create personalized nutrition guidance based on the athlete's:
 - Calculated macronutrient needs
 - Biomarker flags (if available)
 - Lifestyle factors
+- Ecosystem data (glucose patterns, work schedule, recovery status)
+
+ECOSYSTEM DATA INTEGRATION:
+When ecosystem data is provided, use it to personalize recommendations:
+- Glucose patterns (Dexcom): Recommend foods that stabilize blood sugar, avoid spike triggers
+- Meeting density (Gmail/Outlook): Suggest meal prep strategies for busy days, quick nutrition options
+- Recovery score: Adjust protein timing and anti-inflammatory foods based on recovery needs
+- Sleep debt: Include foods that support sleep (magnesium-rich, tryptophan sources)
+- Work stress indicators: Include stress-reducing nutrition (omega-3s, adaptogens)
+- Optimal meal windows: Align meal timing with calendar gaps
+
+Always reference specific data when available (e.g., "Your glucose spikes around 2pm" not just "watch blood sugar").
 
 CRITICAL RULES:
 1. NEVER use colons (:) in your text — use em dashes (—) instead
@@ -117,7 +129,7 @@ IMPORTANT: Always recommend AT LEAST 3 essential supplements (Creatine, Vitamin 
 // ============================================================================
 
 function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
-  const { profile, computedMetrics, constraints, biomarkerFlags } = athleteProfile;
+  const { profile, computedMetrics, constraints, biomarkerFlags, keyInsights, ecosystemMetrics } = athleteProfile;
 
   let prompt = `# ATHLETE NUTRITION PROFILE
 
@@ -141,6 +153,83 @@ function buildUserPrompt(athleteProfile: AthleteProfileCard): string {
 - Stress Level — ${computedMetrics.stressScore}
 - Recovery Capacity — ${computedMetrics.recoveryCapacity}
 `;
+
+  // Add detailed ecosystem metrics if available
+  if (ecosystemMetrics) {
+    const { recovery, schedule } = ecosystemMetrics;
+
+    if (recovery.combinedRecoveryScore || recovery.sleepDebtHours || recovery.strainScore) {
+      prompt += `\n## Recovery Data (for nutrition timing)\n`;
+
+      if (recovery.combinedRecoveryScore) {
+        prompt += `- Recovery Score — ${recovery.combinedRecoveryScore}%`;
+        if (recovery.combinedRecoveryScore < 50) {
+          prompt += ` (LOW — emphasize anti-inflammatory foods, recovery nutrition)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.sleepHoursAvg) {
+        prompt += `- Sleep Average — ${recovery.sleepHoursAvg}h`;
+        if (recovery.sleepDebtHours && recovery.sleepDebtHours > 3) {
+          prompt += ` (${recovery.sleepDebtHours}h sleep debt — include sleep-supporting foods)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.strainScore) {
+        prompt += `- Training Strain — ${recovery.strainScore}/21`;
+        if (recovery.strainScore > 14) {
+          prompt += ` (HIGH — ensure adequate carb and protein intake for recovery)`;
+        }
+        prompt += `\n`;
+      }
+
+      if (recovery.overtrainingRisk === 'high' || recovery.overtrainingRisk === 'moderate') {
+        prompt += `- Overtraining Risk — ${recovery.overtrainingRisk} — prioritize recovery nutrition\n`;
+      }
+    }
+
+    if (schedule.meetingDensity || schedule.optimalTrainingWindows) {
+      prompt += `\n## Work Schedule Patterns (for meal timing)\n`;
+
+      if (schedule.meetingDensity) {
+        prompt += `- Meeting Load — ${schedule.meetingDensity}`;
+        if (schedule.avgMeetingsPerDay) {
+          prompt += ` (${schedule.avgMeetingsPerDay} meetings/day)`;
+        }
+        prompt += `\n`;
+
+        if (schedule.meetingDensity === 'very-high' || schedule.meetingDensity === 'high') {
+          prompt += `  * Busy schedule — recommend meal prep strategies and quick nutrition options\n`;
+        }
+      }
+
+      if (schedule.optimalTrainingWindows && schedule.optimalTrainingWindows.length > 0) {
+        prompt += `- Optimal Meal/Training Windows — ${schedule.optimalTrainingWindows.join(', ')}\n`;
+        prompt += `  * Align pre/post workout nutrition with these windows\n`;
+      }
+
+      if (schedule.workStressIndicators) {
+        const stressFactors: string[] = [];
+        if (schedule.workStressIndicators.afterHoursWork) stressFactors.push('after-hours work');
+        if (schedule.workStressIndicators.backToBackMeetings) stressFactors.push('back-to-back meetings');
+        if (stressFactors.length > 0) {
+          prompt += `- Work Stress — ${stressFactors.join(', ')}\n`;
+          prompt += `  * Include stress-reducing nutrition (omega-3s, magnesium-rich foods)\n`;
+        }
+      }
+    }
+  }
+
+  // Add ecosystem insights (nutrition-related)
+  const nutritionInsights = keyInsights?.filter(i => i.impact === 'nutrition' || i.impact === 'general') || [];
+  if (nutritionInsights.length > 0) {
+    prompt += `\n## Ecosystem Insights\n`;
+    for (const insight of nutritionInsights) {
+      prompt += `- [${insight.source.toUpperCase()}] ${insight.insight}\n`;
+    }
+  }
 
   // Add biomarker flags
   if (biomarkerFlags.length > 0) {
@@ -166,7 +255,20 @@ Create nutrition guidance that:
 1. Supports their goal of "${profile.primaryGoal}"
 2. Provides ${computedMetrics.proteinTargetGrams}g protein daily
 3. Addresses any biomarker concerns
-4. Fits their ${profile.trainingDays}-day training schedule
+4. Fits their ${profile.trainingDays}-day training schedule`;
+
+  // Add ecosystem-specific nutrition tasks
+  if (ecosystemMetrics?.recovery.combinedRecoveryScore && ecosystemMetrics.recovery.combinedRecoveryScore < 50) {
+    prompt += `\n5. PRIORITY — Low recovery (${ecosystemMetrics.recovery.combinedRecoveryScore}%) — emphasize anti-inflammatory foods and recovery nutrition`;
+  }
+  if (ecosystemMetrics?.recovery.sleepDebtHours && ecosystemMetrics.recovery.sleepDebtHours > 5) {
+    prompt += `\n6. Include sleep-supporting foods (magnesium, tryptophan sources) for ${ecosystemMetrics.recovery.sleepDebtHours}h sleep debt`;
+  }
+  if (ecosystemMetrics?.schedule.meetingDensity === 'very-high' || ecosystemMetrics?.schedule.meetingDensity === 'high') {
+    prompt += `\n7. Include meal prep strategies and quick nutrition options for busy work schedule`;
+  }
+
+  prompt += `
 
 Return the JSON structure as specified.`;
 

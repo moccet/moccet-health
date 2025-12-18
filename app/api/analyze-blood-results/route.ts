@@ -263,6 +263,23 @@ function cleanAndParseJSON(text: string): string {
   return cleaned;
 }
 
+// Helper function to safely get an array from a value that might be an object or non-iterable
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ensureArray(value: any): any[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  // If it's an object with numeric keys or iterable-like structure, try to convert
+  if (typeof value === 'object') {
+    // Check if it's an object with values we can extract
+    const values = Object.values(value);
+    if (values.length > 0) {
+      return values;
+    }
+  }
+  // If it's a single item, wrap it in an array
+  return [value];
+}
+
 // Helper function to merge multiple analyses into one
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mergeAnalyses(analyses: any[]) {
@@ -277,11 +294,14 @@ function mergeAnalyses(analyses: any[]) {
   // Merge biomarkers and deduplicate by name
   const biomarkersMap = new Map();
   for (const analysis of analyses) {
-    for (const biomarker of analysis.biomarkers || []) {
-      const key = biomarker.name.toLowerCase().trim();
-      // Keep the first occurrence of each biomarker
-      if (!biomarkersMap.has(key)) {
-        biomarkersMap.set(key, biomarker);
+    const biomarkersArray = ensureArray(analysis.biomarkers);
+    for (const biomarker of biomarkersArray) {
+      if (biomarker && biomarker.name) {
+        const key = biomarker.name.toLowerCase().trim();
+        // Keep the first occurrence of each biomarker
+        if (!biomarkersMap.has(key)) {
+          biomarkersMap.set(key, biomarker);
+        }
       }
     }
   }
@@ -290,8 +310,11 @@ function mergeAnalyses(analyses: any[]) {
   // Merge concerns and deduplicate
   const concernsSet = new Set();
   for (const analysis of analyses) {
-    for (const concern of analysis.concerns || []) {
-      concernsSet.add(concern);
+    const concernsArray = ensureArray(analysis.concerns);
+    for (const concern of concernsArray) {
+      if (concern && typeof concern === 'string') {
+        concernsSet.add(concern);
+      }
     }
   }
   const concerns = Array.from(concernsSet);
@@ -299,8 +322,11 @@ function mergeAnalyses(analyses: any[]) {
   // Merge positives and deduplicate
   const positivesSet = new Set();
   for (const analysis of analyses) {
-    for (const positive of analysis.positives || []) {
-      positivesSet.add(positive);
+    const positivesArray = ensureArray(analysis.positives);
+    for (const positive of positivesArray) {
+      if (positive && typeof positive === 'string') {
+        positivesSet.add(positive);
+      }
     }
   }
   const positives = Array.from(positivesSet);
@@ -316,10 +342,11 @@ function mergeAnalyses(analyses: any[]) {
 
   for (const analysis of analyses) {
     if (analysis.recommendations) {
-      recommendations.lifestyle.push(...(analysis.recommendations.lifestyle || []));
-      recommendations.dietary.push(...(analysis.recommendations.dietary || []));
-      recommendations.supplements.push(...(analysis.recommendations.supplements || []));
-      recommendations.followUp.push(...(analysis.recommendations.followUp || []));
+      const recs = analysis.recommendations;
+      recommendations.lifestyle.push(...ensureArray(recs.lifestyle).filter((s: unknown) => typeof s === 'string'));
+      recommendations.dietary.push(...ensureArray(recs.dietary).filter((s: unknown) => typeof s === 'string'));
+      recommendations.supplements.push(...ensureArray(recs.supplements).filter((s: unknown) => typeof s === 'string'));
+      recommendations.followUp.push(...ensureArray(recs.followUp).filter((s: unknown) => typeof s === 'string'));
     }
   }
 
@@ -330,10 +357,11 @@ function mergeAnalyses(analyses: any[]) {
   recommendations.followUp = Array.from(new Set(recommendations.followUp));
 
   // Merge personalized notes if present
-  const personalizedNotes = [];
+  const personalizedNotes: string[] = [];
   for (const analysis of analyses) {
     if (analysis.personalizedNotes) {
-      personalizedNotes.push(...analysis.personalizedNotes);
+      const notesArray = ensureArray(analysis.personalizedNotes);
+      personalizedNotes.push(...notesArray.filter((s: unknown) => typeof s === 'string'));
     }
   }
 

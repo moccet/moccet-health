@@ -93,6 +93,25 @@ interface NutritionPlan {
       benefits?: string;
       duration?: string;
     }>;
+    // Alternative naming convention
+    essential?: Array<{
+      name: string;
+      dosage: string;
+      timing: string;
+      rationale: string;
+      benefits?: string;
+      duration?: string;
+    }>;
+    optional?: Array<{
+      name: string;
+      dosage: string;
+      timing: string;
+      rationale: string;
+      benefits?: string;
+      duration?: string;
+    }>;
+    considerations?: string;
+    personalizedNotes?: string;
   };
 }
 
@@ -416,8 +435,9 @@ export default function PersonalisedPlanPage() {
         // Enrich supplements with product data if they exist (use transformedPlan for old format)
         const planToCheck = transformedPlan.supplementRecommendations || planData.plan?.supplementRecommendations;
         if (planToCheck) {
-          const essential = planToCheck.essentialSupplements || [];
-          const optional = planToCheck.optionalSupplements || [];
+          // Handle both naming conventions: essentialSupplements/optionalSupplements AND essential/optional
+          const essential = planToCheck.essentialSupplements || planToCheck.essential || [];
+          const optional = planToCheck.optionalSupplements || planToCheck.optional || [];
 
           console.log('[Supplement Enrichment] Essential count:', essential.length);
           console.log('[Supplement Enrichment] Optional count:', optional.length);
@@ -850,14 +870,62 @@ export default function PersonalisedPlanPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bloodAnalysis.biomarkers.map((marker, idx) => (
-                    <tr key={idx}>
-                      <td className="biomarker-name">{marker.name}</td>
-                      <td className="biomarker-value">{marker.value}</td>
-                      <td className="biomarker-range">{marker.referenceRange || 'N/A'}</td>
-                      <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`}>{marker.status}</td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // Priority biomarkers to always show if present (even if normal)
+                    const priorityBiomarkers = [
+                      'vitamin d', 'hba1c', 'glucose', 'ferritin', 'crp', 'c-reactive protein',
+                      'ldl cholesterol', 'hdl cholesterol', 'total cholesterol', 'triglycerides',
+                      'tsh', 'free thyroxine', 'ft4', 'iron', 'b12', 'vitamin b12', 'folate'
+                    ];
+
+                    // Sort biomarkers: abnormal first, then priority, then others
+                    const sortedBiomarkers = [...bloodAnalysis.biomarkers].sort((a, b) => {
+                      const statusPriority = (status: string) => {
+                        const s = status.toLowerCase();
+                        if (s === 'critical' || s === 'very high' || s === 'very low') return 0;
+                        if (s === 'high' || s === 'low') return 1;
+                        if (s === 'needs optimization' || s === 'borderline') return 2;
+                        if (s === 'pending') return 5;
+                        return 3; // Normal
+                      };
+
+                      const isPriority = (name: string) =>
+                        priorityBiomarkers.some(p => name.toLowerCase().includes(p));
+
+                      const priorityA = statusPriority(a.status);
+                      const priorityB = statusPriority(b.status);
+
+                      if (priorityA !== priorityB) return priorityA - priorityB;
+
+                      // If same status priority, prioritize important biomarkers
+                      const aIsPriority = isPriority(a.name);
+                      const bIsPriority = isPriority(b.name);
+                      if (aIsPriority && !bIsPriority) return -1;
+                      if (!aIsPriority && bIsPriority) return 1;
+
+                      return 0;
+                    });
+
+                    // Take top 8-10: all abnormal + important normals up to limit
+                    const MAX_BIOMARKERS = 10;
+                    const abnormalCount = sortedBiomarkers.filter(m =>
+                      !['normal', 'pending'].includes(m.status.toLowerCase())
+                    ).length;
+
+                    // Show all abnormal, plus fill up to 10 with important normal ones
+                    const limitedBiomarkers = sortedBiomarkers.slice(0, Math.max(abnormalCount, MAX_BIOMARKERS));
+
+                    return limitedBiomarkers
+                      .filter(m => m.status.toLowerCase() !== 'pending') // Hide pending
+                      .map((marker, idx) => (
+                      <tr key={idx}>
+                        <td className="biomarker-name">{marker.name}</td>
+                        <td className="biomarker-value">{marker.value}</td>
+                        <td className="biomarker-range">{marker.referenceRange || 'N/A'}</td>
+                        <td className={`biomarker-status status-${marker.status.toLowerCase().replace(/\s+/g, '-')}`}>{marker.status}</td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1027,7 +1095,7 @@ export default function PersonalisedPlanPage() {
             </div>
           )}
           {plan.dailyRecommendations.nutritionGuidelines && (
-            <div className="recommendation-card" style={{ gridColumn: '1 / -1' }}>
+            <div className="recommendation-card">
               <h3>{plan.dailyRecommendations.nutritionGuidelines.title || 'Nutrition Guidelines'}</h3>
               <ul>
                 {(Array.isArray(plan.dailyRecommendations.nutritionGuidelines)
@@ -1037,7 +1105,7 @@ export default function PersonalisedPlanPage() {
                   <li key={idx}>
                     {typeof item === 'string' ? item : (
                       <div>
-                        <strong>{item.category}:</strong> {item.guideline}
+                        <strong>{item.category || item.action}</strong>{(item.category || item.action) ? ': ' : ''}{item.guideline || item.description}
                         {item.reason && <div style={{ fontSize: '0.9em', marginTop: '5px', color: '#b3b3b3' }}><em>Why:</em> {item.reason}</div>}
                         {item.examples && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#a0a0a0' }}><em>Examples:</em> {item.examples}</div>}
                         {item.tip && <div style={{ fontSize: '0.9em', marginTop: '3px', color: '#000000' }}><em>Tip:</em> {item.tip}</div>}
@@ -1171,44 +1239,68 @@ export default function PersonalisedPlanPage() {
           </>
         )}
 
-        {!loadingMicronutrients && (!micronutrients || !micronutrients.micronutrients || micronutrients.micronutrients.length === 0) && plan.micronutrientFocus && plan.micronutrientFocus.length > 0 && (
-          <>
-            {/* Personalized intro for fallback micronutrients */}
-            <p className="micronutrients-intro">
-              {`Based on ${bloodAnalysis ? 'your blood biomarkers' : 'your profile'}${
-                bloodAnalysis && bloodAnalysis.concerns?.length > 0
-                  ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
-                  : ''
-              }, your ${typeof plan?.nutritionOverview?.goals?.[0] === 'string' ? plan.nutritionOverview.goals[0].toLowerCase() : 'health goals'}, and your ${
-                plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
-              }, these micronutrients are specifically chosen to support your optimal health and performance.`}
-            </p>
+        {/* Fallback micronutrient table - handles both array and object formats */}
+        {(() => {
+          // Extract nutrients array from either format: array directly OR object with .nutrients
+          const fallbackNutrients = plan.micronutrientFocus
+            ? (Array.isArray(plan.micronutrientFocus)
+                ? plan.micronutrientFocus
+                : plan.micronutrientFocus.nutrients || [])
+            : [];
+          const fallbackIntro = !Array.isArray(plan.micronutrientFocus) && plan.micronutrientFocus?.personalizedIntro;
 
-            <div className="table-container">
-              <table className="micronutrient-table">
-                <thead>
-                  <tr>
-                    <th>Nutrient</th>
-                    <th>Daily Goal</th>
-                    <th>Food Sources in Plan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {plan.micronutrientFocus.map((nutrient, idx) => (
-                  <tr key={idx}>
-                    <td className="nutrient-name">{typeof nutrient.nutrient === 'string' ? nutrient.nutrient : JSON.stringify(nutrient.nutrient)}</td>
-                    <td className="nutrient-goal">{typeof nutrient.dailyGoal === 'string' ? nutrient.dailyGoal : JSON.stringify(nutrient.dailyGoal)}</td>
-                    <td className="nutrient-sources">{typeof nutrient.foodSources === 'string' ? nutrient.foodSources : JSON.stringify(nutrient.foodSources)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          </>
-        )}
+          if (loadingMicronutrients || (micronutrients && micronutrients.micronutrients && micronutrients.micronutrients.length > 0)) {
+            return null;
+          }
+          if (fallbackNutrients.length === 0) {
+            return null;
+          }
+
+          return (
+            <>
+              {/* Personalized intro for fallback micronutrients */}
+              <p className="micronutrients-intro">
+                {fallbackIntro || `Based on ${bloodAnalysis ? 'your blood biomarkers' : 'your profile'}${
+                  bloodAnalysis && bloodAnalysis.concerns?.length > 0
+                    ? ` showing ${bloodAnalysis.concerns.slice(0, 2).join(' and ')}`
+                    : ''
+                }, your ${typeof plan?.nutritionOverview?.goals?.[0] === 'string' ? plan.nutritionOverview.goals[0].toLowerCase() : 'health goals'}, and your ${
+                  plan?.dailyRecommendations ? 'personalized nutrition plan' : 'lifestyle'
+                }, these micronutrients are specifically chosen to support your optimal health and performance.`}
+              </p>
+
+              <div className="table-container">
+                <table className="micronutrient-table">
+                  <thead>
+                    <tr>
+                      <th>Nutrient</th>
+                      <th>Daily Goal</th>
+                      <th>Food Sources in Plan</th>
+                      <th>Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {fallbackNutrients.map((nutrient: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="nutrient-name">{typeof nutrient.nutrient === 'string' ? nutrient.nutrient : JSON.stringify(nutrient.nutrient)}</td>
+                      <td className="nutrient-goal">{typeof nutrient.dailyGoal === 'string' ? nutrient.dailyGoal : JSON.stringify(nutrient.dailyGoal)}</td>
+                      <td className="nutrient-sources">{typeof nutrient.foodSources === 'string' ? nutrient.foodSources : JSON.stringify(nutrient.foodSources)}</td>
+                      <td className="nutrient-purpose">{typeof nutrient.purpose === 'string' ? nutrient.purpose : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
+          );
+        })()}
 
         {/* Fallback when no micronutrient data from either source */}
-        {!loadingMicronutrients && (!micronutrients || !micronutrients.micronutrients || micronutrients.micronutrients.length === 0) && (!plan.micronutrientFocus || plan.micronutrientFocus.length === 0) && (
+        {!loadingMicronutrients && (!micronutrients || !micronutrients.micronutrients || micronutrients.micronutrients.length === 0) && (
+          !plan.micronutrientFocus ||
+          (Array.isArray(plan.micronutrientFocus) && plan.micronutrientFocus.length === 0) ||
+          (!Array.isArray(plan.micronutrientFocus) && (!plan.micronutrientFocus.nutrients || plan.micronutrientFocus.nutrients.length === 0))
+        ) && (
           <p className="micronutrients-intro" style={{ color: '#666' }}>
             Micronutrient recommendations are being personalized for you. Please check back soon.
           </p>
@@ -1216,11 +1308,11 @@ export default function PersonalisedPlanPage() {
       </section>
 
       {/* Supplement Recommendations */}
-      {plan.supplementRecommendations && (plan.supplementRecommendations.essentialSupplements?.length > 0 || plan.supplementRecommendations.optionalSupplements?.length > 0) && (
+      {plan.supplementRecommendations && ((plan.supplementRecommendations.essentialSupplements?.length > 0 || plan.supplementRecommendations.essential?.length > 0) || (plan.supplementRecommendations.optionalSupplements?.length > 0 || plan.supplementRecommendations.optional?.length > 0)) && (
         <section className="plan-section">
           <h2 className="section-title">Supplement Recommendations</h2>
 
-          {plan.supplementRecommendations.essentialSupplements && plan.supplementRecommendations.essentialSupplements.length > 0 && (
+          {((plan.supplementRecommendations.essentialSupplements && plan.supplementRecommendations.essentialSupplements.length > 0) || (plan.supplementRecommendations.essential && plan.supplementRecommendations.essential.length > 0)) && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <h3 className="overview-heading" style={{ marginBottom: 0 }}>Essential Supplements</h3>
@@ -1923,17 +2015,22 @@ export default function PersonalisedPlanPage() {
               </div>
             )}
 
-            {lifestyleIntegration ? (
+            {/* Use lifestyleIntegration state (from separate column) OR fall back to plan.lifestyleIntegration */}
+            {(() => {
+              const lifestyle = lifestyleIntegration || (plan as any).lifestyleIntegration;
+              if (!lifestyle) return null;
+
+              return (
               <div className="lifestyle-clean">
                 {/* Sleep Optimization / Sleep */}
-                {(lifestyleIntegration.sleepOptimization || lifestyleIntegration.sleep) && (
+                {(lifestyle.sleepOptimization || lifestyle.sleep) && (
                   <div className="lifestyle-section">
-                    <h3 className="lifestyle-title">Sleep{lifestyleIntegration.sleepOptimization ? ' Optimization' : ''}</h3>
+                    <h3 className="lifestyle-title">Sleep{lifestyle.sleepOptimization ? ' Optimization' : ''}</h3>
 
                     {/* New format - simple sleep info */}
-                    {lifestyleIntegration.sleep && (
+                    {lifestyle.sleep && (
                       <>
-                        {lifestyleIntegration.sleep.currentQuality && (
+                        {lifestyle.sleep.currentQuality && (
                           <div style={{
                             background: 'rgba(0, 0, 0, 0.02)',
                             border: '1px solid #e5e5e5',
@@ -1941,66 +2038,66 @@ export default function PersonalisedPlanPage() {
                             borderRadius: '8px',
                             marginBottom: '20px'
                           }}>
-                            <p><strong>Current Sleep Quality:</strong> {lifestyleIntegration.sleep.currentQuality}</p>
-                            {lifestyleIntegration.sleep.recommendation && (
-                              <p style={{ marginTop: '10px' }}><strong>Recommendation:</strong> {lifestyleIntegration.sleep.recommendation}</p>
+                            <p><strong>Current Sleep Quality:</strong> {lifestyle.sleep.currentQuality}</p>
+                            {lifestyle.sleep.recommendation && (
+                              <p style={{ marginTop: '10px' }}><strong>Recommendation:</strong> {lifestyle.sleep.recommendation}</p>
                             )}
                           </div>
                         )}
-                        {lifestyleIntegration.sleep.mealTimingForSleep && (
+                        {lifestyle.sleep.mealTimingForSleep && (
                           <div className="lifestyle-text">
-                            <p><strong>Meal Timing:</strong> {lifestyleIntegration.sleep.mealTimingForSleep}</p>
+                            <p><strong>Meal Timing:</strong> {lifestyle.sleep.mealTimingForSleep}</p>
                           </div>
                         )}
-                        {lifestyleIntegration.sleep.tip && (
+                        {lifestyle.sleep.tip && (
                           <div className="lifestyle-text">
-                            <p style={{ color: '#000000' }}>{lifestyleIntegration.sleep.tip}</p>
+                            <p style={{ color: '#000000' }}>{lifestyle.sleep.tip}</p>
                           </div>
                         )}
-                        {lifestyleIntegration.sleep.protectYourSleep && (
+                        {lifestyle.sleep.protectYourSleep && (
                           <div className="lifestyle-text">
-                            <p>{lifestyleIntegration.sleep.protectYourSleep}</p>
+                            <p>{lifestyle.sleep.protectYourSleep}</p>
                           </div>
                         )}
                       </>
                     )}
 
                     {/* Old format - detailed sleep optimization */}
-                    {lifestyleIntegration.sleepOptimization && (
+                    {lifestyle.sleepOptimization && (
                       <>
-                        {lifestyleIntegration.sleepOptimization.personalizedIntro && (
-                          <p className="lifestyle-subtitle">{lifestyleIntegration.sleepOptimization.personalizedIntro}</p>
+                        {lifestyle.sleepOptimization.personalizedIntro && (
+                          <p className="lifestyle-subtitle">{lifestyle.sleepOptimization.personalizedIntro}</p>
                         )}
 
-                        {lifestyleIntegration.sleepOptimization.optimalSleepWindow && (
+                        {lifestyle.sleepOptimization.optimalSleepWindow && (
                           <div className="lifestyle-text">
-                            <p><strong>Optimal Sleep Window:</strong> {lifestyleIntegration.sleepOptimization.optimalSleepWindow}</p>
+                            <p><strong>Optimal Sleep Window:</strong> {lifestyle.sleepOptimization.optimalSleepWindow}</p>
                           </div>
                         )}
 
-                        {lifestyleIntegration.sleepOptimization.preBedroutine && lifestyleIntegration.sleepOptimization.preBedroutine.length > 0 && (
+                        {lifestyle.sleepOptimization.preBedRoutine && lifestyle.sleepOptimization.preBedRoutine.length > 0 && (
                           <div className="lifestyle-text">
                             <p><strong>Pre-Bed Routine:</strong></p>
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.sleepOptimization.preBedroutine.map((item: any, idx: number) => (
+                            {lifestyle.sleepOptimization.preBedRoutine.map((item: any, idx: number) => (
                               <p key={idx}>• {item}</p>
                             ))}
                           </div>
                         )}
 
-                        {lifestyleIntegration.sleepOptimization.morningProtocol && lifestyleIntegration.sleepOptimization.morningProtocol.length > 0 && (
+                        {lifestyle.sleepOptimization.morningProtocol && lifestyle.sleepOptimization.morningProtocol.length > 0 && (
                           <div className="lifestyle-text">
                             <p><strong>Morning Protocol:</strong></p>
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
+                            {lifestyle.sleepOptimization.morningProtocol.map((item: any, idx: number) => (
                               <p key={idx}>• {item}</p>
                             ))}
                           </div>
                         )}
 
-                        {lifestyleIntegration.sleepOptimization.whyThisMatters && (
+                        {lifestyle.sleepOptimization.whyThisMatters && (
                           <div className="lifestyle-text">
-                            <p><strong>Why This Matters:</strong> {lifestyleIntegration.sleepOptimization.whyThisMatters}</p>
+                            <p><strong>Why This Matters:</strong> {lifestyle.sleepOptimization.whyThisMatters}</p>
                           </div>
                         )}
                       </>
@@ -2009,14 +2106,14 @@ export default function PersonalisedPlanPage() {
                 )}
 
                 {/* Exercise Protocol / Exercise */}
-                {(lifestyleIntegration.exerciseProtocol || lifestyleIntegration.exercise) && (
+                {(lifestyle.exerciseProtocol || lifestyle.exercise) && (
                   <div className="lifestyle-section">
-                    <h3 className="lifestyle-title">Exercise{lifestyleIntegration.exerciseProtocol ? ' Protocol' : ''}</h3>
+                    <h3 className="lifestyle-title">Exercise{lifestyle.exerciseProtocol ? ' Protocol' : ''}</h3>
 
                     {/* New format - exercise concerns and monitoring */}
-                    {lifestyleIntegration.exercise && (
+                    {lifestyle.exercise && (
                       <>
-                        {lifestyleIntegration.exercise.currentSituation && (
+                        {lifestyle.exercise.currentSituation && (
                           <div style={{
                             background: 'rgba(0, 0, 0, 0.02)',
                             border: '1px solid #e5e5e5',
@@ -2024,68 +2121,68 @@ export default function PersonalisedPlanPage() {
                             borderRadius: '8px',
                             marginBottom: '20px'
                           }}>
-                            {lifestyleIntegration.exercise.currentSituation.recentChange && (
-                              <p><strong>Recent Change:</strong> {lifestyleIntegration.exercise.currentSituation.recentChange}</p>
+                            {lifestyle.exercise.currentSituation.recentChange && (
+                              <p><strong>Recent Change:</strong> {lifestyle.exercise.currentSituation.recentChange}</p>
                             )}
-                            {lifestyleIntegration.exercise.currentSituation.concern && (
-                              <p style={{ marginTop: '10px' }}><strong>Your Concern:</strong> {lifestyleIntegration.exercise.currentSituation.concern}</p>
+                            {lifestyle.exercise.currentSituation.concern && (
+                              <p style={{ marginTop: '10px' }}><strong>Your Concern:</strong> {lifestyle.exercise.currentSituation.concern}</p>
                             )}
                           </div>
                         )}
 
-                        {lifestyleIntegration.exercise.approach && (
+                        {lifestyle.exercise.approach && (
                           <div className="lifestyle-text">
-                            <p><strong>Our Approach:</strong> {lifestyleIntegration.exercise.approach}</p>
+                            <p><strong>Our Approach:</strong> {lifestyle.exercise.approach}</p>
                           </div>
                         )}
 
-                        {lifestyleIntegration.exercise.monitoring && (
+                        {lifestyle.exercise.monitoring && (
                           <div className="lifestyle-text">
                             <p><strong>What We'll Monitor:</strong></p>
-                            {lifestyleIntegration.exercise.monitoring.watchFor && lifestyleIntegration.exercise.monitoring.watchFor.length > 0 && (
+                            {lifestyle.exercise.monitoring.watchFor && lifestyle.exercise.monitoring.watchFor.length > 0 && (
                               <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
-                                {lifestyleIntegration.exercise.monitoring.watchFor.map((item: string, idx: number) => (
+                                {lifestyle.exercise.monitoring.watchFor.map((item: string, idx: number) => (
                                   <li key={idx} style={{ marginBottom: '5px' }}>{item}</li>
                                 ))}
                               </ul>
                             )}
-                            {lifestyleIntegration.exercise.monitoring.action && (
-                              <p style={{ marginTop: '10px', color: '#000000' }}><strong>Action:</strong> {lifestyleIntegration.exercise.monitoring.action}</p>
+                            {lifestyle.exercise.monitoring.action && (
+                              <p style={{ marginTop: '10px', color: '#000000' }}><strong>Action:</strong> {lifestyle.exercise.monitoring.action}</p>
                             )}
                           </div>
                         )}
 
-                        {lifestyleIntegration.exercise.reassurance && (
+                        {lifestyle.exercise.reassurance && (
                           <div style={{
                             background: 'rgba(144, 217, 160, 0.1)',
                             padding: '15px',
                             borderRadius: '8px',
                             marginTop: '20px'
                           }}>
-                            <p>{lifestyleIntegration.exercise.reassurance}</p>
+                            <p>{lifestyle.exercise.reassurance}</p>
                           </div>
                         )}
                       </>
                     )}
 
                     {/* Old format - detailed exercise protocol */}
-                    {lifestyleIntegration.exerciseProtocol && (
+                    {lifestyle.exerciseProtocol && (
                       <>
-                        {lifestyleIntegration.exerciseProtocol.personalizedIntro && (
-                          <p className="lifestyle-subtitle">{lifestyleIntegration.exerciseProtocol.personalizedIntro}</p>
+                        {lifestyle.exerciseProtocol.personalizedIntro && (
+                          <p className="lifestyle-subtitle">{lifestyle.exerciseProtocol.personalizedIntro}</p>
                         )}
 
-                        {lifestyleIntegration.exerciseProtocol.weeklyStructure && (
+                        {lifestyle.exerciseProtocol.weeklyStructure && (
                           <div className="lifestyle-text">
-                            <p><strong>Weekly Structure:</strong> {lifestyleIntegration.exerciseProtocol.weeklyStructure}</p>
+                            <p><strong>Weekly Structure:</strong> {lifestyle.exerciseProtocol.weeklyStructure}</p>
                           </div>
                         )}
 
-                        {lifestyleIntegration.exerciseProtocol.workoutSplit && lifestyleIntegration.exerciseProtocol.workoutSplit.length > 0 && (
+                        {lifestyle.exerciseProtocol.workoutSplit && lifestyle.exerciseProtocol.workoutSplit.length > 0 && (
                           <div className="lifestyle-text">
                             <p><strong>Workout Split:</strong></p>
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {lifestyleIntegration.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
+                            {lifestyle.exerciseProtocol.workoutSplit.map((workout: any, idx: number) => (
                               <p key={idx}>
                                 <strong>{workout.day}:</strong> {workout.focus}
                                 {workout.duration && <> • {workout.duration}</>}
@@ -2094,9 +2191,9 @@ export default function PersonalisedPlanPage() {
                           </div>
                         )}
 
-                        {lifestyleIntegration.exerciseProtocol.whyThisMatters && (
+                        {lifestyle.exerciseProtocol.whyThisMatters && (
                           <div className="lifestyle-text">
-                            <p><strong>Why This Matters:</strong> {lifestyleIntegration.exerciseProtocol.whyThisMatters}</p>
+                            <p><strong>Why This Matters:</strong> {lifestyle.exerciseProtocol.whyThisMatters}</p>
                           </div>
                         )}
                       </>
@@ -2105,12 +2202,12 @@ export default function PersonalisedPlanPage() {
                 )}
 
                 {/* Stress Management */}
-                {lifestyleIntegration.stressManagement && (
+                {lifestyle.stressManagement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Stress Management</h3>
 
                     {/* Current Level */}
-                    {lifestyleIntegration.stressManagement.currentLevel && (
+                    {lifestyle.stressManagement.currentLevel && (
                       <div style={{
                         background: 'rgba(0, 0, 0, 0.02)',
                         border: '1px solid #e5e5e5',
@@ -2118,23 +2215,23 @@ export default function PersonalisedPlanPage() {
                         borderRadius: '8px',
                         marginBottom: '20px'
                       }}>
-                        <p><strong>Current Status:</strong> {lifestyleIntegration.stressManagement.currentLevel}</p>
-                        {lifestyleIntegration.stressManagement.acknowledgment && (
-                          <p style={{ marginTop: '10px' }}>{lifestyleIntegration.stressManagement.acknowledgment}</p>
+                        <p><strong>Current Status:</strong> {lifestyle.stressManagement.currentLevel}</p>
+                        {lifestyle.stressManagement.acknowledgment && (
+                          <p style={{ marginTop: '10px' }}>{lifestyle.stressManagement.acknowledgment}</p>
                         )}
                       </div>
                     )}
 
-                    {lifestyleIntegration.stressManagement.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{lifestyleIntegration.stressManagement.personalizedIntro}</p>
+                    {lifestyle.stressManagement.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyle.stressManagement.personalizedIntro}</p>
                     )}
 
                     {/* Primary Interventions */}
-                    {lifestyleIntegration.stressManagement.primaryInterventions && lifestyleIntegration.stressManagement.primaryInterventions.length > 0 && (
+                    {lifestyle.stressManagement.primaryInterventions && lifestyleIntegration.stressManagement.primaryInterventions.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Key Strategies:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.stressManagement.primaryInterventions.map((intervention: any, idx: number) => (
+                        {lifestyle.stressManagement.primaryInterventions.map((intervention: any, idx: number) => (
                           <div key={idx} style={{ marginBottom: '15px', paddingLeft: '15px', borderLeft: '3px solid #e5e5e5' }}>
                             <p><strong>{intervention.intervention}</strong></p>
                             <p style={{ fontSize: '0.95em', color: '#666666' }}>{intervention.description}</p>
@@ -2165,11 +2262,11 @@ export default function PersonalisedPlanPage() {
                     )}
 
                     {/* Daily Practices (legacy format) */}
-                    {lifestyleIntegration.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
+                    {lifestyle.stressManagement.dailyPractices && lifestyleIntegration.stressManagement.dailyPractices.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Daily Practices:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.stressManagement.dailyPractices.map((practice: any, idx: number) => (
+                        {lifestyle.stressManagement.dailyPractices.map((practice: any, idx: number) => (
                           <p key={idx}>
                             <strong>{practice.practice}</strong>
                             {practice.timing && <> • {practice.timing}</>}
@@ -2181,31 +2278,31 @@ export default function PersonalisedPlanPage() {
                     )}
 
                     {/* Expected Outcome */}
-                    {lifestyleIntegration.stressManagement.expectedOutcome && (
+                    {lifestyle.stressManagement.expectedOutcome && (
                       <div style={{
                         background: 'rgba(144, 217, 160, 0.1)',
                         padding: '15px',
                         borderRadius: '8px',
                         marginTop: '20px'
                       }}>
-                        <p><strong>Expected Progress:</strong> {lifestyleIntegration.stressManagement.expectedOutcome}</p>
+                        <p><strong>Expected Progress:</strong> {lifestyle.stressManagement.expectedOutcome}</p>
                       </div>
                     )}
 
-                    {lifestyleIntegration.stressManagement.whyThisMatters && (
+                    {lifestyle.stressManagement.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.stressManagement.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyle.stressManagement.whyThisMatters}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Cholesterol Management - New Section */}
-                {lifestyleIntegration.cholesterolManagement && (
+                {lifestyle.cholesterolManagement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Cholesterol Management</h3>
 
-                    {lifestyleIntegration.cholesterolManagement.primaryGoal && (
+                    {lifestyle.cholesterolManagement.primaryGoal && (
                       <div style={{
                         background: 'rgba(0, 0, 0, 0.02)',
                         border: '1px solid #e5e5e5',
@@ -2213,47 +2310,47 @@ export default function PersonalisedPlanPage() {
                         borderRadius: '8px',
                         marginBottom: '20px'
                       }}>
-                        <p><strong>Primary Goal:</strong> {lifestyleIntegration.cholesterolManagement.primaryGoal}</p>
+                        <p><strong>Primary Goal:</strong> {lifestyle.cholesterolManagement.primaryGoal}</p>
                       </div>
                     )}
 
-                    {lifestyleIntegration.cholesterolManagement.keyStrategies && lifestyleIntegration.cholesterolManagement.keyStrategies.length > 0 && (
+                    {lifestyle.cholesterolManagement.keyStrategies && lifestyleIntegration.cholesterolManagement.keyStrategies.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Key Strategies:</strong></p>
                         <ul style={{ marginLeft: '20px', marginTop: '10px' }}>
-                          {lifestyleIntegration.cholesterolManagement.keyStrategies.map((strategy: string, idx: number) => (
+                          {lifestyle.cholesterolManagement.keyStrategies.map((strategy: string, idx: number) => (
                             <li key={idx} style={{ marginBottom: '8px' }}>{strategy}</li>
                           ))}
                         </ul>
                       </div>
                     )}
 
-                    {lifestyleIntegration.cholesterolManagement.timeline && (
+                    {lifestyle.cholesterolManagement.timeline && (
                       <div style={{
                         background: 'rgba(144, 217, 160, 0.1)',
                         padding: '15px',
                         borderRadius: '8px',
                         marginTop: '20px'
                       }}>
-                        <p><strong>Expected Timeline:</strong> {lifestyleIntegration.cholesterolManagement.timeline}</p>
+                        <p><strong>Expected Timeline:</strong> {lifestyle.cholesterolManagement.timeline}</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Skin Improvement */}
-                {lifestyleIntegration.skinImprovement && (
+                {lifestyle.skinImprovement && (
                   <div className="lifestyle-section">
                     <h3 className="lifestyle-title">Skin Improvement</h3>
-                    {lifestyleIntegration.skinImprovement.personalizedIntro && (
-                      <p className="lifestyle-subtitle">{lifestyleIntegration.skinImprovement.personalizedIntro}</p>
+                    {lifestyle.skinImprovement.personalizedIntro && (
+                      <p className="lifestyle-subtitle">{lifestyle.skinImprovement.personalizedIntro}</p>
                     )}
 
-                    {lifestyleIntegration.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
+                    {lifestyle.skinImprovement.morningRoutine && lifestyleIntegration.skinImprovement.morningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Morning Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.skinImprovement.morningRoutine.map((step: any, idx: number) => (
+                        {lifestyle.skinImprovement.morningRoutine.map((step: any, idx: number) => (
                           <p key={idx}>
                             {idx + 1}. <strong>{step.product}</strong>
                             {step.purpose && <> - {step.purpose}</>}
@@ -2262,11 +2359,11 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {lifestyleIntegration.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
+                    {lifestyle.skinImprovement.eveningRoutine && lifestyleIntegration.skinImprovement.eveningRoutine.length > 0 && (
                       <div className="lifestyle-text">
                         <p><strong>Evening Routine:</strong></p>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {lifestyleIntegration.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
+                        {lifestyle.skinImprovement.eveningRoutine.map((step: any, idx: number) => (
                           <p key={idx}>
                             {idx + 1}. <strong>{step.product}</strong>
                             {step.purpose && <> - {step.purpose}</>}
@@ -2275,36 +2372,16 @@ export default function PersonalisedPlanPage() {
                       </div>
                     )}
 
-                    {lifestyleIntegration.skinImprovement.whyThisMatters && (
+                    {lifestyle.skinImprovement.whyThisMatters && (
                       <div className="lifestyle-text">
-                        <p><strong>Why This Matters:</strong> {lifestyleIntegration.skinImprovement.whyThisMatters}</p>
+                        <p><strong>Why This Matters:</strong> {lifestyle.skinImprovement.whyThisMatters}</p>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            ) : plan.lifestyleIntegration ? (
-              <div className="lifestyle-content">
-                <div className="lifestyle-item">
-                  <h3>Sleep Optimization Protocol:</h3>
-                  <p>{plan.lifestyleIntegration.sleepOptimization}</p>
-                </div>
-                <div className="lifestyle-item">
-                  <h3>Exercise Protocol:</h3>
-                  <p>{plan.lifestyleIntegration.exerciseProtocol}</p>
-                </div>
-                <div className="lifestyle-item">
-                  <h3>Stress Management Protocol:</h3>
-                  <p>{plan.lifestyleIntegration.stressManagement}</p>
-                </div>
-                {plan.lifestyleIntegration.skinImprovement && (
-                  <div className="lifestyle-item">
-                    <h3>Skin Improvement Protocol:</h3>
-                    <p>{plan.lifestyleIntegration.skinImprovement}</p>
-                  </div>
-                )}
-              </div>
-            ) : null}
+              );
+            })()}
           </section>
 
           {/* Preventive & Adaptive Features */}

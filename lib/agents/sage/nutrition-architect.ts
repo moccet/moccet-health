@@ -57,6 +57,15 @@ When wearable/ecosystem data is provided, incorporate it into the nutrition phil
 - Stress indicators — include stress-reducing foods (omega-3s, adaptogens)
 - Training strain — ensure adequate protein and carb timing for recovery
 
+DAILY RECOMMENDATIONS REQUIREMENTS:
+Each section MUST have 2-4 specific, actionable items. DO NOT give generic advice.
+- Reference the client's SPECIFIC biomarkers (e.g., "Your Vitamin D at 31 nmol/L means...")
+- Reference their SPECIFIC goals (e.g., "For longevity focus...")
+- Include SPECIFIC food examples (e.g., "salmon, mackerel, sardines" not just "fatty fish")
+- Include SPECIFIC quantities where relevant (e.g., "30g protein" not just "protein")
+- Every item MUST have a "time" field with specific timing
+- Descriptions should explain WHY this matters for THIS person
+
 OUTPUT FORMAT:
 Return valid JSON with this exact structure:
 {
@@ -84,37 +93,49 @@ Return valid JSON with this exact structure:
     "morningRitual": {
       "title": "Morning Ritual",
       "items": [
-        { "time": "Upon waking", "action": "Drink 500ml water", "description": "Rehydrate after sleep" }
+        { "time": "Upon waking", "action": "Drink 500ml water with lemon", "description": "Rehydrates cells after 7-8 hours without fluids and kickstarts metabolism — add lemon for vitamin C to support your immune system" },
+        { "time": "Within 30 minutes", "action": "Take Vitamin D3 (4000 IU) with breakfast", "description": "Your Vitamin D at 31 nmol/L is below optimal — taking with fat improves absorption by up to 50%" },
+        { "time": "With breakfast", "action": "Include 25-30g protein", "description": "Stabilizes blood sugar for the morning and supports your 93g daily protein target — try eggs, Greek yogurt, or smoked salmon" }
       ]
     },
     "empowerGut": {
       "title": "Gut Health Focus",
       "items": [
-        { "action": "Include fermented foods", "description": "Supports microbiome diversity" }
+        { "time": "With lunch or dinner", "action": "Include fermented foods daily", "description": "Kefir, sauerkraut, kimchi, or miso — these provide live probiotics that support nutrient absorption and immune function" },
+        { "time": "Throughout the day", "action": "Aim for 30+ different plants weekly", "description": "Variety feeds different gut bacteria — include herbs, spices, nuts, and seeds which all count toward this goal" },
+        { "time": "With each meal", "action": "Include prebiotic fiber", "description": "Garlic, onions, leeks, asparagus, and bananas feed beneficial gut bacteria — aim for 5g prebiotic fiber daily" }
       ]
     },
     "afternoonVitality": {
       "title": "Afternoon Vitality",
       "items": [
-        { "time": "2-3 PM", "action": "Protein-rich snack", "description": "Maintain energy levels" }
+        { "time": "2-3 PM", "action": "Protein-rich snack with healthy fats", "description": "Combat the afternoon energy dip — try apple slices with almond butter (15g protein) or Greek yogurt with berries" },
+        { "time": "Every 2 hours", "action": "Hydration check — drink 250ml water", "description": "Dehydration causes fatigue before thirst kicks in — set reminders to maintain 2.5L daily intake" },
+        { "time": "If energy dips", "action": "Walk for 10 minutes before reaching for caffeine", "description": "Movement increases blood flow and alertness naturally — save caffeine for true need" }
       ]
     },
     "energyOptimization": {
       "title": "Energy Optimization",
       "items": [
-        { "action": "Balance blood sugar", "description": "Combine protein with carbs at meals" }
+        { "time": "At each meal", "action": "Pair carbs with protein and fat", "description": "This slows glucose absorption — prevents the energy spikes and crashes that come from eating carbs alone" },
+        { "time": "Throughout the day", "action": "Choose low-glycemic carbs", "description": "Sweet potatoes, quinoa, legumes, and whole grains release energy steadily — avoid white bread, white rice, and sugary foods" },
+        { "time": "Mid-morning and mid-afternoon", "action": "Include omega-3 rich foods", "description": "Your HDL at 1.50 mmol/L needs support — walnuts, chia seeds, or fatty fish boost brain energy and cardiovascular health" }
       ]
     },
     "eveningNourishment": {
       "title": "Evening Nourishment",
       "items": [
-        { "time": "3+ hours before bed", "action": "Complete dinner", "description": "Allow digestion time" }
+        { "time": "3+ hours before bed", "action": "Complete your last substantial meal", "description": "Allows digestion to complete before sleep — lying down with a full stomach disrupts sleep quality and HRV" },
+        { "time": "With dinner", "action": "Include magnesium-rich foods", "description": "Dark leafy greens, pumpkin seeds, or dark chocolate — magnesium supports muscle relaxation and sleep quality" },
+        { "time": "1-2 hours before bed", "action": "Light snack if needed — tryptophan-rich", "description": "Small portion of turkey, cottage cheese, or a banana — tryptophan converts to melatonin to support sleep onset" }
       ]
     },
     "nutritionGuidelines": {
       "title": "Key Nutrition Guidelines",
       "items": [
-        { "action": "Prioritize whole foods", "description": "80% of intake from unprocessed sources" }
+        { "time": "Daily", "action": "80% whole foods, 20% flexibility", "description": "Base your diet on unprocessed foods — vegetables, fruits, lean proteins, whole grains — while allowing room for enjoyment" },
+        { "time": "Weekly", "action": "Include fatty fish 2-3 times", "description": "Salmon, mackerel, sardines provide EPA/DHA — critical for your cardiovascular health and reducing inflammation" },
+        { "time": "Daily", "action": "Eat the rainbow — 5+ colors of vegetables", "description": "Different colors provide different phytonutrients — aim for variety at each meal to maximize antioxidant intake" }
       ]
     }
   }
@@ -123,10 +144,12 @@ Return valid JSON with this exact structure:
 IMPORTANT GUIDELINES:
 - Design 4-6 key principles based on their specific needs
 - Ensure calorie/macro targets match the computed metrics provided
-- Daily recommendations should be practical and actionable
-- Address any biomarker concerns in the philosophy
-- Morning ritual should include hydration and any supplements they need
-- Evening nourishment should consider sleep optimization`;
+- Each dailyRecommendations section MUST have 2-4 items with SPECIFIC times, actions, and detailed descriptions
+- Reference the client's actual biomarker values and health goals in recommendations
+- Include specific food examples and quantities — not generic advice
+- Morning ritual should include hydration, supplements based on deficiencies, and protein
+- Evening nourishment should consider sleep optimization and magnesium
+- Address any biomarker concerns directly in the relevant sections`;
 
 // ============================================================================
 // BUILD USER PROMPT
@@ -424,8 +447,9 @@ function createDefaultMorningRitual() {
   return {
     title: 'Morning Ritual',
     items: [
-      { time: 'Upon waking', action: 'Drink 500ml water with lemon', description: 'Rehydrate and support digestion' },
-      { time: '15-30 min later', action: 'Light movement or stretching', description: 'Activate metabolism gently' },
+      { time: 'Upon waking', action: 'Drink 500ml water with lemon', description: 'Rehydrates cells after overnight fast and kickstarts metabolism — the lemon adds vitamin C and aids digestion' },
+      { time: 'Within 30 minutes', action: 'Include 25-30g protein at breakfast', description: 'Stabilizes blood sugar for the morning — try eggs, Greek yogurt, cottage cheese, or smoked salmon' },
+      { time: 'With breakfast', action: 'Take any recommended supplements with food', description: 'Fat-soluble vitamins (D, E, K) absorb better with dietary fat — pair with avocado, nuts, or eggs' },
     ],
   };
 }
@@ -434,8 +458,9 @@ function createDefaultGutHealth() {
   return {
     title: 'Gut Health Focus',
     items: [
-      { time: 'With meals', action: 'Include fermented foods daily', description: 'Yogurt, kefir, sauerkraut, or kimchi' },
-      { time: 'Throughout day', action: 'Eat diverse plant foods', description: 'Aim for 30+ different plants weekly' },
+      { time: 'With lunch or dinner', action: 'Include fermented foods daily', description: 'Kefir, sauerkraut, kimchi, miso, or live-culture yogurt — these provide probiotics that support nutrient absorption and immune function' },
+      { time: 'Throughout the day', action: 'Aim for 30+ different plants weekly', description: 'Include herbs, spices, nuts, seeds, vegetables, and fruits — variety feeds different beneficial gut bacteria' },
+      { time: 'With each meal', action: 'Include prebiotic fiber sources', description: 'Garlic, onions, leeks, asparagus, bananas, and oats feed your beneficial gut bacteria' },
     ],
   };
 }
@@ -444,8 +469,9 @@ function createDefaultAfternoon() {
   return {
     title: 'Afternoon Vitality',
     items: [
-      { time: '2-3 PM', action: 'Protein-rich snack if needed', description: 'Prevent energy crashes' },
-      { time: 'Every 1-2 hours', action: 'Stay hydrated', description: 'Continue water intake through the day' },
+      { time: '2-3 PM', action: 'Protein-rich snack with healthy fats', description: 'Combat the afternoon energy dip — try apple with almond butter, Greek yogurt with berries, or a handful of nuts with cheese' },
+      { time: 'Every 2 hours', action: 'Hydration check — 250ml water', description: 'Dehydration causes fatigue before you feel thirsty — set reminders to maintain consistent water intake' },
+      { time: 'If energy dips', action: 'Walk for 10 minutes before caffeine', description: 'Movement increases blood flow and alertness naturally — save caffeine for when truly needed' },
     ],
   };
 }
@@ -454,8 +480,9 @@ function createDefaultEnergy() {
   return {
     title: 'Energy Optimization',
     items: [
-      { time: 'Each meal', action: 'Balance macros at each meal', description: 'Combine protein, healthy fats, and complex carbs' },
-      { time: 'Throughout day', action: 'Avoid large sugar spikes', description: 'Choose low-glycemic carbohydrate sources' },
+      { time: 'At each meal', action: 'Pair carbs with protein and fat', description: 'This combination slows glucose absorption — prevents energy spikes and crashes from eating carbs alone' },
+      { time: 'Throughout the day', action: 'Choose low-glycemic carbs', description: 'Sweet potatoes, quinoa, legumes, and whole grains release energy steadily — avoid refined white bread and sugary foods' },
+      { time: 'Mid-morning and afternoon', action: 'Include omega-3 rich foods', description: 'Walnuts, chia seeds, flaxseeds, or fatty fish — omega-3s support brain energy and reduce inflammation' },
     ],
   };
 }
@@ -464,8 +491,9 @@ function createDefaultEvening() {
   return {
     title: 'Evening Nourishment',
     items: [
-      { time: '3+ hours before bed', action: 'Complete your last meal', description: 'Allow proper digestion' },
-      { time: 'With dinner', action: 'Include magnesium-rich foods', description: 'Support sleep quality' },
+      { time: '3+ hours before bed', action: 'Complete your last substantial meal', description: 'Allows digestion to complete before sleep — lying down with a full stomach disrupts sleep quality' },
+      { time: 'With dinner', action: 'Include magnesium-rich foods', description: 'Dark leafy greens, pumpkin seeds, almonds, or dark chocolate — magnesium supports muscle relaxation and sleep' },
+      { time: '1-2 hours before bed', action: 'Light snack if needed — tryptophan-rich', description: 'Small portion of turkey, cottage cheese, or banana — tryptophan helps with natural melatonin production' },
     ],
   };
 }
@@ -474,9 +502,9 @@ function createDefaultGuidelines() {
   return {
     title: 'Key Nutrition Guidelines',
     items: [
-      { action: 'Prioritize whole foods', description: '80% of intake from unprocessed sources' },
-      { action: 'Eat the rainbow', description: 'Variety of colorful vegetables and fruits' },
-      { action: 'Quality protein at each meal', description: 'Support muscle maintenance and satiety' },
+      { time: 'Daily', action: '80% whole foods, 20% flexibility', description: 'Base your diet on unprocessed foods — vegetables, fruits, lean proteins, whole grains — while allowing room for enjoyment' },
+      { time: 'Weekly', action: 'Include fatty fish 2-3 times', description: 'Salmon, mackerel, sardines, or trout provide EPA and DHA — critical for brain health and reducing inflammation' },
+      { time: 'Daily', action: 'Eat the rainbow — 5+ colors of vegetables', description: 'Different colors provide different phytonutrients and antioxidants — aim for variety at each meal' },
     ],
   };
 }

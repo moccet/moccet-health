@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: "moccet - Autonomous Health AI Platform",
+    default: "moccet - Your Personal Health AI",
     template: "%s | moccet"
   },
   description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and specialized programs. AI agents that monitor, recommend, and coordinate with clinicians.",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: "moccet - Autonomous Health AI Platform",
+    title: "moccet - Your Personal Health AI",
     description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, family health coordination, and AI agents that monitor, recommend, and coordinate with clinicians.",
     type: "website",
     siteName: "moccet",
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@moccet",
-    title: "moccet - Autonomous Health AI Platform",
+    title: "moccet - Your Personal Health AI",
     description: "Autonomous health AI platform with personalized nutrition, fitness, clinical workflows, and AI agents that monitor, recommend, and coordinate with clinicians.",
     images: ['/og-image.png'],
   },

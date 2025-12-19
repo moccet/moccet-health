@@ -157,11 +157,33 @@ export async function POST(request: NextRequest) {
         };
 
         // INSTANT ACKNOWLEDGMENT - sent before ANY processing
-        console.log('[CHAT] Sending instant acknowledgment...');
+        console.log('[CHAT] Sending instant acknowledgment:', acknowledgment.text);
         sendEvent('acknowledgment', {
           text: acknowledgment.text,
           audioFile: acknowledgment.audioFile,
         });
+
+        // Generate TTS for acknowledgment (in parallel with other processing)
+        let ackAudioPromise: Promise<string | null> | null = null;
+        if (ttsEnabled) {
+          console.log('[CHAT] Generating TTS for acknowledgment...');
+          ackAudioPromise = generateSpeech(acknowledgment.text, { voiceId: (voiceId as VoiceId) || 'rachel' })
+            .then(audio => {
+              console.log('[CHAT] Acknowledgment TTS generated, length:', audio.length);
+              // Send audio chunk immediately
+              sendEvent('audio_chunk', {
+                audio,
+                index: -1, // Use -1 to indicate acknowledgment audio
+                isFinal: false,
+                isAcknowledgment: true,
+              });
+              return audio;
+            })
+            .catch(err => {
+              console.error('[CHAT] Error generating acknowledgment TTS:', err);
+              return null;
+            });
+        }
 
         try {
           // NOW do the slow memory loading (user already has acknowledgment)
@@ -273,11 +295,42 @@ export async function POST(request: NextRequest) {
 
               // Check if awaiting approval
               if (nodeState.awaitingApproval && nodeState.pendingToolCall) {
+                // Generate a spoken response for approval request
+                const toolName = nodeState.pendingToolCall.name;
+                const approvalText = `I'd like to ${toolName.replace(/_/g, ' ')} for you. Do you want me to proceed?`;
+
+                console.log('[CHAT] Approval needed, generating TTS for:', approvalText);
+
+                // Send text chunk for display
+                sendEvent('text_chunk', {
+                  text: approvalText,
+                  index: 0,
+                  isFinal: true,
+                });
+
+                // Generate TTS for approval message
+                if (ttsEnabled) {
+                  try {
+                    const audio = await generateSpeech(approvalText, { voiceId: (voiceId as VoiceId) || 'rachel' });
+                    console.log('[CHAT] Approval TTS generated, length:', audio.length);
+                    sendEvent('audio_chunk', {
+                      audio,
+                      index: 0,
+                      isFinal: true,
+                    });
+                  } catch (ttsErr) {
+                    console.error('[CHAT] Error generating approval TTS:', ttsErr);
+                  }
+                }
+
                 sendEvent('approval_needed', {
                   toolName: nodeState.pendingToolCall.name,
                   toolArgs: nodeState.pendingToolCall.args,
                   reasoning: nodeState.pendingToolCall.reasoning,
                 });
+
+                // Set final response for saving
+                finalResponse = approvalText;
               }
 
               // Capture final response and stream it in chunks

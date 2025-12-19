@@ -573,7 +573,8 @@ export async function* streamHealthAgent(input: RunAgentInput) {
     maxSteps: 15,
   };
 
-  for await (const event of agent.stream(initialState)) {
+  const stream = await agent.stream(initialState);
+  for await (const event of stream) {
     yield event;
   }
 }

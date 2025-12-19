@@ -185,7 +185,9 @@ export async function POST(request: NextRequest) {
           // Stream agent execution
           console.log('[CHAT] Step 8: Starting agent stream...');
           let streamEventCount = 0;
-          for await (const event of agent.stream(initialState)) {
+          const agentStream = await agent.stream(initialState);
+          console.log('[CHAT] Agent stream obtained, iterating...');
+          for await (const event of agentStream) {
             streamEventCount++;
             const nodeNames = Object.keys(event);
             console.log(`[CHAT] Stream event #${streamEventCount}, nodes:`, nodeNames);

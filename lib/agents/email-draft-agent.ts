@@ -554,13 +554,15 @@ async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftS
     };
   }
 
+  console.log(`[EmailDraftAgent] Lock acquired for ${state.originalEmail.messageId}, draftRecordId: ${lockResult.existingDraftId}`);
+
   // Store the draft record ID so we can update it later
   const draftRecordId = lockResult.existingDraftId || null;
 
   // Use existing classification if provided, otherwise classify
   let classification: EmailClassification;
   if (state.existingClassification) {
-    console.log('[EmailDraftAgent] Using existing classification (skipping re-classification)');
+    console.log(`[EmailDraftAgent] Using existing classification (needsResponse: ${state.existingClassification.needsResponse})`);
     classification = state.existingClassification;
   } else {
     const emailToClassify: EmailToClassify = {
@@ -767,6 +769,7 @@ export async function runEmailDraftAgent(
   existingClassification?: EmailClassification
 ): Promise<EmailDraftResult> {
   console.log(`[EmailDraftAgent] Starting for ${userEmail}, email: ${originalEmail.subject}${existingClassification ? ' (using existing classification)' : ''}`);
+  console.log(`[EmailDraftAgent] existingClassification.needsResponse: ${existingClassification?.needsResponse}`);
 
   const agent = createEmailDraftAgent();
 
@@ -780,6 +783,8 @@ export async function runEmailDraftAgent(
 
   try {
     const result = await agent.invoke(initialState);
+
+    console.log(`[EmailDraftAgent] Completed for ${originalEmail.subject}: status=${result.status}, draftId=${result.draftRecordId}, gmailDraftId=${result.gmailDraftId}`);
 
     return {
       success: result.status === 'completed',

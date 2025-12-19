@@ -239,8 +239,10 @@ export async function POST(request: NextRequest) {
 
         // Generate draft if needed - pass existing classification to avoid re-classification
         if (classification.needsResponse) {
+          console.log(`[ProcessRecent] Running draft agent for ${fullEmail.messageId}, needsResponse: ${classification.needsResponse}`);
           const draftResult = await runEmailDraftAgent(email, fullEmail, userCode, classification);
           draftCreated = draftResult.success;
+          console.log(`[ProcessRecent] Draft result for ${fullEmail.messageId}: success=${draftResult.success}, skipped=${draftResult.skipped}, error=${draftResult.error}`);
 
           if (!draftResult.success && !draftResult.skipped) {
             console.error(`[ProcessRecent] Draft failed for ${fullEmail.messageId}:`, draftResult.error);

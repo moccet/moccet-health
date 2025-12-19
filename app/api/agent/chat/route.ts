@@ -61,19 +61,29 @@ async function getUserEmail(request: NextRequest): Promise<string | null> {
  * }
  */
 export async function POST(request: NextRequest) {
+  console.log('[CHAT] ========== NEW CHAT REQUEST ==========');
+
   try {
+    console.log('[CHAT] Step 1: Getting user email...');
     const userEmail = await getUserEmail(request);
     if (!userEmail) {
+      console.log('[CHAT] ERROR: No user email found - unauthorized');
       return new Response(
         JSON.stringify({ error: 'Unauthorized. Please sign in.' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
+    console.log('[CHAT] User email:', userEmail);
 
+    console.log('[CHAT] Step 2: Parsing request body...');
     const body = await request.json();
-    const { message, threadId: providedThreadId } = body;
+    const { message, threadId: providedThreadId, requestTTS } = body;
+    console.log('[CHAT] Message:', message?.substring(0, 100));
+    console.log('[CHAT] ThreadId:', providedThreadId);
+    console.log('[CHAT] RequestTTS:', requestTTS);
 
     if (!message) {
+      console.log('[CHAT] ERROR: No message provided');
       return new Response(
         JSON.stringify({ error: 'message is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -82,19 +92,38 @@ export async function POST(request: NextRequest) {
 
     // Generate or use provided thread ID
     const threadId = providedThreadId || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('[CHAT] Using threadId:', threadId);
 
     // Initialize memory service
+    console.log('[CHAT] Step 3: Initializing memory service...');
     const memoryService = new UserMemoryService();
 
     // Get user's memory context for personalization
-    const memoryContext = await memoryService.getMemoryContext(userEmail);
+    console.log('[CHAT] Step 4: Getting memory context...');
+    let memoryContext;
+    try {
+      memoryContext = await memoryService.getMemoryContext(userEmail);
+      console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
+    } catch (memoryError) {
+      console.error('[CHAT] ERROR getting memory context:', memoryError);
+      throw memoryError;
+    }
 
     // Get existing conversation if continuing a thread
-    const existingConversation = providedThreadId
-      ? await memoryService.getConversation(providedThreadId)
-      : null;
+    console.log('[CHAT] Step 5: Getting existing conversation...');
+    let existingConversation = null;
+    if (providedThreadId) {
+      try {
+        existingConversation = await memoryService.getConversation(providedThreadId);
+        console.log('[CHAT] Existing conversation found:', !!existingConversation);
+      } catch (convError) {
+        console.error('[CHAT] ERROR getting conversation:', convError);
+        // Don't throw - just continue without existing conversation
+      }
+    }
 
     // Build memory-aware system prompt
+    console.log('[CHAT] Step 6: Building memory-aware prompt...');
     const memoryPrompt = buildMemoryAwarePrompt(memoryContext);
 
     const encoder = new TextEncoder();
@@ -109,7 +138,15 @@ export async function POST(request: NextRequest) {
 
         try {
           // Create agent
-          const agent = createHealthAgent();
+          console.log('[CHAT] Step 7: Creating health agent...');
+          let agent;
+          try {
+            agent = createHealthAgent();
+            console.log('[CHAT] Health agent created successfully');
+          } catch (agentError) {
+            console.error('[CHAT] ERROR creating health agent:', agentError);
+            throw agentError;
+          }
 
           // Build conversation history
           const conversationMessages = existingConversation?.messages || [];
@@ -132,6 +169,7 @@ export async function POST(request: NextRequest) {
             currentStep: 0,
             maxSteps: 15,
           };
+          console.log('[CHAT] Initial state prepared');
 
           // Send start event
           sendEvent('start', {
@@ -139,16 +177,22 @@ export async function POST(request: NextRequest) {
             hasMemory: memoryContext.facts.length > 0,
             communicationStyle: memoryContext.style,
           });
+          console.log('[CHAT] Start event sent');
 
           let finalResponse = '';
           let agentReasoning: any[] = [];
 
           // Stream agent execution
+          console.log('[CHAT] Step 8: Starting agent stream...');
+          let streamEventCount = 0;
           for await (const event of agent.stream(initialState)) {
+            streamEventCount++;
             const nodeNames = Object.keys(event);
+            console.log(`[CHAT] Stream event #${streamEventCount}, nodes:`, nodeNames);
 
             for (const nodeName of nodeNames) {
               const nodeState = event[nodeName];
+              console.log(`[CHAT] Node "${nodeName}" status:`, nodeState.status);
 
               // Send reasoning steps
               if (nodeState.reasoning && nodeState.reasoning.length > 0) {
@@ -198,26 +242,45 @@ export async function POST(request: NextRequest) {
           }
 
           // Save conversation to memory
+          console.log('[CHAT] Step 9: Saving conversation to memory...');
           conversationMessages.push({
             role: 'assistant',
             content: finalResponse,
             timestamp: new Date().toISOString(),
           });
 
-          await memoryService.saveConversation(
-            userEmail,
-            threadId,
-            conversationMessages,
-            extractTopic(message)
-          );
+          try {
+            await memoryService.saveConversation(
+              userEmail,
+              threadId,
+              conversationMessages,
+              extractTopic(message)
+            );
+            console.log('[CHAT] Conversation saved successfully');
+          } catch (saveError) {
+            console.error('[CHAT] ERROR saving conversation:', saveError);
+            // Don't throw - continue anyway
+          }
 
           // Learn from the interaction
-          await learnFromInteraction(memoryService, userEmail, message, finalResponse, agentReasoning);
+          console.log('[CHAT] Step 10: Learning from interaction...');
+          try {
+            await learnFromInteraction(memoryService, userEmail, message, finalResponse, agentReasoning);
+            console.log('[CHAT] Learning complete');
+          } catch (learnError) {
+            console.error('[CHAT] ERROR learning from interaction:', learnError);
+            // Don't throw - continue anyway
+          }
 
           // Send end event
           sendEvent('end', { threadId });
+          console.log('[CHAT] ========== CHAT COMPLETED SUCCESSFULLY ==========');
         } catch (error) {
-          console.error('Chat error:', error);
+          console.error('[CHAT] ========== STREAM ERROR ==========');
+          console.error('[CHAT] Error type:', error?.constructor?.name);
+          console.error('[CHAT] Error message:', error instanceof Error ? error.message : String(error));
+          console.error('[CHAT] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+          console.error('[CHAT] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2));
           sendEvent('error', {
             error: error instanceof Error ? error.message : 'Unknown error',
           });
@@ -235,9 +298,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in agent chat:', error);
+    console.error('[CHAT] ========== OUTER ERROR ==========');
+    console.error('[CHAT] Error type:', error?.constructor?.name);
+    console.error('[CHAT] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[CHAT] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -121,6 +121,10 @@ type AgentState = typeof AgentStateAnnotation.State;
 // LLM SETUP
 // =============================================================================
 
+console.log('[HEALTH-AGENT] Initializing LLM with model: gpt-4-turbo-preview');
+console.log('[HEALTH-AGENT] OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+console.log('[HEALTH-AGENT] OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
+
 const llm = new ChatOpenAI({
   modelName: 'gpt-4-turbo-preview',
   temperature: 0.3,
@@ -163,8 +167,10 @@ async function buildToolContext(userEmail: string): Promise<ToolContext> {
  */
 async function reasonNode(state: AgentState): Promise<Partial<AgentState>> {
   const step = state.currentStep + 1;
+  console.log(`[HEALTH-AGENT] reasonNode starting, step ${step}/${state.maxSteps}`);
 
   if (step > state.maxSteps) {
+    console.log('[HEALTH-AGENT] Max steps exceeded');
     return {
       status: 'failed',
       error: 'Maximum reasoning steps exceeded',
@@ -172,12 +178,14 @@ async function reasonNode(state: AgentState): Promise<Partial<AgentState>> {
   }
 
   // Build the prompt
+  console.log('[HEALTH-AGENT] Building user prompt...');
   const userPrompt = buildUserPrompt(
     state.task,
     state.userContext,
     state.reasoning,
     state.toolResults
   );
+  console.log('[HEALTH-AGENT] User prompt built, length:', userPrompt.length);
 
   // Add tool descriptions to system prompt
   const systemPrompt = `${HEALTH_AGENT_SYSTEM_PROMPT}
@@ -207,11 +215,21 @@ You must respond in JSON format with one of these structures:
 
 Always respond with valid JSON only.`;
 
-  const response = await llm.invoke([
-    new SystemMessage(systemPrompt),
-    ...state.messages,
-    new HumanMessage(userPrompt),
-  ]);
+  console.log('[HEALTH-AGENT] Calling LLM with', state.messages.length, 'messages in history');
+  let response;
+  try {
+    response = await llm.invoke([
+      new SystemMessage(systemPrompt),
+      ...state.messages,
+      new HumanMessage(userPrompt),
+    ]);
+    console.log('[HEALTH-AGENT] LLM response received, content length:', (response.content as string)?.length || 0);
+  } catch (llmError) {
+    console.error('[HEALTH-AGENT] LLM ERROR:', llmError);
+    console.error('[HEALTH-AGENT] LLM Error type:', llmError?.constructor?.name);
+    console.error('[HEALTH-AGENT] LLM Error message:', llmError instanceof Error ? llmError.message : String(llmError));
+    throw llmError;
+  }
 
   const content = response.content as string;
 
@@ -442,33 +460,43 @@ function routeAfterAct(state: AgentState): string {
 // =============================================================================
 
 export function createHealthAgent() {
-  const graph = new StateGraph(AgentStateAnnotation)
-    // Add nodes
-    .addNode('reason', reasonNode)
-    .addNode('check_approval', checkApprovalNode)
-    .addNode('act', actNode)
-    .addNode('complete', completeNode)
+  console.log('[HEALTH-AGENT] createHealthAgent() called');
+  try {
+    console.log('[HEALTH-AGENT] Building state graph...');
+    const graph = new StateGraph(AgentStateAnnotation)
+      // Add nodes
+      .addNode('reason', reasonNode)
+      .addNode('check_approval', checkApprovalNode)
+      .addNode('act', actNode)
+      .addNode('complete', completeNode)
 
-    // Add edges
-    .addEdge(START, 'reason')
-    .addConditionalEdges('reason', routeAfterReason, {
-      check_approval: 'check_approval',
-      complete: 'complete',
-      reason: 'reason',
-    })
-    .addConditionalEdges('check_approval', routeAfterCheckApproval, {
-      act: 'act',
-      reason: 'reason',
-      __interrupt__: '__interrupt__',
-    })
-    .addConditionalEdges('act', routeAfterAct, {
-      reason: 'reason',
-    })
-    .addEdge('complete', END);
+      // Add edges
+      .addEdge(START, 'reason')
+      .addConditionalEdges('reason', routeAfterReason, {
+        check_approval: 'check_approval',
+        complete: 'complete',
+        reason: 'reason',
+      })
+      .addConditionalEdges('check_approval', routeAfterCheckApproval, {
+        act: 'act',
+        reason: 'reason',
+        __interrupt__: '__interrupt__',
+      } as any)
+      .addConditionalEdges('act', routeAfterAct, {
+        reason: 'reason',
+      })
+      .addEdge('complete', END);
 
-  return graph.compile({
-    // Checkpointer will be added when using the agent
-  });
+    console.log('[HEALTH-AGENT] Compiling graph...');
+    const compiled = graph.compile({
+      // Checkpointer will be added when using the agent
+    });
+    console.log('[HEALTH-AGENT] Graph compiled successfully');
+    return compiled;
+  } catch (compileError) {
+    console.error('[HEALTH-AGENT] ERROR creating/compiling graph:', compileError);
+    throw compileError;
+  }
 }
 
 // =============================================================================

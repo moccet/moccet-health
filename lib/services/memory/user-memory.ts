@@ -122,13 +122,22 @@ export class UserMemoryService {
    * Get full memory context for agent personalization
    */
   async getMemoryContext(userEmail: string): Promise<MemoryContext> {
+    console.log('[MEMORY] getMemoryContext called for:', userEmail);
+    console.log('[MEMORY] Supabase URL exists:', !!supabaseUrl);
+    console.log('[MEMORY] Supabase service key exists:', !!supabaseServiceKey);
+    console.log('[MEMORY] Supabase service key length:', supabaseServiceKey?.length || 0);
+
     // Use the database function for efficient retrieval
+    console.log('[MEMORY] Calling RPC get_user_memory_context...');
     const { data, error } = await supabase.rpc('get_user_memory_context', {
       p_user_email: userEmail,
     });
 
     if (error) {
-      console.error('Error fetching memory context:', error);
+      console.error('[MEMORY] ERROR fetching memory context:', error);
+      console.error('[MEMORY] Error code:', error.code);
+      console.error('[MEMORY] Error message:', error.message);
+      console.error('[MEMORY] Error details:', error.details);
       // Return empty context on error
       return {
         facts: [],
@@ -139,6 +148,7 @@ export class UserMemoryService {
         recentConversations: [],
       };
     }
+    console.log('[MEMORY] Memory context fetched successfully');
 
     // Get recent conversations separately
     const conversations = await this.getRecentConversations(userEmail, 5);

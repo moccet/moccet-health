@@ -209,6 +209,14 @@ async function processNewEmail(
 ): Promise<void> {
   console.log(`[Webhook] Processing email: ${email.subject} from ${email.from}`);
 
+  // Skip emails from the user's own email address (BCC'd to self, etc.)
+  const fromEmail = email.from.toLowerCase();
+  const userEmailLower = userEmail.toLowerCase();
+  if (fromEmail.includes(userEmailLower) || userEmailLower.includes(fromEmail.split('@')[0])) {
+    console.log(`[Webhook] Skipping self-email: ${email.from}`);
+    return;
+  }
+
   try {
     // 1. Classify email with label
     const emailToClassify = {

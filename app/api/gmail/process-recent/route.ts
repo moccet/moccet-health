@@ -210,6 +210,23 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // Skip emails from the user's own email address (BCC'd to self, etc.)
+        const fromEmail = fullEmail.from.toLowerCase();
+        const userEmailLower = email.toLowerCase();
+        if (fromEmail.includes(userEmailLower) || userEmailLower.includes(fromEmail.split('@')[0])) {
+          console.log(`[ProcessRecent] Skipping self-email: ${fullEmail.from}`);
+          results.push({
+            messageId: fullEmail.messageId,
+            subject: fullEmail.subject,
+            from: fullEmail.from,
+            label: 'self',
+            draftCreated: false,
+            draftSkipped: true,
+            needsResponse: false,
+          });
+          continue;
+        }
+
         // Classify email
         const classification = await classifyEmailWithLabeling({
           messageId: fullEmail.messageId,
@@ -234,6 +251,12 @@ export async function POST(request: NextRequest) {
           confidence: classification.confidence,
           reasoning: classification.labelReasoning,
         });
+
+        if (!labelResult.success) {
+          console.error(`[ProcessRecent] Failed to apply label ${classification.moccetLabel} to ${fullEmail.messageId}: ${labelResult.error}`);
+        } else {
+          console.log(`[ProcessRecent] Applied label ${classification.moccetLabel} to ${fullEmail.messageId}`);
+        }
 
         let draftCreated = false;
         let draftError: string | undefined;

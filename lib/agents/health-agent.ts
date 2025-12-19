@@ -439,7 +439,8 @@ function routeAfterReason(state: AgentState): string {
 
 function routeAfterCheckApproval(state: AgentState): string {
   if (state.awaitingApproval) {
-    return '__interrupt__';  // LangGraph interrupt
+    // Return to complete node when awaiting approval - the frontend will handle the pause
+    return 'complete';
   }
 
   if (state.pendingToolCall && state.approvedToolCallIds.includes(state.pendingToolCall.id)) {
@@ -480,8 +481,8 @@ export function createHealthAgent() {
       .addConditionalEdges('check_approval', routeAfterCheckApproval, {
         act: 'act',
         reason: 'reason',
-        __interrupt__: '__interrupt__',
-      } as any)
+        complete: 'complete',
+      })
       .addConditionalEdges('act', routeAfterAct, {
         reason: 'reason',
       })

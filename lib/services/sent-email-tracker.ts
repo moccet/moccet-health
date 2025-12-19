@@ -124,15 +124,28 @@ export async function trackSentEmail(
       return { success: false, error: insertError.message };
     }
 
-    // Apply "Awaiting Reply" label to the thread
-    await applyLabelToEmail(userEmail, messageId, 'awaiting_reply', userCode, {
-      threadId,
-      subject,
-      source: 'sent_tracking',
-      reasoning: 'User sent email, awaiting reply',
+    // Get all messages in the thread to update labels on all of them
+    const thread = await gmail.users.threads.get({
+      userId: 'me',
+      id: threadId,
+      format: 'minimal',
     });
 
-    console.log(`[SentTracker] Tracked sent email ${messageId}`);
+    const allMessageIds = thread.data.messages?.map(m => m.id).filter(Boolean) as string[] || [];
+    console.log(`[SentTracker] Updating labels for ${allMessageIds.length} messages in thread ${threadId}`);
+
+    // Apply "Awaiting Reply" label to ALL messages in the thread
+    // This also removes "to_respond" and other Moccet labels
+    for (const msgId of allMessageIds) {
+      await applyLabelToEmail(userEmail, msgId, 'awaiting_reply', userCode, {
+        threadId,
+        subject,
+        source: 'sent_tracking',
+        reasoning: 'User replied to thread, now awaiting reply',
+      });
+    }
+
+    console.log(`[SentTracker] Tracked sent email ${messageId}, updated ${allMessageIds.length} messages to awaiting_reply`);
     return { success: true };
   } catch (error: any) {
     console.error('[SentTracker] Error tracking sent email:', error);

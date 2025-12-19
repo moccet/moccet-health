@@ -227,21 +227,32 @@ export async function getHistoryChanges(
 
 
   try {
-    const response = await gmail.users.history.list({
-      userId: 'me',
-      startHistoryId,
-      historyTypes: ['messageAdded'],
-      labelId: 'INBOX',
-    });
+    // Fetch history for both INBOX and SENT to track replies
+    const [inboxResponse, sentResponse] = await Promise.all([
+      gmail.users.history.list({
+        userId: 'me',
+        startHistoryId,
+        historyTypes: ['messageAdded'],
+        labelId: 'INBOX',
+      }),
+      gmail.users.history.list({
+        userId: 'me',
+        startHistoryId,
+        historyTypes: ['messageAdded'],
+        labelId: 'SENT',
+      }),
+    ]);
 
     const changes: HistoryChange[] = [];
-    const history = response.data.history || [];
+    const seenMessageIds = new Set<string>();
 
-    for (const item of history) {
-      // Process added messages
+    // Process INBOX history
+    const inboxHistory = inboxResponse.data.history || [];
+    for (const item of inboxHistory) {
       if (item.messagesAdded) {
         for (const added of item.messagesAdded) {
-          if (added.message?.id && added.message?.threadId) {
+          if (added.message?.id && added.message?.threadId && !seenMessageIds.has(added.message.id)) {
+            seenMessageIds.add(added.message.id);
             changes.push({
               messageId: added.message.id,
               threadId: added.message.threadId,
@@ -253,10 +264,33 @@ export async function getHistoryChanges(
       }
     }
 
+    // Process SENT history
+    const sentHistory = sentResponse.data.history || [];
+    for (const item of sentHistory) {
+      if (item.messagesAdded) {
+        for (const added of item.messagesAdded) {
+          if (added.message?.id && added.message?.threadId && !seenMessageIds.has(added.message.id)) {
+            seenMessageIds.add(added.message.id);
+            changes.push({
+              messageId: added.message.id,
+              threadId: added.message.threadId,
+              labelIds: added.message.labelIds || [],
+              action: 'messageAdded',
+            });
+          }
+        }
+      }
+    }
+
+    // Use the latest historyId from either response
+    const newHistoryId = inboxResponse.data.historyId || sentResponse.data.historyId || undefined;
+
+    console.log(`[GmailPush] Found ${changes.length} changes (inbox: ${inboxHistory.length}, sent: ${sentHistory.length})`);
+
     return {
       success: true,
       changes,
-      newHistoryId: response.data.historyId || undefined,
+      newHistoryId,
     };
   } catch (error: any) {
     // Handle historyId too old error

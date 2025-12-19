@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { createHealthAgent, AgentState } from '@/lib/agents/health-agent';
 import { UserMemoryService } from '@/lib/services/memory/user-memory';
 import { buildMemoryAwarePrompt } from '@/lib/agents/prompts';
+import { generateSpeech, isElevenLabsConfigured, VoiceId } from '@/lib/services/tts-service';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
   console.log('[CHAT] ========== NEW CHAT REQUEST ==========');
 
   try {
+    // Step 1: Quick validation - only do essential checks before streaming
     console.log('[CHAT] Step 1: Getting user email...');
     const userEmail = await getUserEmail(request);
     if (!userEmail) {
@@ -77,10 +79,17 @@ export async function POST(request: NextRequest) {
 
     console.log('[CHAT] Step 2: Parsing request body...');
     const body = await request.json();
-    const { message, threadId: providedThreadId, requestTTS } = body;
+    const { message, threadId: providedThreadId, requestTTS, voiceId } = body;
     console.log('[CHAT] Message:', message?.substring(0, 100));
     console.log('[CHAT] ThreadId:', providedThreadId);
     console.log('[CHAT] RequestTTS:', requestTTS);
+    console.log('[CHAT] VoiceId:', voiceId);
+
+    // Check if TTS is available
+    const ttsEnabled = requestTTS && isElevenLabsConfigured();
+    if (requestTTS && !isElevenLabsConfigured()) {
+      console.log('[CHAT] TTS requested but ELEVENLABS_API_KEY not configured');
+    }
 
     if (!message) {
       console.log('[CHAT] ERROR: No message provided');
@@ -94,40 +103,47 @@ export async function POST(request: NextRequest) {
     const threadId = providedThreadId || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     console.log('[CHAT] Using threadId:', threadId);
 
-    // Initialize memory service
-    console.log('[CHAT] Step 3: Initializing memory service...');
-    const memoryService = new UserMemoryService();
-
-    // Get user's memory context for personalization
-    console.log('[CHAT] Step 4: Getting memory context...');
-    let memoryContext;
-    try {
-      memoryContext = await memoryService.getMemoryContext(userEmail);
-      console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
-    } catch (memoryError) {
-      console.error('[CHAT] ERROR getting memory context:', memoryError);
-      throw memoryError;
-    }
-
-    // Get existing conversation if continuing a thread
-    console.log('[CHAT] Step 5: Getting existing conversation...');
-    let existingConversation = null;
-    if (providedThreadId) {
-      try {
-        existingConversation = await memoryService.getConversation(providedThreadId);
-        console.log('[CHAT] Existing conversation found:', !!existingConversation);
-      } catch (convError) {
-        console.error('[CHAT] ERROR getting conversation:', convError);
-        // Don't throw - just continue without existing conversation
-      }
-    }
-
-    // Build memory-aware system prompt
-    console.log('[CHAT] Step 6: Building memory-aware prompt...');
-    const memoryPrompt = buildMemoryAwarePrompt(memoryContext);
-
     const encoder = new TextEncoder();
 
+    // Quick intent classification for smart acknowledgments
+    const intent = classifyIntent(message);
+    console.log('[CHAT] Classified intent:', intent);
+
+    // Context-aware acknowledgment phrases based on intent
+    const acknowledgmentsByIntent: Record<string, Array<{ text: string; audioFile: string }>> = {
+      calendar: [
+        { text: "Let me check your calendar", audioFile: "ack_calendar_1.mp3" },
+        { text: "Checking your schedule now", audioFile: "ack_calendar_2.mp3" },
+        { text: "Looking at your appointments", audioFile: "ack_calendar_3.mp3" },
+      ],
+      health_question: [
+        { text: "Good question, let me look that up for you", audioFile: "ack_health_1.mp3" },
+        { text: "I'll find that information for you", audioFile: "ack_health_2.mp3" },
+        { text: "Let me check what I know about that", audioFile: "ack_health_3.mp3" },
+      ],
+      health_data: [
+        { text: "Let me pull up your health data", audioFile: "ack_data_1.mp3" },
+        { text: "Checking your metrics now", audioFile: "ack_data_2.mp3" },
+        { text: "Looking at your recent data", audioFile: "ack_data_3.mp3" },
+      ],
+      action_request: [
+        { text: "I'll help you with that right away", audioFile: "ack_action_1.mp3" },
+        { text: "On it, give me just a moment", audioFile: "ack_action_2.mp3" },
+        { text: "I can do that for you", audioFile: "ack_action_3.mp3" },
+      ],
+      general: [
+        { text: "I hear you, let me help with that", audioFile: "ack_general_1.mp3" },
+        { text: "I understand, let me see", audioFile: "ack_general_2.mp3" },
+        { text: "Of course, looking into that for you", audioFile: "ack_general_3.mp3" },
+        { text: "Let me see what I can find", audioFile: "ack_general_4.mp3" },
+      ],
+    };
+
+    // Select an acknowledgment based on intent
+    const intentPhrases = acknowledgmentsByIntent[intent] || acknowledgmentsByIntent.general;
+    const acknowledgment = intentPhrases[Math.floor(Math.random() * intentPhrases.length)];
+
+    // START STREAMING IMMEDIATELY - acknowledgment goes out first
     const stream = new ReadableStream({
       async start(controller) {
         const sendEvent = (event: string, data: any) => {
@@ -136,7 +152,46 @@ export async function POST(request: NextRequest) {
           );
         };
 
+        // INSTANT ACKNOWLEDGMENT - sent before ANY processing
+        console.log('[CHAT] Sending instant acknowledgment...');
+        sendEvent('acknowledgment', {
+          text: acknowledgment.text,
+          audioFile: acknowledgment.audioFile,
+        });
+
         try {
+          // NOW do the slow memory loading (user already has acknowledgment)
+          console.log('[CHAT] Step 3: Initializing memory service...');
+          const memoryService = new UserMemoryService();
+
+          // Get user's memory context for personalization
+          console.log('[CHAT] Step 4: Getting memory context...');
+          let memoryContext;
+          try {
+            memoryContext = await memoryService.getMemoryContext(userEmail);
+            console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
+          } catch (memoryError) {
+            console.error('[CHAT] ERROR getting memory context:', memoryError);
+            throw memoryError;
+          }
+
+          // Get existing conversation if continuing a thread
+          console.log('[CHAT] Step 5: Getting existing conversation...');
+          let existingConversation = null;
+          if (providedThreadId) {
+            try {
+              existingConversation = await memoryService.getConversation(providedThreadId);
+              console.log('[CHAT] Existing conversation found:', !!existingConversation);
+            } catch (convError) {
+              console.error('[CHAT] ERROR getting conversation:', convError);
+              // Don't throw - just continue without existing conversation
+            }
+          }
+
+          // Build memory-aware system prompt
+          console.log('[CHAT] Step 6: Building memory-aware prompt...');
+          const memoryPrompt = buildMemoryAwarePrompt(memoryContext);
+
           // Create agent
           console.log('[CHAT] Step 7: Creating health agent...');
           let agent;
@@ -221,7 +276,7 @@ export async function POST(request: NextRequest) {
                 });
               }
 
-              // Capture final response
+              // Capture final response and stream it in chunks
               if (nodeState.status === 'completed' && nodeState.finalResult) {
                 // finalResult has: { success, summary, actionsCompleted, recommendations }
                 // The 'summary' field contains the actual response text
@@ -230,6 +285,61 @@ export async function POST(request: NextRequest) {
                                (typeof nodeState.finalResult === 'string' ? nodeState.finalResult : JSON.stringify(nodeState.finalResult));
                 console.log('[CHAT] Final response captured, length:', finalResponse?.length || 0);
                 console.log('[CHAT] Final response preview:', finalResponse?.substring(0, 200));
+
+                // Stream the response in sentence chunks for better perceived latency
+                console.log('[CHAT] Streaming response in chunks...');
+                const sentences = splitIntoSentences(finalResponse);
+
+                // Start audio generation in parallel (if TTS is enabled)
+                const audioPromises: Promise<{ audio: string; index: number } | null>[] = [];
+                if (ttsEnabled) {
+                  console.log('[CHAT] TTS enabled, generating audio for', sentences.length, 'sentences');
+                  for (let i = 0; i < sentences.length; i++) {
+                    audioPromises.push(
+                      generateSpeech(sentences[i], { voiceId: (voiceId as VoiceId) || 'rachel' })
+                        .then(audio => ({ audio, index: i }))
+                        .catch(err => {
+                          console.error(`[CHAT] TTS error for sentence ${i}:`, err);
+                          return null;
+                        })
+                    );
+                  }
+                }
+
+                // Send text chunks immediately (don't wait for audio)
+                for (let i = 0; i < sentences.length; i++) {
+                  const isLast = i === sentences.length - 1;
+                  sendEvent('text_chunk', {
+                    text: sentences[i],
+                    index: i,
+                    isFinal: isLast,
+                  });
+                  // Small delay between chunks for natural pacing (10ms per chunk)
+                  if (!isLast) {
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                  }
+                }
+                console.log('[CHAT] Sent', sentences.length, 'text chunks');
+
+                // Send audio chunks as they complete
+                if (ttsEnabled && audioPromises.length > 0) {
+                  console.log('[CHAT] Waiting for audio generation...');
+                  const audioResults = await Promise.all(audioPromises);
+                  const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
+
+                  // Sort by index to maintain order
+                  validResults.sort((a, b) => a.index - b.index);
+
+                  for (const result of validResults) {
+                    const isLast = result.index === sentences.length - 1;
+                    sendEvent('audio_chunk', {
+                      audio: result.audio,
+                      index: result.index,
+                      isFinal: isLast,
+                    });
+                  }
+                  console.log('[CHAT] Sent', validResults.length, 'audio chunks');
+                }
               }
 
               // Send completion
@@ -319,6 +429,40 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Quick intent classification for smart acknowledgments
+ * Classifies the user's message into categories for contextual responses
+ */
+function classifyIntent(message: string): string {
+  const lowerMessage = message.toLowerCase();
+
+  // Calendar-related queries
+  const calendarKeywords = ['calendar', 'schedule', 'appointment', 'meeting', 'reschedule', 'book', 'when am i', 'what do i have', 'my day', 'tomorrow', 'next week'];
+  if (calendarKeywords.some(kw => lowerMessage.includes(kw))) {
+    return 'calendar';
+  }
+
+  // Health data queries (asking about their own metrics)
+  const healthDataKeywords = ['my sleep', 'my glucose', 'my hrv', 'my heart rate', 'my steps', 'my data', 'my metrics', 'my score', 'how did i', 'how was my', 'show me my', 'what was my'];
+  if (healthDataKeywords.some(kw => lowerMessage.includes(kw))) {
+    return 'health_data';
+  }
+
+  // Health questions (asking for information/advice)
+  const questionIndicators = ['what is', 'what are', 'how do', 'how can', 'why do', 'why does', 'should i', 'can i', 'is it', 'tell me about', 'explain', 'help me understand'];
+  if (questionIndicators.some(kw => lowerMessage.includes(kw))) {
+    return 'health_question';
+  }
+
+  // Action requests
+  const actionKeywords = ['create', 'add', 'set', 'send', 'order', 'buy', 'play', 'start', 'stop', 'remind', 'cancel'];
+  if (actionKeywords.some(kw => lowerMessage.includes(kw))) {
+    return 'action_request';
+  }
+
+  return 'general';
+}
+
+/**
  * Extract a topic from the user's message
  */
 function extractTopic(message: string): string {
@@ -334,6 +478,57 @@ function extractTopic(message: string): string {
   if (lowerMessage.includes('blood') || lowerMessage.includes('biomarker')) return 'Blood Work';
 
   return 'General';
+}
+
+/**
+ * Split text into sentences for streaming chunks
+ * Handles common sentence endings while preserving formatting
+ */
+function splitIntoSentences(text: string): string[] {
+  if (!text) return [];
+
+  // Split on sentence-ending punctuation followed by space or end of string
+  // But keep the punctuation with the sentence
+  const sentences: string[] = [];
+  let current = '';
+
+  for (let i = 0; i < text.length; i++) {
+    current += text[i];
+
+    // Check for sentence endings: . ! ? followed by space or end
+    if ((text[i] === '.' || text[i] === '!' || text[i] === '?')) {
+      const nextChar = text[i + 1];
+      // End sentence if followed by space, newline, or end of string
+      if (!nextChar || nextChar === ' ' || nextChar === '\n') {
+        // Don't split on common abbreviations like "Dr." "Mr." "etc."
+        const lastWord = current.trim().split(/\s+/).pop() || '';
+        const abbreviations = ['dr', 'mr', 'mrs', 'ms', 'jr', 'sr', 'vs', 'etc', 'i.e', 'e.g'];
+        const isAbbreviation = abbreviations.some(abbr =>
+          lastWord.toLowerCase().replace('.', '') === abbr
+        );
+
+        if (!isAbbreviation) {
+          sentences.push(current.trim());
+          current = '';
+          // Skip the space after the sentence
+          if (nextChar === ' ') i++;
+        }
+      }
+    }
+  }
+
+  // Add any remaining text
+  if (current.trim()) {
+    sentences.push(current.trim());
+  }
+
+  // If we couldn't split into sentences, split by newlines or return as single chunk
+  if (sentences.length === 0) {
+    const lines = text.split('\n').filter(line => line.trim());
+    return lines.length > 0 ? lines : [text];
+  }
+
+  return sentences;
 }
 
 /**

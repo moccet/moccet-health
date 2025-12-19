@@ -497,7 +497,7 @@ async function tryAcquireProcessingLock(
 ): Promise<{ acquired: boolean; existingDraftId?: string }> {
   const supabase = createAdminClient();
 
-  // Try to insert a placeholder with status 'processing'
+  // Try to insert a placeholder with status 'pending' (processing is not a valid status)
   // If it fails due to unique constraint, another process is already handling it
   const { data, error } = await supabase
     .from('email_drafts')
@@ -511,7 +511,7 @@ async function tryAcquireProcessingLock(
       original_labels: [],
       draft_subject: '',
       draft_body: '',
-      status: 'processing',
+      status: 'pending',
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select('id')

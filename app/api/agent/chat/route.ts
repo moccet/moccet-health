@@ -223,11 +223,18 @@ export async function POST(request: NextRequest) {
 
               // Capture final response
               if (nodeState.status === 'completed' && nodeState.finalResult) {
-                finalResponse = nodeState.finalResult.response || nodeState.finalResult;
+                // finalResult has: { success, summary, actionsCompleted, recommendations }
+                // The 'summary' field contains the actual response text
+                finalResponse = nodeState.finalResult.summary ||
+                               nodeState.finalResult.response ||
+                               (typeof nodeState.finalResult === 'string' ? nodeState.finalResult : JSON.stringify(nodeState.finalResult));
+                console.log('[CHAT] Final response captured, length:', finalResponse?.length || 0);
+                console.log('[CHAT] Final response preview:', finalResponse?.substring(0, 200));
               }
 
               // Send completion
               if (nodeState.status === 'completed') {
+                console.log('[CHAT] Sending complete event with response');
                 sendEvent('complete', {
                   response: finalResponse,
                   threadId,

@@ -69,6 +69,10 @@ const EmailDraftStateAnnotation = Annotation.Root({
   userEmail: Annotation<string>(),
   userCode: Annotation<string | undefined>(),
   originalEmail: Annotation<OriginalEmail>(),
+  existingClassification: Annotation<EmailClassification | null>({
+    reducer: (_, y) => y,
+    default: () => null,
+  }),
 
   // Context
   emailStyle: Annotation<EmailStyleProfile | null>({
@@ -553,15 +557,22 @@ async function classifyNode(state: EmailDraftState): Promise<Partial<EmailDraftS
   // Store the draft record ID so we can update it later
   const draftRecordId = lockResult.existingDraftId || null;
 
-  const emailToClassify: EmailToClassify = {
-    ...state.originalEmail,
-    isUnread: true,
-  };
+  // Use existing classification if provided, otherwise classify
+  let classification: EmailClassification;
+  if (state.existingClassification) {
+    console.log('[EmailDraftAgent] Using existing classification (skipping re-classification)');
+    classification = state.existingClassification;
+  } else {
+    const emailToClassify: EmailToClassify = {
+      ...state.originalEmail,
+      isUnread: true,
+    };
 
-  const classification = await classifyEmail(emailToClassify, {
-    onlyPrimaryInbox: true,
-    minConfidence: 0.5,
-  });
+    classification = await classifyEmail(emailToClassify, {
+      onlyPrimaryInbox: true,
+      minConfidence: 0.5,
+    });
+  }
 
   if (!classification.needsResponse) {
     // Delete the placeholder record since we won't be creating a draft
@@ -746,14 +757,16 @@ export interface EmailDraftResult {
  * @param userEmail - User's email
  * @param originalEmail - The email to respond to
  * @param userCode - Optional user code
+ * @param existingClassification - Optional pre-computed classification to skip re-classification
  * @returns Draft result
  */
 export async function runEmailDraftAgent(
   userEmail: string,
   originalEmail: OriginalEmail,
-  userCode?: string
+  userCode?: string,
+  existingClassification?: EmailClassification
 ): Promise<EmailDraftResult> {
-  console.log(`[EmailDraftAgent] Starting for ${userEmail}, email: ${originalEmail.subject}`);
+  console.log(`[EmailDraftAgent] Starting for ${userEmail}, email: ${originalEmail.subject}${existingClassification ? ' (using existing classification)' : ''}`);
 
   const agent = createEmailDraftAgent();
 
@@ -762,6 +775,7 @@ export async function runEmailDraftAgent(
     userEmail,
     userCode,
     originalEmail,
+    existingClassification: existingClassification || null,
   };
 
   try {

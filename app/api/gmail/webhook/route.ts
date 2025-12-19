@@ -260,9 +260,9 @@ async function processNewEmail(
       }
     }
 
-    // 4. Run draft agent if email needs response
+    // 4. Run draft agent if email needs response - pass existing classification to avoid re-classification
     if (classification.needsResponse) {
-      const result = await runEmailDraftAgent(userEmail, email, userCode);
+      const result = await runEmailDraftAgent(userEmail, email, userCode, classification);
 
       if (result.success) {
         console.log(`[Webhook] Draft created for email ${email.messageId}`);

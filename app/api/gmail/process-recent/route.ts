@@ -237,9 +237,9 @@ export async function POST(request: NextRequest) {
 
         let draftCreated = false;
 
-        // Generate draft if needed
+        // Generate draft if needed - pass existing classification to avoid re-classification
         if (classification.needsResponse) {
-          const draftResult = await runEmailDraftAgent(email, fullEmail, userCode);
+          const draftResult = await runEmailDraftAgent(email, fullEmail, userCode, classification);
           draftCreated = draftResult.success;
 
           if (!draftResult.success && !draftResult.skipped) {

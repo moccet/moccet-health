@@ -86,9 +86,13 @@ export async function POST(request: NextRequest) {
     console.log('[CHAT] VoiceId:', voiceId);
 
     // Check if TTS is available
-    const ttsEnabled = requestTTS && isElevenLabsConfigured();
-    if (requestTTS && !isElevenLabsConfigured()) {
+    const elevenLabsConfigured = isElevenLabsConfigured();
+    const ttsEnabled = requestTTS && elevenLabsConfigured;
+    console.log('[CHAT] TTS check - requestTTS:', requestTTS, 'elevenLabsConfigured:', elevenLabsConfigured, 'ttsEnabled:', ttsEnabled);
+    if (requestTTS && !elevenLabsConfigured) {
       console.log('[CHAT] TTS requested but ELEVENLABS_API_KEY not configured');
+      console.log('[CHAT] ELEVENLABS_API_KEY present:', !!process.env.ELEVENLABS_API_KEY);
+      console.log('[CHAT] ELEVENLABS_API_KEY length:', process.env.ELEVENLABS_API_KEY?.length || 0);
     }
 
     if (!message) {
@@ -325,13 +329,19 @@ export async function POST(request: NextRequest) {
                 if (ttsEnabled && audioPromises.length > 0) {
                   console.log('[CHAT] Waiting for audio generation...');
                   const audioResults = await Promise.all(audioPromises);
+                  console.log('[CHAT] Audio generation complete. Results:', audioResults.length, 'total,', audioResults.filter(r => r !== null).length, 'successful');
                   const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
+
+                  if (validResults.length === 0) {
+                    console.log('[CHAT] WARNING: No audio chunks generated successfully!');
+                  }
 
                   // Sort by index to maintain order
                   validResults.sort((a, b) => a.index - b.index);
 
                   for (const result of validResults) {
                     const isLast = result.index === sentences.length - 1;
+                    console.log(`[CHAT] Sending audio_chunk ${result.index}, audio length: ${result.audio.length}`);
                     sendEvent('audio_chunk', {
                       audio: result.audio,
                       index: result.index,
@@ -339,6 +349,8 @@ export async function POST(request: NextRequest) {
                     });
                   }
                   console.log('[CHAT] Sent', validResults.length, 'audio chunks');
+                } else if (requestTTS) {
+                  console.log('[CHAT] TTS was requested but not enabled - no audio will be sent');
                 }
               }
 

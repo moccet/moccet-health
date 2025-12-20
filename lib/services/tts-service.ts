@@ -27,7 +27,7 @@ interface TTSOptions {
 
 const DEFAULT_OPTIONS: Required<TTSOptions> = {
   voiceId: 'rachel',
-  modelId: 'eleven_monolingual_v1',
+  modelId: 'eleven_turbo_v2_5', // Updated from deprecated eleven_monolingual_v1
   stability: 0.5,
   similarityBoost: 0.75,
   style: 0,

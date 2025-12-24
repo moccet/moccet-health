@@ -9,9 +9,61 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createHealthAgent, AgentState } from '@/lib/agents/health-agent';
+import { runChefAgent } from '@/lib/agents/moccet-chef';
 import { UserMemoryService } from '@/lib/services/memory/user-memory';
 import { buildMemoryAwarePrompt } from '@/lib/agents/prompts';
 import { generateSpeech, isElevenLabsConfigured, VoiceId } from '@/lib/services/tts-service';
+
+// Agent types
+type AgentType = 'moccet-chef' | 'moccet-health' | 'moccet-orchestrator';
+
+interface AgentInfo {
+  type: AgentType;
+  displayName: string;
+  icon: string;
+}
+
+const AGENT_INFO: Record<AgentType, AgentInfo> = {
+  'moccet-chef': {
+    type: 'moccet-chef',
+    displayName: 'Chef',
+    icon: 'chef_hat',
+  },
+  'moccet-health': {
+    type: 'moccet-health',
+    displayName: 'Health',
+    icon: 'heart',
+  },
+  'moccet-orchestrator': {
+    type: 'moccet-orchestrator',
+    displayName: 'Orchestrator',
+    icon: 'brain',
+  },
+};
+
+/**
+ * Classify which agent should handle the request
+ */
+function classifyAgentType(message: string): AgentType {
+  const lowerMessage = message.toLowerCase();
+
+  // Food/nutrition related - route to moccet-chef
+  const chefKeywords = [
+    'recipe', 'recipes', 'cook', 'cooking', 'meal', 'meals', 'food', 'foods',
+    'eat', 'eating', 'breakfast', 'lunch', 'dinner', 'snack', 'nutrition',
+    'nutritious', 'ingredient', 'ingredients', 'dish', 'dishes', 'cuisine',
+    'healthy food', 'what should i eat', 'what can i make', 'what to cook',
+    'hungry', 'dietary', 'diet', 'menu', 'protein', 'carbs', 'vegetables',
+    'fruit', 'calories', 'vitamins', 'iron-rich', 'vitamin d', 'b12',
+  ];
+
+  if (chefKeywords.some(kw => lowerMessage.includes(kw))) {
+    return 'moccet-chef';
+  }
+
+  // Default to orchestrator (which uses health agent for now)
+  return 'moccet-orchestrator';
+}
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -79,11 +131,17 @@ export async function POST(request: NextRequest) {
 
     console.log('[CHAT] Step 2: Parsing request body...');
     const body = await request.json();
-    const { message, threadId: providedThreadId, requestTTS, voiceId } = body;
+    const { message, threadId: providedThreadId, requestTTS, voiceId, requestedAgent } = body;
     console.log('[CHAT] Message:', message?.substring(0, 100));
     console.log('[CHAT] ThreadId:', providedThreadId);
     console.log('[CHAT] RequestTTS:', requestTTS);
     console.log('[CHAT] VoiceId:', voiceId);
+    console.log('[CHAT] RequestedAgent:', requestedAgent);
+
+    // Determine which agent should handle this request
+    const agentType: AgentType = requestedAgent || classifyAgentType(message);
+    const agentInfo = AGENT_INFO[agentType];
+    console.log('[CHAT] Selected agent:', agentType);
 
     // Check if TTS is available
     const elevenLabsConfigured = isElevenLabsConfigured();
@@ -163,6 +221,14 @@ export async function POST(request: NextRequest) {
           audioFile: acknowledgment.audioFile,
         });
 
+        // Send agent_active event to indicate which agent is handling the request
+        console.log('[CHAT] Sending agent_active event:', agentInfo.displayName);
+        sendEvent('agent_active', {
+          agent: agentInfo.type,
+          displayName: agentInfo.displayName,
+          icon: agentInfo.icon,
+        });
+
         // Generate TTS for acknowledgment (in parallel with other processing)
         let ackAudioPromise: Promise<string | null> | null = null;
         if (ttsEnabled) {
@@ -217,6 +283,120 @@ export async function POST(request: NextRequest) {
           // Build memory-aware system prompt
           console.log('[CHAT] Step 6: Building memory-aware prompt...');
           const memoryPrompt = buildMemoryAwarePrompt(memoryContext);
+
+          // ================================================================
+          // AGENT ROUTING - Route to appropriate agent based on classification
+          // ================================================================
+
+          if (agentType === 'moccet-chef') {
+            // MOCCET CHEF AGENT - Handles food/nutrition/recipe queries
+            console.log('[CHAT] Routing to Moccet Chef agent...');
+
+            try {
+              const chefResult = await runChefAgent(userEmail, message);
+              console.log('[CHAT] Chef agent completed');
+
+              const finalResponse = chefResult.response;
+
+              // Stream the response in sentence chunks
+              const sentences = splitIntoSentences(finalResponse);
+
+              // Start audio generation in parallel (if TTS is enabled)
+              const audioPromises: Promise<{ audio: string; index: number } | null>[] = [];
+              if (ttsEnabled) {
+                console.log('[CHAT] TTS enabled, generating audio for', sentences.length, 'sentences');
+                for (let i = 0; i < sentences.length; i++) {
+                  audioPromises.push(
+                    generateSpeech(sentences[i], { voiceId: (voiceId as VoiceId) || 'rachel' })
+                      .then(audio => ({ audio, index: i }))
+                      .catch(err => {
+                        console.error(`[CHAT] TTS error for sentence ${i}:`, err);
+                        return null;
+                      })
+                  );
+                }
+              }
+
+              // Send text chunks immediately
+              for (let i = 0; i < sentences.length; i++) {
+                const isLast = i === sentences.length - 1;
+                sendEvent('text_chunk', {
+                  text: sentences[i],
+                  index: i,
+                  isFinal: isLast,
+                });
+                if (!isLast) {
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                }
+              }
+              console.log('[CHAT] Sent', sentences.length, 'text chunks from chef');
+
+              // Send audio chunks
+              if (ttsEnabled && audioPromises.length > 0) {
+                const audioResults = await Promise.all(audioPromises);
+                const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
+                validResults.sort((a, b) => a.index - b.index);
+
+                for (const result of validResults) {
+                  const isLast = result.index === sentences.length - 1;
+                  sendEvent('audio_chunk', {
+                    audio: result.audio,
+                    index: result.index,
+                    isFinal: isLast,
+                  });
+                }
+                console.log('[CHAT] Sent', validResults.length, 'audio chunks from chef');
+              }
+
+              // Send complete event
+              sendEvent('complete', {
+                response: finalResponse,
+                threadId,
+                recipe: chefResult.recipe,
+              });
+
+              // Save conversation
+              const conversationMessages = existingConversation?.messages || [];
+              conversationMessages.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString(),
+              });
+              conversationMessages.push({
+                role: 'assistant',
+                content: finalResponse,
+                timestamp: new Date().toISOString(),
+              });
+
+              try {
+                await memoryService.saveConversation(
+                  userEmail,
+                  threadId,
+                  conversationMessages,
+                  extractTopic(message)
+                );
+              } catch (saveError) {
+                console.error('[CHAT] Error saving conversation:', saveError);
+              }
+
+              sendEvent('end', {});
+              controller.close();
+              return;
+
+            } catch (chefError) {
+              console.error('[CHAT] Chef agent error:', chefError);
+              sendEvent('error', {
+                error: chefError instanceof Error ? chefError.message : 'Chef agent failed',
+              });
+              sendEvent('end', {});
+              controller.close();
+              return;
+            }
+          }
+
+          // ================================================================
+          // HEALTH AGENT (default / orchestrator) - Handles general health queries
+          // ================================================================
 
           // Create agent
           console.log('[CHAT] Step 7: Creating health agent...');

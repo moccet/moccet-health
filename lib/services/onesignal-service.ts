@@ -41,6 +41,14 @@ export async function sendPushNotification(
   try {
     const supabase = await createClient();
 
+    // Debug: First check all tokens for this user
+    const { data: allTokens } = await supabase
+      .from('user_device_tokens')
+      .select('device_token, platform, provider, is_active')
+      .eq('email', email);
+
+    console.log(`[OneSignal Service] All tokens for ${email}:`, JSON.stringify(allTokens));
+
     // Get active device tokens for the user (OneSignal player IDs)
     const { data: tokens, error } = await supabase
       .from('user_device_tokens')
@@ -48,6 +56,8 @@ export async function sendPushNotification(
       .eq('email', email)
       .eq('is_active', true)
       .eq('provider', 'onesignal');
+
+    console.log(`[OneSignal Service] Filtered tokens:`, JSON.stringify(tokens), 'Error:', error);
 
     if (error) {
       console.error('[OneSignal Service] Error fetching device tokens:', error);

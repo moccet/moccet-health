@@ -40,6 +40,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Email required as query param' }, { status: 400 });
   }
 
+  // Debug: Check what tokens exist for this user
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+  const { data: allTokens } = await supabase
+    .from('user_device_tokens')
+    .select('id, platform, provider, is_active')
+    .eq('email', email);
+
+  console.log(`[Test Push Debug] All tokens for ${email}:`, JSON.stringify(allTokens));
+
   const sent = await sendPushNotification(email, {
     title: 'Test Notification',
     body: 'This is a test push notification from moccet',
@@ -49,6 +59,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     sent,
+    debug_tokens: allTokens,
     message: sent > 0 ? `Notification sent to ${sent} device(s)` : 'No devices found for this email'
   });
 }

@@ -74,7 +74,7 @@ export async function sendPushNotification(
     console.log(`[OneSignal Service] Sending to ${playerIds.length} device(s) for ${email}`);
 
     // Prepare notification payload
-    const notificationPayload = {
+    const notificationPayload: Record<string, unknown> = {
       app_id: appId,
       include_player_ids: playerIds,
       headings: { en: payload.title },
@@ -84,9 +84,6 @@ export async function sendPushNotification(
       ios_sound: 'default',
       ios_badgeType: 'Increase',
       ios_badgeCount: 1,
-      // Android specific
-      android_sound: 'default',
-      android_channel_id: 'high_priority',
       priority: 10,
     };
 
@@ -183,15 +180,13 @@ export async function sendToPlayerIds(
   }
 
   try {
-    const notificationPayload = {
+    const notificationPayload: Record<string, unknown> = {
       app_id: appId,
       include_player_ids: playerIds,
       headings: { en: payload.title },
       contents: { en: payload.body },
       data: payload.data || {},
       ios_sound: 'default',
-      android_sound: 'default',
-      android_channel_id: 'high_priority',
       priority: 10,
     };
 

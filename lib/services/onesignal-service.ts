@@ -73,10 +73,13 @@ export async function sendPushNotification(
 
     console.log(`[OneSignal Service] Sending to ${playerIds.length} device(s) for ${email}`);
 
-    // Prepare notification payload
+    // Prepare notification payload - use external_id (email) for targeting
+    // This is more reliable than player_ids since we set external_id via OneSignal.login()
     const notificationPayload: Record<string, unknown> = {
       app_id: appId,
-      include_player_ids: playerIds,
+      // Target by external user ID (email) instead of player IDs
+      include_aliases: { external_id: [email] },
+      target_channel: 'push',
       headings: { en: payload.title },
       contents: { en: payload.body },
       data: payload.data || {},

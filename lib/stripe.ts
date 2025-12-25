@@ -192,3 +192,186 @@ export function verifyWebhookSignature(
     stripeConfig.webhookSecret
   );
 }
+
+// =============================================================================
+// SUBSCRIPTION MANAGEMENT
+// =============================================================================
+
+// Subscription tiers
+export const subscriptionTiers = {
+  free: {
+    id: 'free',
+    name: 'moccet free',
+    description: 'Data synchronization and basic insights',
+    price: 0,
+    priceId: null, // No Stripe price for free tier
+    features: [
+      'Data synchronization',
+      'Basic health insights',
+      'Limited AI interactions',
+      '3 insights per day',
+    ],
+  },
+  pro: {
+    id: 'pro',
+    name: 'moccet pro',
+    description: 'moccet app access + agents',
+    price: 35,
+    priceId: process.env.STRIPE_PRO_PRICE_ID,
+    features: [
+      'Everything in Free',
+      'Unlimited AI interactions',
+      'All agent access',
+      'Priority insights',
+      'Email agent (labeling & drafts)',
+      'Voice assistant',
+    ],
+  },
+  max: {
+    id: 'max',
+    name: 'moccet max',
+    description: 'Everything in pro + unlimited reviews/insights',
+    price: 200,
+    priceId: process.env.STRIPE_MAX_PRICE_ID,
+    features: [
+      'Everything in Pro',
+      'Unlimited reviews & insights',
+      'Priority support',
+      'Custom integrations',
+      'Advanced analytics',
+      'API access',
+    ],
+  },
+} as const;
+
+export type SubscriptionTier = keyof typeof subscriptionTiers;
+
+/**
+ * Creates a Stripe Checkout Session for subscription
+ */
+export async function createSubscriptionCheckout(
+  customerEmail: string,
+  priceId: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const customer = await getOrCreateStripeCustomer(customerEmail);
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customer.id,
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      customer_email: customerEmail,
+    },
+    subscription_data: {
+      metadata: {
+        customer_email: customerEmail,
+      },
+    },
+  });
+
+  return session;
+}
+
+/**
+ * Creates a Stripe Customer Portal session for managing subscription
+ */
+export async function createCustomerPortalSession(
+  customerEmail: string,
+  returnUrl: string
+): Promise<Stripe.BillingPortal.Session> {
+  const customer = await getOrCreateStripeCustomer(customerEmail);
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customer.id,
+    return_url: returnUrl,
+  });
+
+  return session;
+}
+
+/**
+ * Gets a customer's active subscription
+ */
+export async function getCustomerSubscription(
+  customerEmail: string
+): Promise<Stripe.Subscription | null> {
+  const customers = await stripe.customers.list({
+    email: customerEmail,
+    limit: 1,
+  });
+
+  if (customers.data.length === 0) {
+    return null;
+  }
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customers.data[0].id,
+    status: 'active',
+    limit: 1,
+  });
+
+  return subscriptions.data[0] || null;
+}
+
+/**
+ * Cancels a subscription
+ */
+export async function cancelSubscription(
+  subscriptionId: string,
+  cancelAtPeriodEnd: boolean = true
+): Promise<Stripe.Subscription> {
+  if (cancelAtPeriodEnd) {
+    return stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: true,
+    });
+  }
+  return stripe.subscriptions.cancel(subscriptionId);
+}
+
+/**
+ * Gets subscription tier from price ID
+ */
+export function getTierFromPriceId(priceId: string): SubscriptionTier {
+  if (priceId === subscriptionTiers.pro.priceId) return 'pro';
+  if (priceId === subscriptionTiers.max.priceId) return 'max';
+  return 'free';
+}
+
+/**
+ * Checks if a feature is available for a tier
+ */
+export function isFeatureAvailable(
+  tier: SubscriptionTier,
+  feature: string
+): boolean {
+  const tierOrder: SubscriptionTier[] = ['free', 'pro', 'max'];
+  const userTierIndex = tierOrder.indexOf(tier);
+
+  // Define which features are available at which tier
+  const featureTiers: Record<string, SubscriptionTier> = {
+    basic_insights: 'free',
+    data_sync: 'free',
+    unlimited_ai: 'pro',
+    agents: 'pro',
+    email_agent: 'pro',
+    voice_assistant: 'pro',
+    unlimited_insights: 'max',
+    api_access: 'max',
+    priority_support: 'max',
+  };
+
+  const requiredTier = featureTiers[feature] || 'free';
+  const requiredTierIndex = tierOrder.indexOf(requiredTier);
+
+  return userTierIndex >= requiredTierIndex;
+}

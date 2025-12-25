@@ -18,7 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Note: These are imported dynamically to avoid build issues with MCP SDK
 const getMcpHandlers = async () => {
   try {
-    const { resourceHandlers } = await import('../../../../../../mcp-server/src/resources/index.js');
+    const { resourceHandlers } = await import('../../../../../../mcp-server/src/resources/index');
     return resourceHandlers;
   } catch (error) {
     console.error('Failed to import MCP handlers:', error);

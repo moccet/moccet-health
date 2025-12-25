@@ -33,7 +33,7 @@ const TOOL_RISK_LEVELS: Record<string, 'low' | 'medium' | 'high'> = {
 // Import tool handlers from MCP server
 const getMcpToolHandlers = async () => {
   try {
-    const { toolHandlers } = await import('../../../../../../mcp-server/src/tools/index.js');
+    const { toolHandlers } = await import('../../../../../../mcp-server/src/tools/index');
     return toolHandlers;
   } catch (error) {
     console.error('Failed to import MCP tool handlers:', error);

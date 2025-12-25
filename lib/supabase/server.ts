@@ -49,3 +49,38 @@ export function createAdminClient() {
     },
   });
 }
+
+/**
+ * Create a Supabase service client with service key.
+ * Similar to admin client but uses SUPABASE_SERVICE_KEY with ANON_KEY fallback.
+ * For API routes that need to authenticate users but also access data.
+ */
+export function createServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error('Missing Supabase configuration');
+  }
+
+  return createSupabaseClient(supabaseUrl, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
+ * Lazy-loaded Supabase service client singleton.
+ * Use this to get a service client without initializing at module load time.
+ * Prevents build errors when environment variables aren't available.
+ */
+let _serviceClientInstance: ReturnType<typeof createSupabaseClient> | null = null;
+
+export function getServiceClient() {
+  if (!_serviceClientInstance) {
+    _serviceClientInstance = createServiceClient();
+  }
+  return _serviceClientInstance;
+}

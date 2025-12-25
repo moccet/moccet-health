@@ -38,7 +38,7 @@ async function getUserEmail(request: NextRequest): Promise<string | null> {
 // Import tool handlers
 const getMcpToolHandlers = async () => {
   try {
-    const { toolHandlers } = await import('../../../../../mcp-server/src/tools/index.js');
+    const { toolHandlers } = await import('../../../../../mcp-server/src/tools/index');
     return toolHandlers;
   } catch (error) {
     console.error('Failed to import MCP tool handlers:', error);

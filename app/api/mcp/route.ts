@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // Import handlers
 const getMcpHandlers = async () => {
   try {
-    const { resourceHandlers } = await import('../../../../mcp-server/src/resources/index.js');
-    const { toolHandlers } = await import('../../../../mcp-server/src/tools/index.js');
+    const { resourceHandlers } = await import('../../../../mcp-server/src/resources/index');
+    const { toolHandlers } = await import('../../../../mcp-server/src/tools/index');
     return { resourceHandlers, toolHandlers };
   } catch (error) {
     console.error('Failed to import MCP handlers:', error);

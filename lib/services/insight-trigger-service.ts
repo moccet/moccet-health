@@ -46,7 +46,23 @@ export type InsightType =
   | 'sleep_improvement'
   | 'general_health'
   | 'mood_indicator'
-  | 'communication_pattern';
+  | 'communication_pattern'
+  // Cross-source correlation types
+  | 'cross_source_correlation'
+  | 'work_sleep_impact'
+  | 'stress_recovery_pattern'
+  | 'lifestyle_health_connection'
+  | 'exercise_sleep_benefit'
+  // Weekly analysis types
+  | 'weekly_summary'
+  | 'weekly_sleep_trend'
+  | 'weekly_activity_trend'
+  | 'weekly_stress_trend'
+  | 'weekly_recovery_trend'
+  | 'weekly_glucose_trend'
+  | 'weekly_work_life_balance'
+  | 'weekly_improvement'
+  | 'weekly_decline';
 
 export type InsightSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -68,6 +84,64 @@ export interface BaselineChange {
   change_pct: number;
   direction: 'increase' | 'decrease' | 'unchanged';
   is_significant: boolean;
+}
+
+/**
+ * Combined data from all connectors for cross-source analysis
+ */
+interface AllConnectorData {
+  oura: OuraData | null;
+  dexcom: DexcomData | null;
+  whoop: WhoopData | null;
+  gmail: GmailPatterns | null;
+  slack: SlackPatterns | null;
+  spotify: SpotifyData | null;
+}
+
+/**
+ * Weekly metrics for trend analysis
+ */
+interface WeeklyMetrics {
+  weekStart: Date;
+  weekEnd: Date;
+  // Sleep metrics
+  avgSleepHours: number | null;
+  avgSleepScore: number | null;
+  avgHRV: number | null;
+  sleepConsistency: number | null; // 0-100 how consistent bedtime/wake time
+  // Activity metrics
+  avgDailySteps: number | null;
+  totalWorkouts: number | null;
+  avgStrainScore: number | null;
+  activeDays: number; // days with significant activity
+  // Recovery metrics
+  avgRecoveryScore: number | null;
+  lowRecoveryDays: number; // days < 34%
+  highRecoveryDays: number; // days > 67%
+  // Stress metrics
+  avgRestingHR: number | null;
+  workStressScore: number | null; // derived from email/slack patterns
+  afterHoursWorkDays: number;
+  // Glucose metrics (if available)
+  avgGlucose: number | null;
+  timeInRange: number | null;
+  spikeDays: number;
+  // Work-life balance
+  avgMeetingsPerDay: number | null;
+  focusTimeHours: number | null;
+  afterHoursEmailPct: number | null;
+}
+
+/**
+ * Week-over-week comparison result
+ */
+interface WeekComparison {
+  metric: string;
+  currentValue: number;
+  previousValue: number;
+  changePercent: number;
+  trend: 'improving' | 'declining' | 'stable';
+  isSignificant: boolean;
 }
 
 // Threshold configuration for each metric type
@@ -719,6 +793,730 @@ async function generateSpotifyInsights(
   return insights;
 }
 
+/**
+ * Generate cross-source insights by analyzing correlations between multiple data sources
+ * This is the key function that provides unified context across all connectors
+ */
+async function generateCrossSourceInsights(
+  email: string,
+  data: AllConnectorData
+): Promise<GeneratedInsight[]> {
+  const insights: GeneratedInsight[] = [];
+
+  // =========================================================================
+  // Pattern 1: Work stress → Sleep impact (Gmail/Slack + Oura)
+  // =========================================================================
+  if (data.gmail && data.oura) {
+    const hasAfterHoursWork = data.gmail.stressIndicators?.frequentAfterHoursWork;
+    const hasHighMeetingLoad = data.gmail.meetingDensity?.avgMeetingsPerDay > 6;
+    const poorSleep = data.oura.avgReadinessScore < 70;
+
+    if ((hasAfterHoursWork || hasHighMeetingLoad) && poorSleep) {
+      insights.push({
+        insight_type: 'work_sleep_impact',
+        title: 'Work Patterns Affecting Your Sleep',
+        message: `Your ${hasAfterHoursWork ? 'after-hours work activity' : 'high meeting load'} appears to correlate with reduced sleep quality. Your readiness score of ${Math.round(data.oura.avgReadinessScore)} is below optimal.`,
+        severity: data.oura.avgReadinessScore < 60 ? 'high' : 'medium',
+        actionable_recommendation: hasAfterHoursWork
+          ? 'Try setting a hard work cutoff 2 hours before bedtime. Your body needs time to wind down.'
+          : 'Consider blocking focus time and reducing meeting density to protect your recovery.',
+        source_provider: 'cross_source',
+        source_data_type: 'work_sleep_correlation',
+        context_data: {
+          sources: ['gmail', 'oura'],
+          afterHoursWork: hasAfterHoursWork,
+          meetingsPerDay: data.gmail.meetingDensity?.avgMeetingsPerDay,
+          readinessScore: data.oura.avgReadinessScore,
+          sleepHours: data.oura.avgSleepHours,
+          afterHoursEmailPct: data.gmail.emailVolume?.afterHoursPercentage,
+        },
+      });
+    }
+  }
+
+  // Slack + Oura correlation
+  if (data.slack && data.oura) {
+    const lateSlack = data.slack.stressIndicators?.lateNightMessages;
+    const poorSleep = data.oura.avgReadinessScore < 70;
+
+    if (lateSlack && poorSleep) {
+      insights.push({
+        insight_type: 'work_sleep_impact',
+        title: 'Late Slack Activity Impacting Sleep',
+        message: `Late-night Slack messages are correlating with your reduced sleep quality (readiness: ${Math.round(data.oura.avgReadinessScore)}).`,
+        severity: 'medium',
+        actionable_recommendation: 'Set Slack to "Do Not Disturb" after 9pm. Your recovery metrics will thank you.',
+        source_provider: 'cross_source',
+        source_data_type: 'communication_sleep_correlation',
+        context_data: {
+          sources: ['slack', 'oura'],
+          lateNightMessages: true,
+          readinessScore: data.oura.avgReadinessScore,
+          afterHoursPct: data.slack.messageVolume?.afterHoursPercentage,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Pattern 2: Recovery + Glucose correlation (Whoop + Dexcom)
+  // =========================================================================
+  if (data.whoop && data.dexcom) {
+    const lowRecovery = data.whoop.avgRecoveryScore < 50;
+    const highGlucoseVariability = data.dexcom.glucoseVariability === 'high';
+    const poorTimeInRange = data.dexcom.timeInRange < 70;
+
+    if (lowRecovery && (highGlucoseVariability || poorTimeInRange)) {
+      insights.push({
+        insight_type: 'stress_recovery_pattern',
+        title: 'Metabolic Stress Signal Detected',
+        message: `Your low recovery score (${Math.round(data.whoop.avgRecoveryScore)}%) combined with ${highGlucoseVariability ? 'high glucose variability' : `only ${data.dexcom.timeInRange}% time in glucose range`} suggests your body is under systemic stress.`,
+        severity: 'high',
+        actionable_recommendation: 'Focus on recovery: prioritize sleep, reduce intense exercise for 1-2 days, and eat balanced meals with protein and fiber to stabilize glucose.',
+        source_provider: 'cross_source',
+        source_data_type: 'metabolic_recovery_correlation',
+        context_data: {
+          sources: ['whoop', 'dexcom'],
+          recoveryScore: data.whoop.avgRecoveryScore,
+          glucoseVariability: data.dexcom.glucoseVariability,
+          timeInRange: data.dexcom.timeInRange,
+          avgGlucose: data.dexcom.avgGlucose,
+          hrvAvg: data.whoop.avgHRV,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Pattern 3: Meetings → Energy (Gmail + Whoop)
+  // =========================================================================
+  if (data.gmail && data.whoop) {
+    const highMeetingDensity = data.gmail.meetingDensity?.avgMeetingsPerDay > 5;
+    const backToBackMeetings = data.gmail.meetingDensity?.backToBackPercentage > 50;
+    const lowRecovery = data.whoop.avgRecoveryScore < 60;
+
+    if ((highMeetingDensity || backToBackMeetings) && lowRecovery) {
+      insights.push({
+        insight_type: 'cross_source_correlation',
+        title: 'Meeting Load Draining Your Energy',
+        message: `Your calendar density (${data.gmail.meetingDensity?.avgMeetingsPerDay} meetings/day${backToBackMeetings ? ', 50%+ back-to-back' : ''}) correlates with your low recovery score of ${Math.round(data.whoop.avgRecoveryScore)}%.`,
+        severity: 'medium',
+        actionable_recommendation: 'Try adding 15-minute buffers between meetings. Consider declining non-essential meetings on low-recovery days.',
+        source_provider: 'cross_source',
+        source_data_type: 'calendar_energy_correlation',
+        context_data: {
+          sources: ['gmail', 'whoop'],
+          meetingsPerDay: data.gmail.meetingDensity?.avgMeetingsPerDay,
+          backToBackPct: data.gmail.meetingDensity?.backToBackPercentage,
+          recoveryScore: data.whoop.avgRecoveryScore,
+          strainScore: data.whoop.avgStrainScore,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Pattern 4: Music → Physiology (Spotify + Oura/Whoop)
+  // =========================================================================
+  if (data.spotify && (data.oura || data.whoop)) {
+    const anxiousMood = data.spotify.inferredMood === 'anxious';
+    const lowMood = data.spotify.avgValence < 0.3;
+    const lowReadiness = data.oura?.avgReadinessScore && data.oura.avgReadinessScore < 60;
+    const lowRecovery = data.whoop?.avgRecoveryScore && data.whoop.avgRecoveryScore < 50;
+
+    if ((anxiousMood || lowMood) && (lowReadiness || lowRecovery)) {
+      insights.push({
+        insight_type: 'cross_source_correlation',
+        title: 'Music & Body Both Signal Stress',
+        message: `Your music choices (${anxiousMood ? 'anxious patterns' : 'low valence/mood'}) align with your physiological markers${lowReadiness ? ` (readiness: ${Math.round(data.oura!.avgReadinessScore)})` : ''}${lowRecovery ? ` (recovery: ${Math.round(data.whoop!.avgRecoveryScore)}%)` : ''}. Both suggest elevated stress.`,
+        severity: 'medium',
+        actionable_recommendation: 'Consider creating a calming playlist. Music can influence mood - try uplifting or ambient tracks to help shift your state.',
+        source_provider: 'cross_source',
+        source_data_type: 'mood_physiology_correlation',
+        context_data: {
+          sources: ['spotify', data.oura ? 'oura' : 'whoop'],
+          inferredMood: data.spotify.inferredMood,
+          avgValence: data.spotify.avgValence,
+          avgEnergy: data.spotify.avgEnergy,
+          readinessScore: data.oura?.avgReadinessScore,
+          recoveryScore: data.whoop?.avgRecoveryScore,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Pattern 5: Late Activity → Next Day HRV (Slack/Gmail + Oura)
+  // =========================================================================
+  if ((data.slack || data.gmail) && data.oura) {
+    const lateWork = data.slack?.stressIndicators?.lateNightMessages ||
+      (data.gmail?.emailVolume?.afterHoursPercentage && data.gmail.emailVolume.afterHoursPercentage > 30);
+    const lowHRV = data.oura.avgHRV && data.oura.hrvBaseline &&
+      data.oura.avgHRV < data.oura.hrvBaseline * 0.85;
+
+    if (lateWork && lowHRV) {
+      const hrvDrop = data.oura.hrvBaseline
+        ? Math.round((1 - data.oura.avgHRV / data.oura.hrvBaseline) * 100)
+        : 0;
+
+      insights.push({
+        insight_type: 'lifestyle_health_connection',
+        title: 'Late Work Reducing Your HRV',
+        message: `Your late-night work activity correlates with a ${hrvDrop}% drop in HRV (${Math.round(data.oura.avgHRV)}ms vs baseline ${Math.round(data.oura.hrvBaseline || 0)}ms). This impacts your recovery capacity.`,
+        severity: hrvDrop > 20 ? 'high' : 'medium',
+        actionable_recommendation: 'Set a work cutoff time at least 2 hours before bed. Your nervous system needs time to downshift for quality sleep.',
+        source_provider: 'cross_source',
+        source_data_type: 'work_hrv_correlation',
+        context_data: {
+          sources: [data.slack ? 'slack' : 'gmail', 'oura'],
+          lateNightWork: true,
+          currentHRV: data.oura.avgHRV,
+          baselineHRV: data.oura.hrvBaseline,
+          hrvDropPct: hrvDrop,
+          afterHoursEmailPct: data.gmail?.emailVolume?.afterHoursPercentage,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Pattern 6: Exercise → Sleep benefit (Whoop + Oura) - POSITIVE correlation
+  // =========================================================================
+  if (data.whoop && data.oura) {
+    const goodStrain = data.whoop.avgStrainScore >= 10 && data.whoop.avgStrainScore <= 18;
+    const goodSleep = data.oura.avgReadinessScore >= 75;
+    const goodDeepSleep = data.oura.sleepArchitecture?.deepSleepPercentage &&
+      data.oura.sleepArchitecture.deepSleepPercentage > 15;
+
+    if (goodStrain && (goodSleep || goodDeepSleep)) {
+      insights.push({
+        insight_type: 'exercise_sleep_benefit',
+        title: 'Your Training is Boosting Sleep Quality',
+        message: `Your balanced training load (strain: ${data.whoop.avgStrainScore.toFixed(1)}) is correlating with ${goodSleep ? `excellent readiness (${Math.round(data.oura.avgReadinessScore)})` : ''}${goodDeepSleep ? ` and great deep sleep (${data.oura.sleepArchitecture?.deepSleepPercentage}%)` : ''}.`,
+        severity: 'info',
+        actionable_recommendation: 'Keep this balance! Moderate training with adequate recovery is optimizing your sleep architecture.',
+        source_provider: 'cross_source',
+        source_data_type: 'exercise_sleep_correlation',
+        context_data: {
+          sources: ['whoop', 'oura'],
+          strainScore: data.whoop.avgStrainScore,
+          readinessScore: data.oura.avgReadinessScore,
+          deepSleepPct: data.oura.sleepArchitecture?.deepSleepPercentage,
+          sleepHours: data.oura.avgSleepHours,
+        },
+      });
+    }
+  }
+
+  console.log(`[Insight Trigger] Generated ${insights.length} cross-source insights for ${email}`);
+  return insights;
+}
+
+// ============================================================================
+// WEEKLY ANALYSIS FUNCTIONS
+// ============================================================================
+
+/**
+ * Fetch weekly aggregated data from the database
+ */
+async function fetchWeeklyData(
+  email: string,
+  weekStart: Date,
+  weekEnd: Date
+): Promise<WeeklyMetrics> {
+  const supabase = await createClient();
+  const startStr = weekStart.toISOString();
+  const endStr = weekEnd.toISOString();
+
+  // Initialize metrics with defaults
+  const metrics: WeeklyMetrics = {
+    weekStart,
+    weekEnd,
+    avgSleepHours: null,
+    avgSleepScore: null,
+    avgHRV: null,
+    sleepConsistency: null,
+    avgDailySteps: null,
+    totalWorkouts: null,
+    avgStrainScore: null,
+    activeDays: 0,
+    avgRecoveryScore: null,
+    lowRecoveryDays: 0,
+    highRecoveryDays: 0,
+    avgRestingHR: null,
+    workStressScore: null,
+    afterHoursWorkDays: 0,
+    avgGlucose: null,
+    timeInRange: null,
+    spikeDays: 0,
+    avgMeetingsPerDay: null,
+    focusTimeHours: null,
+    afterHoursEmailPct: null,
+  };
+
+  // Fetch Oura sleep data
+  const { data: ouraData } = await supabase
+    .from('oura_data')
+    .select('*')
+    .eq('email', email)
+    .gte('date', startStr)
+    .lte('date', endStr);
+
+  if (ouraData && ouraData.length > 0) {
+    const sleepScores = ouraData.map(d => d.readiness_score).filter(Boolean);
+    const sleepHours = ouraData.map(d => d.total_sleep_duration / 3600).filter(Boolean);
+    const hrvValues = ouraData.map(d => d.average_hrv).filter(Boolean);
+
+    metrics.avgSleepScore = sleepScores.length > 0
+      ? sleepScores.reduce((a, b) => a + b, 0) / sleepScores.length : null;
+    metrics.avgSleepHours = sleepHours.length > 0
+      ? sleepHours.reduce((a, b) => a + b, 0) / sleepHours.length : null;
+    metrics.avgHRV = hrvValues.length > 0
+      ? hrvValues.reduce((a, b) => a + b, 0) / hrvValues.length : null;
+  }
+
+  // Fetch Whoop recovery/strain data
+  const { data: whoopData } = await supabase
+    .from('whoop_data')
+    .select('*')
+    .eq('email', email)
+    .gte('date', startStr)
+    .lte('date', endStr);
+
+  if (whoopData && whoopData.length > 0) {
+    const recoveryScores = whoopData.map(d => d.recovery_score).filter(Boolean);
+    const strainScores = whoopData.map(d => d.strain_score).filter(Boolean);
+    const restingHRs = whoopData.map(d => d.resting_heart_rate).filter(Boolean);
+
+    metrics.avgRecoveryScore = recoveryScores.length > 0
+      ? recoveryScores.reduce((a, b) => a + b, 0) / recoveryScores.length : null;
+    metrics.avgStrainScore = strainScores.length > 0
+      ? strainScores.reduce((a, b) => a + b, 0) / strainScores.length : null;
+    metrics.avgRestingHR = restingHRs.length > 0
+      ? restingHRs.reduce((a, b) => a + b, 0) / restingHRs.length : null;
+
+    metrics.lowRecoveryDays = recoveryScores.filter(s => s < 34).length;
+    metrics.highRecoveryDays = recoveryScores.filter(s => s > 67).length;
+    metrics.activeDays = strainScores.filter(s => s > 8).length;
+    metrics.totalWorkouts = whoopData.filter(d => d.workout_count > 0).length;
+  }
+
+  // Fetch Dexcom glucose data
+  const { data: dexcomData } = await supabase
+    .from('dexcom_data')
+    .select('*')
+    .eq('email', email)
+    .gte('timestamp', startStr)
+    .lte('timestamp', endStr);
+
+  if (dexcomData && dexcomData.length > 0) {
+    const glucoseValues = dexcomData.map(d => d.glucose_value).filter(Boolean);
+    const inRangeCount = glucoseValues.filter(g => g >= 70 && g <= 140).length;
+
+    metrics.avgGlucose = glucoseValues.length > 0
+      ? glucoseValues.reduce((a, b) => a + b, 0) / glucoseValues.length : null;
+    metrics.timeInRange = glucoseValues.length > 0
+      ? (inRangeCount / glucoseValues.length) * 100 : null;
+
+    // Count spike days (days with readings > 180)
+    const daysWithSpikes = new Set(
+      dexcomData.filter(d => d.glucose_value > 180).map(d => d.timestamp?.split('T')[0])
+    );
+    metrics.spikeDays = daysWithSpikes.size;
+  }
+
+  // Fetch Gmail patterns for work metrics
+  const { data: gmailData } = await supabase
+    .from('gmail_patterns')
+    .select('*')
+    .eq('email', email)
+    .gte('date', startStr)
+    .lte('date', endStr);
+
+  if (gmailData && gmailData.length > 0) {
+    const meetingsPerDay = gmailData.map(d => d.meetings_count).filter(Boolean);
+    const afterHoursPcts = gmailData.map(d => d.after_hours_percentage).filter(Boolean);
+
+    metrics.avgMeetingsPerDay = meetingsPerDay.length > 0
+      ? meetingsPerDay.reduce((a, b) => a + b, 0) / meetingsPerDay.length : null;
+    metrics.afterHoursEmailPct = afterHoursPcts.length > 0
+      ? afterHoursPcts.reduce((a, b) => a + b, 0) / afterHoursPcts.length : null;
+    metrics.afterHoursWorkDays = afterHoursPcts.filter(p => p > 20).length;
+
+    // Calculate work stress score (0-100)
+    if (metrics.avgMeetingsPerDay !== null && metrics.afterHoursEmailPct !== null) {
+      const meetingStress = Math.min((metrics.avgMeetingsPerDay / 8) * 50, 50);
+      const afterHoursStress = Math.min((metrics.afterHoursEmailPct / 40) * 50, 50);
+      metrics.workStressScore = meetingStress + afterHoursStress;
+    }
+  }
+
+  return metrics;
+}
+
+/**
+ * Compare two weeks of metrics and calculate trends
+ */
+function compareWeeks(
+  currentWeek: WeeklyMetrics,
+  previousWeek: WeeklyMetrics,
+  metricKey: keyof WeeklyMetrics,
+  higherIsBetter: boolean,
+  significantThreshold: number = 10
+): WeekComparison | null {
+  const current = currentWeek[metricKey] as number | null;
+  const previous = previousWeek[metricKey] as number | null;
+
+  if (current === null || previous === null || previous === 0) {
+    return null;
+  }
+
+  const changePercent = ((current - previous) / Math.abs(previous)) * 100;
+  const isSignificant = Math.abs(changePercent) >= significantThreshold;
+
+  let trend: 'improving' | 'declining' | 'stable';
+  if (!isSignificant) {
+    trend = 'stable';
+  } else if (higherIsBetter) {
+    trend = changePercent > 0 ? 'improving' : 'declining';
+  } else {
+    trend = changePercent < 0 ? 'improving' : 'declining';
+  }
+
+  return {
+    metric: metricKey,
+    currentValue: current,
+    previousValue: previous,
+    changePercent: Math.round(changePercent * 10) / 10,
+    trend,
+    isSignificant,
+  };
+}
+
+/**
+ * Generate comprehensive weekly analysis insights
+ */
+export async function generateWeeklyAnalysis(email: string): Promise<GeneratedInsight[]> {
+  console.log(`[Insight Trigger] Generating weekly analysis for ${email}`);
+  const insights: GeneratedInsight[] = [];
+
+  // Calculate date ranges
+  const now = new Date();
+  const currentWeekEnd = new Date(now);
+  const currentWeekStart = new Date(now);
+  currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+
+  const previousWeekEnd = new Date(currentWeekStart);
+  const previousWeekStart = new Date(currentWeekStart);
+  previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+
+  // Fetch data for both weeks
+  const currentWeek = await fetchWeeklyData(email, currentWeekStart, currentWeekEnd);
+  const previousWeek = await fetchWeeklyData(email, previousWeekStart, previousWeekEnd);
+
+  // Track all comparisons for the summary
+  const comparisons: WeekComparison[] = [];
+  const improvements: string[] = [];
+  const declines: string[] = [];
+
+  // =========================================================================
+  // Sleep Trend Analysis
+  // =========================================================================
+  const sleepScoreComp = compareWeeks(currentWeek, previousWeek, 'avgSleepScore', true);
+  const sleepHoursComp = compareWeeks(currentWeek, previousWeek, 'avgSleepHours', true, 5);
+  const hrvComp = compareWeeks(currentWeek, previousWeek, 'avgHRV', true, 10);
+
+  if (sleepScoreComp) comparisons.push(sleepScoreComp);
+  if (sleepHoursComp) comparisons.push(sleepHoursComp);
+  if (hrvComp) comparisons.push(hrvComp);
+
+  if (sleepScoreComp?.isSignificant || sleepHoursComp?.isSignificant) {
+    const sleepTrend = sleepScoreComp?.trend || sleepHoursComp?.trend || 'stable';
+
+    if (sleepTrend === 'improving') {
+      improvements.push('sleep quality');
+      insights.push({
+        insight_type: 'weekly_sleep_trend',
+        title: 'Sleep Quality Improved This Week',
+        message: `Your sleep metrics improved this week! ${sleepScoreComp ? `Sleep score up ${Math.abs(sleepScoreComp.changePercent)}% (${Math.round(sleepScoreComp.currentValue)} vs ${Math.round(sleepScoreComp.previousValue)}).` : ''} ${sleepHoursComp ? `Averaging ${currentWeek.avgSleepHours?.toFixed(1)} hours vs ${previousWeek.avgSleepHours?.toFixed(1)} last week.` : ''}`,
+        severity: 'info',
+        actionable_recommendation: 'Keep doing what worked! Note any changes to your routine that may have contributed.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'sleep_trend',
+        context_data: {
+          currentWeekAvgScore: currentWeek.avgSleepScore,
+          previousWeekAvgScore: previousWeek.avgSleepScore,
+          currentWeekAvgHours: currentWeek.avgSleepHours,
+          previousWeekAvgHours: previousWeek.avgSleepHours,
+          changePct: sleepScoreComp?.changePercent,
+        },
+      });
+    } else if (sleepTrend === 'declining') {
+      declines.push('sleep quality');
+      insights.push({
+        insight_type: 'weekly_sleep_trend',
+        title: 'Sleep Quality Declined This Week',
+        message: `Your sleep metrics dropped this week. ${sleepScoreComp ? `Sleep score down ${Math.abs(sleepScoreComp.changePercent)}% (${Math.round(sleepScoreComp.currentValue)} vs ${Math.round(sleepScoreComp.previousValue)}).` : ''} ${currentWeek.avgSleepHours ? `Averaging only ${currentWeek.avgSleepHours.toFixed(1)} hours.` : ''}`,
+        severity: currentWeek.avgSleepScore && currentWeek.avgSleepScore < 60 ? 'high' : 'medium',
+        actionable_recommendation: 'Review your bedtime routine, screen time, and stress levels. Aim for 7-8 hours consistently.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'sleep_trend',
+        context_data: {
+          currentWeekAvgScore: currentWeek.avgSleepScore,
+          previousWeekAvgScore: previousWeek.avgSleepScore,
+          changePct: sleepScoreComp?.changePercent,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Activity & Exercise Trend Analysis
+  // =========================================================================
+  const strainComp = compareWeeks(currentWeek, previousWeek, 'avgStrainScore', true, 15);
+  const activeDaysComp = compareWeeks(currentWeek, previousWeek, 'activeDays', true, 20);
+
+  if (strainComp) comparisons.push(strainComp);
+
+  if (strainComp?.isSignificant || (currentWeek.activeDays !== previousWeek.activeDays)) {
+    const activityTrend = strainComp?.trend || (currentWeek.activeDays > previousWeek.activeDays ? 'improving' : 'declining');
+
+    if (activityTrend === 'improving') {
+      improvements.push('activity level');
+      insights.push({
+        insight_type: 'weekly_activity_trend',
+        title: 'Activity Level Increased This Week',
+        message: `Great work! You were more active this week. ${strainComp ? `Average strain up ${Math.abs(strainComp.changePercent)}%.` : ''} ${currentWeek.activeDays} active days vs ${previousWeek.activeDays} last week.${currentWeek.totalWorkouts ? ` ${currentWeek.totalWorkouts} workouts logged.` : ''}`,
+        severity: 'info',
+        actionable_recommendation: 'Nice momentum! Balance activity with recovery to maintain this progress.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'activity_trend',
+        context_data: {
+          currentWeekStrain: currentWeek.avgStrainScore,
+          previousWeekStrain: previousWeek.avgStrainScore,
+          currentActiveDays: currentWeek.activeDays,
+          previousActiveDays: previousWeek.activeDays,
+          totalWorkouts: currentWeek.totalWorkouts,
+        },
+      });
+    } else if (activityTrend === 'declining' && currentWeek.activeDays < 3) {
+      declines.push('activity level');
+      insights.push({
+        insight_type: 'weekly_activity_trend',
+        title: 'Activity Level Dropped This Week',
+        message: `Your activity decreased this week. Only ${currentWeek.activeDays} active days vs ${previousWeek.activeDays} last week.${strainComp ? ` Strain down ${Math.abs(strainComp.changePercent)}%.` : ''}`,
+        severity: 'medium',
+        actionable_recommendation: 'Even light movement helps. Try adding a 15-minute walk to your daily routine.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'activity_trend',
+        context_data: {
+          currentWeekStrain: currentWeek.avgStrainScore,
+          previousWeekStrain: previousWeek.avgStrainScore,
+          currentActiveDays: currentWeek.activeDays,
+          previousActiveDays: previousWeek.activeDays,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Recovery Trend Analysis
+  // =========================================================================
+  const recoveryComp = compareWeeks(currentWeek, previousWeek, 'avgRecoveryScore', true);
+  if (recoveryComp) comparisons.push(recoveryComp);
+
+  if (recoveryComp?.isSignificant) {
+    if (recoveryComp.trend === 'improving') {
+      improvements.push('recovery');
+      insights.push({
+        insight_type: 'weekly_recovery_trend',
+        title: 'Recovery Improved This Week',
+        message: `Your body is recovering better! Average recovery up ${Math.abs(recoveryComp.changePercent)}% (${Math.round(recoveryComp.currentValue)}% vs ${Math.round(recoveryComp.previousValue)}%). ${currentWeek.highRecoveryDays} green zone days this week.`,
+        severity: 'info',
+        actionable_recommendation: 'Your recovery practices are working. Consider pushing your training intensity slightly.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'recovery_trend',
+        context_data: {
+          currentWeekAvg: currentWeek.avgRecoveryScore,
+          previousWeekAvg: previousWeek.avgRecoveryScore,
+          highRecoveryDays: currentWeek.highRecoveryDays,
+          lowRecoveryDays: currentWeek.lowRecoveryDays,
+        },
+      });
+    } else if (recoveryComp.trend === 'declining') {
+      declines.push('recovery');
+      insights.push({
+        insight_type: 'weekly_recovery_trend',
+        title: 'Recovery Declined This Week',
+        message: `Your recovery dropped ${Math.abs(recoveryComp.changePercent)}% (${Math.round(recoveryComp.currentValue)}% vs ${Math.round(recoveryComp.previousValue)}%). ${currentWeek.lowRecoveryDays} low recovery days this week.`,
+        severity: currentWeek.lowRecoveryDays >= 4 ? 'high' : 'medium',
+        actionable_recommendation: 'Prioritize sleep, reduce training intensity, and manage stress. Your body needs more recovery time.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'recovery_trend',
+        context_data: {
+          currentWeekAvg: currentWeek.avgRecoveryScore,
+          previousWeekAvg: previousWeek.avgRecoveryScore,
+          lowRecoveryDays: currentWeek.lowRecoveryDays,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Stress & Work-Life Balance Trend
+  // =========================================================================
+  const workStressComp = compareWeeks(currentWeek, previousWeek, 'workStressScore', false); // lower is better
+  const meetingsComp = compareWeeks(currentWeek, previousWeek, 'avgMeetingsPerDay', false);
+
+  if (workStressComp) comparisons.push(workStressComp);
+
+  if (workStressComp?.isSignificant || currentWeek.afterHoursWorkDays > 4) {
+    if (workStressComp?.trend === 'declining') { // declining stress = improving
+      improvements.push('work-life balance');
+    } else if (workStressComp?.trend === 'improving' || currentWeek.afterHoursWorkDays > 4) {
+      declines.push('work-life balance');
+      insights.push({
+        insight_type: 'weekly_work_life_balance',
+        title: 'Work Stress Elevated This Week',
+        message: `Your work patterns show elevated stress. ${currentWeek.afterHoursWorkDays}/7 days with after-hours work.${currentWeek.avgMeetingsPerDay ? ` Averaging ${currentWeek.avgMeetingsPerDay.toFixed(1)} meetings/day.` : ''}${currentWeek.afterHoursEmailPct ? ` ${Math.round(currentWeek.afterHoursEmailPct)}% emails sent outside work hours.` : ''}`,
+        severity: currentWeek.afterHoursWorkDays >= 5 ? 'high' : 'medium',
+        actionable_recommendation: 'Set boundaries: designate no-email hours, decline non-essential meetings, and protect your evening recovery time.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'work_stress_trend',
+        context_data: {
+          currentWorkStress: currentWeek.workStressScore,
+          previousWorkStress: previousWeek.workStressScore,
+          afterHoursWorkDays: currentWeek.afterHoursWorkDays,
+          avgMeetingsPerDay: currentWeek.avgMeetingsPerDay,
+          afterHoursEmailPct: currentWeek.afterHoursEmailPct,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Glucose Trend Analysis (if available)
+  // =========================================================================
+  const glucoseComp = compareWeeks(currentWeek, previousWeek, 'avgGlucose', false); // lower is better
+  const timeInRangeComp = compareWeeks(currentWeek, previousWeek, 'timeInRange', true);
+
+  if (glucoseComp) comparisons.push(glucoseComp);
+  if (timeInRangeComp) comparisons.push(timeInRangeComp);
+
+  if ((glucoseComp?.isSignificant || timeInRangeComp?.isSignificant) && currentWeek.avgGlucose !== null) {
+    const glucoseTrend = timeInRangeComp?.trend || (glucoseComp?.trend === 'improving' ? 'improving' : 'declining');
+
+    if (glucoseTrend === 'improving') {
+      improvements.push('glucose control');
+      insights.push({
+        insight_type: 'weekly_glucose_trend',
+        title: 'Glucose Control Improved This Week',
+        message: `Your glucose metrics improved! ${timeInRangeComp ? `Time in range up to ${Math.round(timeInRangeComp.currentValue)}% (from ${Math.round(timeInRangeComp.previousValue)}%).` : ''} ${glucoseComp ? `Average glucose ${Math.round(glucoseComp.currentValue)} mg/dL.` : ''} Only ${currentWeek.spikeDays} days with spikes.`,
+        severity: 'info',
+        actionable_recommendation: 'Your meal choices and timing are working well. Keep it up!',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'glucose_trend',
+        context_data: {
+          currentAvgGlucose: currentWeek.avgGlucose,
+          previousAvgGlucose: previousWeek.avgGlucose,
+          currentTimeInRange: currentWeek.timeInRange,
+          previousTimeInRange: previousWeek.timeInRange,
+          spikeDays: currentWeek.spikeDays,
+        },
+      });
+    } else if (glucoseTrend === 'declining') {
+      declines.push('glucose control');
+      insights.push({
+        insight_type: 'weekly_glucose_trend',
+        title: 'Glucose Control Needs Attention',
+        message: `Your glucose metrics declined this week. ${timeInRangeComp ? `Time in range dropped to ${Math.round(timeInRangeComp.currentValue)}% (from ${Math.round(timeInRangeComp.previousValue)}%).` : ''} ${currentWeek.spikeDays} days with glucose spikes.`,
+        severity: currentWeek.timeInRange && currentWeek.timeInRange < 60 ? 'high' : 'medium',
+        actionable_recommendation: 'Review meal composition: add more protein, fiber, and healthy fats. Consider timing of carbs.',
+        source_provider: 'weekly_analysis',
+        source_data_type: 'glucose_trend',
+        context_data: {
+          currentAvgGlucose: currentWeek.avgGlucose,
+          previousAvgGlucose: previousWeek.avgGlucose,
+          currentTimeInRange: currentWeek.timeInRange,
+          spikeDays: currentWeek.spikeDays,
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // Overall Weekly Summary
+  // =========================================================================
+  if (comparisons.length > 0) {
+    const significantImprovements = comparisons.filter(c => c.trend === 'improving' && c.isSignificant);
+    const significantDeclines = comparisons.filter(c => c.trend === 'declining' && c.isSignificant);
+
+    let overallTrend: 'improving' | 'declining' | 'mixed' | 'stable';
+    if (significantImprovements.length > significantDeclines.length + 1) {
+      overallTrend = 'improving';
+    } else if (significantDeclines.length > significantImprovements.length + 1) {
+      overallTrend = 'declining';
+    } else if (significantImprovements.length > 0 && significantDeclines.length > 0) {
+      overallTrend = 'mixed';
+    } else {
+      overallTrend = 'stable';
+    }
+
+    let summaryMessage = '';
+    let severity: InsightSeverity = 'info';
+
+    switch (overallTrend) {
+      case 'improving':
+        summaryMessage = `Great week! ${improvements.length} areas improved: ${improvements.join(', ')}.`;
+        break;
+      case 'declining':
+        summaryMessage = `Challenging week. ${declines.length} areas declined: ${declines.join(', ')}. Focus on recovery.`;
+        severity = 'medium';
+        break;
+      case 'mixed':
+        summaryMessage = `Mixed week. Improved: ${improvements.join(', ') || 'none'}. Declined: ${declines.join(', ') || 'none'}.`;
+        break;
+      case 'stable':
+        summaryMessage = 'Steady week with no major changes in your health metrics.';
+        break;
+    }
+
+    insights.unshift({
+      insight_type: 'weekly_summary',
+      title: `Weekly Health Summary`,
+      message: summaryMessage,
+      severity,
+      actionable_recommendation: overallTrend === 'declining'
+        ? 'Focus on fundamentals: sleep 7-8 hours, move daily, manage stress, and eat balanced meals.'
+        : overallTrend === 'improving'
+        ? 'You\'re building positive momentum. Keep consistent with your healthy habits.'
+        : 'Consistency is key. Small daily improvements compound over time.',
+      source_provider: 'weekly_analysis',
+      source_data_type: 'weekly_summary',
+      context_data: {
+        overallTrend,
+        improvements,
+        declines,
+        comparisons: comparisons.map(c => ({
+          metric: c.metric,
+          change: c.changePercent,
+          trend: c.trend,
+        })),
+        currentWeek: {
+          sleepScore: currentWeek.avgSleepScore,
+          recoveryScore: currentWeek.avgRecoveryScore,
+          strainScore: currentWeek.avgStrainScore,
+          activeDays: currentWeek.activeDays,
+          workStress: currentWeek.workStressScore,
+        },
+      },
+    });
+  }
+
+  console.log(`[Insight Trigger] Generated ${insights.length} weekly analysis insights for ${email}`);
+  return insights;
+}
+
 // ============================================================================
 // MAIN TRIGGER FUNCTIONS
 // ============================================================================
@@ -867,6 +1665,18 @@ export async function processAllProviders(email: string): Promise<{
     );
     allInsights.push(...spotifyInsights);
   }
+
+  // Generate cross-source insights using ALL connector data together
+  // This is the key function that provides unified context across all connectors
+  const crossSourceInsights = await generateCrossSourceInsights(email, {
+    oura: (ouraResult?.available && ouraResult.data) ? ouraResult.data as OuraData : null,
+    dexcom: (dexcomResult?.available && dexcomResult.data) ? dexcomResult.data as DexcomData : null,
+    whoop: (whoopResult?.available && whoopResult.data) ? whoopResult.data as WhoopData : null,
+    gmail: (gmailResult?.available && gmailResult.data) ? gmailResult.data as GmailPatterns : null,
+    slack: (slackResult?.available && slackResult.data) ? slackResult.data as SlackPatterns : null,
+    spotify: (spotifyResult?.available && spotifyResult.data) ? spotifyResult.data as SpotifyData : null,
+  });
+  allInsights.push(...crossSourceInsights);
 
   // Store all generated insights
   let stored_count = 0;

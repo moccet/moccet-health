@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       // Check if watch is enabled
       supabase
         .from('gmail_watch_subscriptions')
-        .select('id, expiration')
+        .select('id, expiration_timestamp, is_active')
         .eq('user_email', userEmail)
         .maybeSingle(),
 
@@ -119,10 +119,10 @@ export async function GET(request: NextRequest) {
     // Determine drafts enabled status
     const draftsEnabled = settingsResult.data?.auto_draft_enabled ?? false;
 
-    // Determine watch status (check if not expired)
+    // Determine watch status (check if active and not expired)
     let watchEnabled = false;
-    if (watchResult.data?.expiration) {
-      const expirationDate = new Date(watchResult.data.expiration);
+    if (watchResult.data?.is_active && watchResult.data?.expiration_timestamp) {
+      const expirationDate = new Date(watchResult.data.expiration_timestamp);
       watchEnabled = expirationDate > new Date();
     }
 

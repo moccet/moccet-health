@@ -4,6 +4,22 @@
     {
       "path": "/api/cron/sync-all-providers",
       "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-analysis",
+      "schedule": "0 9 * * 0"
+    },
+    {
+      "path": "/api/cron/proactive-engagement?time=morning",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/proactive-engagement?time=midday",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/proactive-engagement?time=evening",
+      "schedule": "0 20 * * *"
     }
   ]
 }

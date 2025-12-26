@@ -17,7 +17,7 @@ export const ELEVENLABS_VOICES = {
 export type VoiceId = keyof typeof ELEVENLABS_VOICES;
 
 interface TTSOptions {
-  voiceId?: VoiceId;
+  voiceId?: VoiceId | string; // Accept either key name or actual ElevenLabs voice ID
   modelId?: string;
   stability?: number;
   similarityBoost?: number;
@@ -25,7 +25,7 @@ interface TTSOptions {
   useSpeakerBoost?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<TTSOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<TTSOptions, 'voiceId'>> & { voiceId: VoiceId } = {
   voiceId: 'rachel',
   modelId: 'eleven_turbo_v2_5', // Updated from deprecated eleven_monolingual_v1
   stability: 0.5,
@@ -33,6 +33,21 @@ const DEFAULT_OPTIONS: Required<TTSOptions> = {
   style: 0,
   useSpeakerBoost: true,
 };
+
+/**
+ * Resolve voice ID - accepts either a key name (e.g., 'bella') or actual ElevenLabs voice ID
+ */
+function resolveVoiceId(voiceIdOrKey: string | undefined): string {
+  if (!voiceIdOrKey) {
+    return ELEVENLABS_VOICES[DEFAULT_OPTIONS.voiceId];
+  }
+  // Check if it's a key in our voices map
+  if (voiceIdOrKey in ELEVENLABS_VOICES) {
+    return ELEVENLABS_VOICES[voiceIdOrKey as VoiceId];
+  }
+  // Otherwise assume it's an actual ElevenLabs voice ID
+  return voiceIdOrKey;
+}
 
 /**
  * Generate speech from text using ElevenLabs
@@ -48,7 +63,7 @@ export async function generateSpeech(
   }
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const voiceId = ELEVENLABS_VOICES[opts.voiceId];
+  const voiceId = resolveVoiceId(opts.voiceId);
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -98,7 +113,7 @@ export async function* streamSpeech(
   }
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const voiceId = ELEVENLABS_VOICES[opts.voiceId];
+  const voiceId = resolveVoiceId(opts.voiceId);
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,

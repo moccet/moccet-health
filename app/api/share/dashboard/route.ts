@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     // Overview of all monitored people
     console.log(`[Share] Fetching dashboard overview for ${email}`);
 
-    const monitoredPeople = await shareRelationshipService.getMonitoredPeople(email);
+    const monitoredPeople = await shareRelationshipService.instance.getMonitoredPeople(email);
 
     // Get recent alerts for all monitored people
     const { data: recentAlerts } = await supabase
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .limit(10);
 
     // Get stats
-    const stats = await shareRelationshipService.getStats(email);
+    const stats = await shareRelationshipService.instance.getStats(email);
 
     return NextResponse.json({
       success: true,
@@ -63,9 +63,11 @@ export async function GET(request: NextRequest) {
 }
 
 async function getPersonDetail(caregiverEmail: string, sharerEmail: string) {
+  const supabase = getServiceClient();
+
   try {
     // Verify caregiver has access
-    const canAccess = await shareRelationshipService.canAccessMetric(
+    const canAccess = await shareRelationshipService.instance.canAccessMetric(
       sharerEmail,
       caregiverEmail,
       'activity' // Base metric to check access

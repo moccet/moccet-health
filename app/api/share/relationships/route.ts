@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
 
     // Get both monitored people (caregiver role) and caregivers (sharer role)
     const [monitoredPeople, caregivers, stats] = await Promise.all([
-      role !== 'sharer' ? shareRelationshipService.getMonitoredPeople(email) : [],
-      role !== 'caregiver' ? shareRelationshipService.getCaregivers(email) : [],
-      shareRelationshipService.getStats(email),
+      role !== 'sharer' ? shareRelationshipService.instance.getMonitoredPeople(email) : [],
+      role !== 'caregiver' ? shareRelationshipService.instance.getCaregivers(email) : [],
+      shareRelationshipService.instance.getStats(email),
     ]);
 
     return NextResponse.json({
@@ -76,10 +76,10 @@ export async function PUT(request: NextRequest) {
     let result;
     switch (action) {
       case 'pause':
-        result = await shareRelationshipService.pauseSharing(email, caregiverEmail, reason);
+        result = await shareRelationshipService.instance.pauseSharing(email, caregiverEmail, reason);
         break;
       case 'resume':
-        result = await shareRelationshipService.resumeSharing(email, caregiverEmail);
+        result = await shareRelationshipService.instance.resumeSharing(email, caregiverEmail);
         break;
       case 'update_role':
         if (!role) {
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest) {
             { status: 400 }
           );
         }
-        result = await shareRelationshipService.updateCaregiverRole(email, caregiverEmail, role);
+        result = await shareRelationshipService.instance.updateCaregiverRole(email, caregiverEmail, role);
         break;
       default:
         return NextResponse.json(
@@ -136,7 +136,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log(`[Share] ${email} revoking sharing with ${caregiverEmail}`);
 
-    const result = await shareRelationshipService.revokeSharing(
+    const result = await shareRelationshipService.instance.revokeSharing(
       email,
       caregiverEmail,
       reason || undefined

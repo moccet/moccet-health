@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     console.log(`[Share] ${email} ${accept ? 'accepting' : 'declining'} invite ${inviteCode}`);
 
     if (accept) {
-      const result = await shareRelationshipService.acceptInvite(inviteCode, email);
+      const result = await shareRelationshipService.instance.acceptInvite(inviteCode, email);
 
       if (!result.success) {
         return NextResponse.json(
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         relationship: result.relationship,
       });
     } else {
-      const result = await shareRelationshipService.declineInvite(inviteCode, email);
+      const result = await shareRelationshipService.instance.declineInvite(inviteCode, email);
 
       if (!result.success) {
         return NextResponse.json(

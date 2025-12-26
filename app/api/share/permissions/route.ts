@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Share] Fetching permissions for relationship ${relationshipId}`);
 
-    const permissions = await shareRelationshipService.getPermissions(relationshipId);
+    const permissions = await shareRelationshipService.instance.getPermissions(relationshipId);
 
     if (!permissions) {
       return NextResponse.json(
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
 
     console.log(`[Share] Updating permissions for relationship ${relationshipId}`);
 
-    const result = await shareRelationshipService.updatePermissions(
+    const result = await shareRelationshipService.instance.updatePermissions(
       relationshipId,
       email,
       permissions

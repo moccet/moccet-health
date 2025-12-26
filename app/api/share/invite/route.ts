@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Share] ${email} inviting ${caregiverEmail} as ${relationshipType}`);
 
-    const result = await shareRelationshipService.createInvite(email, caregiverEmail, {
+    const result = await shareRelationshipService.instance.createInvite(email, caregiverEmail, {
       relationshipType,
       relationshipLabel,
       caregiverRole,
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
     console.log(`[Share] Fetching invites for ${email}`);
 
     // Get pending invites received
-    const pendingInvites = await shareRelationshipService.getPendingInvites(email);
+    const pendingInvites = await shareRelationshipService.instance.getPendingInvites(email);
 
     // Get stats which includes pending sent
-    const stats = await shareRelationshipService.getStats(email);
+    const stats = await shareRelationshipService.instance.getStats(email);
 
     return NextResponse.json({
       success: true,

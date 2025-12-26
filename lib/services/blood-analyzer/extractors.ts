@@ -2,6 +2,7 @@
  * Blood Analyzer Extractors
  * Batch extraction of biomarkers using GPT-4o-mini for cost efficiency
  * Uses OpenAI Assistants API with file_search for PDF analysis
+ * Uses GPT-4o vision for image analysis (PNG, JPG, etc.)
  */
 
 import OpenAI from 'openai';
@@ -14,6 +15,17 @@ import {
 } from './types';
 
 const openai = new OpenAI();
+
+// Image extensions that need vision-based analysis
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+
+/**
+ * Check if a file is an image based on extension
+ */
+export function isImageFile(fileName: string): boolean {
+  const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return IMAGE_EXTENSIONS.includes(ext);
+}
 
 /**
  * Build the extraction prompt for a batch of categories
@@ -94,7 +106,96 @@ function cleanAndParseJSON(text: string): string {
 }
 
 /**
- * Extract biomarkers for a batch of categories from a file using Assistants API
+ * Extract biomarkers from an image using GPT-4o vision
+ */
+async function extractBatchFromImage(
+  imageBase64: string,
+  mimeType: string,
+  batchConfig: BatchConfig
+): Promise<BatchExtractionResult> {
+  const startTime = Date.now();
+
+  console.log(`[Blood Analyzer] Extracting batch from IMAGE: ${batchConfig.name}`);
+  console.log(`[Blood Analyzer] Categories: ${batchConfig.categories.join(', ')}`);
+
+  try {
+    const systemPrompt = buildBatchPrompt(batchConfig.categories);
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o', // GPT-4o has vision capability
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Please analyze this blood test image and extract ALL biomarkers for the categories: ${batchConfig.categories.map(c => CATEGORY_CONFIGS[c].name).join(', ')}.
+
+IMPORTANT: Examine the entire image carefully. Extract EVERY biomarker you find in these categories. Return the complete analysis as JSON.`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${imageBase64}`,
+                detail: 'high'
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 4096,
+      temperature: 0.1
+    });
+
+    let responseText = response.choices[0]?.message?.content || '';
+    responseText = cleanAndParseJSON(responseText);
+
+    const parsed = JSON.parse(responseText);
+    const biomarkers: Biomarker[] = parsed.biomarkers || [];
+
+    // Validate and clean biomarkers
+    const cleanedBiomarkers = biomarkers.filter(b => {
+      if (!b.name || !b.value) {
+        console.warn(`[Blood Analyzer] Skipping invalid biomarker:`, b);
+        return false;
+      }
+      return true;
+    }).map(b => ({
+      ...b,
+      unit: b.unit || '',
+      referenceRange: b.referenceRange || 'Not specified',
+      status: b.status || 'normal',
+      significance: b.significance || '',
+      implications: b.implications || ''
+    }));
+
+    console.log(`[Blood Analyzer] Batch "${batchConfig.name}" extracted ${cleanedBiomarkers.length} biomarkers from image`);
+
+    return {
+      batchName: batchConfig.name,
+      categories: batchConfig.categories,
+      biomarkers: cleanedBiomarkers,
+      rawCount: cleanedBiomarkers.length,
+      processingTimeMs: Date.now() - startTime
+    };
+  } catch (error) {
+    console.error(`[Blood Analyzer] Error extracting batch ${batchConfig.name} from image:`, error);
+    return {
+      batchName: batchConfig.name,
+      categories: batchConfig.categories,
+      biomarkers: [],
+      rawCount: 0,
+      processingTimeMs: Date.now() - startTime
+    };
+  }
+}
+
+/**
+ * Extract biomarkers for a batch of categories from a PDF using Assistants API
  */
 export async function extractBatch(
   openaiFileId: string,
@@ -205,19 +306,59 @@ IMPORTANT: Read ALL pages of the document. Extract EVERY biomarker you find in t
 }
 
 /**
+ * Get MIME type for image files
+ */
+function getImageMimeType(fileName: string): string {
+  const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  const mimeTypes: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+  };
+  return mimeTypes[ext] || 'image/png';
+}
+
+/**
  * Run all batch extractions sequentially
+ * For PDFs: uses Assistants API with file_search
+ * For images: uses GPT-4o vision
  */
 export async function runAllBatchExtractions(
-  openaiFileId: string
+  openaiFileId: string | null,
+  fileBuffer?: Buffer,
+  fileName?: string
 ): Promise<BatchExtractionResult[]> {
   const results: BatchExtractionResult[] = [];
 
-  for (const batchConfig of BATCH_CONFIGS) {
-    const result = await extractBatch(openaiFileId, batchConfig);
-    results.push(result);
+  // Check if this is an image file
+  const isImage = fileName && isImageFile(fileName);
 
-    // Small delay between batches to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  if (isImage && fileBuffer && fileName) {
+    console.log(`[Blood Analyzer] Using VISION mode for image file: ${fileName}`);
+    const imageBase64 = fileBuffer.toString('base64');
+    const mimeType = getImageMimeType(fileName);
+
+    for (const batchConfig of BATCH_CONFIGS) {
+      const result = await extractBatchFromImage(imageBase64, mimeType, batchConfig);
+      results.push(result);
+
+      // Small delay between batches to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } else if (openaiFileId) {
+    console.log(`[Blood Analyzer] Using FILE_SEARCH mode for PDF file`);
+
+    for (const batchConfig of BATCH_CONFIGS) {
+      const result = await extractBatch(openaiFileId, batchConfig);
+      results.push(result);
+
+      // Small delay between batches to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } else {
+    throw new Error('No valid file provided for extraction');
   }
 
   return results;

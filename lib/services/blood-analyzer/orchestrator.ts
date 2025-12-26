@@ -7,7 +7,8 @@ import { BloodAnalysisResult, Biomarker } from './types';
 import {
   uploadFileToOpenAI,
   deleteFileFromOpenAI,
-  runAllBatchExtractions
+  runAllBatchExtractions,
+  isImageFile
 } from './extractors';
 import { validateAndDedupe } from './validator';
 import { generateAnalysis, saveAnalysisToDatabase } from './analyzer';
@@ -30,18 +31,24 @@ export async function runMultiAgentBloodAnalysis(
 ): Promise<BloodAnalysisResult> {
   const startTime = Date.now();
   let openaiFileId: string | null = null;
+  const isImage = isImageFile(fileName);
 
   console.log(`[Blood Analyzer] Starting multi-agent analysis for ${userEmail}`);
   console.log(`[Blood Analyzer] File: ${fileName}, Size: ${fileBuffer.length} bytes`);
+  console.log(`[Blood Analyzer] File type: ${isImage ? 'IMAGE (using vision)' : 'PDF (using file_search)'}`);
 
   try {
-    // Step 1: Upload file to OpenAI
-    console.log(`[Blood Analyzer] Step 1: Uploading file to OpenAI...`);
-    openaiFileId = await uploadFileToOpenAI(fileBuffer, fileName);
+    // Step 1: Upload file to OpenAI (only for PDFs, not images)
+    if (!isImage) {
+      console.log(`[Blood Analyzer] Step 1: Uploading file to OpenAI...`);
+      openaiFileId = await uploadFileToOpenAI(fileBuffer, fileName);
+    } else {
+      console.log(`[Blood Analyzer] Step 1: Skipping OpenAI upload for image (using vision API directly)`);
+    }
 
     // Step 2: Run all batch extractions
     console.log(`[Blood Analyzer] Step 2: Running batch extractions...`);
-    const batchResults = await runAllBatchExtractions(openaiFileId);
+    const batchResults = await runAllBatchExtractions(openaiFileId, fileBuffer, fileName);
 
     // Collect all biomarkers from all batches
     const allBiomarkers: Biomarker[] = [];

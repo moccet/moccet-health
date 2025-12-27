@@ -25,7 +25,7 @@ const corsHeaders = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, question, selectedOption, selectedText, date } = body;
+    const { email, question, questionId, category, selectedOption, selectedText, learnedFact, date } = body;
 
     if (!email || !question || !selectedOption || !date) {
       return NextResponse.json(
@@ -43,8 +43,11 @@ export async function POST(request: NextRequest) {
         {
           user_email: email,
           question,
+          question_id: questionId || null,
+          category: category || null,
           selected_option: selectedOption,
           selected_text: selectedText,
+          learned_fact: learnedFact || null,
           checkin_date: date,
           created_at: new Date().toISOString(),
         },
@@ -68,10 +71,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Also store as a learned fact for MCP context
-    await storeAsLearnedFact(supabase, email, question, selectedOption, selectedText);
+    // Store learned fact - prefer AI-generated fact, fallback to mapped fact
+    if (learnedFact) {
+      await storeDirectLearnedFact(supabase, email, category || 'general', selectedOption, learnedFact);
+    } else {
+      await storeAsLearnedFact(supabase, email, question, selectedOption, selectedText);
+    }
 
-    console.log(`[Daily Check-in API] Stored check-in for ${email}: ${selectedOption}`);
+    console.log(`[Daily Check-in API] Stored check-in for ${email}: ${selectedOption}${learnedFact ? ' with AI fact' : ''}`);
 
     return NextResponse.json(
       {
@@ -92,12 +99,13 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/user/daily-checkin
- * Get user's check-in history
+ * Get user's check-in history or check if completed for a specific date
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const email = searchParams.get('email');
+    const date = searchParams.get('date'); // Optional: check specific date
     const limit = parseInt(searchParams.get('limit') || '30');
 
     if (!email) {
@@ -109,6 +117,31 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
 
+    // If date is provided, check if user has completed check-in for that date
+    if (date) {
+      const { data: todayCheckin, error: todayError } = await supabase
+        .from('user_daily_checkins')
+        .select('*')
+        .eq('user_email', email)
+        .eq('checkin_date', date)
+        .single();
+
+      if (todayError && todayError.code !== 'PGRST116') {
+        // PGRST116 = no rows returned (not an error for us)
+        console.error('[Daily Check-in API] Error checking today:', todayError);
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          hasCompletedToday: !!todayCheckin,
+          checkin: todayCheckin || null,
+        },
+        { headers: corsHeaders }
+      );
+    }
+
+    // Otherwise return history
     const { data, error } = await supabase
       .from('user_daily_checkins')
       .select('*')
@@ -212,6 +245,38 @@ async function storeAsLearnedFact(
     console.log(`[Daily Check-in] Stored learned fact: ${mapping.category} - ${mapping.fact}`);
   } catch (error) {
     console.error('[Daily Check-in] Error storing learned fact:', error);
+  }
+}
+
+/**
+ * Store a direct learned fact from AI-generated questions
+ */
+async function storeDirectLearnedFact(
+  supabase: any,
+  email: string,
+  category: string,
+  optionId: string,
+  learnedFact: string
+) {
+  try {
+    await supabase.from('user_learned_facts').upsert(
+      {
+        user_email: email,
+        fact_category: category,
+        fact_key: `ai_checkin_${optionId}_${Date.now()}`,
+        fact_value: learnedFact,
+        confidence: 0.85,
+        source: 'ai_daily_checkin',
+        last_confirmed: new Date().toISOString(),
+      },
+      {
+        onConflict: 'user_email,fact_key',
+      }
+    );
+
+    console.log(`[Daily Check-in] Stored AI learned fact: ${category} - ${learnedFact}`);
+  } catch (error) {
+    console.error('[Daily Check-in] Error storing AI learned fact:', error);
   }
 }
 

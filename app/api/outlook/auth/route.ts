@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('response_mode', 'query');
-    authUrl.searchParams.append('scope', 'openid profile email User.Read Calendars.Read Calendars.ReadWrite Mail.Read offline_access');
+    authUrl.searchParams.append('scope', 'openid profile email User.Read Calendars.Read Calendars.ReadWrite Mail.Read Mail.ReadWrite Mail.Send MailboxSettings.Read offline_access');
     authUrl.searchParams.append('state', state);
 
     return NextResponse.json({

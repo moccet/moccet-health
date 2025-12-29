@@ -82,9 +82,18 @@ Return ONLY valid JSON, no markdown formatting.`;
 
 /**
  * Clean and parse JSON from AI response
+ * Returns null if the response doesn't contain valid JSON
  */
-function cleanAndParseJSON(text: string): string {
+function cleanAndParseJSON(text: string): { biomarkers: Biomarker[] } | null {
   let cleaned = text.trim();
+
+  // Check if AI returned an error/refusal message instead of JSON
+  const refusalPhrases = ["I'm unable", "I cannot", "I can't", "unable to", "cannot extract", "not able to"];
+  const lowerText = cleaned.toLowerCase();
+  if (refusalPhrases.some(phrase => lowerText.includes(phrase.toLowerCase()))) {
+    console.log(`[Blood Analyzer] AI returned refusal message: "${cleaned.substring(0, 80)}..."`);
+    return null;
+  }
 
   // Strip markdown code blocks
   if (cleaned.startsWith('```json')) {
@@ -98,11 +107,19 @@ function cleanAndParseJSON(text: string): string {
   // Extract JSON object
   const jsonStart = cleaned.indexOf('{');
   const jsonEnd = cleaned.lastIndexOf('}');
-  if (jsonStart !== -1 && jsonEnd !== -1) {
-    cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+  if (jsonStart === -1 || jsonEnd === -1) {
+    console.log(`[Blood Analyzer] No JSON object found in response: "${cleaned.substring(0, 80)}..."`);
+    return null;
   }
 
-  return cleaned;
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.log(`[Blood Analyzer] Failed to parse JSON: "${cleaned.substring(0, 80)}..."`);
+    return null;
+  }
 }
 
 /**
@@ -151,10 +168,21 @@ IMPORTANT: Examine the entire image carefully. Extract EVERY biomarker you find 
       temperature: 0.1
     });
 
-    let responseText = response.choices[0]?.message?.content || '';
-    responseText = cleanAndParseJSON(responseText);
+    const responseText = response.choices[0]?.message?.content || '';
+    const parsed = cleanAndParseJSON(responseText);
 
-    const parsed = JSON.parse(responseText);
+    // If parsing failed (AI returned non-JSON), return empty result
+    if (!parsed) {
+      console.log(`[Blood Analyzer] Batch "${batchConfig.name}" returned no extractable data from image`);
+      return {
+        batchName: batchConfig.name,
+        categories: batchConfig.categories,
+        biomarkers: [],
+        rawCount: 0,
+        processingTimeMs: Date.now() - startTime
+      };
+    }
+
     const biomarkers: Biomarker[] = parsed.biomarkers || [];
 
     // Validate and clean biomarkers
@@ -247,10 +275,23 @@ IMPORTANT: Read ALL pages of the document. Extract EVERY biomarker you find in t
       throw new Error('No valid response from assistant');
     }
 
-    let responseText = assistantMessage.content[0].text.value;
-    responseText = cleanAndParseJSON(responseText);
+    const responseText = assistantMessage.content[0].text.value;
+    const parsed = cleanAndParseJSON(responseText);
 
-    const parsed = JSON.parse(responseText);
+    // If parsing failed (AI returned non-JSON), return empty result
+    if (!parsed) {
+      console.log(`[Blood Analyzer] Batch "${batchConfig.name}" returned no extractable data from PDF`);
+      // Clean up assistant
+      await openai.beta.assistants.delete(assistant.id);
+      return {
+        batchName: batchConfig.name,
+        categories: batchConfig.categories,
+        biomarkers: [],
+        rawCount: 0,
+        processingTimeMs: Date.now() - startTime
+      };
+    }
+
     const biomarkers: Biomarker[] = parsed.biomarkers || [];
 
     // Validate and clean biomarkers

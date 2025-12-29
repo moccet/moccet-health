@@ -17,9 +17,12 @@ import OpenAI from 'openai';
 import { gmail_v1 } from 'googleapis';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createValidatedGmailClient } from '@/lib/services/gmail-client';
+import { createValidatedOutlookMailClient, OutlookMailClient } from '@/lib/services/outlook-mail-client';
 import { EmailStyleProfile, getEmailStyle } from '@/lib/services/email-style-learner';
 import { EmailClassification, EmailToClassify, classifyEmail } from '@/lib/services/email-classifier';
 import { getUserFineTunedModel } from '@/lib/services/email-fine-tuning';
+
+export type EmailProvider = 'gmail' | 'outlook';
 
 // =========================================================================
 // TYPES
@@ -69,6 +72,10 @@ const EmailDraftStateAnnotation = Annotation.Root({
   userEmail: Annotation<string>(),
   userCode: Annotation<string | undefined>(),
   originalEmail: Annotation<OriginalEmail>(),
+  emailProvider: Annotation<EmailProvider>({
+    reducer: (_, y) => y,
+    default: () => 'gmail' as EmailProvider,
+  }),
   existingClassification: Annotation<EmailClassification | null>({
     reducer: (_, y) => y,
     default: () => null,
@@ -105,8 +112,12 @@ const EmailDraftStateAnnotation = Annotation.Root({
     default: () => null,
   }),
 
-  // Gmail Integration
+  // Email Provider Integration (Gmail or Outlook)
   gmailDraftId: Annotation<string | null>({
+    reducer: (_, y) => y,
+    default: () => null,
+  }),
+  outlookDraftId: Annotation<string | null>({
     reducer: (_, y) => y,
     default: () => null,
   }),
@@ -213,6 +224,39 @@ async function createGmailDraft(
   }
 }
 
+/**
+ * Create a draft in Outlook
+ * IMPORTANT: This does NOT mark the original email as read
+ */
+async function createOutlookDraft(
+  client: OutlookMailClient,
+  originalEmail: OriginalEmail,
+  draft: GeneratedDraft
+): Promise<string | null> {
+  try {
+    // Create a reply draft using the original message ID
+    const replyDraft = await client.createReplyDraft(originalEmail.messageId, '');
+
+    if (!replyDraft.id) {
+      throw new Error('Failed to create reply draft - no ID returned');
+    }
+
+    // Update the draft with the generated content
+    await client.updateDraft(replyDraft.id, {
+      subject: draft.subject,
+      body: {
+        contentType: 'text',
+        content: draft.body,
+      },
+    });
+
+    return replyDraft.id;
+  } catch (error) {
+    console.error('[EmailDraftAgent] Failed to create Outlook draft:', error);
+    return null;
+  }
+}
+
 // =========================================================================
 // DATABASE OPERATIONS
 // =========================================================================
@@ -223,10 +267,14 @@ async function updateEmailDraft(
   draft: GeneratedDraft,
   classification: EmailClassification | null,
   gmailDraftId: string | null,
+  outlookDraftId: string | null,
   modelUsed: string,
+  emailProvider: EmailProvider,
   userCode?: string
 ): Promise<string | null> {
   const supabase = createAdminClient();
+
+  const providerDraftId = emailProvider === 'outlook' ? outlookDraftId : gmailDraftId;
 
   // Update the existing placeholder record with full draft data
   const { error } = await supabase
@@ -239,6 +287,8 @@ async function updateEmailDraft(
       original_received_at: originalEmail.receivedAt.toISOString(),
       original_labels: originalEmail.labels,
       gmail_draft_id: gmailDraftId,
+      outlook_draft_id: outlookDraftId,
+      email_provider: emailProvider,
       draft_subject: draft.subject,
       draft_body: draft.body,
       draft_html_body: draft.htmlBody || null,
@@ -247,10 +297,11 @@ async function updateEmailDraft(
       classification_reasoning: classification?.reasoning || null,
       response_points: classification?.suggestedResponsePoints || [],
       confidence_score: classification?.confidence || null,
-      status: gmailDraftId ? 'created' : 'pending',
+      status: providerDraftId ? 'created' : 'pending',
       reasoning_steps: [draft.reasoning],
       generation_model: modelUsed,
       gmail_created_at: gmailDraftId ? new Date().toISOString() : null,
+      outlook_created_at: outlookDraftId ? new Date().toISOString() : null,
     })
     .eq('id', existingDraftId);
 
@@ -642,10 +693,11 @@ async function generateNode(state: EmailDraftState): Promise<Partial<EmailDraftS
 }
 
 /**
- * Create Gmail Draft node - Save draft to Gmail
+ * Create Draft node - Save draft to Gmail or Outlook based on provider
  */
 async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDraftState>> {
-  console.log('[EmailDraftAgent] Creating Gmail draft...');
+  const provider = state.emailProvider || 'gmail';
+  console.log(`[EmailDraftAgent] Creating ${provider} draft...`);
 
   if (!state.generatedDraft) {
     return {
@@ -662,19 +714,36 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
   }
 
   let gmailDraftId: string | null = null;
+  let outlookDraftId: string | null = null;
 
-  // Create Gmail draft if enabled and not requiring approval
+  // Create draft in the appropriate provider if enabled and not requiring approval
   if (state.settings.autoCreateInGmail && !state.settings.requireApproval) {
-    const gmail = await createGmailClient(state.userEmail, state.userCode);
-    if (gmail) {
-      gmailDraftId = await createGmailDraft(gmail, state.originalEmail, state.generatedDraft);
-      if (!gmailDraftId) {
-        console.error(`[EmailDraftAgent] Failed to create Gmail draft for ${state.userEmail} - draft will be stored locally only`);
+    if (provider === 'outlook') {
+      // Create Outlook draft
+      const { client, error } = await createValidatedOutlookMailClient(state.userEmail, state.userCode);
+      if (client) {
+        outlookDraftId = await createOutlookDraft(client, state.originalEmail, state.generatedDraft);
+        if (!outlookDraftId) {
+          console.error(`[EmailDraftAgent] Failed to create Outlook draft for ${state.userEmail} - draft will be stored locally only`);
+        }
+      } else {
+        console.error(`[EmailDraftAgent] Outlook client creation failed for ${state.userEmail}: ${error}`);
       }
     } else {
-      console.error(`[EmailDraftAgent] Gmail client creation failed for ${state.userEmail} - token may be expired`);
+      // Create Gmail draft
+      const gmail = await createGmailClient(state.userEmail, state.userCode);
+      if (gmail) {
+        gmailDraftId = await createGmailDraft(gmail, state.originalEmail, state.generatedDraft);
+        if (!gmailDraftId) {
+          console.error(`[EmailDraftAgent] Failed to create Gmail draft for ${state.userEmail} - draft will be stored locally only`);
+        }
+      } else {
+        console.error(`[EmailDraftAgent] Gmail client creation failed for ${state.userEmail} - token may be expired`);
+      }
     }
   }
+
+  const providerDraftId = provider === 'outlook' ? outlookDraftId : gmailDraftId;
 
   // Update the existing draft record (created during lock acquisition)
   const draftRecordId = await updateEmailDraft(
@@ -683,18 +752,21 @@ async function createDraftNode(state: EmailDraftState): Promise<Partial<EmailDra
     state.generatedDraft,
     state.classification,
     gmailDraftId,
+    outlookDraftId,
     state.modelUsed,
+    provider,
     state.userCode
   );
 
   return {
     gmailDraftId,
+    outlookDraftId,
     draftRecordId,
     status: 'completed',
     reasoning: [
-      gmailDraftId
-        ? `Created Gmail draft (ID: ${gmailDraftId}) using ${state.isFineTuned ? 'fine-tuned' : 'base'} model`
-        : 'Stored draft locally (Gmail creation skipped or failed)',
+      providerDraftId
+        ? `Created ${provider} draft (ID: ${providerDraftId}) using ${state.isFineTuned ? 'fine-tuned' : 'base'} model`
+        : `Stored draft locally (${provider} creation skipped or failed)`,
     ],
   };
 }
@@ -745,6 +817,7 @@ export interface EmailDraftResult {
   skipped: boolean;
   draftId?: string;
   gmailDraftId?: string;
+  outlookDraftId?: string;
   draft?: GeneratedDraft;
   classification?: EmailClassification;
   modelUsed?: string;
@@ -760,15 +833,17 @@ export interface EmailDraftResult {
  * @param originalEmail - The email to respond to
  * @param userCode - Optional user code
  * @param existingClassification - Optional pre-computed classification to skip re-classification
+ * @param emailProvider - Email provider ('gmail' or 'outlook'), defaults to 'gmail'
  * @returns Draft result
  */
 export async function runEmailDraftAgent(
   userEmail: string,
   originalEmail: OriginalEmail,
   userCode?: string,
-  existingClassification?: EmailClassification
+  existingClassification?: EmailClassification,
+  emailProvider: EmailProvider = 'gmail'
 ): Promise<EmailDraftResult> {
-  console.log(`[EmailDraftAgent] Starting for ${userEmail}, email: ${originalEmail.subject}${existingClassification ? ' (using existing classification)' : ''}`);
+  console.log(`[EmailDraftAgent] Starting for ${userEmail}, email: ${originalEmail.subject}, provider: ${emailProvider}${existingClassification ? ' (using existing classification)' : ''}`);
   console.log(`[EmailDraftAgent] existingClassification.needsResponse: ${existingClassification?.needsResponse}`);
 
   const agent = createEmailDraftAgent();
@@ -778,19 +853,22 @@ export async function runEmailDraftAgent(
     userEmail,
     userCode,
     originalEmail,
+    emailProvider,
     existingClassification: existingClassification || null,
   };
 
   try {
     const result = await agent.invoke(initialState);
 
-    console.log(`[EmailDraftAgent] Completed for ${originalEmail.subject}: status=${result.status}, draftId=${result.draftRecordId}, gmailDraftId=${result.gmailDraftId}`);
+    const providerDraftId = emailProvider === 'outlook' ? result.outlookDraftId : result.gmailDraftId;
+    console.log(`[EmailDraftAgent] Completed for ${originalEmail.subject}: status=${result.status}, draftId=${result.draftRecordId}, ${emailProvider}DraftId=${providerDraftId}`);
 
     return {
       success: result.status === 'completed',
       skipped: result.status === 'skipped',
       draftId: result.draftRecordId || undefined,
       gmailDraftId: result.gmailDraftId || undefined,
+      outlookDraftId: result.outlookDraftId || undefined,
       draft: result.generatedDraft || undefined,
       classification: result.classification || undefined,
       modelUsed: result.modelUsed || undefined,

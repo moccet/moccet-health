@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createAdminClient } from '@/lib/supabase/server';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,10 +16,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get optional parameters from request
+    // Get parameters from request
     const body = await request.json();
+    const email = body.email;
     const page = body.page || 1;
     const perPage = body.perPage || 30;
+
+    if (!email) {
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      );
+    }
 
     console.log(`[Strava] Syncing activities for athlete ${athleteId}`);
 
@@ -97,9 +107,57 @@ export async function POST(request: NextRequest) {
     // TODO: Store this data in your database for the user
     // For now, we just return it
 
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze workout trends and correlate with life events
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Strava] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Strava data for analysis
+        const stravaData = {
+          workouts: transformedActivities.map((activity: any) => ({
+            date: activity.startDate,
+            type: activity.type,
+            distance: activity.distance,
+            duration: activity.movingTime,
+            calories: activity.calories,
+            avgHeartRate: activity.averageHeartrate,
+            maxHeartRate: activity.maxHeartrate,
+          })),
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, null, null, stravaData);
+
+        console.log(`[Strava] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the sync if analysis fails
+      console.error('[Strava] Health analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       data: syncedData,
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

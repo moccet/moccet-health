@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { parseStringPromise } from 'xml2js';
 import AdmZip from 'adm-zip';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 export const maxDuration = 60;
 
@@ -86,7 +87,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save health data' }, { status: 500 });
     }
 
-    console.log('[Apple Health] ✅ Data saved successfully\n');
+    console.log('[Apple Health] ✅ Data saved successfully');
+
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze trends and correlate with life events
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Apple Health] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Apple Health data for analysis
+        const appleHealthData = {
+          dailyMetrics: metrics.steps?.daily?.map((d: { date: string; value: number }) => ({
+            date: d.date,
+            steps: d.value,
+          })) || [],
+          heartRate: {
+            average: metrics.heartRate?.average || 0,
+            resting: metrics.heartRate?.resting || 0,
+          },
+          sleep: {
+            averageHours: parseFloat(metrics.sleep?.averageHours || '0'),
+            records: metrics.sleep?.records || [],
+          },
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, null, null, appleHealthData);
+
+        console.log(`[Apple Health] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the upload if analysis fails
+      console.error('[Apple Health] Health analysis error (non-fatal):', analysisError);
+    }
+
+    console.log('[Apple Health] ✅ Upload complete\n');
 
     return NextResponse.json({
       success: true,
@@ -96,7 +145,12 @@ export async function POST(req: NextRequest) {
         heartRate: metrics.heartRate?.average || 0,
         sleep: metrics.sleep?.averageHours || 0,
         workouts: metrics.workouts?.count || 0,
-      }
+      },
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

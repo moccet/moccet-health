@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -400,6 +401,54 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Whoop Fetch] Successfully completed for ${email}`);
 
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze trends and correlate with life events
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Whoop Fetch] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Whoop data for analysis
+        const whoopData = {
+          recoveryData: cycles
+            .filter(c => c.recovery)
+            .map(c => ({
+              date: c.days?.[0],
+              recovery_score: c.recovery!.score,
+              hrv_rmssd_milli: c.recovery!.hrv_rmssd,
+            })),
+          sleepData: cycles
+            .filter(c => c.sleep)
+            .map(c => ({
+              date: c.days?.[0],
+              quality_duration_ms: c.sleep!.duration_millis,
+              sleep_performance_percentage: c.sleep!.sleep_efficiency,
+            })),
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, null, whoopData, null);
+
+        console.log(`[Whoop Fetch] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the fetch if analysis fails
+      console.error('[Whoop Fetch] Health analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       cyclesAnalyzed: cycles.length,
@@ -408,7 +457,12 @@ export async function POST(request: NextRequest) {
       dataPeriod: {
         start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0],
-      }
+      },
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

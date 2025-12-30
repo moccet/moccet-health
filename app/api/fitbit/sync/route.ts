@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createAdminClient } from '@/lib/supabase/server';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,9 +16,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get date parameter from request (defaults to today)
+    // Get parameters from request
     const body = await request.json();
+    const email = body.email;
     const date = body.date || new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+    if (!email) {
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      );
+    }
 
     console.log(`[Fitbit] Syncing data for user ${userId} on date ${date}`);
 
@@ -94,9 +104,63 @@ export async function POST(request: NextRequest) {
     // TODO: Store this data in your database for the user
     // For now, we just return it
 
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze sleep, heart rate, and activity trends
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Fitbit] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Fitbit data for analysis
+        const fitbitData = {
+          sleep: {
+            totalMinutes: syncedData.sleep.totalMinutesAsleep,
+            efficiency: syncedData.sleep.efficiency,
+            stages: syncedData.sleep.stages,
+          },
+          heartRate: {
+            resting: syncedData.heartRate.restingHeartRate,
+            zones: syncedData.heartRate.zones,
+          },
+          activity: {
+            steps: syncedData.activity.steps,
+            activeMinutes: syncedData.activity.activeMinutes,
+            calories: syncedData.activity.caloriesBurned,
+          },
+          date: syncedData.date,
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, null, null, fitbitData);
+
+        console.log(`[Fitbit] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the sync if analysis fails
+      console.error('[Fitbit] Health analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       data: syncedData,
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

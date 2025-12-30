@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SlackPatterns } from '@/lib/services/ecosystem-fetcher';
+import { analyzeSlackForLifeContext, mergeAndStoreLifeContext } from '@/lib/services/content-sentiment-analyzer';
 
 // Reuse SlackPatterns type since Teams chat patterns are structurally identical
 type TeamsPatterns = SlackPatterns;
@@ -43,6 +44,7 @@ interface MessageData {
   isWeekend: boolean;
   isAfterHours: boolean;
   chatId: string;
+  content?: string; // Message content for life context analysis
 }
 
 // Microsoft Graph Chat type
@@ -375,7 +377,8 @@ export async function POST(request: NextRequest) {
                 dayOfWeek,
                 isWeekend,
                 isAfterHours,
-                chatId: chat.id
+                chatId: chat.id,
+                content: message.body?.content || '', // Store message content for life context analysis
               });
             }
           }
@@ -481,6 +484,49 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Teams Fetch] Successfully completed for ${email}`);
 
+    // =====================================================
+    // TRIGGER LIFE CONTEXT ANALYSIS (Pro/Max feature)
+    // Detect life events from Teams messages
+    // =====================================================
+    let lifeContextResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium && messageData.length > 0) {
+        console.log(`[Teams Fetch] Running life context analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Format Teams messages for life context analysis (reuse Slack analyzer)
+        const messagesForAnalysis = messageData
+          .filter(msg => msg.content && msg.content.length > 0)
+          .map(msg => ({
+            text: msg.content || '',
+            timestamp: msg.timestamp,
+            channel: msg.chatId,
+            isAfterHours: msg.isAfterHours,
+          }));
+
+        if (messagesForAnalysis.length > 0) {
+          lifeContextResult = await analyzeSlackForLifeContext(messagesForAnalysis);
+          await mergeAndStoreLifeContext(email, lifeContextResult, 'teams');
+          console.log(`[Teams Fetch] Life context analysis complete: ${lifeContextResult.upcomingEvents?.length || 0} events, ${lifeContextResult.activePatterns?.length || 0} patterns detected`);
+        } else {
+          console.log(`[Teams Fetch] No message content available for life context analysis`);
+        }
+      }
+    } catch (analysisError) {
+      // Don't fail the fetch if analysis fails
+      console.error('[Teams Fetch] Life context analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       patterns,
@@ -490,7 +536,12 @@ export async function POST(request: NextRequest) {
       dataPeriod: {
         start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
-      }
+      },
+      lifeContext: lifeContextResult ? {
+        eventsDetected: lifeContextResult.upcomingEvents?.length || 0,
+        patternsDetected: lifeContextResult.activePatterns?.length || 0,
+        sentiment: lifeContextResult.sentiment,
+      } : null,
     });
 
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createAdminClient } from '@/lib/supabase/server';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -129,6 +130,52 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Oura Sync] Successfully synced and stored data for ${email}`);
 
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze trends and correlate with life events
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      // Check if user is Pro/Max
+      const { data: userData } = await supabase
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Oura Sync] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Oura data for analysis
+        const ouraData = {
+          hrvData: (allData.heart_rate || []).map((hr: any) => ({
+            day: hr.day || hr.timestamp?.split('T')[0],
+            average_hrv: hr.hrv?.rmssd || hr.average_hrv,
+          })),
+          sleepData: (allData.sleep || []).map((s: any) => ({
+            day: s.day,
+            total_sleep_duration: s.total_sleep_duration,
+            efficiency: s.efficiency,
+            sleep_score: s.score,
+          })),
+          readinessData: (allData.daily_readiness || []).map((r: any) => ({
+            day: r.day,
+            score: r.score,
+          })),
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, ouraData, null, null);
+
+        console.log(`[Oura Sync] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the sync if analysis fails
+      console.error('[Oura Sync] Health analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Oura data synced successfully',
@@ -139,6 +186,11 @@ export async function POST(request: NextRequest) {
         heart_rate_records: allData.heart_rate?.length || 0,
         workout_records: allData.workout?.length || 0,
       },
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

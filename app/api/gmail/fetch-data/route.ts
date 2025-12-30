@@ -4,6 +4,12 @@ import type { calendar_v3 } from 'googleapis';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { GmailPatterns } from '@/lib/services/ecosystem-fetcher';
+import {
+  analyzeEmailSubjects,
+  storeSentimentAnalysis,
+  analyzeEmailsForLifeContext,
+  storeLifeContext,
+} from '@/lib/services/content-sentiment-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -44,6 +50,7 @@ interface EmailData {
   dayOfWeek: number;
   isWeekend: boolean;
   isAfterHours: boolean;
+  subject?: string; // For sentiment analysis
 }
 
 /**
@@ -704,11 +711,15 @@ export async function POST(request: NextRequest) {
           userId: 'me',
           id: message.id!,
           format: 'metadata',
-          metadataHeaders: ['Date']
+          metadataHeaders: ['Date', 'Subject'] // Added Subject for sentiment analysis
         });
 
         const dateHeader = messageDetail.data.payload?.headers?.find(
           h => h.name?.toLowerCase() === 'date'
+        );
+
+        const subjectHeader = messageDetail.data.payload?.headers?.find(
+          h => h.name?.toLowerCase() === 'subject'
         );
 
         if (dateHeader?.value) {
@@ -724,7 +735,8 @@ export async function POST(request: NextRequest) {
             hour,
             dayOfWeek,
             isWeekend,
-            isAfterHours
+            isAfterHours,
+            subject: subjectHeader?.value || ''
           });
         }
       } catch (err) {
@@ -765,6 +777,105 @@ export async function POST(request: NextRequest) {
     patterns.insights = generateInsights(patterns);
 
     console.log('[Gmail Fetch] Patterns calculated:', JSON.stringify(patterns, null, 2));
+
+    // =====================================================
+    // SENTIMENT & LIFE CONTEXT ANALYSIS (tier-based)
+    // =====================================================
+    try {
+      const adminClient = createAdminClient();
+
+      // Check user's subscription tier and preferences in parallel
+      const [prefsResult, userResult] = await Promise.all([
+        adminClient
+          .from('sentiment_analysis_preferences')
+          .select('gmail_subject_analysis, gmail_snippet_analysis')
+          .eq('user_email', email)
+          .single(),
+        adminClient
+          .from('users')
+          .select('subscription_tier')
+          .eq('email', email)
+          .single()
+      ]);
+
+      const sentimentPrefs = prefsResult.data;
+      const subscriptionTier = userResult.data?.subscription_tier || 'free';
+      const sentimentEnabled = sentimentPrefs?.gmail_subject_analysis || sentimentPrefs?.gmail_snippet_analysis;
+      const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
+
+      // Only analyze if user opted in and we have enough data
+      if (sentimentEnabled && emailData.length >= 10) {
+        console.log(`[Gmail Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis for ${email} (${subscriptionTier} tier, ${emailData.length} emails)`);
+
+        // Prepare all subjects with metadata
+        const allSubjects = emailData
+          .filter(e => e.subject && e.subject.trim().length > 0)
+          .map(e => ({
+            subject: e.subject!,
+            timestamp: e.timestamp,
+            isAfterHours: e.isAfterHours
+          }));
+
+        if (isPremium && allSubjects.length >= 5) {
+          // Pro/Max: Full life context analysis with AI
+          // Analyze ALL emails together to detect patterns across time
+          const lifeContext = await analyzeEmailsForLifeContext(allSubjects);
+
+          // Store life context
+          await storeLifeContext(email, lifeContext);
+
+          // Also store daily sentiment for trend tracking
+          const emailsByDate: Record<string, typeof allSubjects> = {};
+          for (const subj of allSubjects) {
+            const date = subj.timestamp.split('T')[0];
+            if (!emailsByDate[date]) emailsByDate[date] = [];
+            emailsByDate[date].push(subj);
+          }
+
+          for (const [date, daySubjects] of Object.entries(emailsByDate)) {
+            if (daySubjects.length >= 3) {
+              await storeSentimentAnalysis(email, 'gmail', date, lifeContext.sentiment);
+            }
+          }
+
+          console.log(`[Gmail Fetch] Life context analysis complete: ${lifeContext.upcomingEvents.length} events, ${lifeContext.activePatterns.length} patterns detected`);
+        } else {
+          // Free tier: Basic keyword-based sentiment analysis per day
+          const emailsByDate: Record<string, typeof emailData> = {};
+          for (const emailItem of emailData) {
+            const date = emailItem.timestamp.split('T')[0];
+            if (!emailsByDate[date]) emailsByDate[date] = [];
+            emailsByDate[date].push(emailItem);
+          }
+
+          let analyzedDays = 0;
+          for (const [date, dayEmails] of Object.entries(emailsByDate)) {
+            if (dayEmails.length < 3) continue;
+
+            const subjects = dayEmails
+              .filter(e => e.subject && e.subject.trim().length > 0)
+              .map(e => ({
+                subject: e.subject!,
+                timestamp: e.timestamp,
+                isAfterHours: e.isAfterHours
+              }));
+
+            if (subjects.length < 3) continue;
+
+            const sentiment = await analyzeEmailSubjects(subjects);
+            await storeSentimentAnalysis(email, 'gmail', date, sentiment);
+            analyzedDays++;
+          }
+
+          console.log(`[Gmail Fetch] Sentiment analysis complete: ${analyzedDays} days analyzed`);
+        }
+      } else if (!sentimentEnabled) {
+        console.log(`[Gmail Fetch] Content analysis skipped - user not opted in`);
+      }
+    } catch (sentimentError) {
+      // Don't fail the entire request if analysis fails
+      console.error('[Gmail Fetch] Content analysis error (non-fatal):', sentimentError);
+    }
 
     // Calculate metrics
     const stressScore =

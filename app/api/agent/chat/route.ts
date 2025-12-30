@@ -13,6 +13,8 @@ import { runChefAgent } from '@/lib/agents/moccet-chef';
 import { UserMemoryService } from '@/lib/services/memory/user-memory';
 import { buildMemoryAwarePrompt } from '@/lib/agents/prompts';
 import { generateSpeech, isElevenLabsConfigured, VoiceId } from '@/lib/services/tts-service';
+import { getUserContext, formatContextForPrompt, getUserSubscriptionTier } from '@/lib/services/user-context-service';
+import { saveMessage } from '@/lib/services/conversation-compactor';
 
 // Agent types
 type AgentType = 'moccet-chef' | 'moccet-health' | 'moccet-orchestrator';
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[CHAT] Step 2: Parsing request body...');
     const body = await request.json();
-    const { message, threadId: providedThreadId, requestTTS, voiceId, requestedAgent } = body;
+    const { message, threadId: providedThreadId, requestTTS, voiceId, requestedAgent, skipAcknowledgment = true } = body;
     console.log('[CHAT] Message:', message?.substring(0, 100));
     console.log('[CHAT] ThreadId:', providedThreadId);
     console.log('[CHAT] RequestTTS:', requestTTS);
@@ -214,13 +216,6 @@ export async function POST(request: NextRequest) {
           );
         };
 
-        // INSTANT ACKNOWLEDGMENT - sent before ANY processing
-        console.log('[CHAT] Sending instant acknowledgment:', acknowledgment.text);
-        sendEvent('acknowledgment', {
-          text: acknowledgment.text,
-          audioFile: acknowledgment.audioFile,
-        });
-
         // Send agent_active event to indicate which agent is handling the request
         console.log('[CHAT] Sending agent_active event:', agentInfo.displayName);
         sendEvent('agent_active', {
@@ -229,46 +224,69 @@ export async function POST(request: NextRequest) {
           icon: agentInfo.icon,
         });
 
-        // Generate TTS for acknowledgment (in parallel with other processing)
+        // INSTANT ACKNOWLEDGMENT - sent before ANY processing (if not skipped)
         let ackAudioPromise: Promise<string | null> | null = null;
-        if (ttsEnabled) {
-          console.log('[CHAT] Generating TTS for acknowledgment...');
-          ackAudioPromise = generateSpeech(acknowledgment.text, { voiceId: (voiceId as VoiceId) || 'rachel' })
-            .then(audio => {
-              console.log('[CHAT] Acknowledgment TTS generated, length:', audio.length);
-              // Send audio chunk immediately
-              sendEvent('audio_chunk', {
-                audio,
-                index: -1, // Use -1 to indicate acknowledgment audio
-                isFinal: false,
-                isAcknowledgment: true,
+        if (!skipAcknowledgment) {
+          console.log('[CHAT] Sending instant acknowledgment:', acknowledgment.text);
+          sendEvent('acknowledgment', {
+            text: acknowledgment.text,
+            audioFile: acknowledgment.audioFile,
+          });
+
+          // Generate TTS for acknowledgment (in parallel with other processing)
+          if (ttsEnabled) {
+            console.log('[CHAT] Generating TTS for acknowledgment...');
+            ackAudioPromise = generateSpeech(acknowledgment.text, { voiceId: (voiceId as VoiceId) || 'rachel' })
+              .then(audio => {
+                console.log('[CHAT] Acknowledgment TTS generated, length:', audio.length);
+                // Send audio chunk immediately
+                sendEvent('audio_chunk', {
+                  audio,
+                  index: -1, // Use -1 to indicate acknowledgment audio
+                  isFinal: false,
+                  isAcknowledgment: true,
+                });
+                return audio;
+              })
+              .catch(err => {
+                console.error('[CHAT] Error generating acknowledgment TTS:', err);
+                return null;
               });
-              return audio;
-            })
-            .catch(err => {
-              console.error('[CHAT] Error generating acknowledgment TTS:', err);
-              return null;
-            });
+          }
         }
 
         try {
-          // NOW do the slow memory loading (user already has acknowledgment)
-          console.log('[CHAT] Step 3: Initializing memory service...');
+          // NOW do the slow memory/context loading (user already has acknowledgment)
+          console.log('[CHAT] Step 3: Initializing services...');
           const memoryService = new UserMemoryService();
 
-          // Get user's memory context for personalization
-          console.log('[CHAT] Step 4: Getting memory context...');
-          let memoryContext;
-          try {
-            memoryContext = await memoryService.getMemoryContext(userEmail);
-            console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
-          } catch (memoryError) {
-            console.error('[CHAT] ERROR getting memory context:', memoryError);
-            throw memoryError;
-          }
+          // Get user's subscription tier for context limits
+          console.log('[CHAT] Step 4: Getting subscription tier...');
+          const subscriptionTier = await getUserSubscriptionTier(userEmail);
+          console.log('[CHAT] Subscription tier:', subscriptionTier);
+
+          // Get user's memory context for personalization (parallel with user context)
+          console.log('[CHAT] Step 5: Getting memory and user context...');
+          const [memoryContext, userContext] = await Promise.all([
+            memoryService.getMemoryContext(userEmail).catch((err) => {
+              console.error('[CHAT] ERROR getting memory context:', err);
+              return { facts: [], style: null, outcomes: [], preferences: [], recentSummary: null, recentConversations: [] };
+            }),
+            getUserContext(userEmail, message, {
+              subscriptionTier,
+              threadId: providedThreadId,
+              includeConversation: true,
+              useAISelection: subscriptionTier !== 'free', // Only use AI selection for paid tiers
+            }).catch((err) => {
+              console.error('[CHAT] ERROR getting user context:', err);
+              return null;
+            }),
+          ]);
+          console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
+          console.log('[CHAT] User context loaded, sources:', userContext?.selectionResult?.sources?.join(', ') || 'none');
 
           // Get existing conversation if continuing a thread
-          console.log('[CHAT] Step 5: Getting existing conversation...');
+          console.log('[CHAT] Step 6: Getting existing conversation...');
           let existingConversation = null;
           if (providedThreadId) {
             try {
@@ -281,8 +299,16 @@ export async function POST(request: NextRequest) {
           }
 
           // Build memory-aware system prompt
-          console.log('[CHAT] Step 6: Building memory-aware prompt...');
+          console.log('[CHAT] Step 7: Building context-aware prompt...');
           const memoryPrompt = buildMemoryAwarePrompt(memoryContext);
+
+          // Format user context for prompt
+          let userContextPrompt = '';
+          if (userContext) {
+            const formattedContext = formatContextForPrompt(userContext, subscriptionTier);
+            userContextPrompt = formattedContext.systemPromptAddition;
+            console.log('[CHAT] User context formatted, token estimate:', formattedContext.tokenEstimate);
+          }
 
           // ================================================================
           // AGENT ROUTING - Route to appropriate agent based on classification
@@ -355,7 +381,7 @@ export async function POST(request: NextRequest) {
                 recipe: chefResult.recipe,
               });
 
-              // Save conversation
+              // Save conversation to both memory and history
               const conversationMessages = existingConversation?.messages || [];
               conversationMessages.push({
                 role: 'user',
@@ -369,12 +395,25 @@ export async function POST(request: NextRequest) {
               });
 
               try {
+                // Save to existing memory system
                 await memoryService.saveConversation(
                   userEmail,
                   threadId,
                   conversationMessages,
                   extractTopic(message)
                 );
+
+                // Also save to new conversation_history table for compaction
+                await Promise.all([
+                  saveMessage(userEmail, 'user', message, {
+                    threadId,
+                    agent: 'moccet-chef',
+                  }),
+                  saveMessage(userEmail, 'assistant', finalResponse, {
+                    threadId,
+                    agent: 'moccet-chef',
+                  }),
+                ]);
               } catch (saveError) {
                 console.error('[CHAT] Error saving conversation:', saveError);
               }
@@ -399,7 +438,7 @@ export async function POST(request: NextRequest) {
           // ================================================================
 
           // Create agent
-          console.log('[CHAT] Step 7: Creating health agent...');
+          console.log('[CHAT] Step 8: Creating health agent...');
           let agent;
           try {
             agent = createHealthAgent();
@@ -417,7 +456,7 @@ export async function POST(request: NextRequest) {
             timestamp: new Date().toISOString(),
           });
 
-          // Initial state with memory context
+          // Initial state with memory context and user context
           const initialState: Partial<AgentState> = {
             taskId: threadId,
             userEmail,
@@ -425,12 +464,14 @@ export async function POST(request: NextRequest) {
             userContext: {
               memory: memoryContext,
               memoryPrompt,
+              userContextPrompt, // NEW: Full user health/data context
               conversationHistory: conversationMessages,
+              subscriptionTier, // NEW: For tier-aware responses
             },
             currentStep: 0,
             maxSteps: 15,
           };
-          console.log('[CHAT] Initial state prepared');
+          console.log('[CHAT] Initial state prepared with user context');
 
           // Send start event
           sendEvent('start', {
@@ -444,7 +485,7 @@ export async function POST(request: NextRequest) {
           let agentReasoning: any[] = [];
 
           // Stream agent execution
-          console.log('[CHAT] Step 8: Starting agent stream...');
+          console.log('[CHAT] Step 9: Starting agent stream...');
           let streamEventCount = 0;
           const agentStream = await agent.stream(initialState);
           console.log('[CHAT] Agent stream obtained, iterating...');
@@ -605,8 +646,8 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Save conversation to memory
-          console.log('[CHAT] Step 9: Saving conversation to memory...');
+          // Save conversation to memory and conversation history
+          console.log('[CHAT] Step 10: Saving conversation to memory and history...');
           conversationMessages.push({
             role: 'assistant',
             content: finalResponse,
@@ -614,20 +655,34 @@ export async function POST(request: NextRequest) {
           });
 
           try {
+            // Save to existing memory system
             await memoryService.saveConversation(
               userEmail,
               threadId,
               conversationMessages,
               extractTopic(message)
             );
-            console.log('[CHAT] Conversation saved successfully');
+            console.log('[CHAT] Conversation saved to memory');
+
+            // Also save to new conversation_history table for compaction
+            await Promise.all([
+              saveMessage(userEmail, 'user', message, {
+                threadId,
+                agent: agentType,
+              }),
+              saveMessage(userEmail, 'assistant', finalResponse, {
+                threadId,
+                agent: agentType,
+              }),
+            ]);
+            console.log('[CHAT] Conversation saved to history table');
           } catch (saveError) {
             console.error('[CHAT] ERROR saving conversation:', saveError);
             // Don't throw - continue anyway
           }
 
           // Learn from the interaction
-          console.log('[CHAT] Step 10: Learning from interaction...');
+          console.log('[CHAT] Step 11: Learning from interaction...');
           try {
             await learnFromInteraction(memoryService, userEmail, message, finalResponse, agentReasoning);
             console.log('[CHAT] Learning complete');

@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SlackPatterns } from '@/lib/services/ecosystem-fetcher';
+import {
+  analyzeMessageBatch,
+  storeSentimentAnalysis,
+  analyzeSlackForLifeContext,
+  mergeAndStoreLifeContext,
+} from '@/lib/services/content-sentiment-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -693,6 +699,107 @@ export async function POST(request: NextRequest) {
 
     console.log('[Slack Fetch] Patterns calculated:', JSON.stringify(patterns, null, 2));
 
+    // ========================================================================
+    // SENTIMENT & LIFE CONTEXT ANALYSIS (tier-based)
+    // Free: Basic sentiment analysis
+    // Pro/Max: Full life context detection (work events, team dynamics, patterns)
+    // ========================================================================
+    let sentimentAnalyzed = false;
+    try {
+      // Check user's subscription tier and preferences in parallel
+      const [prefsResult, userResult] = await Promise.all([
+        supabase
+          .from('sentiment_analysis_preferences')
+          .select('slack_content_analysis')
+          .eq('user_email', email)
+          .single(),
+        supabase
+          .from('users')
+          .select('subscription_tier')
+          .eq('email', email)
+          .single()
+      ]);
+
+      const sentimentEnabled = prefsResult.data?.slack_content_analysis ?? false;
+      const subscriptionTier = userResult.data?.subscription_tier || 'free';
+      const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
+
+      if (sentimentEnabled && messageData.length >= 10) {
+        console.log(`[Slack Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis (${subscriptionTier} tier)`);
+
+        // Prepare all messages with text
+        const messagesWithText = messageData
+          .filter(msg => msg.text && msg.text.trim().length > 0)
+          .map(msg => ({
+            text: msg.text!,
+            timestamp: msg.timestamp,
+            channel: msg.channelName,
+            isAfterHours: msg.isAfterHours,
+          }));
+
+        if (isPremium && messagesWithText.length >= 5) {
+          // Pro/Max: Full life context analysis with AI
+          // Analyze ALL messages together to detect patterns across time
+          const lifeContext = await analyzeSlackForLifeContext(messagesWithText);
+
+          // Store life context (merges with Gmail context if exists)
+          await mergeAndStoreLifeContext(email, lifeContext, 'slack');
+
+          // Also store daily sentiment for trend tracking
+          const messagesByDate: Record<string, typeof messagesWithText> = {};
+          for (const msg of messagesWithText) {
+            const date = msg.timestamp.split('T')[0];
+            if (!messagesByDate[date]) messagesByDate[date] = [];
+            messagesByDate[date].push(msg);
+          }
+
+          for (const [date, dayMessages] of Object.entries(messagesByDate)) {
+            if (dayMessages.length >= 3) {
+              await storeSentimentAnalysis(email, 'slack', date, lifeContext.sentiment);
+            }
+          }
+
+          console.log(`[Slack Fetch] Life context analysis complete: ${lifeContext.upcomingEvents.length} events, ${lifeContext.activePatterns.length} patterns detected`);
+          sentimentAnalyzed = true;
+        } else {
+          // Free tier: Basic sentiment analysis per day
+          const messagesByDate: Record<string, { text: string; timestamp: string; isAfterHours: boolean }[]> = {};
+
+          for (const msg of messagesWithText) {
+            const date = msg.timestamp.split('T')[0];
+            if (!messagesByDate[date]) messagesByDate[date] = [];
+            messagesByDate[date].push({
+              text: msg.text,
+              timestamp: msg.timestamp,
+              isAfterHours: msg.isAfterHours,
+            });
+          }
+
+          // Analyze each day's messages
+          for (const [date, dayMessages] of Object.entries(messagesByDate)) {
+            if (dayMessages.length >= 3) {
+              const texts = dayMessages.map(m => m.text);
+              const sentiment = await analyzeMessageBatch(texts, {
+                source: 'slack',
+                date,
+                includeTimestamps: dayMessages,
+              });
+
+              await storeSentimentAnalysis(email, 'slack', date, sentiment);
+            }
+          }
+
+          sentimentAnalyzed = true;
+          console.log(`[Slack Fetch] Sentiment analysis complete for ${Object.keys(messagesByDate).length} days`);
+        }
+      } else if (!sentimentEnabled) {
+        console.log('[Slack Fetch] Content analysis not enabled for user');
+      }
+    } catch (sentimentError) {
+      console.error('[Slack Fetch] Content analysis error:', sentimentError);
+      // Don't fail the whole request if analysis fails
+    }
+
     // Calculate metrics
     const stressScore =
       (patterns.stressIndicators.constantAvailability ? 3 : 0) +
@@ -775,6 +882,12 @@ export async function POST(request: NextRequest) {
       dataPeriod: {
         start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
+      },
+      sentimentAnalysis: {
+        enabled: sentimentAnalyzed,
+        message: sentimentAnalyzed
+          ? 'Content sentiment analysis completed'
+          : 'Sentiment analysis not enabled - opt in via settings'
       }
     });
 

@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import OpenAI from 'openai';
 import {
   fetchOuraData,
   fetchDexcomData,
@@ -23,6 +24,11 @@ import {
   SpotifyData,
 } from './ecosystem-fetcher';
 import { sendInsightNotification } from './onesignal-service';
+import { getUserContext, UserContext, getUserSubscriptionTier } from './user-context-service';
+import { getCompactedHistory, formatHistoryForPrompt } from './conversation-compactor';
+import { formatSentimentForPrompt } from './content-sentiment-analyzer';
+
+const openai = new OpenAI();
 
 // ============================================================================
 // TYPES
@@ -1518,6 +1524,535 @@ export async function generateWeeklyAnalysis(email: string): Promise<GeneratedIn
 }
 
 // ============================================================================
+// AI-POWERED INSIGHT GENERATION
+// ============================================================================
+
+/**
+ * Tier-based insight configuration
+ */
+interface InsightTierConfig {
+  insightCount: number;
+  includeDeepAnalysis: boolean;
+  includeCorrelations: boolean;
+  includePredictions: boolean;
+  includeActionPlan: boolean;
+  maxTokens: number;
+  model: string;
+}
+
+const INSIGHT_TIER_CONFIG: Record<string, InsightTierConfig> = {
+  free: {
+    insightCount: 2,
+    includeDeepAnalysis: false,
+    includeCorrelations: false,
+    includePredictions: false,
+    includeActionPlan: false,
+    maxTokens: 800,
+    model: 'gpt-4o-mini',
+  },
+  pro: {
+    insightCount: 4,
+    includeDeepAnalysis: true,
+    includeCorrelations: true,
+    includePredictions: true,
+    includeActionPlan: true,
+    maxTokens: 2000,
+    model: 'gpt-4o',
+  },
+  max: {
+    insightCount: 6,
+    includeDeepAnalysis: true,
+    includeCorrelations: true,
+    includePredictions: true,
+    includeActionPlan: true,
+    maxTokens: 4000,
+    model: 'gpt-4o',
+  },
+};
+
+/**
+ * Generate AI-powered personalized insights using comprehensive user context
+ *
+ * This function uses GPT-4o with full user context including:
+ * - User profile (goals, allergies, conditions)
+ * - Conversation history (what they've discussed with Moccet Voice)
+ * - Lab results / blood biomarkers
+ * - Training & nutrition plans
+ * - All ecosystem data (Oura, Dexcom, etc.)
+ *
+ * Pro and Max tiers get deeper, more complex insights with:
+ * - Multi-source correlations
+ * - Predictive analysis
+ * - Detailed action plans
+ * - Scientific explanations
+ */
+async function generateAIInsights(
+  email: string,
+  ecosystemData: AllConnectorData,
+  userContext: UserContext | null,
+  subscriptionTier: string = 'free'
+): Promise<GeneratedInsight[]> {
+  const tierConfig = INSIGHT_TIER_CONFIG[subscriptionTier] || INSIGHT_TIER_CONFIG.free;
+  console.log(`[Insight Trigger] Generating AI-powered insights for ${email} (${subscriptionTier} tier - ${tierConfig.insightCount} insights)`);
+
+  // Skip if no meaningful data available
+  const hasEcosystemData = Object.values(ecosystemData).some((d) => d !== null);
+  if (!hasEcosystemData && !userContext?.labResults?.length) {
+    console.log('[Insight Trigger] No data available, skipping AI insights');
+    return [];
+  }
+
+  try {
+    // Build comprehensive context sections
+    const contextSections: string[] = [];
+
+    // User Profile - More detailed for Pro/Max
+    if (userContext?.profile) {
+      const profile = userContext.profile;
+      const profileParts: string[] = [];
+      if (profile.name) profileParts.push(`Name: ${profile.name}`);
+      if (profile.goals?.length) profileParts.push(`Primary Goals: ${profile.goals.join(', ')}`);
+      if (profile.allergies?.length) profileParts.push(`Allergies/Sensitivities: ${profile.allergies.join(', ')}`);
+      if (profile.healthConditions?.length) profileParts.push(`Health Conditions: ${profile.healthConditions.join(', ')}`);
+      if (profile.medications?.length) profileParts.push(`Current Medications: ${profile.medications.join(', ')}`);
+      if (profile.dietaryPreferences?.length) profileParts.push(`Dietary Preferences: ${profile.dietaryPreferences.join(', ')}`);
+      if (profileParts.length > 0) {
+        contextSections.push(`## User Profile\n${profileParts.join('\n')}`);
+      }
+    }
+
+    // Learned Facts - Things the user explicitly told us via insight feedback
+    // CRITICAL: These should inform all insights (e.g., "works night shifts" means don't criticize late sleep)
+    if (userContext?.learnedFacts && userContext.learnedFacts.length > 0) {
+      const factParts: string[] = [];
+      factParts.push('**IMPORTANT: The user has explicitly told us the following - DO NOT generate insights that conflict with these:**');
+
+      // Group by category
+      const factsByCategory: Record<string, string[]> = {};
+      for (const fact of userContext.learnedFacts) {
+        const cat = fact.category || 'other';
+        if (!factsByCategory[cat]) factsByCategory[cat] = [];
+        factsByCategory[cat].push(fact.value);
+      }
+
+      for (const [category, facts] of Object.entries(factsByCategory)) {
+        const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+        factParts.push(`\n**${categoryLabel}:**`);
+        facts.forEach((f) => factParts.push(`- ${f}`));
+      }
+
+      contextSections.push(`## User-Provided Context\n${factParts.join('\n')}`);
+    }
+
+    // Conversation History - More for Pro/Max
+    if (userContext?.conversationHistory) {
+      const historyText = formatHistoryForPrompt(userContext.conversationHistory);
+      if (historyText) {
+        const maxHistoryLength = tierConfig.includeDeepAnalysis ? 3000 : 1000;
+        contextSections.push(`## Recent Conversations with Moccet Voice\n${historyText.substring(0, maxHistoryLength)}`);
+      }
+    }
+
+    // Lab Results - Full details for Pro/Max
+    if (userContext?.labResults && userContext.labResults.length > 0) {
+      const maxLabs = tierConfig.includeDeepAnalysis ? 30 : 10;
+      const labsByCategory: Record<string, typeof userContext.labResults> = {};
+
+      for (const lab of userContext.labResults.slice(0, maxLabs)) {
+        const cat = lab.category || 'general';
+        if (!labsByCategory[cat]) labsByCategory[cat] = [];
+        labsByCategory[cat].push(lab);
+      }
+
+      const labParts: string[] = [];
+      for (const [category, labs] of Object.entries(labsByCategory)) {
+        labParts.push(`### ${category}`);
+        for (const l of labs) {
+          const statusIndicator = l.status === 'normal' ? '✓' : l.status === 'high' ? '↑' : l.status === 'low' ? '↓' : '•';
+          labParts.push(`- ${l.biomarker}: ${l.value} ${l.unit} ${statusIndicator} ${l.referenceRange ? `(ref: ${l.referenceRange})` : ''}`);
+        }
+      }
+      contextSections.push(`## Lab Results / Biomarkers\n${labParts.join('\n')}`);
+    }
+
+    // Training Plan - Full for Pro/Max
+    if (userContext?.training) {
+      const training = userContext.training;
+      const trainingParts: string[] = [];
+
+      if (training.profile) {
+        if (training.profile.fitnessLevel) trainingParts.push(`Fitness Level: ${training.profile.fitnessLevel}`);
+        if (training.profile.fitnessGoals?.length) trainingParts.push(`Fitness Goals: ${training.profile.fitnessGoals.join(', ')}`);
+        if (training.profile.workoutFrequency) trainingParts.push(`Target Frequency: ${training.profile.workoutFrequency}`);
+      }
+
+      if (training.currentPlan) {
+        const plan = training.currentPlan;
+        const planSummary = typeof plan === 'string' ? plan : (plan.summary || JSON.stringify(plan).substring(0, tierConfig.includeDeepAnalysis ? 800 : 300));
+        trainingParts.push(`Current Plan: ${planSummary}`);
+      }
+
+      if (trainingParts.length > 0) {
+        contextSections.push(`## Training / Fitness\n${trainingParts.join('\n')}`);
+      }
+    }
+
+    // Nutrition Plan - Full for Pro/Max
+    if (userContext?.nutrition) {
+      const nutrition = userContext.nutrition;
+      const nutritionParts: string[] = [];
+
+      if (nutrition.profile) {
+        if (nutrition.profile.dietType) nutritionParts.push(`Diet Type: ${nutrition.profile.dietType}`);
+        if (nutrition.profile.calorieTarget) nutritionParts.push(`Calorie Target: ${nutrition.profile.calorieTarget}`);
+        if (nutrition.profile.macroTargets) nutritionParts.push(`Macro Targets: ${JSON.stringify(nutrition.profile.macroTargets)}`);
+      }
+
+      if (nutrition.currentPlan) {
+        const plan = nutrition.currentPlan;
+        const planSummary = typeof plan === 'string' ? plan : (plan.summary || JSON.stringify(plan).substring(0, tierConfig.includeDeepAnalysis ? 800 : 300));
+        nutritionParts.push(`Current Plan: ${planSummary}`);
+      }
+
+      if (nutritionParts.length > 0) {
+        contextSections.push(`## Nutrition\n${nutritionParts.join('\n')}`);
+      }
+    }
+
+    // Sentiment Analysis - Communication patterns from Slack/Gmail content
+    // Pro/Max feature: Detects stress, success, and boundary violations
+    if (userContext?.sentimentAnalysis && tierConfig.includeDeepAnalysis) {
+      const sentimentText = formatSentimentForPrompt(userContext.sentimentAnalysis);
+      if (sentimentText) {
+        contextSections.push(sentimentText);
+      }
+    }
+
+    // Ecosystem Data - Comprehensive for Pro/Max
+    const ecosystemParts: string[] = [];
+
+    if (ecosystemData.oura) {
+      const oura = ecosystemData.oura;
+      ecosystemParts.push(`### Sleep & Recovery (Oura Ring)`);
+      if (oura.avgSleepHours) ecosystemParts.push(`- Average Sleep: ${oura.avgSleepHours.toFixed(1)} hours`);
+      if (oura.avgReadinessScore) ecosystemParts.push(`- Readiness Score: ${Math.round(oura.avgReadinessScore)}/100`);
+      if (oura.avgHRV) ecosystemParts.push(`- HRV: ${Math.round(oura.avgHRV)}ms (trend: ${oura.hrvTrend || 'stable'})`);
+      if (oura.sleepQuality) ecosystemParts.push(`- Sleep Quality: ${oura.sleepQuality}`);
+
+      // Pro/Max get deeper Oura data
+      if (tierConfig.includeDeepAnalysis) {
+        if (oura.sleepArchitecture) {
+          ecosystemParts.push(`- Deep Sleep: ${oura.sleepArchitecture.deepSleepPercent}% (${oura.sleepArchitecture.avgDeepSleepMins} min avg)`);
+          ecosystemParts.push(`- REM Sleep: ${oura.sleepArchitecture.remSleepPercent}% (${oura.sleepArchitecture.avgRemSleepMins} min avg)`);
+          ecosystemParts.push(`- Sleep Efficiency: ${oura.sleepArchitecture.sleepEfficiency}%`);
+        }
+        if (oura.sleepConsistency) {
+          ecosystemParts.push(`- Bedtime: ${oura.sleepConsistency.avgBedtime} (variability: ${oura.sleepConsistency.bedtimeVariability} min)`);
+          ecosystemParts.push(`- Wake Time: ${oura.sleepConsistency.avgWakeTime} (variability: ${oura.sleepConsistency.wakeTimeVariability} min)`);
+          ecosystemParts.push(`- Consistency Score: ${oura.sleepConsistency.consistencyScore}`);
+        }
+        if (oura.hrvAnalysis) {
+          ecosystemParts.push(`- HRV Baseline: ${oura.hrvAnalysis.baseline}ms, Current: ${oura.hrvAnalysis.currentAvg}ms`);
+          ecosystemParts.push(`- Morning Readiness: ${oura.hrvAnalysis.morningReadiness}`);
+        }
+        if (oura.sleepDebt) {
+          ecosystemParts.push(`- Sleep Debt: ${oura.sleepDebt.accumulatedHours.toFixed(1)} hours accumulated`);
+          ecosystemParts.push(`- Weekly Deficit: ${oura.sleepDebt.weeklyDeficit.toFixed(1)} hours`);
+          if (oura.sleepDebt.recoveryNeeded) ecosystemParts.push(`- Recovery Needed: ~${oura.sleepDebt.daysToRecover} days`);
+        }
+        if (oura.activityInsights) {
+          ecosystemParts.push(`- Daily Steps: ${oura.activityInsights.avgDailySteps}`);
+          ecosystemParts.push(`- Movement Consistency: ${oura.activityInsights.movementConsistency}`);
+        }
+      }
+
+      if (oura.insights?.length) {
+        ecosystemParts.push(`Oura Insights: ${oura.insights.slice(0, tierConfig.includeDeepAnalysis ? 5 : 2).join('; ')}`);
+      }
+    }
+
+    if (ecosystemData.dexcom) {
+      const dexcom = ecosystemData.dexcom;
+      ecosystemParts.push(`### Glucose Monitoring (CGM)`);
+      if (dexcom.avgGlucose) ecosystemParts.push(`- Average Glucose: ${Math.round(dexcom.avgGlucose)} mg/dL`);
+      if (dexcom.avgFastingGlucose) ecosystemParts.push(`- Fasting Glucose: ${Math.round(dexcom.avgFastingGlucose)} mg/dL`);
+      if (dexcom.timeInRange) ecosystemParts.push(`- Time in Range: ${Math.round(dexcom.timeInRange)}%`);
+      if (dexcom.glucoseVariability) ecosystemParts.push(`- Glucose Variability: ${Math.round(dexcom.glucoseVariability)}%`);
+
+      // Pro/Max get spike analysis
+      if (tierConfig.includeDeepAnalysis && dexcom.spikeEvents?.length) {
+        ecosystemParts.push(`- Spike Events: ${dexcom.spikeEvents.length}`);
+        const recentSpikes = dexcom.spikeEvents.slice(0, 5);
+        for (const spike of recentSpikes) {
+          ecosystemParts.push(`  • ${spike.time}: ${spike.value} mg/dL ${spike.trigger ? `(trigger: ${spike.trigger})` : ''}`);
+        }
+      }
+
+      if (dexcom.trends?.length) {
+        ecosystemParts.push(`Glucose Trends: ${dexcom.trends.slice(0, 3).join('; ')}`);
+      }
+      if (dexcom.insights?.length) {
+        ecosystemParts.push(`Glucose Insights: ${dexcom.insights.slice(0, tierConfig.includeDeepAnalysis ? 5 : 2).join('; ')}`);
+      }
+    }
+
+    if (ecosystemData.whoop) {
+      const whoop = ecosystemData.whoop;
+      ecosystemParts.push(`### Recovery & Strain (Whoop)`);
+      if (whoop.avgRecoveryScore) ecosystemParts.push(`- Recovery Score: ${Math.round(whoop.avgRecoveryScore)}%`);
+      if (whoop.avgStrainScore) ecosystemParts.push(`- Strain Score: ${whoop.avgStrainScore.toFixed(1)}`);
+      if (whoop.avgHRV) ecosystemParts.push(`- HRV: ${Math.round(whoop.avgHRV)}ms`);
+      if (whoop.avgRestingHR) ecosystemParts.push(`- Resting HR: ${Math.round(whoop.avgRestingHR)} bpm`);
+
+      // Pro/Max get deeper Whoop data
+      if (tierConfig.includeDeepAnalysis) {
+        if (whoop.recoveryZones) {
+          ecosystemParts.push(`- Green Days: ${whoop.recoveryZones.greenDays} (${whoop.recoveryZones.greenPercentage}%)`);
+          ecosystemParts.push(`- Yellow Days: ${whoop.recoveryZones.yellowDays}`);
+          ecosystemParts.push(`- Red Days: ${whoop.recoveryZones.redDays}`);
+        }
+        if (whoop.strainRecoveryBalance) {
+          ecosystemParts.push(`- Balance: ${whoop.strainRecoveryBalance.balanceScore}`);
+          if (whoop.strainRecoveryBalance.overreachingDays > 0) {
+            ecosystemParts.push(`- Overreaching Days: ${whoop.strainRecoveryBalance.overreachingDays}`);
+          }
+        }
+        if (whoop.trainingLoad) {
+          ecosystemParts.push(`- Weekly Strain: ${whoop.trainingLoad.weeklyStrain}`);
+          ecosystemParts.push(`- Overtraining Risk: ${whoop.trainingLoad.overtrainingRisk}`);
+        }
+      }
+    }
+
+    if (ecosystemData.gmail) {
+      const gmail = ecosystemData.gmail;
+      ecosystemParts.push(`### Work Patterns (Email/Calendar)`);
+      if (gmail.workHours) {
+        ecosystemParts.push(`- Work Hours: ${gmail.workHours.start} - ${gmail.workHours.end}`);
+        if (gmail.workHours.weekendActivity) ecosystemParts.push(`- Weekend Work: Yes`);
+      }
+      if (gmail.meetingDensity) {
+        ecosystemParts.push(`- Meetings/Day: ${gmail.meetingDensity.avgMeetingsPerDay}`);
+        if (gmail.meetingDensity.backToBackPercentage > 30) {
+          ecosystemParts.push(`- Back-to-Back Meetings: ${gmail.meetingDensity.backToBackPercentage}%`);
+        }
+      }
+      if (gmail.emailVolume?.afterHoursPercentage > 10) {
+        ecosystemParts.push(`- After-Hours Email: ${gmail.emailVolume.afterHoursPercentage}%`);
+      }
+
+      // Pro/Max get stress analysis
+      if (tierConfig.includeDeepAnalysis) {
+        if (gmail.stressIndicators) {
+          const stressors: string[] = [];
+          if (gmail.stressIndicators.highEmailVolume) stressors.push('high email volume');
+          if (gmail.stressIndicators.frequentAfterHoursWork) stressors.push('frequent late work');
+          if (gmail.stressIndicators.shortMeetingBreaks) stressors.push('insufficient breaks');
+          if (stressors.length) ecosystemParts.push(`- Stress Signals: ${stressors.join(', ')}`);
+        }
+        if (gmail.focusTime) {
+          ecosystemParts.push(`- Focus Score: ${gmail.focusTime.focusScore}`);
+          ecosystemParts.push(`- Avg Focus Blocks/Day: ${gmail.focusTime.avgFocusBlocksPerDay}`);
+        }
+        if (gmail.calendarHealth) {
+          if (!gmail.calendarHealth.lunchProtected) ecosystemParts.push(`- Warning: Lunch not protected`);
+          if (!gmail.calendarHealth.eveningsClear) ecosystemParts.push(`- Warning: Evening meetings scheduled`);
+        }
+      }
+    }
+
+    if (ecosystemData.slack) {
+      const slack = ecosystemData.slack;
+      ecosystemParts.push(`### Communication Patterns (Slack)`);
+      if (slack.collaborationIntensity) ecosystemParts.push(`- Collaboration Intensity: ${slack.collaborationIntensity}`);
+      if (slack.messageVolume?.afterHoursPercentage > 10) {
+        ecosystemParts.push(`- After-Hours Messages: ${slack.messageVolume.afterHoursPercentage}%`);
+      }
+
+      if (tierConfig.includeDeepAnalysis) {
+        if (slack.stressIndicators) {
+          if (slack.stressIndicators.constantAvailability) ecosystemParts.push(`- Warning: Always-on pattern detected`);
+          if (slack.stressIndicators.lateNightMessages) ecosystemParts.push(`- Warning: Late night messaging`);
+        }
+        if (slack.focusMetrics) {
+          ecosystemParts.push(`- Context Switching: ${slack.focusMetrics.contextSwitchingScore}`);
+          ecosystemParts.push(`- Deep Work Windows: ${slack.focusMetrics.deepWorkWindows}/day`);
+        }
+      }
+    }
+
+    if (ecosystemData.spotify) {
+      const spotify = ecosystemData.spotify;
+      ecosystemParts.push(`### Music & Mood (Spotify)`);
+      if (spotify.inferredMood) ecosystemParts.push(`- Inferred Mood: ${spotify.inferredMood}`);
+      if (spotify.avgValence) ecosystemParts.push(`- Music Valence: ${Math.round(spotify.avgValence * 100)}%`);
+      if (spotify.avgEnergy) ecosystemParts.push(`- Music Energy: ${Math.round(spotify.avgEnergy * 100)}%`);
+      if (spotify.lateNightListening) ecosystemParts.push(`- Late Night Listening: Yes`);
+      if (spotify.emotionalVolatility === 'high') ecosystemParts.push(`- Emotional Volatility: High`);
+    }
+
+    if (ecosystemParts.length > 0) {
+      contextSections.push(`## Current Health & Lifestyle Data\n${ecosystemParts.join('\n')}`);
+    }
+
+    const fullContext = contextSections.join('\n\n');
+
+    // Build tier-specific system prompt
+    const systemPrompt = buildTierSpecificPrompt(tierConfig, subscriptionTier);
+
+    // Generate insights using appropriate model
+    const response = await openai.chat.completions.create({
+      model: tierConfig.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: `Generate ${tierConfig.insightCount} personalized health insights for this user:\n\n${fullContext}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: tierConfig.maxTokens,
+      temperature: 0.7,
+    });
+
+    const responseText = response.choices[0]?.message?.content || '{}';
+    let parsed: { insights?: any[] } = {};
+
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[Insight Trigger] Failed to parse AI response:', parseError);
+      return [];
+    }
+
+    const aiInsights = Array.isArray(parsed) ? parsed : (parsed.insights || []);
+
+    // Convert AI insights to GeneratedInsight format
+    const insights: GeneratedInsight[] = aiInsights.map((ai: any) => ({
+      insight_type: ai.insight_type || 'general_health',
+      title: ai.title || 'Health Insight',
+      message: ai.message || '',
+      severity: ai.severity || 'info',
+      actionable_recommendation: ai.recommendation || ai.action_plan || '',
+      source_provider: 'ai_analysis',
+      source_data_type: tierConfig.includeDeepAnalysis ? 'comprehensive_deep_analysis' : 'basic_analysis',
+      context_data: {
+        ai_generated: true,
+        subscription_tier: subscriptionTier,
+        analysis_depth: tierConfig.includeDeepAnalysis ? 'deep' : 'basic',
+        sources_used: Object.keys(ecosystemData).filter((k) => ecosystemData[k as keyof AllConnectorData] !== null),
+        has_user_context: !!userContext,
+        has_conversation_history: !!userContext?.conversationHistory?.totalMessageCount,
+        has_lab_results: (userContext?.labResults?.length || 0) > 0,
+        has_sentiment_analysis: !!userContext?.sentimentAnalysis,
+        sentiment_stress_score: userContext?.sentimentAnalysis?.avgStressScore,
+        sentiment_success_score: userContext?.sentimentAnalysis?.avgSuccessScore,
+        correlations: ai.correlations || [],
+        scientific_basis: ai.scientific_basis || null,
+        prediction: ai.prediction || null,
+      },
+    }));
+
+    console.log(`[Insight Trigger] Generated ${insights.length} AI-powered insights (${subscriptionTier} tier)`);
+    return insights;
+  } catch (error) {
+    console.error('[Insight Trigger] Error generating AI insights:', error);
+    return [];
+  }
+}
+
+/**
+ * Build tier-specific system prompt for insight generation
+ */
+function buildTierSpecificPrompt(config: InsightTierConfig, tier: string): string {
+  if (tier === 'free') {
+    return `You are a health insights analyst for Moccet Health. Generate ${config.insightCount} personalized health insights.
+
+Your insights should be:
+- Actionable and specific
+- Personalized based on their data
+- Easy to understand
+
+Output as JSON:
+{
+  "insights": [
+    {
+      "title": "Short title",
+      "message": "2-3 sentence insight",
+      "severity": "info|low|medium|high|critical",
+      "recommendation": "Simple actionable tip",
+      "insight_type": "general_health"
+    }
+  ]
+}`;
+  }
+
+  // Pro and Max get comprehensive prompts
+  return `You are an expert health analyst for Moccet Health, providing deep, comprehensive insights for premium users.
+
+Generate ${config.insightCount} highly sophisticated, personalized health insights that demonstrate the value of premium analysis.
+
+## Analysis Requirements (Pro/Max Tier)
+
+### 1. Multi-Source Correlations
+- Connect data across ALL available sources (sleep + glucose + work stress + HRV + labs)
+- Identify patterns the user wouldn't notice themselves
+- Example: "Your glucose spikes correlate with days when you have >5 meetings AND slept <7 hours"
+
+### 2. Root Cause Analysis
+- Don't just report symptoms, identify underlying causes
+- Connect lifestyle factors to physiological markers
+- Reference their lab results when explaining patterns
+
+### 3. Predictive Insights
+- Based on current trends, predict what might happen
+- Warn about concerning trajectories before they become problems
+- Example: "If your HRV continues declining at this rate, you may hit burnout indicators within 2 weeks"
+
+### 4. Scientific Depth
+- Include brief scientific explanations (accessible but substantive)
+- Reference the biological mechanisms at play
+- Connect their data to research-backed findings
+
+### 5. Personalized Action Plans
+- Don't give generic advice - make it specific to THEIR data
+- Reference their goals, conditions, and current plans
+- Provide timing recommendations based on their schedule patterns
+
+### 6. Goal Alignment
+- Explicitly connect insights to their stated goals
+- Show progress or obstacles toward their objectives
+- Suggest optimizations specific to what they're trying to achieve
+
+## Output Format
+{
+  "insights": [
+    {
+      "title": "Attention-grabbing title that hints at the insight",
+      "message": "3-5 sentence comprehensive insight that connects multiple data sources, explains the 'why', and shows you understand their unique situation. Reference specific numbers from their data.",
+      "severity": "info|low|medium|high|critical",
+      "recommendation": "Detailed, personalized action plan with specific steps",
+      "insight_type": "cross_source_correlation|lifestyle_health_connection|biomarker_trend|predictive_analysis|goal_alignment",
+      "correlations": ["source1 + source2", "metric1 ↔ metric2"],
+      "scientific_basis": "Brief explanation of the biological mechanism",
+      "prediction": "What this trend suggests for the coming weeks (if applicable)"
+    }
+  ]
+}
+
+## Quality Standards
+- Each insight should feel like it came from a personal health advisor who knows them deeply
+- Avoid generic advice that could apply to anyone
+- Make them feel the value of having all their data connected
+- Be warm but authoritative - they're trusting you with their health data
+
+Generate insights that make premium users feel like they're getting genuine value from their subscription.`;
+}
+
+// ============================================================================
 // MAIN TRIGGER FUNCTIONS
 // ============================================================================
 
@@ -1595,8 +2130,12 @@ export async function processAllProviders(email: string): Promise<{
   const allInsights: GeneratedInsight[] = [];
   const errors: string[] = [];
 
-  // Fetch data from all providers in parallel
-  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult] = await Promise.all([
+  // Get user's subscription tier first (determines insight depth)
+  const subscriptionTier = await getUserSubscriptionTier(email);
+  console.log(`[Insight Trigger] User subscription tier: ${subscriptionTier}`);
+
+  // Fetch data from all providers AND user context in parallel
+  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, userContext] = await Promise.all([
     fetchOuraData(email).catch((e) => {
       errors.push(`Oura: ${e.message}`);
       return null;
@@ -1621,7 +2160,21 @@ export async function processAllProviders(email: string): Promise<{
       errors.push(`Spotify: ${e.message}`);
       return null;
     }),
+    // NEW: Fetch comprehensive user context (profile, labs, conversation history, plans)
+    getUserContext(email, 'generate health insights', {
+      subscriptionTier: 'max', // Use max context for insight generation
+      includeConversation: true,
+      useAISelection: false, // Fetch all sources for comprehensive insights
+    }).catch((e) => {
+      console.error(`[Insight Trigger] Error fetching user context: ${e.message}`);
+      return null;
+    }),
   ]);
+
+  console.log(`[Insight Trigger] User context fetched: ${userContext ? 'yes' : 'no'}`);
+  if (userContext) {
+    console.log(`[Insight Trigger] Context includes - Labs: ${userContext.labResults?.length || 0}, Conversation: ${userContext.conversationHistory?.totalMessageCount || 0} messages`);
+  }
 
   // Generate insights from each available provider
   if (ouraResult?.available && ouraResult.data) {
@@ -1668,15 +2221,23 @@ export async function processAllProviders(email: string): Promise<{
 
   // Generate cross-source insights using ALL connector data together
   // This is the key function that provides unified context across all connectors
-  const crossSourceInsights = await generateCrossSourceInsights(email, {
+  const ecosystemData: AllConnectorData = {
     oura: (ouraResult?.available && ouraResult.data) ? ouraResult.data as OuraData : null,
     dexcom: (dexcomResult?.available && dexcomResult.data) ? dexcomResult.data as DexcomData : null,
     whoop: (whoopResult?.available && whoopResult.data) ? whoopResult.data as WhoopData : null,
     gmail: (gmailResult?.available && gmailResult.data) ? gmailResult.data as GmailPatterns : null,
     slack: (slackResult?.available && slackResult.data) ? slackResult.data as SlackPatterns : null,
     spotify: (spotifyResult?.available && spotifyResult.data) ? spotifyResult.data as SpotifyData : null,
-  });
+  };
+
+  const crossSourceInsights = await generateCrossSourceInsights(email, ecosystemData);
   allInsights.push(...crossSourceInsights);
+
+  // NEW: Generate AI-powered personalized insights using comprehensive user context
+  // This uses GPT-4o with full context: profile, labs, conversation history, plans, and ecosystem data
+  // Pro and Max tiers get deeper, more complex insights
+  const aiInsights = await generateAIInsights(email, ecosystemData, userContext, subscriptionTier);
+  allInsights.push(...aiInsights);
 
   // Store all generated insights
   let stored_count = 0;

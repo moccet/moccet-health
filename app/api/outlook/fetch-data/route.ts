@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { GmailPatterns } from '@/lib/services/ecosystem-fetcher';
+import {
+  analyzeEmailSubjects,
+  storeSentimentAnalysis,
+  analyzeEmailsForLifeContext,
+  mergeAndStoreLifeContext,
+} from '@/lib/services/content-sentiment-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -48,6 +54,7 @@ interface EmailData {
   dayOfWeek: number;
   isWeekend: boolean;
   isAfterHours: boolean;
+  subject?: string; // For sentiment/life context analysis
 }
 
 /**
@@ -422,7 +429,7 @@ export async function POST(request: NextRequest) {
         console.error('[Outlook Fetch] Calendar error:', err);
         return { ok: false, json: async () => ({ value: [] }) };
       }),
-      fetch(`https://graph.microsoft.com/v1.0/me/messages?$top=200&$select=receivedDateTime&$filter=receivedDateTime ge ${startDate.toISOString()}`, {
+      fetch(`https://graph.microsoft.com/v1.0/me/messages?$top=200&$select=receivedDateTime,subject&$filter=receivedDateTime ge ${startDate.toISOString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -434,7 +441,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     let calendarEvents: MSCalendarEvent[] = [];
-    let emailMessages: Array<{ receivedDateTime: string }> = [];
+    let emailMessages: Array<{ receivedDateTime: string; subject?: string }> = [];
 
     if (calendarResponse.ok) {
       const calendarData = await calendarResponse.json();
@@ -458,14 +465,15 @@ export async function POST(request: NextRequest) {
       const hour = date.getHours();
       const dayOfWeek = date.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      const isAfterHours = hour < 7 || hour >= 19;
+      const isAfterHours = hour < 9 || hour >= 17; // Fixed: 9am-5pm work hours
 
       return {
         timestamp: date.toISOString(),
         hour,
         dayOfWeek,
         isWeekend,
-        isAfterHours
+        isAfterHours,
+        subject: message.subject || ''
       };
     });
 
@@ -491,6 +499,105 @@ export async function POST(request: NextRequest) {
     patterns.insights = generateInsights(patterns);
 
     console.log('[Outlook Fetch] Patterns calculated:', JSON.stringify(patterns, null, 2));
+
+    // =====================================================
+    // SENTIMENT & LIFE CONTEXT ANALYSIS (tier-based)
+    // =====================================================
+    try {
+      const adminClient = createAdminClient();
+
+      // Check user's subscription tier and preferences in parallel
+      const [prefsResult, userResult] = await Promise.all([
+        adminClient
+          .from('sentiment_analysis_preferences')
+          .select('gmail_subject_analysis, gmail_snippet_analysis') // Reuse Gmail prefs for Outlook
+          .eq('user_email', email)
+          .single(),
+        adminClient
+          .from('users')
+          .select('subscription_tier')
+          .eq('email', email)
+          .single()
+      ]);
+
+      const sentimentPrefs = prefsResult.data;
+      const subscriptionTier = userResult.data?.subscription_tier || 'free';
+      // Reuse Gmail settings for Outlook (both are email)
+      const sentimentEnabled = sentimentPrefs?.gmail_subject_analysis || sentimentPrefs?.gmail_snippet_analysis;
+      const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
+
+      // Only analyze if user opted in and we have enough data
+      if (sentimentEnabled && emailData.length >= 10) {
+        console.log(`[Outlook Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis (${subscriptionTier} tier, ${emailData.length} emails)`);
+
+        // Prepare all subjects with metadata
+        const allSubjects = emailData
+          .filter(e => e.subject && e.subject.trim().length > 0)
+          .map(e => ({
+            subject: e.subject!,
+            timestamp: e.timestamp,
+            isAfterHours: e.isAfterHours
+          }));
+
+        if (isPremium && allSubjects.length >= 5) {
+          // Pro/Max: Full life context analysis with AI
+          const lifeContext = await analyzeEmailsForLifeContext(allSubjects);
+
+          // Store life context (merges with Gmail/Slack context if exists)
+          await mergeAndStoreLifeContext(email, lifeContext, 'outlook');
+
+          // Also store daily sentiment for trend tracking
+          const emailsByDate: Record<string, typeof allSubjects> = {};
+          for (const subj of allSubjects) {
+            const date = subj.timestamp.split('T')[0];
+            if (!emailsByDate[date]) emailsByDate[date] = [];
+            emailsByDate[date].push(subj);
+          }
+
+          for (const [date, daySubjects] of Object.entries(emailsByDate)) {
+            if (daySubjects.length >= 3) {
+              await storeSentimentAnalysis(email, 'gmail', date, lifeContext.sentiment); // Store as 'gmail' for compatibility
+            }
+          }
+
+          console.log(`[Outlook Fetch] Life context analysis complete: ${lifeContext.upcomingEvents.length} events, ${lifeContext.activePatterns.length} patterns detected`);
+        } else {
+          // Free tier: Basic keyword-based sentiment analysis per day
+          const emailsByDate: Record<string, typeof emailData> = {};
+          for (const emailItem of emailData) {
+            const date = emailItem.timestamp.split('T')[0];
+            if (!emailsByDate[date]) emailsByDate[date] = [];
+            emailsByDate[date].push(emailItem);
+          }
+
+          let analyzedDays = 0;
+          for (const [date, dayEmails] of Object.entries(emailsByDate)) {
+            if (dayEmails.length < 3) continue;
+
+            const subjects = dayEmails
+              .filter(e => e.subject && e.subject.trim().length > 0)
+              .map(e => ({
+                subject: e.subject!,
+                timestamp: e.timestamp,
+                isAfterHours: e.isAfterHours
+              }));
+
+            if (subjects.length < 3) continue;
+
+            const sentiment = await analyzeEmailSubjects(subjects);
+            await storeSentimentAnalysis(email, 'gmail', date, sentiment); // Store as 'gmail' for compatibility
+            analyzedDays++;
+          }
+
+          console.log(`[Outlook Fetch] Sentiment analysis complete: ${analyzedDays} days analyzed`);
+        }
+      } else if (!sentimentEnabled) {
+        console.log(`[Outlook Fetch] Content analysis skipped - user not opted in`);
+      }
+    } catch (sentimentError) {
+      // Don't fail the entire request if analysis fails
+      console.error('[Outlook Fetch] Content analysis error (non-fatal):', sentimentError);
+    }
 
     // Calculate metrics
     const stressScore =

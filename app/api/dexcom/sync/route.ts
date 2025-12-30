@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/server';
+import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -98,6 +100,45 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Dexcom Sync] Successfully synced and stored data for ${email}`);
 
+    // =====================================================
+    // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)
+    // Analyze glucose trends and correlate with life events
+    // =====================================================
+    let healthAnalysisResult = null;
+    try {
+      const adminClient = createAdminClient();
+
+      // Check if user is Pro/Max
+      const { data: userData } = await adminClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('email', email)
+        .single();
+
+      const isPremium = userData?.subscription_tier === 'pro' || userData?.subscription_tier === 'max';
+
+      if (isPremium) {
+        console.log(`[Dexcom Sync] Running health pattern analysis for ${email} (${userData?.subscription_tier} tier)`);
+
+        // Prepare Dexcom data for analysis
+        const dexcomData = {
+          glucoseData: (allData.egvs as any[] || []).map((egv: any) => ({
+            date: egv.systemTime || egv.displayTime,
+            value: egv.value,
+            trend: egv.trend,
+          })),
+        };
+
+        // Run health analysis (detects patterns + correlates with life events)
+        healthAnalysisResult = await runHealthAnalysis(email, null, null, dexcomData);
+
+        console.log(`[Dexcom Sync] Health analysis complete: ${healthAnalysisResult.patterns.length} patterns, ${healthAnalysisResult.correlations.length} correlations`);
+      }
+    } catch (analysisError) {
+      // Don't fail the sync if analysis fails
+      console.error('[Dexcom Sync] Health analysis error (non-fatal):', analysisError);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Dexcom data synced successfully',
@@ -106,6 +147,11 @@ export async function POST(request: NextRequest) {
         events_records: Array.isArray(allData.events) ? allData.events.length : 0,
         calibrations_records: Array.isArray(allData.calibrations) ? allData.calibrations.length : 0,
       },
+      healthAnalysis: healthAnalysisResult ? {
+        patterns: healthAnalysisResult.patterns.length,
+        correlations: healthAnalysisResult.correlations.length,
+        summary: healthAnalysisResult.summary,
+      } : null,
     });
 
   } catch (error) {

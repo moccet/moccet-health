@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Store tokens in database
     const cookieStore = await cookies();
-    let appUserEmail = cookieStore.get('user_email')?.value || userEmail;
+    let appUserEmail: string | null = cookieStore.get('user_email')?.value || null;
     let userCode = cookieStore.get('user_code')?.value;
     let supabaseUserId: string | null = null;
     let isMobileApp = false;
@@ -99,8 +99,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // If we have userId but no email, look up the email from Supabase
-    if (!appUserEmail && supabaseUserId) {
+    // If we have userId, look up the app user email from Supabase (prefer this over cookie)
+    if (supabaseUserId) {
       try {
         const { createAdminClient } = await import('@/lib/supabase/server');
         const supabase = createAdminClient();
@@ -112,6 +112,12 @@ export async function GET(request: NextRequest) {
       } catch (e) {
         console.log('[Outlook] Could not look up email from userId:', e);
       }
+    }
+
+    // Final fallback: use Outlook email if we still don't have an app email
+    if (!appUserEmail) {
+      appUserEmail = userEmail;
+      console.log(`[Outlook] Using Outlook email as fallback: ${appUserEmail}`);
     }
 
     if (appUserEmail && accessToken) {

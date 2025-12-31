@@ -139,12 +139,13 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         await supabase.from('user_connectors').upsert({
           user_id: supabaseUserId,
+          user_email: appUserEmail || null, // Store email for queries that use user_email
           connector_name: 'Outlook',
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id,connector_name' });
-        console.log(`[Outlook] Updated user_connectors for user ${supabaseUserId}`);
+        console.log(`[Outlook] Updated user_connectors for user ${supabaseUserId}${appUserEmail ? ` (email: ${appUserEmail})` : ''}`);
       } catch (connectorError) {
         console.error('[Outlook] Failed to update user_connectors:', connectorError);
       }

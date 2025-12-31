@@ -386,6 +386,27 @@ export async function fetchOuraData(
 ): Promise<EcosystemDataSource> {
   try {
     const supabase = await createClient();
+
+    // First check if user actually has Oura connected
+    const { data: connector } = await supabase
+      .from('user_connectors')
+      .select('is_connected')
+      .eq('user_email', email)
+      .eq('connector_name', 'Oura Ring')
+      .eq('is_connected', true)
+      .maybeSingle();
+
+    if (!connector) {
+      return {
+        source: 'oura',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'Oura Ring not connected',
+      };
+    }
+
     const end = endDate || new Date();
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
@@ -726,6 +747,27 @@ export async function fetchDexcomData(
 ): Promise<EcosystemDataSource> {
   try {
     const supabase = await createClient();
+
+    // First check if user actually has Dexcom connected
+    const { data: connector } = await supabase
+      .from('user_connectors')
+      .select('is_connected')
+      .eq('user_email', email)
+      .eq('connector_name', 'Dexcom')
+      .eq('is_connected', true)
+      .maybeSingle();
+
+    if (!connector) {
+      return {
+        source: 'dexcom',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'Dexcom not connected',
+      };
+    }
+
     const end = endDate || new Date();
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
@@ -1100,6 +1142,26 @@ export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSo
 export async function fetchWhoopData(email: string): Promise<EcosystemDataSource> {
   try {
     const supabase = await createClient();
+
+    // First check if user actually has Whoop connected
+    const { data: connector } = await supabase
+      .from('user_connectors')
+      .select('is_connected')
+      .eq('user_email', email)
+      .eq('connector_name', 'Whoop')
+      .eq('is_connected', true)
+      .maybeSingle();
+
+    if (!connector) {
+      return {
+        source: 'whoop',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: 'Whoop not connected',
+      };
+    }
 
     // Fetch from both training data and workout patterns for complete picture
     const [trainingResult, patternsResult] = await Promise.all([

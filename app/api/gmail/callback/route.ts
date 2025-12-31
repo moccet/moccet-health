@@ -99,12 +99,13 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         await supabase.from('user_connectors').upsert({
           user_id: mobileUserId,
+          user_email: userEmail || null, // Store email for queries that use user_email
           connector_name: 'Google',
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id,connector_name' });
-        console.log(`[Gmail] Updated user_connectors for user ${mobileUserId}`);
+        console.log(`[Gmail] Updated user_connectors for user ${mobileUserId}${userEmail ? ` (email: ${userEmail})` : ''}`);
       } catch (connectorError) {
         console.error('[Gmail] Failed to update user_connectors:', connectorError);
       }

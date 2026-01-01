@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncAllIntegrations, getSyncStatus, getSyncRecommendations } from '@/lib/services/mcp-sync';
+import { createLogger } from '@/lib/utils/logger';
+import {
+  syncRequestSchema,
+  syncStatusQuerySchema,
+  validateBody,
+  validateQuery,
+  formatZodError,
+} from '@/lib/validation/schemas';
+
+const logger = createLogger('MCPSyncAPI');
 
 /**
  * POST /api/mcp/sync
@@ -16,16 +26,16 @@ import { syncAllIntegrations, getSyncStatus, getSyncRecommendations } from '@/li
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, forceSync, providers } = body;
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = validateBody(body, syncRequestSchema);
+    if (!validation.success) {
+      return NextResponse.json(formatZodError(validation.error), { status: 400 });
     }
 
-    console.log(`[MCP Sync API] Sync requested for ${email}`);
+    const { email, forceSync, providers } = validation.data;
+
+    logger.info('Sync requested', { email, forceSync, providers });
 
     // Get base URL from request
     const baseUrl = request.nextUrl.origin;
@@ -36,13 +46,15 @@ export async function POST(request: NextRequest) {
       baseUrl,
     });
 
+    logger.info('Sync completed', { email, result });
+
     return NextResponse.json({
       success: true,
       ...result,
     });
 
   } catch (error) {
-    console.error('[MCP Sync API] Error:', error);
+    logger.error('Sync error', error);
     return NextResponse.json(
       {
         error: 'Failed to sync integrations',
@@ -65,15 +77,14 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const email = searchParams.get('email');
-    const action = searchParams.get('action') || 'status';
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email query parameter is required' },
-        { status: 400 }
-      );
+    // Validate query parameters
+    const validation = validateQuery(searchParams, syncStatusQuerySchema);
+    if (!validation.success) {
+      return NextResponse.json(formatZodError(validation.error), { status: 400 });
     }
+
+    const { email, action } = validation.data;
 
     if (action === 'recommendations') {
       const recommendations = await getSyncRecommendations(email);
@@ -91,7 +102,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[MCP Sync API] Error:', error);
+    logger.error('Error getting sync status', error);
     return NextResponse.json(
       {
         error: 'Failed to get sync status',

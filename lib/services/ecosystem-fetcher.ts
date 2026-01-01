@@ -16,6 +16,9 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('EcosystemFetcher');
 
 // ============================================================================
 // TYPES
@@ -370,6 +373,10 @@ export interface EcosystemFetchResult {
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
+  /** Sources that failed to fetch (rejected promises) */
+  failedSources?: string[];
+  /** Whether some sources failed but others succeeded (partial data) */
+  partial?: boolean;
 }
 
 // ============================================================================
@@ -725,7 +732,7 @@ export async function fetchOuraData(
       daysOfData: sleepData.length,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Oura data:', error);
+    logger.error('Error fetching Oura data', error, { email });
     return {
       source: 'oura',
       available: false,
@@ -855,7 +862,7 @@ export async function fetchDexcomData(
       daysOfData: Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)),
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Dexcom data:', error);
+    logger.error('Error fetching Dexcom data', error, { email });
     return {
       source: 'dexcom',
       available: false,
@@ -924,7 +931,7 @@ export async function fetchVitalData(
       recordCount: processedData.connectedProviders.length,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Vital data:', error);
+    logger.error('Error fetching Vital data', error, { email });
     return {
       source: 'vital',
       available: false,
@@ -974,7 +981,7 @@ export async function fetchGmailPatterns(email: string): Promise<EcosystemDataSo
       recordCount: gmailRecord.data_points_analyzed || 0,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Gmail patterns:', error);
+    logger.error('Error fetching Gmail patterns', error, { email });
     return {
       source: 'gmail',
       available: false,
@@ -1024,7 +1031,7 @@ export async function fetchSlackPatterns(email: string): Promise<EcosystemDataSo
       recordCount: slackRecord.data_points_analyzed || 0,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Slack patterns:', error);
+    logger.error('Error fetching Slack patterns', error, { email });
     return {
       source: 'slack',
       available: false,
@@ -1074,7 +1081,7 @@ export async function fetchOutlookPatterns(email: string): Promise<EcosystemData
       recordCount: outlookRecord.data_points_analyzed || 0,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Outlook patterns:', error);
+    logger.error('Error fetching Outlook patterns', error, { email });
     return {
       source: 'outlook',
       available: false,
@@ -1124,7 +1131,7 @@ export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSo
       recordCount: teamsRecord.data_points_analyzed || 0,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Teams patterns:', error);
+    logger.error('Error fetching Teams patterns', error, { email });
     return {
       source: 'teams',
       available: false,
@@ -1370,7 +1377,7 @@ export async function fetchWhoopData(email: string): Promise<EcosystemDataSource
       recordCount: processedData.cyclesAnalyzed,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Whoop data:', error);
+    logger.error('Error fetching Whoop data', error, { email });
     return {
       source: 'whoop',
       available: false,
@@ -1421,7 +1428,7 @@ export async function fetchBloodBiomarkers(
       recordCount: biomarkerData.biomarkers?.length || 0,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching blood biomarkers:', error);
+    logger.error('Error fetching blood biomarkers', error, { email });
     return {
       source: 'bloodBiomarkers',
       available: false,
@@ -1624,7 +1631,7 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
       recordCount: items.length,
     };
   } catch (error) {
-    console.error('[Ecosystem Fetcher] Error fetching Spotify data:', error);
+    logger.error('Error fetching Spotify data', error, { email });
     return {
       source: 'spotify',
       available: false,
@@ -1663,12 +1670,25 @@ export async function fetchAllEcosystemData(
     endDate?: Date;
   }
 ): Promise<EcosystemFetchResult> {
-  console.log(`[Ecosystem Fetcher] Fetching all ecosystem data for ${email}`);
+  logger.info('Fetching all ecosystem data', { email });
 
   const startTime = Date.now();
 
-  // Fetch all data sources in parallel
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify] = await Promise.all([
+  // Helper to create a failed source object when a promise rejects
+  const createFailedSource = (source: string, error: unknown): EcosystemDataSource => ({
+    source,
+    available: false,
+    data: null,
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    error: error instanceof Error ? error.message : 'Unknown error - promise rejected',
+  });
+
+  // Source names for tracking failures
+  const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify'];
+
+  // Fetch all data sources in parallel using Promise.allSettled for graceful degradation
+  const results = await Promise.allSettled([
     fetchBloodBiomarkers(email, planType),
     fetchOuraData(email, options?.startDate, options?.endDate),
     fetchDexcomData(email, options?.startDate, options?.endDate),
@@ -1680,6 +1700,23 @@ export async function fetchAllEcosystemData(
     fetchWhoopData(email),
     fetchSpotifyData(email),
   ]);
+
+  // Extract values from settled results, creating failed sources for rejected promises
+  const failedSources: string[] = [];
+  const extractResult = (result: PromiseSettledResult<EcosystemDataSource>, index: number): EcosystemDataSource => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    }
+    // Promise was rejected - log and return a failed source
+    const sourceName = sourceNames[index];
+    failedSources.push(sourceName);
+    logger.error(`Promise rejected for ${sourceName}`, result.reason, { email, source: sourceName });
+    return createFailedSource(sourceName, result.reason);
+  };
+
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify] = results.map(extractResult);
+
+  const allSources = [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify];
 
   const result: EcosystemFetchResult = {
     bloodBiomarkers,
@@ -1693,12 +1730,29 @@ export async function fetchAllEcosystemData(
     whoop,
     spotify,
     fetchTimestamp: new Date().toISOString(),
-    successCount: [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify].filter(s => s.available).length,
+    successCount: allSources.filter(s => s.available).length,
     totalSources: 10,
+    failedSources: failedSources.length > 0 ? failedSources : undefined,
+    partial: failedSources.length > 0 && failedSources.length < 10,
   };
 
   const duration = Date.now() - startTime;
-  console.log(`[Ecosystem Fetcher] Completed in ${duration}ms. Success: ${result.successCount}/${result.totalSources} sources`);
+  if (failedSources.length > 0) {
+    logger.warn('Ecosystem fetch completed with failures', {
+      email,
+      duration,
+      failedSources,
+      successCount: result.successCount,
+      totalSources: result.totalSources,
+    });
+  } else {
+    logger.info('Ecosystem fetch completed', {
+      email,
+      duration,
+      successCount: result.successCount,
+      totalSources: result.totalSources,
+    });
+  }
 
   return result;
 }

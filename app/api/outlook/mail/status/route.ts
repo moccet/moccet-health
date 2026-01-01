@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAccessToken } from '@/lib/services/token-manager';
+import { getOrganizationMode, hasFoldersSetup } from '@/lib/services/outlook-category-manager';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,6 +70,8 @@ export async function GET(request: NextRequest) {
       subscriptionResult,
       categoryCountResult,
       draftCountResult,
+      organizationMode,
+      foldersSetup,
     ] = await Promise.all([
       // Check if Outlook is connected (has tokens)
       getAccessToken(userEmail, 'outlook'),
@@ -108,6 +111,12 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true })
         .eq('user_email', userEmail)
         .eq('email_provider', 'outlook'),
+
+      // Get organization mode
+      getOrganizationMode(userEmail),
+
+      // Check if folders are setup
+      hasFoldersSetup(userEmail),
     ]);
 
     // Determine connection status
@@ -139,6 +148,8 @@ export async function GET(request: NextRequest) {
         categorizedEmailCount,
         draftCount,
         connectedAt: settingsResult.data?.created_at ?? null,
+        organizationMode,
+        foldersSetup,
       },
       { headers: corsHeaders }
     );

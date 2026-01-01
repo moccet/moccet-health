@@ -439,6 +439,42 @@ export class OutlookMailClient {
     return this.request(`/me/mailFolders/${folderNameOrId}`);
   }
 
+  /**
+   * Get child folders of a folder
+   */
+  async getChildFolders(parentFolderId: string): Promise<{ value: OutlookFolder[] }> {
+    return this.request(`/me/mailFolders/${parentFolderId}/childFolders?$top=100`);
+  }
+
+  /**
+   * Create a new folder at the top level
+   */
+  async createFolder(displayName: string): Promise<OutlookFolder> {
+    return this.request('/me/mailFolders', {
+      method: 'POST',
+      body: JSON.stringify({ displayName }),
+    });
+  }
+
+  /**
+   * Create a child folder under a parent folder
+   */
+  async createChildFolder(parentFolderId: string, displayName: string): Promise<OutlookFolder> {
+    return this.request(`/me/mailFolders/${parentFolderId}/childFolders`, {
+      method: 'POST',
+      body: JSON.stringify({ displayName }),
+    });
+  }
+
+  /**
+   * Delete a folder
+   */
+  async deleteFolder(folderId: string): Promise<void> {
+    await this.request(`/me/mailFolders/${folderId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // =========================================================================
   // SUBSCRIPTIONS (Webhooks)
   // =========================================================================

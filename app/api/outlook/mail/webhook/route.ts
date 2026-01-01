@@ -16,7 +16,7 @@ import { applyCategoryToEmail, MoccetCategoryName } from '@/lib/services/outlook
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -40,16 +40,42 @@ interface NotificationPayload {
 }
 
 /**
+ * GET /api/outlook/mail/webhook
+ * Handle Microsoft Graph validation requests (sent as GET with validationToken)
+ */
+export async function GET(request: NextRequest) {
+  const validationToken = request.nextUrl.searchParams.get('validationToken');
+
+  if (validationToken) {
+    console.log('[Outlook Webhook] Responding to GET validation request');
+    return new NextResponse(validationToken, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+    });
+  }
+
+  // No validation token - return 200 to prevent errors
+  return new NextResponse('Webhook endpoint active', {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  });
+}
+
+/**
  * POST /api/outlook/mail/webhook
  * Handle Microsoft Graph change notifications
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check for validation token (Microsoft sends this when creating subscription)
+    // Check for validation token (Microsoft may also send via POST)
     const validationToken = request.nextUrl.searchParams.get('validationToken');
 
     if (validationToken) {
-      console.log('[Outlook Webhook] Responding to validation request');
+      console.log('[Outlook Webhook] Responding to POST validation request');
       return new NextResponse(validationToken, {
         status: 200,
         headers: {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createLogger } from '@/lib/utils/logger';
+import { uuidSchema, patchInsightSchema, validateBody, formatZodError } from '@/lib/validation/schemas';
+
+const logger = createLogger('InsightDetailAPI');
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -13,6 +17,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
 
+    // Validate UUID format
+    const idValidation = uuidSchema.safeParse(id);
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid insight ID format' },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -22,7 +35,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .single();
 
     if (error) {
-      console.error('[Insight API] Error:', error);
+      logger.error('Error fetching insight', error, { id });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -35,7 +48,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       insight: data,
     });
   } catch (error) {
-    console.error('[Insight API] Error:', error);
+    logger.error('Error fetching insight', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -47,7 +60,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
  * PATCH /api/user/insights/:id
  * Update an insight (mark viewed, dismissed, or action taken)
  *
- * Body (all optional):
+ * Body (at least one required):
  * - viewed: boolean - Mark as viewed
  * - dismissed: boolean - Mark as dismissed
  * - acted_on: boolean - Mark action taken
@@ -56,7 +69,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
+
+    // Validate UUID format
+    const idValidation = uuidSchema.safeParse(id);
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid insight ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate request body
     const body = await request.json();
+    const validation = validateBody(body, patchInsightSchema);
+    if (!validation.success) {
+      return NextResponse.json(formatZodError(validation.error), { status: 400 });
+    }
+
+    const { viewed, dismissed, acted_on, action_taken } = validation.data;
 
     const supabase = await createClient();
 
@@ -65,18 +95,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       updated_at: new Date().toISOString(),
     };
 
-    if (body.viewed === true) {
+    if (viewed === true) {
       updateData.viewed_at = new Date().toISOString();
     }
 
-    if (body.dismissed === true) {
+    if (dismissed === true) {
       updateData.dismissed_at = new Date().toISOString();
     }
 
-    if (body.acted_on === true) {
+    if (acted_on === true) {
       updateData.acted_on = true;
-      if (body.action_taken) {
-        updateData.action_taken = body.action_taken;
+      if (action_taken) {
+        updateData.action_taken = action_taken;
       }
       // Also dismiss when action is taken
       updateData.dismissed_at = new Date().toISOString();
@@ -90,16 +120,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .single();
 
     if (error) {
-      console.error('[Insight API] Error:', error);
+      logger.error('Error updating insight', error, { id });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    logger.info('Insight updated', { id, viewed, dismissed, acted_on });
 
     return NextResponse.json({
       success: true,
       insight: data,
     });
   } catch (error) {
-    console.error('[Insight API] Error:', error);
+    logger.error('Error updating insight', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -115,6 +147,15 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
 
+    // Validate UUID format
+    const idValidation = uuidSchema.safeParse(id);
+    if (!idValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid insight ID format' },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -128,9 +169,11 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       .single();
 
     if (error) {
-      console.error('[Insight API] Error:', error);
+      logger.error('Error dismissing insight', error, { id });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    logger.info('Insight dismissed', { id });
 
     return NextResponse.json({
       success: true,
@@ -138,7 +181,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       insight: data,
     });
   } catch (error) {
-    console.error('[Insight API] Error:', error);
+    logger.error('Error dismissing insight', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -9,6 +9,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getUserIntegrations, type Provider } from '@/lib/services/token-manager';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('MCPSync');
 
 // ============================================================================
 // TYPES
@@ -218,7 +221,7 @@ async function syncProvider(
   }
 
   const startTime = Date.now();
-  console.log(`[MCP Sync] Starting sync for ${provider} (${email})`);
+  logger.info('Starting provider sync', { provider, email });
 
   try {
     // Call the provider's sync endpoint
@@ -235,7 +238,7 @@ async function syncProvider(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`[MCP Sync] ${provider} sync failed:`, errorData);
+      logger.error(`${provider} sync failed`, null, { provider, email, error: errorData });
 
       return {
         provider,
@@ -248,7 +251,7 @@ async function syncProvider(
 
     const result = await response.json();
 
-    console.log(`[MCP Sync] ${provider} sync completed in ${duration}ms`);
+    logger.info('Provider sync completed', { provider, email, duration });
 
     return {
       provider,
@@ -259,7 +262,7 @@ async function syncProvider(
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[MCP Sync] ${provider} sync error:`, error);
+    logger.error(`${provider} sync error`, error, { provider, email });
 
     return {
       provider,
@@ -369,7 +372,7 @@ async function calculateDataQuality(
       }
     }
   } catch (error) {
-    console.error(`[MCP Sync] Error calculating quality for ${provider}:`, error);
+    logger.error('Error calculating data quality', error, { provider });
     dataGaps.push('Error accessing data');
   }
 
@@ -398,7 +401,7 @@ export async function syncAllIntegrations(
     baseUrl?: string; // Base URL for API calls
   }
 ): Promise<MCPSyncStatus> {
-  console.log(`[MCP Sync] Starting sync for ${email}`);
+  logger.info('Starting full sync', { email });
 
   const startTime = Date.now();
   const baseUrl = options?.baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -407,7 +410,7 @@ export async function syncAllIntegrations(
   const { integrations, error: integrationsError } = await getUserIntegrations(email);
 
   if (integrationsError || !integrations) {
-    console.error('[MCP Sync] Failed to get user integrations:', integrationsError);
+    logger.error('Failed to get user integrations', integrationsError, { email });
     return {
       userEmail: email,
       totalIntegrations: 0,
@@ -428,7 +431,7 @@ export async function syncAllIntegrations(
     ? activeProviders.filter(p => options.providers!.includes(p))
     : activeProviders;
 
-  console.log(`[MCP Sync] Found ${providersToSync.length} active integrations:`, providersToSync);
+  logger.info('Found active integrations', { email, count: providersToSync.length, providers: providersToSync });
 
   // Check which providers need syncing
   const syncNeeded = options?.forceSync
@@ -440,7 +443,7 @@ export async function syncAllIntegrations(
         })
       ).then(results => results.filter((p): p is Provider => p !== null));
 
-  console.log(`[MCP Sync] ${syncNeeded.length} providers need syncing:`, syncNeeded);
+  logger.info('Providers need syncing', { email, count: syncNeeded.length, providers: syncNeeded });
 
   // Sync providers in parallel
   const syncResults = await Promise.all(
@@ -463,7 +466,7 @@ export async function syncAllIntegrations(
     avgConfidence >= 40 ? 'fair' : 'poor';
 
   const duration = Date.now() - startTime;
-  console.log(`[MCP Sync] Completed in ${duration}ms. Overall health: ${overallHealth}`);
+  logger.info('Sync completed', { email, duration, overallHealth });
 
   return {
     userEmail: email,

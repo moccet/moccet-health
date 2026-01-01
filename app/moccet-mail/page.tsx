@@ -1,444 +1,290 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import MailNavigation from './MailNavigation';
+import { createClient } from '@/lib/supabase/client';
 import './mail.css';
 
-interface PatternData {
-  meetingDensity?: {
-    avgMeetingsPerDay: number;
-    peakHours: string[];
-    backToBackPercentage: number;
-  };
-  workHours?: {
-    start: string;
-    end: string;
-    weekendActivity: boolean;
-  };
-  emailVolume?: {
-    avgPerDay: number;
-    afterHoursPercentage: number;
-  };
-}
+export default function MoccetMailLandingPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-export default function MoccetMailPage() {
-  // Connection state
-  const [isConnected, setIsConnected] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Feature states
-  const [patterns, setPatterns] = useState<PatternData | null>(null);
-  const [labelsCreated, setLabelsCreated] = useState(false);
-  const [draftCreated, setDraftCreated] = useState(false);
-  const [eventCreated, setEventCreated] = useState<{ title: string; url: string } | null>(null);
-
-  // Loading states
-  const [loadingEmails, setLoadingEmails] = useState(false);
-  const [loadingCalendar, setLoadingCalendar] = useState(false);
-  const [loadingLabels, setLoadingLabels] = useState(false);
-  const [creatingDraft, setCreatingDraft] = useState(false);
-  const [creatingEvent, setCreatingEvent] = useState(false);
-
-  // Check connection on mount
+  // Check if already authenticated
   useEffect(() => {
-    const cookies = document.cookie.split(';');
-    const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
-
-    if (gmailEmailCookie) {
-      const email = gmailEmailCookie.split('=')[1];
-      setIsConnected(true);
-      setUserEmail(decodeURIComponent(email));
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-      setIsConnected(true);
-      setTimeout(() => {
-        const cookies = document.cookie.split(';');
-        const emailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
-        if (emailCookie) {
-          setUserEmail(decodeURIComponent(emailCookie.split('=')[1]));
-        }
-      }, 500);
-    }
-  }, []);
-
-  const handleConnect = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/gmail/auth');
-      const data = await response.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Already logged in, redirect to dashboard
+        router.push('/moccet-mail/dashboard');
+      } else {
+        setIsCheckingAuth(false);
       }
-    } catch (error) {
-      console.error('Error connecting:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    checkAuth();
+  }, [router, supabase.auth]);
 
-  const handleDisconnect = async () => {
-    setLoading(true);
-    try {
-      await fetch('/api/gmail/disconnect', { method: 'POST' });
-      setIsConnected(false);
-      setUserEmail('');
-      setPatterns(null);
-      setLabelsCreated(false);
-      setDraftCreated(false);
-      setEventCreated(null);
-    } catch (error) {
-      console.error('Error disconnecting:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEmailData = async () => {
-    setLoadingEmails(true);
-    try {
-      const response = await fetch('/api/gmail/fetch-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail }),
-      });
-      const data = await response.json();
-      if (data.success && data.patterns) {
-        setPatterns(data.patterns);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoadingEmails(false);
-    }
-  };
-
-  const fetchCalendarData = async () => {
-    setLoadingCalendar(true);
-    try {
-      const response = await fetch('/api/gmail/fetch-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail }),
-      });
-      const data = await response.json();
-      if (data.success && data.patterns) {
-        setPatterns(data.patterns);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoadingCalendar(false);
-    }
-  };
-
-  const setupLabels = async () => {
-    setLoadingLabels(true);
-    try {
-      const response = await fetch('/api/gmail/labels/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, backfill: false }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setLabelsCreated(true);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoadingLabels(false);
-    }
-  };
-
-  const createDraft = async () => {
-    setCreatingDraft(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setDraftCreated(true);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setCreatingDraft(false);
-    }
-  };
-
-  const createCalendarEvent = async () => {
-    setCreatingEvent(true);
-    try {
-      const now = new Date();
-      const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      startTime.setHours(10, 0, 0, 0);
-      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-
-      const response = await fetch('/api/calendar/create-event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail,
-          title: 'Moccet Wellness Check-in',
-          description: 'AI-scheduled wellness reminder from Moccet',
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setEventCreated({ title: data.title, url: data.eventUrl });
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setCreatingEvent(false);
-    }
-  };
+  if (isCheckingAuth) {
+    return (
+      <main className="mail-page">
+        <MailNavigation />
+        <div className="mail-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <div className="loading-spinner"></div>
+        </div>
+        <style jsx>{`
+          .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a1a1a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </main>
+    );
+  }
 
   return (
     <main className="mail-page">
       <MailNavigation />
 
-      <div className="mail-container">
-        {/* Hero */}
-        <section className="mail-hero">
-          <h1>moccet mail</h1>
-          <p>
+      <div className="landing-container">
+        {/* Hero Section */}
+        <section className="landing-hero">
+          <h1><span className="title-moccet">moccet</span> <span className="title-mail">mail</span></h1>
+          <p className="hero-subtitle">
             Intelligent inbox management that learns your patterns and helps you
-            stay focused on what matters. Connect your Gmail and Calendar to get started.
+            stay focused on what matters.
           </p>
+
+          <button
+            onClick={() => window.location.href = '/moccet-mail/auth'}
+            className="get-started-button"
+          >
+            Get Started
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
         </section>
 
-        {/* Connection Card */}
-        <section className="connection-card">
-          <h2>Connect your Google account</h2>
-          <p>
-            Moccet Mail analyzes your email and calendar patterns to provide personalized
-            productivity insights and help you manage your inbox more effectively.
-          </p>
-
-          <div className="scopes-list">
-            <h3>Permissions we request</h3>
-            <ul>
-              <li><code>gmail.readonly</code> Read email messages</li>
-              <li><code>gmail.modify</code> Apply labels to emails</li>
-              <li><code>gmail.compose</code> Create email drafts</li>
-              <li><code>calendar.readonly</code> Read calendar events</li>
-              <li><code>calendar.events</code> Create calendar events</li>
-              <li><code>userinfo.email</code> Get your email address</li>
-            </ul>
+        {/* Features Grid */}
+        <section className="landing-features">
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <h3>Smart Labels</h3>
+            <p>AI-powered categorization that organizes your inbox automatically</p>
           </div>
 
-          {isConnected ? (
-            <div className="connected-status">
-              <div className="connected-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Connected as {userEmail}
-              </div>
-              <button
-                onClick={handleDisconnect}
-                disabled={loading}
-                className="disconnect-button"
-              >
-                {loading ? 'Disconnecting...' : 'Disconnect'}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleConnect}
-              disabled={loading}
-              className="connect-button"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              {loading ? 'Connecting...' : 'Connect with Google'}
-            </button>
-          )}
+            </div>
+            <h3>Draft Replies</h3>
+            <p>AI-suggested responses that match your writing style</p>
+          </div>
+
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3>Auto Scheduling</h3>
+            <p>Automatically create calendar events with Google Meet</p>
+          </div>
+
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3>Insights</h3>
+            <p>Understand your email patterns and optimize your workflow</p>
+          </div>
         </section>
 
-        {/* Feature Cards - Only show when connected */}
-        {isConnected && (
-          <>
-            <div className="feature-grid">
-              {/* Read Emails */}
-              <div className="feature-card">
-                <div className="feature-header">
-                  <span className="scope-badge readonly">gmail.readonly</span>
-                  <h3>Analyze Email Patterns</h3>
-                </div>
-                <p>
-                  We analyze your email patterns to understand your communication habits
-                  and provide insights to reduce inbox stress.
-                </p>
-                <button
-                  onClick={fetchEmailData}
-                  disabled={loadingEmails}
-                  className={`feature-button ${patterns?.emailVolume ? 'success' : ''}`}
-                >
-                  {patterns?.emailVolume ? 'Analysis Complete' : loadingEmails ? 'Analyzing...' : 'Analyze Emails'}
-                </button>
-
-                {patterns?.emailVolume && (
-                  <div className="result-display">
-                    <h4>Email Insights</h4>
-                    <div className="result-item">
-                      <div className="title">{patterns.emailVolume.avgPerDay} emails/day average</div>
-                      <div className="subtitle">{patterns.emailVolume.afterHoursPercentage}% sent after hours</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Read Calendar */}
-              <div className="feature-card">
-                <div className="feature-header">
-                  <span className="scope-badge readonly">calendar.readonly</span>
-                  <h3>Analyze Calendar</h3>
-                </div>
-                <p>
-                  We read your calendar to find optimal times for wellness activities
-                  and identify scheduling patterns that may affect your health.
-                </p>
-                <button
-                  onClick={fetchCalendarData}
-                  disabled={loadingCalendar}
-                  className={`feature-button ${patterns?.meetingDensity ? 'success' : ''}`}
-                >
-                  {patterns?.meetingDensity ? 'Analysis Complete' : loadingCalendar ? 'Analyzing...' : 'Analyze Calendar'}
-                </button>
-
-                {patterns?.meetingDensity && (
-                  <div className="result-display">
-                    <h4>Calendar Insights</h4>
-                    <div className="result-item">
-                      <div className="title">{patterns.meetingDensity.avgMeetingsPerDay} meetings/day</div>
-                      <div className="subtitle">{patterns.meetingDensity.backToBackPercentage}% back-to-back</div>
-                    </div>
-                    <div className="result-item">
-                      <div className="title">Work hours: {patterns.workHours?.start} - {patterns.workHours?.end}</div>
-                      <div className="subtitle">Peak: {patterns.meetingDensity.peakHours?.slice(0, 2).join(', ')}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Apply Labels */}
-              <div className="feature-card">
-                <div className="feature-header">
-                  <span className="scope-badge modify">gmail.modify</span>
-                  <h3>Apply Labels</h3>
-                </div>
-                <p>
-                  We create labels to help organize your inbox automatically.
-                  Categories include Action Required, Follow Up, and Low Priority.
-                </p>
-                <button
-                  onClick={setupLabels}
-                  disabled={loadingLabels || labelsCreated}
-                  className={`feature-button ${labelsCreated ? 'success' : ''}`}
-                >
-                  {labelsCreated ? 'Labels Created' : loadingLabels ? 'Creating...' : 'Create Labels'}
-                </button>
-
-                {labelsCreated && (
-                  <div className="labels-display">
-                    <span className="label-tag">moccet/Action Required</span>
-                    <span className="label-tag">moccet/Follow Up</span>
-                    <span className="label-tag">moccet/Low Priority</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Create Draft */}
-              <div className="feature-card">
-                <div className="feature-header">
-                  <span className="scope-badge compose">gmail.compose</span>
-                  <h3>Create Drafts</h3>
-                </div>
-                <p>
-                  Our AI suggests email replies that appear in your Drafts folder.
-                  We never send emails automatically without your approval.
-                </p>
-                <button
-                  onClick={createDraft}
-                  disabled={creatingDraft || draftCreated}
-                  className={`feature-button ${draftCreated ? 'success' : ''}`}
-                >
-                  {draftCreated ? 'Draft Created' : creatingDraft ? 'Creating...' : 'Create Sample Draft'}
-                </button>
-
-                {draftCreated && (
-                  <div className="success-message">
-                    <p>Draft created! Check your Gmail Drafts folder to review and send.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Create Calendar Event */}
-              <div className="feature-card">
-                <div className="feature-header">
-                  <span className="scope-badge events">calendar.events</span>
-                  <h3>Schedule Events</h3>
-                </div>
-                <p>
-                  We schedule wellness activities, workout reminders, and health check-ins
-                  directly to your calendar based on your availability.
-                </p>
-                <button
-                  onClick={createCalendarEvent}
-                  disabled={creatingEvent || eventCreated !== null}
-                  className={`feature-button ${eventCreated ? 'success' : ''}`}
-                >
-                  {eventCreated ? 'Event Created' : creatingEvent ? 'Creating...' : 'Create Wellness Event'}
-                </button>
-
-                {eventCreated && (
-                  <div className="success-message">
-                    <p>
-                      &ldquo;{eventCreated.title}&rdquo; added to your calendar.{' '}
-                      <a href={eventCreated.url} target="_blank" rel="noopener noreferrer">
-                        View in Google Calendar
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Disconnect */}
-              <div className="feature-card disconnect-section">
-                <h3>Revoke Access</h3>
-                <p>
-                  You can disconnect your Google account at any time. This removes
-                  all stored tokens and revokes our access to your data.
-                </p>
-                <button
-                  onClick={handleDisconnect}
-                  disabled={loading}
-                  className="disconnect-button"
-                >
-                  {loading ? 'Disconnecting...' : 'Disconnect Google Account'}
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Privacy Footer */}
-        <footer className="privacy-footer">
+        {/* Privacy Notice */}
+        <section className="landing-privacy">
           <p>
-            <strong>Privacy:</strong> Moccet does not store email content. Data is processed in real-time for insights only.
-            <br />
-            <a href="/privacy-policy">Read our Privacy Policy</a>
+            <strong>Privacy first:</strong> We never store your email content. Data is processed in real-time only.
           </p>
-        </footer>
+        </section>
       </div>
+
+      <style jsx>{`
+        .landing-container {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 80px 40px;
+          text-align: center;
+        }
+
+        .landing-hero {
+          margin-bottom: 80px;
+        }
+
+        .landing-hero h1 {
+          font-size: 64px;
+          letter-spacing: -0.02em;
+          line-height: 1.1;
+          margin: 0 0 24px 0;
+          color: #1a1a1a;
+        }
+
+        .title-moccet {
+          font-family: "Inter", Helvetica;
+          font-weight: 900;
+        }
+
+        .title-mail {
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-weight: 500;
+          font-stretch: expanded;
+        }
+
+        .hero-subtitle {
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          color: #4a4a4a;
+          font-size: 20px;
+          line-height: 1.6;
+          margin: 0 auto 40px auto;
+          max-width: 500px;
+        }
+
+        .get-started-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 18px 36px;
+          background-color: #1a1a1a;
+          color: #ffffff;
+          border: none;
+          border-radius: 12px;
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 17px;
+          letter-spacing: -0.01em;
+          cursor: pointer;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+
+        .get-started-button:hover {
+          background-color: #333;
+          transform: translateY(-1px);
+        }
+
+        .landing-features {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+          margin-bottom: 60px;
+        }
+
+        .feature-item {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 32px 24px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+          text-align: center;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .feature-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-icon {
+          width: 56px;
+          height: 56px;
+          background: #f8f7f2;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 20px auto;
+        }
+
+        .feature-icon svg {
+          width: 28px;
+          height: 28px;
+          color: #1a1a1a;
+        }
+
+        .feature-item h3 {
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 16px;
+          color: #1a1a1a;
+          margin: 0 0 10px 0;
+        }
+
+        .feature-item p {
+          font-family: "Inter", Helvetica;
+          font-size: 14px;
+          color: #666666;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .landing-privacy {
+          padding: 24px;
+          background: #f8f7f2;
+          border-radius: 12px;
+        }
+
+        .landing-privacy p {
+          font-family: "Inter", Helvetica;
+          font-size: 14px;
+          color: #666666;
+          margin: 0;
+        }
+
+        .landing-privacy strong {
+          color: #1a1a1a;
+        }
+
+        @media (max-width: 900px) {
+          .landing-features {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 600px) {
+          .landing-container {
+            padding: 60px 24px;
+          }
+
+          .landing-hero h1 {
+            font-size: 40px;
+          }
+
+          .hero-subtitle {
+            font-size: 17px;
+          }
+
+          .landing-features {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </main>
   );
 }

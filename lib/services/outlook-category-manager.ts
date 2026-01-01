@@ -63,6 +63,23 @@ export const MOCCET_CATEGORIES = {
 
 export type MoccetCategoryName = keyof typeof MOCCET_CATEGORIES;
 
+// Folder display names (matching category names)
+export const MOCCET_FOLDERS: Record<MoccetCategoryName, string> = {
+  to_respond: 'To Respond',
+  fyi: 'FYI',
+  awaiting_reply: 'Awaiting Reply',
+  actioned: 'Actioned',
+  notifications: 'Notifications',
+  comment: 'Comment',
+  meeting_update: 'Meeting Update',
+  marketing: 'Marketing',
+};
+
+export const MOCCET_PARENT_FOLDER_NAME = 'Moccet';
+
+// Organization modes
+export type OrganizationMode = 'categories' | 'folders' | 'both';
+
 // Category priority for conflicts (higher wins)
 export const CATEGORY_PRIORITY: Record<MoccetCategoryName, number> = {
   to_respond: 10,
@@ -217,6 +234,219 @@ export async function setupUserCategories(
 }
 
 // =========================================================================
+// FOLDER SETUP
+// =========================================================================
+
+export interface FolderSetupResult {
+  success: boolean;
+  parentFolderId: string | null;
+  foldersCreated: number;
+  foldersExisting: number;
+  errors: string[];
+}
+
+/**
+ * Setup all Moccet folders in user's Outlook account
+ * Creates a parent "Moccet" folder with subfolders for each category
+ */
+export async function setupMoccetFolders(
+  userEmail: string,
+  userCode?: string
+): Promise<FolderSetupResult> {
+  console.log(`[CategoryManager] Setting up folders for ${userEmail}`);
+
+  const client = await createOutlookClient(userEmail, userCode);
+  if (!client) {
+    return {
+      success: false,
+      parentFolderId: null,
+      foldersCreated: 0,
+      foldersExisting: 0,
+      errors: ['Failed to authenticate with Outlook'],
+    };
+  }
+
+  const supabase = createAdminClient();
+  const errors: string[] = [];
+  let foldersCreated = 0;
+  let foldersExisting = 0;
+  let parentFolderId: string | null = null;
+
+  try {
+    // Get existing top-level folders
+    const foldersResponse = await client.getFolders();
+    const existingFolders = foldersResponse.value || [];
+    const existingFolderMap = new Map(
+      existingFolders.map((f) => [f.displayName.toLowerCase(), f])
+    );
+
+    // Find or create parent Moccet folder
+    const existingParent = existingFolderMap.get(MOCCET_PARENT_FOLDER_NAME.toLowerCase());
+    if (existingParent) {
+      parentFolderId = existingParent.id;
+      console.log(`[CategoryManager] Parent folder exists: ${parentFolderId}`);
+    } else {
+      const newParent = await client.createFolder(MOCCET_PARENT_FOLDER_NAME);
+      parentFolderId = newParent.id;
+      foldersCreated++;
+      console.log(`[CategoryManager] Created parent folder: ${parentFolderId}`);
+    }
+
+    // Get existing child folders
+    const childFoldersResponse = await client.getChildFolders(parentFolderId);
+    const existingChildFolders = childFoldersResponse.value || [];
+    const existingChildMap = new Map(
+      existingChildFolders.map((f) => [f.displayName.toLowerCase(), f])
+    );
+
+    // Create each category subfolder
+    for (const [categoryName, folderDisplayName] of Object.entries(MOCCET_FOLDERS)) {
+      const existingChild = existingChildMap.get(folderDisplayName.toLowerCase());
+      let folderId: string;
+
+      if (existingChild) {
+        folderId = existingChild.id;
+        foldersExisting++;
+        console.log(`[CategoryManager] Folder exists: ${folderDisplayName}`);
+      } else {
+        try {
+          const newFolder = await client.createChildFolder(parentFolderId, folderDisplayName);
+          folderId = newFolder.id;
+          foldersCreated++;
+          console.log(`[CategoryManager] Created folder: ${folderDisplayName} (${folderId})`);
+        } catch (createError: unknown) {
+          const err = createError as { message?: string };
+          errors.push(`Failed to create folder ${folderDisplayName}: ${err.message}`);
+          console.error(`[CategoryManager] Failed to create ${folderDisplayName}:`, createError);
+          continue;
+        }
+      }
+
+      // Store folder mapping in database
+      await supabase.from('outlook_user_folders').upsert(
+        {
+          user_email: userEmail,
+          user_code: userCode || null,
+          folder_name: categoryName,
+          outlook_folder_id: folderId,
+          display_name: folderDisplayName,
+          parent_folder_id: parentFolderId,
+          is_synced: true,
+          last_synced_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_email,folder_name' }
+      );
+    }
+
+    console.log(
+      `[CategoryManager] Folder setup complete: ${foldersCreated} created, ${foldersExisting} existing`
+    );
+
+    return {
+      success: errors.length === 0,
+      parentFolderId,
+      foldersCreated,
+      foldersExisting,
+      errors,
+    };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.error('[CategoryManager] Folder setup failed:', error);
+    return {
+      success: false,
+      parentFolderId,
+      foldersCreated,
+      foldersExisting,
+      errors: [err.message || 'Unknown error'],
+    };
+  }
+}
+
+/**
+ * Get user's folder mapping from database
+ */
+export async function getUserFolderMapping(
+  userEmail: string
+): Promise<Map<MoccetCategoryName, string>> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from('outlook_user_folders')
+    .select('folder_name, outlook_folder_id')
+    .eq('user_email', userEmail)
+    .eq('is_synced', true);
+
+  const mapping = new Map<MoccetCategoryName, string>();
+  if (data) {
+    for (const row of data) {
+      if (row.outlook_folder_id) {
+        mapping.set(row.folder_name as MoccetCategoryName, row.outlook_folder_id);
+      }
+    }
+  }
+
+  return mapping;
+}
+
+/**
+ * Check if user has folders set up
+ */
+export async function hasFoldersSetup(userEmail: string): Promise<boolean> {
+  const supabase = createAdminClient();
+
+  const { count } = await supabase
+    .from('outlook_user_folders')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_email', userEmail)
+    .eq('is_synced', true);
+
+  return (count || 0) >= Object.keys(MOCCET_FOLDERS).length;
+}
+
+/**
+ * Get user's organization mode from settings
+ */
+export async function getOrganizationMode(userEmail: string): Promise<OrganizationMode> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from('email_draft_settings')
+    .select('outlook_organization_mode')
+    .eq('user_email', userEmail)
+    .maybeSingle();
+
+  return (data?.outlook_organization_mode as OrganizationMode) || 'categories';
+}
+
+/**
+ * Set user's organization mode
+ */
+export async function setOrganizationMode(
+  userEmail: string,
+  mode: OrganizationMode
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('email_draft_settings')
+    .upsert(
+      {
+        user_email: userEmail,
+        outlook_organization_mode: mode,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_email' }
+    );
+
+  if (error) {
+    console.error('[CategoryManager] Failed to set organization mode:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// =========================================================================
 // CATEGORY APPLICATION
 // =========================================================================
 
@@ -248,8 +478,8 @@ export async function getUserCategoryMapping(
 }
 
 /**
- * Apply a Moccet category to an email in Outlook
- * Also removes any other Moccet categories from the email
+ * Apply a Moccet category/folder to an email in Outlook
+ * Respects the user's organization mode setting (categories, folders, or both)
  */
 export async function applyCategoryToEmail(
   userEmail: string,
@@ -265,7 +495,7 @@ export async function applyCategoryToEmail(
     reasoning?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  console.log(`[CategoryManager] Applying category ${categoryName} to message ${messageId}`);
+  console.log(`[CategoryManager] Applying ${categoryName} to message ${messageId}`);
 
   const client = await createOutlookClient(userEmail, userCode);
   if (!client) {
@@ -275,40 +505,66 @@ export async function applyCategoryToEmail(
   const supabase = createAdminClient();
 
   try {
-    // Get category mapping
-    let categoryMapping = await getUserCategoryMapping(userEmail);
+    // Get user's organization mode
+    const organizationMode = await getOrganizationMode(userEmail);
+    console.log(`[CategoryManager] Organization mode: ${organizationMode}`);
 
-    if (categoryMapping.size === 0) {
-      // Categories not set up yet, try to set them up
-      console.log(`[CategoryManager] Categories not found, setting up for ${userEmail}`);
-      await setupUserCategories(userEmail, userCode);
-      categoryMapping = await getUserCategoryMapping(userEmail);
+    let categoryApplied = false;
+    let folderApplied = false;
+    let appliedFolderId: string | null = null;
+
+    // Apply category if mode is 'categories' or 'both'
+    if (organizationMode === 'categories' || organizationMode === 'both') {
+      // Get category mapping
+      let categoryMapping = await getUserCategoryMapping(userEmail);
 
       if (categoryMapping.size === 0) {
-        return { success: false, error: 'Categories not found after setup' };
+        console.log(`[CategoryManager] Categories not found, setting up for ${userEmail}`);
+        await setupUserCategories(userEmail, userCode);
+        categoryMapping = await getUserCategoryMapping(userEmail);
+      }
+
+      const categoryDisplayName = categoryMapping.get(categoryName);
+      if (categoryDisplayName) {
+        // Get current email to preserve non-Moccet categories
+        const email = await client.getEmail(messageId);
+        const existingCategories = email.categories || [];
+
+        // Get all Moccet category display names
+        const allMoccetDisplayNames = Array.from(categoryMapping.values());
+
+        // Filter out existing Moccet categories and add the new one
+        const nonMoccetCategories = existingCategories.filter(
+          (cat) => !allMoccetDisplayNames.includes(cat)
+        );
+        const newCategories = [...nonMoccetCategories, categoryDisplayName];
+
+        // Apply the updated categories
+        await client.applyCategoryToEmail(messageId, newCategories);
+        categoryApplied = true;
+        console.log(`[CategoryManager] Applied category ${categoryName}`);
       }
     }
 
-    const categoryDisplayName = categoryMapping.get(categoryName);
-    if (!categoryDisplayName) {
-      return { success: false, error: `Category ${categoryName} not found` };
+    // Move to folder if mode is 'folders' or 'both'
+    if (organizationMode === 'folders' || organizationMode === 'both') {
+      // Get folder mapping
+      let folderMapping = await getUserFolderMapping(userEmail);
+
+      if (folderMapping.size === 0) {
+        console.log(`[CategoryManager] Folders not found, setting up for ${userEmail}`);
+        await setupMoccetFolders(userEmail, userCode);
+        folderMapping = await getUserFolderMapping(userEmail);
+      }
+
+      const folderId = folderMapping.get(categoryName);
+      if (folderId) {
+        await client.moveEmail(messageId, folderId);
+        folderApplied = true;
+        appliedFolderId = folderId;
+        console.log(`[CategoryManager] Moved to folder ${categoryName}`);
+      }
     }
-
-    // Get current email to preserve non-Moccet categories
-    const email = await client.getEmail(messageId);
-    const existingCategories = email.categories || [];
-
-    // Get all Moccet category display names
-    const allMoccetDisplayNames = Array.from(categoryMapping.values());
-
-    // Filter out existing Moccet categories and add the new one
-    const nonMoccetCategories = existingCategories.filter(
-      (cat) => !allMoccetDisplayNames.includes(cat)
-    );
-    const newCategories = [...nonMoccetCategories, categoryDisplayName];
-
-    // Apply the updated categories
-    await client.applyCategoryToEmail(messageId, newCategories);
 
     // Get previous category assignment for this message
     const { data: existingAssignment } = await supabase
@@ -337,11 +593,13 @@ export async function applyCategoryToEmail(
         subject: metadata?.subject,
         is_applied: true,
         applied_at: new Date().toISOString(),
+        organization_method: organizationMode,
+        applied_folder_id: appliedFolderId,
       },
       { onConflict: 'user_email,message_id' }
     );
 
-    console.log(`[CategoryManager] Applied ${categoryName} to ${messageId}`);
+    console.log(`[CategoryManager] Applied ${categoryName} to ${messageId} (category: ${categoryApplied}, folder: ${folderApplied})`);
     return { success: true };
   } catch (error: unknown) {
     const err = error as { message?: string };

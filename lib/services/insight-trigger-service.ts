@@ -27,8 +27,10 @@ import { sendInsightNotification } from './onesignal-service';
 import { getUserContext, UserContext, getUserSubscriptionTier } from './user-context-service';
 import { getCompactedHistory, formatHistoryForPrompt } from './conversation-compactor';
 import { formatSentimentForPrompt } from './content-sentiment-analyzer';
+import { createLogger } from '@/lib/utils/logger';
 
 const openai = new OpenAI();
+const logger = createLogger('InsightTriggerService');
 
 // ============================================================================
 // TYPES
@@ -1014,7 +1016,7 @@ async function generateCrossSourceInsights(
     }
   }
 
-  console.log(`[Insight Trigger] Generated ${insights.length} cross-source insights for ${email}`);
+  logger.info('Generated cross-source insights', { email, insightCount: insights.length });
   return insights;
 }
 
@@ -1203,7 +1205,7 @@ function compareWeeks(
  * Generate comprehensive weekly analysis insights
  */
 export async function generateWeeklyAnalysis(email: string): Promise<GeneratedInsight[]> {
-  console.log(`[Insight Trigger] Generating weekly analysis for ${email}`);
+  logger.info('Generating weekly analysis', { email });
   const insights: GeneratedInsight[] = [];
 
   // Calculate date ranges
@@ -1519,7 +1521,7 @@ export async function generateWeeklyAnalysis(email: string): Promise<GeneratedIn
     });
   }
 
-  console.log(`[Insight Trigger] Generated ${insights.length} weekly analysis insights for ${email}`);
+  logger.info('Generated weekly analysis insights', { email, insightCount: insights.length });
   return insights;
 }
 
@@ -1593,12 +1595,12 @@ async function generateAIInsights(
   subscriptionTier: string = 'free'
 ): Promise<GeneratedInsight[]> {
   const tierConfig = INSIGHT_TIER_CONFIG[subscriptionTier] || INSIGHT_TIER_CONFIG.free;
-  console.log(`[Insight Trigger] Generating AI-powered insights for ${email} (${subscriptionTier} tier - ${tierConfig.insightCount} insights)`);
+  logger.info('Generating AI-powered insights', { email, tier: subscriptionTier, maxInsights: tierConfig.insightCount });
 
   // Skip if no meaningful data available
   const hasEcosystemData = Object.values(ecosystemData).some((d) => d !== null);
   if (!hasEcosystemData && !userContext?.labResults?.length) {
-    console.log('[Insight Trigger] No data available, skipping AI insights');
+    logger.info('No data available, skipping AI insights', { email });
     return [];
   }
 
@@ -1924,7 +1926,7 @@ async function generateAIInsights(
     try {
       parsed = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('[Insight Trigger] Failed to parse AI response:', parseError);
+      logger.error('Failed to parse AI response', parseError, { email });
       return [];
     }
 
@@ -1956,10 +1958,10 @@ async function generateAIInsights(
       },
     }));
 
-    console.log(`[Insight Trigger] Generated ${insights.length} AI-powered insights (${subscriptionTier} tier)`);
+    logger.info('Generated AI-powered insights', { email, tier: subscriptionTier, insightCount: insights.length });
     return insights;
   } catch (error) {
-    console.error('[Insight Trigger] Error generating AI insights:', error);
+    logger.error('Error generating AI insights', error, { email, tier: subscriptionTier });
     return [];
   }
 }
@@ -2080,7 +2082,7 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
     .single();
 
   if (error) {
-    console.error('[Insight Trigger] Error storing insight:', error);
+    logger.error('Error storing insight', error, { email });
     return null;
   }
 
@@ -2109,7 +2111,7 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
           .eq('id', insightId);
       }
     } catch (pushError) {
-      console.error('[Insight Trigger] Error sending push notification:', pushError);
+      logger.error('Error sending push notification', pushError, { email, insightId });
       // Don't fail the whole operation if push notification fails
     }
   }
@@ -2125,14 +2127,14 @@ export async function processAllProviders(email: string): Promise<{
   insights: GeneratedInsight[];
   errors: string[];
 }> {
-  console.log(`[Insight Trigger] Processing all providers for ${email}`);
+  logger.info('Processing all providers', { email });
 
   const allInsights: GeneratedInsight[] = [];
   const errors: string[] = [];
 
   // Get user's subscription tier first (determines insight depth)
   const subscriptionTier = await getUserSubscriptionTier(email);
-  console.log(`[Insight Trigger] User subscription tier: ${subscriptionTier}`);
+  logger.info('User subscription tier determined', { email, tier: subscriptionTier });
 
   // Fetch data from all providers AND user context in parallel
   const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, userContext] = await Promise.all([
@@ -2166,14 +2168,18 @@ export async function processAllProviders(email: string): Promise<{
       includeConversation: true,
       useAISelection: false, // Fetch all sources for comprehensive insights
     }).catch((e) => {
-      console.error(`[Insight Trigger] Error fetching user context: ${e.message}`);
+      logger.error('Error fetching user context', e, { email });
       return null;
     }),
   ]);
 
-  console.log(`[Insight Trigger] User context fetched: ${userContext ? 'yes' : 'no'}`);
+  logger.debug('User context fetched', { email, hasContext: !!userContext });
   if (userContext) {
-    console.log(`[Insight Trigger] Context includes - Labs: ${userContext.labResults?.length || 0}, Conversation: ${userContext.conversationHistory?.totalMessageCount || 0} messages`);
+    logger.debug('Context details', {
+      email,
+      labCount: userContext.labResults?.length || 0,
+      messageCount: userContext.conversationHistory?.totalMessageCount || 0,
+    });
   }
 
   // Generate insights from each available provider
@@ -2246,9 +2252,11 @@ export async function processAllProviders(email: string): Promise<{
     if (id) stored_count++;
   }
 
-  console.log(
-    `[Insight Trigger] Generated ${allInsights.length} insights, stored ${stored_count} for ${email}`
-  );
+  logger.info('Insights generated and stored', {
+    email,
+    generated: allInsights.length,
+    stored: stored_count,
+  });
 
   return {
     insights_generated: stored_count,
@@ -2265,7 +2273,7 @@ export async function processVitalEvent(
   eventType: string,
   eventData: Record<string, unknown>
 ): Promise<GeneratedInsight[]> {
-  console.log(`[Insight Trigger] Processing Vital event ${eventType} for ${email}`);
+  logger.info('Processing Vital event', { email, eventType });
 
   const insights: GeneratedInsight[] = [];
 
@@ -2351,7 +2359,7 @@ export async function getUsersWithIntegrations(): Promise<string[]> {
     .eq('is_active', true);
 
   if (error) {
-    console.error('[Insight Trigger] Error fetching users:', error);
+    logger.error('Error fetching users', error);
     return [];
   }
 

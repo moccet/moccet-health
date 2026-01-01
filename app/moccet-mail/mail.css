@@ -466,6 +466,11 @@
   color: #c2185b;
 }
 
+.scope-badge.send {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
 .feature-card h3 {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;

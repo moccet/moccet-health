@@ -47,7 +47,15 @@ const scopes: ScopeInfo[] = [
     badge: 'compose',
     access: ['Create new email drafts', 'Save drafts to your Drafts folder'],
     usage: ['Generate AI-suggested replies', 'Help you respond faster', 'Save drafts for your review'],
-    notDo: ['Send emails automatically', 'Access your contacts', 'Email anyone on your behalf'],
+    notDo: ['Send emails without approval', 'Access your contacts', 'Email anyone on your behalf'],
+  },
+  {
+    scope: 'gmail.send',
+    name: 'Send Emails',
+    badge: 'send',
+    access: ['Send emails you have approved', 'Send from your Gmail address'],
+    usage: ['Send draft replies after you click "Send"', 'Only sends emails you explicitly approve'],
+    notDo: ['Send emails automatically', 'Send without your confirmation', 'Email anyone without your explicit action'],
   },
   {
     scope: 'calendar.events',
@@ -326,6 +334,22 @@ export default function MoccetMailOnboardingPage() {
           )}
         </section>
 
+        {/* Important Notice */}
+        <section className="important-notice">
+          <div className="notice-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div className="notice-content">
+            <h3>Emails are never sent without your approval</h3>
+            <p>
+              We create draft replies for you to review. You must explicitly click &quot;Send&quot; to send any email.
+              We will <strong>never</strong> send emails automatically on your behalf.
+            </p>
+          </div>
+        </section>
+
         {/* Privacy Notice */}
         <section className="privacy-notice">
           <h3>Your privacy matters</h3>
@@ -338,6 +362,9 @@ export default function MoccetMailOnboardingPage() {
             </li>
             <li>
               <strong>Data processed in real-time</strong> - Nothing is saved to our servers
+            </li>
+            <li>
+              <strong>You control sending</strong> - All emails require your explicit approval before sending
             </li>
           </ul>
           <Link href="/privacy-policy" className="privacy-link">
@@ -623,6 +650,38 @@ export default function MoccetMailOnboardingPage() {
 
         .skip-button:hover {
           opacity: 0.7;
+        }
+
+        .important-notice {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          background: #e8f5e9;
+          border: 1px solid #a5d6a7;
+          border-radius: 12px;
+          padding: 20px 24px;
+          margin-bottom: 24px;
+        }
+
+        .notice-icon {
+          flex-shrink: 0;
+          color: #2e7d32;
+        }
+
+        .notice-content h3 {
+          font-family: "SF Pro", -apple-system, sans-serif;
+          font-weight: 600;
+          font-size: 15px;
+          color: #1b5e20;
+          margin: 0 0 8px 0;
+        }
+
+        .notice-content p {
+          font-family: "Inter", Helvetica;
+          font-size: 14px;
+          color: #2e7d32;
+          margin: 0;
+          line-height: 1.5;
         }
 
         .privacy-notice {

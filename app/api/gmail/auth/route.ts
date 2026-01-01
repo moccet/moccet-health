@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       'https://www.googleapis.com/auth/gmail.compose', // Allow creating drafts
       'https://www.googleapis.com/auth/gmail.labels',  // Create/manage labels
       'https://www.googleapis.com/auth/gmail.modify',  // Apply labels to messages
+      'https://www.googleapis.com/auth/gmail.send',    // Send emails (requires user approval)
       'https://www.googleapis.com/auth/calendar.readonly',
       'https://www.googleapis.com/auth/calendar.events', // Allow creating/editing calendar events
       'https://www.googleapis.com/auth/userinfo.email'

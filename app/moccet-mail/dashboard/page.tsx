@@ -24,6 +24,15 @@ interface Stats {
   meetingsScheduled: number;
 }
 
+interface PendingDraft {
+  id: string;
+  subject: string;
+  to: string;
+  preview: string;
+  createdAt: string;
+  threadId?: string;
+}
+
 export default function DashboardHomePage() {
   const supabase = createClient();
   const [user, setUser] = useState<{ email: string; user_metadata?: { full_name?: string; name?: string } } | null>(null);
@@ -32,6 +41,9 @@ export default function DashboardHomePage() {
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [showSetupComplete, setShowSetupComplete] = useState(true);
+  const [pendingDrafts, setPendingDrafts] = useState<PendingDraft[]>([]);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
+  const [sendingDraftId, setSendingDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,6 +72,17 @@ export default function DashboardHomePage() {
                 const eventsData = await eventsRes.json();
                 setMeetings(eventsData.events || []);
               }
+
+              // Load pending drafts
+              try {
+                const draftsRes = await fetch(`/api/gmail/drafts/pending?email=${encodeURIComponent(session.user.email || '')}`);
+                if (draftsRes.ok) {
+                  const draftsData = await draftsRes.json();
+                  setPendingDrafts(draftsData.drafts || []);
+                }
+              } catch (e) {
+                console.log('Drafts API not available yet');
+              }
             }
           }
         } catch (error) {
@@ -67,6 +90,7 @@ export default function DashboardHomePage() {
         }
 
         setIsLoadingMeetings(false);
+        setIsLoadingDrafts(false);
       }
     };
     loadData();
@@ -105,6 +129,54 @@ export default function DashboardHomePage() {
         day: 'numeric',
       });
     }
+  };
+
+  const handleSendDraft = async (draftId: string) => {
+    if (!user?.email) return;
+
+    setSendingDraftId(draftId);
+    try {
+      const response = await fetch('/api/gmail/drafts/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId, email: user.email }),
+      });
+
+      if (response.ok) {
+        // Remove the sent draft from the list
+        setPendingDrafts(prev => prev.filter(d => d.id !== draftId));
+      } else {
+        console.error('Failed to send draft');
+      }
+    } catch (error) {
+      console.error('Error sending draft:', error);
+    } finally {
+      setSendingDraftId(null);
+    }
+  };
+
+  const handleDiscardDraft = async (draftId: string) => {
+    if (!user?.email) return;
+
+    try {
+      const response = await fetch(`/api/gmail/drafts?id=${draftId}&email=${encodeURIComponent(user.email)}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the discarded draft from the list
+        setPendingDrafts(prev => prev.filter(d => d.id !== draftId));
+      } else {
+        console.error('Failed to discard draft');
+      }
+    } catch (error) {
+      console.error('Error discarding draft:', error);
+    }
+  };
+
+  const handleReviewDraft = (draftId: string) => {
+    // Open in Gmail or navigate to a review page
+    window.open(`https://mail.google.com/mail/u/0/#drafts`, '_blank');
   };
 
   return (
@@ -175,6 +247,90 @@ export default function DashboardHomePage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Pending Drafts Section - Shows emails awaiting user approval */}
+        {isConnected && (
+          <section className="drafts-section">
+            <div className="section-header">
+              <h2>Drafts Awaiting Your Approval</h2>
+              <span className="section-subtitle">Review before sending</span>
+            </div>
+
+            <div className="drafts-notice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Emails are <strong>never sent automatically</strong>. You must review and click &quot;Send&quot; for each draft.</span>
+            </div>
+
+            <div className="drafts-card">
+              {isLoadingDrafts ? (
+                <div className="drafts-loading">
+                  <div className="loading-spinner small"></div>
+                  <span>Loading drafts...</span>
+                </div>
+              ) : pendingDrafts.length === 0 ? (
+                <div className="drafts-empty">
+                  <div className="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="empty-text">No drafts pending approval</p>
+                  <p className="empty-subtext">When AI creates draft replies, they&apos;ll appear here for your review</p>
+                </div>
+              ) : (
+                <div className="drafts-list">
+                  {pendingDrafts.map((draft) => (
+                    <div key={draft.id} className="draft-item">
+                      <div className="draft-info">
+                        <div className="draft-to">To: {draft.to}</div>
+                        <div className="draft-subject">{draft.subject}</div>
+                        <div className="draft-preview">{draft.preview}</div>
+                      </div>
+                      <div className="draft-actions">
+                        <button
+                          className="draft-btn review"
+                          onClick={() => handleReviewDraft(draft.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Review
+                        </button>
+                        <button
+                          className="draft-btn send"
+                          onClick={() => handleSendDraft(draft.id)}
+                          disabled={sendingDraftId === draft.id}
+                        >
+                          {sendingDraftId === draft.id ? (
+                            <>Sending...</>
+                          ) : (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                              Send
+                            </>
+                          )}
+                        </button>
+                        <button
+                          className="draft-btn discard"
+                          onClick={() => handleDiscardDraft(draft.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         )}
 
         {/* Meetings Section */}
@@ -443,6 +599,166 @@ export default function DashboardHomePage() {
           font-weight: 400;
           font-size: 13px;
           color: #666;
+        }
+
+        .drafts-section {
+          margin-bottom: 32px;
+        }
+
+        .drafts-notice {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 16px;
+          background: #e8f5e9;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-family: "Inter", Helvetica;
+          font-size: 13px;
+          color: #2e7d32;
+        }
+
+        .drafts-notice svg {
+          flex-shrink: 0;
+          color: #2e7d32;
+        }
+
+        .drafts-card {
+          background: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+          overflow: hidden;
+        }
+
+        .drafts-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 40px;
+          color: #666;
+          font-family: "Inter", Helvetica;
+          font-size: 14px;
+        }
+
+        .drafts-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px 24px;
+          text-align: center;
+        }
+
+        .drafts-empty .empty-subtext {
+          font-size: 13px;
+          color: #999;
+          margin: 0;
+        }
+
+        .drafts-list {
+          padding: 8px;
+        }
+
+        .draft-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px;
+          border-radius: 8px;
+          border-bottom: 1px solid #f5f5f5;
+          transition: background-color 0.15s ease;
+        }
+
+        .draft-item:last-child {
+          border-bottom: none;
+        }
+
+        .draft-item:hover {
+          background-color: #f8f7f2;
+        }
+
+        .draft-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .draft-to {
+          font-family: "Inter", Helvetica;
+          font-size: 12px;
+          color: #999;
+          margin-bottom: 4px;
+        }
+
+        .draft-subject {
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 14px;
+          color: #1a1a1a;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .draft-preview {
+          font-family: "Inter", Helvetica;
+          font-size: 13px;
+          color: #666;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .draft-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .draft-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border: none;
+          border-radius: 6px;
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .draft-btn.review {
+          background: #f5f5f5;
+          color: #1a1a1a;
+        }
+
+        .draft-btn.review:hover {
+          background: #e8e8e8;
+        }
+
+        .draft-btn.send {
+          background: #1a1a1a;
+          color: white;
+        }
+
+        .draft-btn.send:hover {
+          opacity: 0.85;
+        }
+
+        .draft-btn.discard {
+          background: transparent;
+          color: #999;
+          padding: 8px;
+        }
+
+        .draft-btn.discard:hover {
+          background: #fff5f5;
+          color: #dc2626;
         }
 
         .meetings-section {

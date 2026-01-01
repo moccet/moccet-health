@@ -77,19 +77,31 @@ export default function MoccetMailOnboardingPage() {
   const [connecting, setConnecting] = useState(false);
   const [expandedScope, setExpandedScope] = useState<string | null>(null);
 
+  // Check Gmail connection status from database (user-specific, not cookies)
+  const checkGmailConnection = async (email: string) => {
+    try {
+      const response = await fetch(`/api/gmail/status?email=${encodeURIComponent(email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setIsConnected(data.isConnected);
+      }
+    } catch (error) {
+      console.error('Error checking Gmail status:', error);
+    }
+  };
+
   // Check authentication and Gmail connection status
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          setUserEmail(session.user.email || null);
+          const email = session.user.email || null;
+          setUserEmail(email);
 
-          // Check Gmail connection from cookies
-          const cookies = document.cookie.split(';');
-          const gmailEmailCookie = cookies.find(c => c.trim().startsWith('gmail_email='));
-          if (gmailEmailCookie) {
-            setIsConnected(true);
+          // Check Gmail connection from database (user-specific)
+          if (email) {
+            await checkGmailConnection(email);
           }
 
           // Check URL params for successful OAuth callback
@@ -113,7 +125,14 @@ export default function MoccetMailOnboardingPage() {
     const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setUserEmail(session.user.email || null);
+        const email = session.user.email || null;
+        setUserEmail(email);
+
+        // Check Gmail connection from database
+        if (email) {
+          await checkGmailConnection(email);
+        }
+
         setLoading(false);
       } else {
         // Wait a moment for cookies to be read, then check again
@@ -122,7 +141,14 @@ export default function MoccetMailOnboardingPage() {
           if (!retrySession?.user) {
             router.push('/moccet-mail');
           } else {
-            setUserEmail(retrySession.user.email || null);
+            const email = retrySession.user.email || null;
+            setUserEmail(email);
+
+            // Check Gmail connection from database
+            if (email) {
+              await checkGmailConnection(email);
+            }
+
             setLoading(false);
           }
         }, 500);
@@ -139,7 +165,9 @@ export default function MoccetMailOnboardingPage() {
   const handleConnectGmail = async () => {
     setConnecting(true);
     try {
-      const response = await fetch('/api/gmail/auth?returnPath=/moccet-mail/dashboard');
+      // Pass the Supabase user's email to link Gmail tokens to the correct user
+      const emailParam = userEmail ? `&userEmail=${encodeURIComponent(userEmail)}` : '';
+      const response = await fetch(`/api/gmail/auth?returnPath=/moccet-mail/dashboard${emailParam}`);
       const data = await response.json();
       if (data.authUrl) {
         window.location.href = data.authUrl;

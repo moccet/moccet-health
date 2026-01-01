@@ -31,7 +31,7 @@ export default function SettingsPage() {
           if (res.ok) {
             const data = await res.json();
             setGmailStatus({
-              connected: data.connected,
+              connected: data.isConnected,
               email: data.gmailEmail,
               connectedAt: data.connectedAt,
               scopes: data.scopes,

@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get('source') || 'web';
     const userId = searchParams.get('userId') || '';
+    const userEmail = searchParams.get('userEmail') || ''; // Supabase user's email for web users
 
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -31,8 +32,8 @@ export async function GET(request: NextRequest) {
       'https://www.googleapis.com/auth/userinfo.email'
     ];
 
-    // Pass source and userId in state parameter so callback knows this is from mobile
-    const state = JSON.stringify({ source, userId });
+    // Pass source, userId, and userEmail in state parameter
+    const state = JSON.stringify({ source, userId, userEmail });
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',

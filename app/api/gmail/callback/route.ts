@@ -9,14 +9,16 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code');
     const stateParam = searchParams.get('state');
 
-    // Parse state to check if this is from mobile
+    // Parse state to check if this is from mobile and get user info
     let source = 'web';
     let mobileUserId = '';
+    let stateUserEmail = ''; // Supabase user's email passed from auth
     if (stateParam) {
       try {
         const state = JSON.parse(stateParam);
         source = state.source || 'web';
         mobileUserId = state.userId || '';
+        stateUserEmail = state.userEmail || ''; // Email from web auth flow
       } catch (e) {
         // State is not JSON, ignore
       }
@@ -58,13 +60,13 @@ export async function GET(request: NextRequest) {
     const userInfo = await oauth2.userinfo.get();
     const googleEmail = userInfo.data.email || '';
 
-    // Get Forge account email and code from cookies (set during onboarding)
+    // Get user email - priority: state param (from web auth) > cookies > Google email
     const cookieStore = await cookies();
     const forgeEmail = cookieStore.get('user_email')?.value;
     const userCode = cookieStore.get('user_code')?.value;
 
-    // Use Forge email if available (to link to user's account), otherwise use Google email
-    const userEmail = forgeEmail || googleEmail;
+    // Use state email first (from web Supabase users), then cookie, then Google email
+    const userEmail = stateUserEmail || forgeEmail || googleEmail;
 
     // Store tokens in database
     if (userEmail && tokens.access_token) {
@@ -220,8 +222,8 @@ export async function GET(request: NextRequest) {
                 window.close();
               }, 1000);
             } else {
-              // Web: Redirect back to onboarding
-              const returnPath = '/forge/onboarding';
+              // Web: Redirect back to onboarding (moccet-mail for Supabase users, forge for others)
+              const returnPath = '${stateUserEmail ? '/moccet-mail/onboarding' : '/forge/onboarding'}';
               window.location.href = returnPath + '?auth=gmail&success=true';
             }
           </script>

@@ -265,8 +265,9 @@ export async function POST(request: NextRequest) {
     console.log(`[Step 3/6] Generated ${analysisResult.crossSourceInsights.length} rule-based insights`);
 
     // Step 5: AI-powered deep analysis (finds non-obvious patterns)
+    // Pass email to inject user's active goals into the AI prompt
     console.log('[Step 4/6] Running AI pattern analysis...');
-    const aiAnalysis = await analyzeWithAI(ecosystemData);
+    const aiAnalysis = await analyzeWithAI(ecosystemData, email);
     console.log(`[Step 4/6] Generated ${aiAnalysis.insights.length} AI insights`);
     if (aiAnalysis.primaryConcern) {
       console.log(`[Step 4/6] Primary concern: ${aiAnalysis.primaryConcern}`);

@@ -7,6 +7,8 @@
 
 import OpenAI from 'openai';
 import { EcosystemFetchResult } from './ecosystem-fetcher';
+import { classifyInsights, ClassifiedInsight, UnclassifiedInsight } from './insight-classifier';
+import { buildGoalsContext } from './goals-service';
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -16,14 +18,22 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
-export interface AIInsight {
+// Raw insight from AI (before classification)
+export interface AIInsightRaw {
   title: string;
   finding: string;
   dataCited: string[];
   impact: 'critical' | 'high' | 'medium' | 'low';
   actionableRecommendation: string;
   sources: string[];
+  confidence?: number;
+}
+
+// Classified insight (after post-classification)
+export interface AIInsight extends AIInsightRaw {
   designCategory: 'PREDICTION' | 'OPTIMIZATION' | 'ANALYSIS' | 'IKIGAI' | 'SOCIAL';
+  classificationConfidence?: number;
+  classificationReason?: string;
 }
 
 export interface AIAnalysisResult {
@@ -121,9 +131,21 @@ ${markers.map((m: any) => `- ${m.name}: ${m.value} (${m.status})${m.implications
 
 /**
  * Use AI to analyze ecosystem data and find genuinely interesting patterns
+ * @param ecosystemData - The ecosystem data to analyze
+ * @param email - Optional user email to fetch active goals for context
  */
-export async function analyzeWithAI(ecosystemData: EcosystemFetchResult): Promise<AIAnalysisResult> {
+export async function analyzeWithAI(ecosystemData: EcosystemFetchResult, email?: string): Promise<AIAnalysisResult> {
   const dataSummary = buildDataSummary(ecosystemData);
+
+  // Fetch user's active goals for context injection
+  let goalsContext = '';
+  if (email) {
+    try {
+      goalsContext = await buildGoalsContext(email);
+    } catch (e) {
+      console.error('[AI-PATTERN-ANALYZER] Failed to fetch goals context:', e);
+    }
+  }
 
   // If no meaningful data, return empty
   if (!dataSummary || dataSummary.trim().length < 100) {
@@ -137,11 +159,12 @@ export async function analyzeWithAI(ecosystemData: EcosystemFetchResult): Promis
 
   const openai = getOpenAIClient();
 
-  const prompt = `You are an elite longevity and performance scientist. Analyze this person's ecosystem data and generate EXACTLY 5 personalized, evidence-based insights focused on ENERGY, RECOVERY, FOCUS, and LONGEVITY.
+  const prompt = `You are an elite longevity and performance scientist. Analyze this person's ecosystem data and generate personalized, evidence-based insights focused on ENERGY, RECOVERY, FOCUS, and LONGEVITY.
 
 Your insights must be grounded in the latest scientific research. DO NOT give generic advice. Find specific, personalized insights that connect multiple data points.
 
 ${dataSummary}
+${goalsContext}
 
 ## CORE FOCUS AREAS (prioritize insights in these domains):
 
@@ -152,22 +175,14 @@ ${dataSummary}
 
 ## YOUR TASK
 
-Generate EXACTLY 5 insights, each with a DIFFERENT designCategory:
+Generate 1-7 insights based on what meaningful patterns actually exist in the data. Quality over quantity - only generate insights where you have HIGH CONFIDENCE in the pattern.
 
-1. **PREDICTION** - Predict an upcoming energy/recovery/focus opportunity
-   - Examples: "Your Best Focus Window Opens Tomorrow at 10am", "A Recovery Boost is Coming Wednesday Morning"
-
-2. **OPTIMIZATION** - Show how a small change unlocks better performance
-   - Examples: "A Short Walk Could Transform Your Afternoon Energy", "Morning Light Could Be Your Secret to Better Sleep"
-
-3. **ANALYSIS** - Reveal a pattern that empowers better choices
-   - Examples: "Your Body is Asking for a Recovery Day", "Your Deep Sleep Holds the Key to Sharper Thinking"
-
-4. **IKIGAI** - Connect health to meaning and peak performance
-   - Examples: "Your Best Ideas Come When You're Well-Rested", "Flow States Are Within Your Reach"
-
-5. **SOCIAL** - Highlight the power of connection for health
-   - Examples: "Working Out Together Could Triple Your Results", "Evening Connection Time Boosts Tomorrow's Energy"
+Aim for variety in your insights:
+- Predictions about upcoming opportunities
+- Small optimizations that could unlock better performance
+- Patterns that reveal important health connections
+- Connections between health and peak performance
+- Social/connection-based health insights
 
 ## CRITICAL RULES
 
@@ -180,7 +195,7 @@ Generate EXACTLY 5 insights, each with a DIFFERENT designCategory:
    - ✅ GOOD: "Your Body Thrives When You Unplug by 10pm"
    - ✅ GOOD: "A Short Walk Could Transform Your Afternoon"
 
-2. **CITE SCIENTIFIC EVIDENCE in the description** (not the title):
+2. **CITE SCIENTIFIC EVIDENCE in the finding** (not the title):
    - "This is because..." (mechanism)
    - "Research shows..." (evidence)
    - Include journal/year when possible for credibility
@@ -189,11 +204,13 @@ Generate EXACTLY 5 insights, each with a DIFFERENT designCategory:
    - ❌ BAD: "Keep up the great sleep schedule"
    - ✅ GOOD: "Adding 20min to your sleep could increase HRV by 8%"
 
-4. **Focus on HIGH-LEVERAGE interventions** - small changes with outsized impact on energy/recovery/focus/longevity
+4. **Focus on HIGH-LEVERAGE interventions** - small changes with outsized impact
 
-5. **Be specific with timing and numbers in the description** - but keep the title clean and inspiring
+5. **Be specific with timing and numbers in the finding** - cite exact values
 
-6. **Connect multiple data sources** - Cross-ecosystem insights are most valuable
+6. **Connect multiple data sources when possible** - Cross-ecosystem insights are most valuable
+
+7. **Only generate insights you're confident about** - if data is sparse, generate fewer insights
 
 ## EVIDENCE-BASED FRAMEWORKS TO APPLY:
 
@@ -211,23 +228,20 @@ Examples of EXCELLENT insights:
 - Title: "Your Body Thrives When You Unplug by 10pm"
   Finding: "HRV drops 23% after late-night screen time. Blue light suppresses melatonin by 50% (Journal of Pineal Research). Unplugging earlier could add 20 minutes of deep sleep."
 
-Examples of BAD insights:
-- "HRV Drop Detected Post-Late-Night Digital Activity" (too clinical)
-- "Glucose Variability Correlates with Meeting Stress" (jargon-heavy)
-- "Keep up the great sleep schedule" (no action)
-- "Your metrics look good" (not helpful)
+- Title: "Your Best Focus Window Opens Tomorrow at 10am"
+  Finding: "Based on your sleep patterns from the past week, tomorrow morning looks optimal for deep work. Your HRV typically peaks around this time after 7+ hours of sleep."
 
 Return JSON:
 {
   "insights": [
     {
-      "title": "Punchy title with data (5-10 words)",
+      "title": "Elegant title (5-10 words)",
       "finding": "The specific pattern found with exact numbers (2-3 sentences)",
       "dataCited": ["Slack: 42% after-hours", "Oura: HRV 45ms declining", "etc"],
       "impact": "critical|high|medium|low",
-      "actionableRecommendation": "Specific NEW action to take - NOT continuing current behavior (1-2 sentences)",
+      "actionableRecommendation": "Specific NEW action to take (1-2 sentences)",
       "sources": ["slack", "oura", "etc"],
-      "designCategory": "PREDICTION|OPTIMIZATION|ANALYSIS|IKIGAI|SOCIAL"
+      "confidence": 0.85
     }
   ],
   "summary": "2-3 sentence overview of the most important finding",
@@ -235,7 +249,7 @@ Return JSON:
   "hiddenPatterns": ["Pattern 1 they probably haven't noticed", "Pattern 2", "etc"]
 }
 
-REMEMBER: Exactly 5 insights, each with a UNIQUE designCategory. Be brutally specific. No fluff. Cite exact numbers. Never recommend maintaining status quo.`;
+REMEMBER: Generate only high-confidence insights. Be brutally specific. No fluff. Cite exact numbers. Never recommend maintaining status quo.`;
 
   try {
     console.log('[AI-PATTERN-ANALYZER] Calling AI for pattern analysis...');
@@ -277,13 +291,16 @@ REMEMBER: Exactly 5 insights, each with a UNIQUE designCategory. Be brutally spe
     }
 
     // Ensure insights is always an array (AI might return object/string unexpectedly)
-    const insights = Array.isArray(parsed.insights) ? parsed.insights : [];
+    const rawInsights: UnclassifiedInsight[] = Array.isArray(parsed.insights) ? parsed.insights : [];
     const hiddenPatterns = Array.isArray(parsed.hiddenPatterns) ? parsed.hiddenPatterns : [];
 
-    console.log(`[AI-PATTERN-ANALYZER] Generated ${insights.length} AI insights`);
+    // Post-classify insights to assign design categories
+    const classifiedInsights = classifyInsights(rawInsights);
+
+    console.log(`[AI-PATTERN-ANALYZER] Generated ${rawInsights.length} AI insights, classified into categories`);
 
     return {
-      insights,
+      insights: classifiedInsights,
       summary: parsed.summary || '',
       primaryConcern: parsed.primaryConcern || null,
       hiddenPatterns,

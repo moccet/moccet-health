@@ -8,6 +8,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('GoalsService');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -162,14 +165,14 @@ export async function createGoal(
       .single();
 
     if (error) {
-      console.error('[GoalsService] Error creating goal:', error);
+      logger.error({ email, error }, 'Error creating goal');
       return null;
     }
 
-    console.log(`[GoalsService] Created goal ${data?.id} for ${email}`);
+    logger.info({ email, goalId: data?.id }, 'Created goal');
     return data?.id || null;
   } catch (e) {
-    console.error('[GoalsService] Exception creating goal:', e);
+    logger.error({ email, error: e }, 'Exception creating goal');
     return null;
   }
 }
@@ -206,13 +209,13 @@ export async function getGoals(
     const { data, error } = await query;
 
     if (error) {
-      console.error('[GoalsService] Error fetching goals:', error);
+      logger.error({ email, error }, 'Error fetching goals');
       return [];
     }
 
     return (data || []).map(mapToUserHealthGoal);
   } catch (e) {
-    console.error('[GoalsService] Exception fetching goals:', e);
+    logger.error({ email, error: e }, 'Exception fetching goals');
     return [];
   }
 }
@@ -229,13 +232,13 @@ export async function getGoal(goalId: string): Promise<UserHealthGoal | null> {
       .single();
 
     if (error) {
-      console.error('[GoalsService] Error fetching goal:', error);
+      logger.error({ goalId, error }, 'Error fetching goal');
       return null;
     }
 
     return data ? mapToUserHealthGoal(data) : null;
   } catch (e) {
-    console.error('[GoalsService] Exception fetching goal:', e);
+    logger.error({ goalId, error: e }, 'Exception fetching goal');
     return null;
   }
 }
@@ -265,7 +268,7 @@ export async function updateGoal(
       });
 
       if (progressError) {
-        console.error('[GoalsService] Error computing progress:', progressError);
+        logger.error({ goalId, error: progressError }, 'Error computing progress');
       }
     }
 
@@ -276,14 +279,14 @@ export async function updateGoal(
         .eq('id', goalId);
 
       if (error) {
-        console.error('[GoalsService] Error updating goal:', error);
+        logger.error({ goalId, error }, 'Error updating goal');
         return false;
       }
     }
 
     return true;
   } catch (e) {
-    console.error('[GoalsService] Exception updating goal:', e);
+    logger.error({ goalId, error: e }, 'Exception updating goal');
     return false;
   }
 }
@@ -299,13 +302,13 @@ export async function deleteGoal(goalId: string): Promise<boolean> {
       .eq('id', goalId);
 
     if (error) {
-      console.error('[GoalsService] Error deleting goal:', error);
+      logger.error({ goalId, error }, 'Error deleting goal');
       return false;
     }
 
     return true;
   } catch (e) {
-    console.error('[GoalsService] Exception deleting goal:', e);
+    logger.error({ goalId, error: e }, 'Exception deleting goal');
     return false;
   }
 }
@@ -338,7 +341,7 @@ export async function linkInsightToGoal(
 
     return !error;
   } catch (e) {
-    console.error('[GoalsService] Exception linking insight:', e);
+    logger.error({ goalId, insightId, error: e }, 'Exception linking insight');
     return false;
   }
 }

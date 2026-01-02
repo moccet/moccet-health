@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,7 +59,11 @@ export async function POST(request: NextRequest) {
     for (const dataType of dataTypes) {
       try {
         const url = `${baseUrl}${dataType.endpoint}?start_date=${start}&end_date=${end}`;
-        const response = await fetch(url, { headers });
+
+        // Use circuit breaker to protect against cascading failures
+        const response = await circuitBreakers.vital.execute(async () => {
+          return fetch(url, { headers });
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -69,15 +74,24 @@ export async function POST(request: NextRequest) {
           console.log(`[Vital Sync] Fetched ${recordCount} ${dataType.name} records`);
         } else {
           console.error(`[Vital Sync] Failed to fetch ${dataType.name}:`, response.status);
+          if (response.status >= 500) {
+            throw new Error(`Vital API error: ${response.status}`);
+          }
         }
       } catch (error) {
-        console.error(`[Vital Sync] Error fetching ${dataType.name}:`, error);
+        if (error instanceof CircuitOpenError) {
+          console.warn(`[Vital Sync] Circuit breaker open for Vital API, skipping ${dataType.name}`);
+        } else {
+          console.error(`[Vital Sync] Error fetching ${dataType.name}:`, error);
+        }
       }
     }
 
     // Also fetch user profile and connected providers
     try {
-      const profileResponse = await fetch(`${baseUrl}/v2/user/${userId}`, { headers });
+      const profileResponse = await circuitBreakers.vital.execute(async () => {
+        return fetch(`${baseUrl}/v2/user/${userId}`, { headers });
+      });
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         allData.user_profile = profileData;
@@ -85,7 +99,11 @@ export async function POST(request: NextRequest) {
         console.log(`[Vital Sync] Connected providers:`, allData.connected_providers);
       }
     } catch (error) {
-      console.error('[Vital Sync] Error fetching user profile:', error);
+      if (error instanceof CircuitOpenError) {
+        console.warn('[Vital Sync] Circuit breaker open for Vital API, skipping user profile');
+      } else {
+        console.error('[Vital Sync] Error fetching user profile:', error);
+      }
     }
 
     // Store data in Supabase

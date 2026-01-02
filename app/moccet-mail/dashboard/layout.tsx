@@ -27,6 +27,7 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [meetingsExpanded, setMeetingsExpanded] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -77,14 +78,37 @@ export default function DashboardLayout({
     return user.email?.split('@')[0] || 'User';
   };
 
-  const navItems = [
+  interface NavItem {
+    href: string;
+    label: string;
+    icon: string;
+    subItems?: { href: string; label: string; icon: string }[];
+  }
+
+  const navItems: NavItem[] = [
     { href: '/moccet-mail/dashboard', label: 'Home', icon: 'home' },
     { href: '/moccet-mail/dashboard/categorization', label: 'Categorization', icon: 'tag' },
     { href: '/moccet-mail/dashboard/drafts', label: 'Drafts', icon: 'edit' },
-    { href: '/moccet-mail/dashboard/meetings', label: 'Meetings', icon: 'calendar' },
+    {
+      href: '/moccet-mail/dashboard/meetings',
+      label: 'Meetings',
+      icon: 'calendar',
+      subItems: [
+        { href: '/moccet-mail/dashboard/meetings/recordings', label: 'Recordings', icon: 'video' },
+        { href: '/moccet-mail/dashboard/meetings/upcoming', label: 'Upcoming', icon: 'calendar-upcoming' },
+        { href: '/moccet-mail/dashboard/meetings/settings', label: 'Settings', icon: 'settings-small' },
+      ],
+    },
     { href: '/moccet-mail/dashboard/scheduling', label: 'Scheduling', icon: 'clock' },
     { href: '/moccet-mail/dashboard/settings', label: 'Settings', icon: 'settings' },
   ];
+
+  // Auto-expand meetings section if on a meetings page
+  useEffect(() => {
+    if (pathname?.startsWith('/moccet-mail/dashboard/meetings')) {
+      setMeetingsExpanded(true);
+    }
+  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === '/moccet-mail/dashboard') {
@@ -127,10 +151,30 @@ export default function DashboardLayout({
           </svg>
         );
       case 'settings':
+      case 'settings-small':
         return (
           <svg {...iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        );
+      case 'video':
+        return (
+          <svg {...iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        );
+      case 'calendar-upcoming':
+        return (
+          <svg {...iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 12v4l2 2" />
+          </svg>
+        );
+      case 'chevron-down':
+        return (
+          <svg {...iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         );
       default:
@@ -170,20 +214,83 @@ export default function DashboardLayout({
           <div className="nav-section">
             <span className="nav-section-label">Platform</span>
             {navItems.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                className={`nav-item ${isActive(item.href) ? 'active' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  flexDirection: 'row'
-                }}
-              >
-                <span style={{ display: 'flex', flexShrink: 0 }}>{renderIcon(item.icon)}</span>
-                <span className="nav-label">{item.label}</span>
-              </button>
+              <div key={item.href}>
+                {item.subItems ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (!sidebarCollapsed) {
+                          setMeetingsExpanded(!meetingsExpanded);
+                        } else {
+                          router.push(item.href);
+                        }
+                      }}
+                      className={`nav-item ${isActive(item.href) ? 'active' : ''}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ display: 'flex', flexShrink: 0 }}>{renderIcon(item.icon)}</span>
+                        <span className="nav-label">{item.label}</span>
+                      </span>
+                      {!sidebarCollapsed && (
+                        <span
+                          style={{
+                            display: 'flex',
+                            flexShrink: 0,
+                            transform: meetingsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                          }}
+                          className="nav-label"
+                        >
+                          {renderIcon('chevron-down')}
+                        </span>
+                      )}
+                    </button>
+                    {meetingsExpanded && !sidebarCollapsed && (
+                      <div className="nav-subitems">
+                        {item.subItems.map((subItem) => (
+                          <button
+                            key={subItem.href}
+                            onClick={() => router.push(subItem.href)}
+                            className={`nav-subitem ${pathname === subItem.href ? 'active' : ''}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              flexDirection: 'row',
+                            }}
+                          >
+                            <span style={{ display: 'flex', flexShrink: 0, width: 16, height: 16 }}>
+                              {renderIcon(subItem.icon)}
+                            </span>
+                            <span className="nav-label">{subItem.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => router.push(item.href)}
+                    className={`nav-item ${isActive(item.href) ? 'active' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      flexDirection: 'row'
+                    }}
+                  >
+                    <span style={{ display: 'flex', flexShrink: 0 }}>{renderIcon(item.icon)}</span>
+                    <span className="nav-label">{item.label}</span>
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </nav>
@@ -510,6 +617,50 @@ export default function DashboardLayout({
           background-color: #f0f0f0;
           color: #1a1a1a;
           font-weight: 500;
+        }
+
+        .nav-subitems {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          padding-left: 32px;
+          margin-top: 2px;
+          margin-bottom: 4px;
+        }
+
+        .nav-subitem {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          text-decoration: none;
+          color: #666;
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 13px;
+          transition: all 0.15s ease;
+          border: none;
+          background: transparent;
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .nav-subitem:hover {
+          background-color: #f8f7f2;
+          color: #4a4a4a;
+        }
+
+        .nav-subitem.active {
+          background-color: #e8e8e8;
+          color: #1a1a1a;
+          font-weight: 500;
+        }
+
+        .nav-subitem svg {
+          width: 16px;
+          height: 16px;
         }
 
         .nav-icon {

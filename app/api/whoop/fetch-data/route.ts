@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
+import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -264,19 +265,38 @@ export async function POST(request: NextRequest) {
     console.log(`[Whoop Fetch] Fetching cycles from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
     // Fetch cycles (Whoop's main data structure - includes recovery, sleep, strain)
-    const cyclesResponse = await fetch(
-      `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+    // Use circuit breaker to protect against cascading failures
+    let cyclesResponse: Response;
+    try {
+      cyclesResponse = await circuitBreakers.whoop.execute(async () => {
+        return fetch(
+          `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+      });
+    } catch (error) {
+      if (error instanceof CircuitOpenError) {
+        console.warn('[Whoop Fetch] Circuit breaker open for Whoop API');
+        return NextResponse.json(
+          { error: 'Whoop service temporarily unavailable. Please try again later.' },
+          { status: 503 }
+        );
       }
-    );
+      throw error;
+    }
 
     if (!cyclesResponse.ok) {
       const errorData = await cyclesResponse.json().catch(() => ({}));
       console.error('[Whoop Fetch] API error:', errorData);
+      // Treat 5xx errors as failures for circuit breaker
+      if (cyclesResponse.status >= 500) {
+        throw new Error(`Whoop API error: ${cyclesResponse.status}`);
+      }
       return NextResponse.json(
         { error: 'Failed to fetch Whoop cycles', details: errorData },
         { status: cyclesResponse.status }

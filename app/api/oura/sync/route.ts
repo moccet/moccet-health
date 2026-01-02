@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { createAdminClient } from '@/lib/supabase/server';
 import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
+import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -85,10 +86,14 @@ export async function POST(request: NextRequest) {
     for (const dataType of dataTypes) {
       try {
         const url = `https://api.ouraring.com/v2/usercollection/${dataType.endpoint}?start_date=${start}&end_date=${end}`;
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
+
+        // Use circuit breaker to protect against cascading failures
+        const response = await circuitBreakers.oura.execute(async () => {
+          return fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
         });
 
         if (response.ok) {
@@ -97,9 +102,17 @@ export async function POST(request: NextRequest) {
           console.log(`[Oura Sync] Fetched ${allData[dataType.name].length} ${dataType.name} records`);
         } else {
           console.error(`[Oura Sync] Failed to fetch ${dataType.name}:`, response.status);
+          // Non-2xx response counts as failure for circuit breaker
+          if (response.status >= 500) {
+            throw new Error(`Oura API error: ${response.status}`);
+          }
         }
       } catch (error) {
-        console.error(`[Oura Sync] Error fetching ${dataType.name}:`, error);
+        if (error instanceof CircuitOpenError) {
+          console.warn(`[Oura Sync] Circuit breaker open for Oura API, skipping ${dataType.name}`);
+        } else {
+          console.error(`[Oura Sync] Error fetching ${dataType.name}:`, error);
+        }
       }
     }
 

@@ -17,8 +17,12 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
+import { cacheService, CACHE_KEYS } from './cache-service';
 
 const logger = createLogger('EcosystemFetcher');
+
+/** Cache TTL for ecosystem data in seconds (15 minutes) */
+const ECOSYSTEM_CACHE_TTL = 900;
 
 // ============================================================================
 // TYPES
@@ -377,6 +381,8 @@ export interface EcosystemFetchResult {
   failedSources?: string[];
   /** Whether some sources failed but others succeeded (partial data) */
   partial?: boolean;
+  /** Whether this result was retrieved from cache */
+  fromCache?: boolean;
 }
 
 // ============================================================================
@@ -1661,6 +1667,7 @@ export async function fetchEcosystemData(
 /**
  * Fetch all available ecosystem data for a user
  * Runs all fetches in parallel for optimal performance
+ * Uses L1+L2 caching to avoid redundant API calls
  */
 export async function fetchAllEcosystemData(
   email: string,
@@ -1668,8 +1675,24 @@ export async function fetchAllEcosystemData(
   options?: {
     startDate?: Date;
     endDate?: Date;
+    forceRefresh?: boolean;
   }
 ): Promise<EcosystemFetchResult> {
+  const cacheKey = `ecosystem:${email}:${planType}`;
+
+  // Check cache first (unless forceRefresh is true)
+  if (!options?.forceRefresh) {
+    try {
+      const cached = await cacheService.get<EcosystemFetchResult>(cacheKey);
+      if (cached) {
+        logger.info('Ecosystem data cache hit', { email, planType });
+        return { ...cached, fromCache: true };
+      }
+    } catch (error) {
+      logger.warn('Cache read error, fetching fresh data', { email, error });
+    }
+  }
+
   logger.info('Fetching all ecosystem data', { email });
 
   const startTime = Date.now();
@@ -1752,6 +1775,17 @@ export async function fetchAllEcosystemData(
       successCount: result.successCount,
       totalSources: result.totalSources,
     });
+  }
+
+  // Cache the result for faster subsequent requests (15 min TTL)
+  // Only cache if we got at least some data
+  if (result.successCount > 0) {
+    try {
+      await cacheService.set(cacheKey, result, ECOSYSTEM_CACHE_TTL);
+      logger.debug('Ecosystem data cached', { email, planType, ttl: ECOSYSTEM_CACHE_TTL });
+    } catch (error) {
+      logger.warn('Failed to cache ecosystem data', { email, error });
+    }
   }
 
   return result;

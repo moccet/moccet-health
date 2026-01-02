@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
+import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,10 +57,14 @@ export async function POST(request: NextRequest) {
     for (const dataType of dataTypes) {
       try {
         const url = `${baseUrl}/v2/users/self/${dataType.endpoint}?startDate=${start}&endDate=${end}`;
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
+
+        // Use circuit breaker to protect against cascading failures
+        const response = await circuitBreakers.dexcom.execute(async () => {
+          return fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
         });
 
         if (response.ok) {
@@ -69,9 +74,17 @@ export async function POST(request: NextRequest) {
           console.log(`[Dexcom Sync] Fetched ${Array.isArray(allData[dataType.name]) ? allData[dataType.name].length : 'N/A'} ${dataType.description}`);
         } else {
           console.error(`[Dexcom Sync] Failed to fetch ${dataType.description}:`, response.status);
+          // Non-2xx response counts as failure for circuit breaker
+          if (response.status >= 500) {
+            throw new Error(`Dexcom API error: ${response.status}`);
+          }
         }
       } catch (error) {
-        console.error(`[Dexcom Sync] Error fetching ${dataType.description}:`, error);
+        if (error instanceof CircuitOpenError) {
+          console.warn(`[Dexcom Sync] Circuit breaker open for Dexcom API, skipping ${dataType.description}`);
+        } else {
+          console.error(`[Dexcom Sync] Error fetching ${dataType.description}:`, error);
+        }
       }
     }
 

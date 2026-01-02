@@ -40,6 +40,26 @@ async function createGmailClient(
   return google.gmail({ version: 'v1', auth: oauth2Client });
 }
 
+/**
+ * Check if a label category is enabled based on user preferences
+ */
+function isLabelEnabled(
+  labelName: string,
+  preferences: { moveOut?: Record<string, boolean>; keepInbox?: Record<string, boolean> } | null
+): boolean {
+  if (!preferences) return true;
+
+  if (preferences.moveOut && labelName in preferences.moveOut) {
+    return preferences.moveOut[labelName] ?? true;
+  }
+
+  if (preferences.keepInbox && labelName in preferences.keepInbox) {
+    return preferences.keepInbox[labelName] ?? true;
+  }
+
+  return true;
+}
+
 async function fetchEmailContent(
   gmail: gmail_v1.Gmail,
   messageId: string
@@ -106,11 +126,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`[ProcessRecent] Processing recent emails for ${email}`);
 
-    // Get user settings
+    // Get user settings including category preferences
     const supabase = createAdminClient();
     const { data: settings } = await supabase
       .from('email_draft_settings')
-      .select('*')
+      .select('*, category_preferences')
       .eq('user_email', email)
       .maybeSingle();
 
@@ -120,6 +140,13 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: corsHeaders }
       );
     }
+
+    // Parse category preferences
+    const categoryPreferences = settings.category_preferences as {
+      moveOut?: Record<string, boolean>;
+      keepInbox?: Record<string, boolean>;
+      respectExisting?: boolean;
+    } | null;
 
     // Get user code from watch subscription
     const { data: subscription } = await supabase
@@ -242,20 +269,27 @@ export async function POST(request: NextRequest) {
           isUnread: true,
         });
 
-        // Apply label
-        const labelResult = await applyLabelToEmail(email, fullEmail.messageId, classification.moccetLabel, userCode, {
-          from: fullEmail.from,
-          subject: fullEmail.subject,
-          threadId: fullEmail.threadId,
-          source: classification.labelSource,
-          confidence: classification.confidence,
-          reasoning: classification.labelReasoning,
-        });
+        // Check if this label is enabled by user preferences
+        const labelEnabled = isLabelEnabled(classification.moccetLabel, categoryPreferences);
 
-        if (!labelResult.success) {
-          console.error(`[ProcessRecent] Failed to apply label ${classification.moccetLabel} to ${fullEmail.messageId}: ${labelResult.error}`);
+        // Apply label only if enabled
+        if (labelEnabled) {
+          const labelResult = await applyLabelToEmail(email, fullEmail.messageId, classification.moccetLabel, userCode, {
+            from: fullEmail.from,
+            subject: fullEmail.subject,
+            threadId: fullEmail.threadId,
+            source: classification.labelSource,
+            confidence: classification.confidence,
+            reasoning: classification.labelReasoning,
+          });
+
+          if (!labelResult.success) {
+            console.error(`[ProcessRecent] Failed to apply label ${classification.moccetLabel} to ${fullEmail.messageId}: ${labelResult.error}`);
+          } else {
+            console.log(`[ProcessRecent] Applied label ${classification.moccetLabel} to ${fullEmail.messageId}`);
+          }
         } else {
-          console.log(`[ProcessRecent] Applied label ${classification.moccetLabel} to ${fullEmail.messageId}`);
+          console.log(`[ProcessRecent] Label "${classification.moccetLabel}" is disabled by user preferences, skipping`);
         }
 
         let draftCreated = false;

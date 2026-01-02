@@ -86,8 +86,28 @@ export async function GET(request: NextRequest) {
 
       if (storeResult.success) {
         console.log(`[Gmail] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''} (Google: ${googleEmail})`);
-        // Note: Email draft agent setup is now opt-in via /api/gmail/enable-drafts
-        // Called explicitly from the Flutter app when user enables the feature
+
+        // Auto-setup labels and watch for moccet-mail users (web users with stateUserEmail)
+        if (stateUserEmail) {
+          try {
+            // Setup Gmail labels in the background
+            const { setupUserLabels } = await import('@/lib/services/gmail-label-manager');
+            const labelResult = await setupUserLabels(userEmail, userCode, 'moccet');
+            console.log(`[Gmail] Labels setup: ${labelResult.labelsCreated} created, ${labelResult.labelsExisting} existing`);
+
+            // Setup Gmail watch for real-time notifications
+            const { setupGmailWatch } = await import('@/lib/services/gmail-push');
+            const watchResult = await setupGmailWatch(userEmail, userCode);
+            if (watchResult.success) {
+              console.log(`[Gmail] Watch setup successful, historyId: ${watchResult.historyId}`);
+            } else {
+              console.warn(`[Gmail] Watch setup failed: ${watchResult.error}`);
+            }
+          } catch (setupError) {
+            // Don't fail the callback if setup fails - user can still use the app
+            console.error('[Gmail] Auto-setup error (non-fatal):', setupError);
+          }
+        }
       } else {
         console.error(`[Gmail] Failed to store tokens:`, storeResult.error);
       }

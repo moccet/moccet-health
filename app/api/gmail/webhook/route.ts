@@ -128,7 +128,16 @@ async function fetchEmailContent(
 }
 
 /**
- * Check if user has auto-drafting enabled
+ * Category preferences from user settings
+ */
+interface CategoryPreferences {
+  moveOut: Record<string, boolean>;
+  keepInbox: Record<string, boolean>;
+  respectExisting: boolean;
+}
+
+/**
+ * Check if user has auto-drafting enabled and get category preferences
  */
 async function getUserDraftSettings(userEmail: string): Promise<{
   enabled: boolean;
@@ -137,12 +146,13 @@ async function getUserDraftSettings(userEmail: string): Promise<{
   excludedDomains: string[];
   autoLabelingEnabled: boolean;
   trackSentForAwaitingReply: boolean;
+  categoryPreferences: CategoryPreferences | null;
 }> {
   const supabase = createAdminClient();
 
   const { data } = await supabase
     .from('email_draft_settings')
-    .select('auto_draft_enabled, max_drafts_per_day, excluded_senders, excluded_domains, auto_labeling_enabled, track_sent_for_awaiting_reply')
+    .select('auto_draft_enabled, max_drafts_per_day, excluded_senders, excluded_domains, auto_labeling_enabled, track_sent_for_awaiting_reply, category_preferences')
     .eq('user_email', userEmail)
     .maybeSingle();
 
@@ -153,7 +163,32 @@ async function getUserDraftSettings(userEmail: string): Promise<{
     excludedDomains: data?.excluded_domains ?? [],
     autoLabelingEnabled: data?.auto_labeling_enabled ?? true,
     trackSentForAwaitingReply: data?.track_sent_for_awaiting_reply ?? true,
+    categoryPreferences: data?.category_preferences as CategoryPreferences | null,
   };
+}
+
+/**
+ * Check if a label category is enabled based on user preferences
+ */
+function isLabelEnabled(
+  labelName: string,
+  preferences: CategoryPreferences | null
+): boolean {
+  // If no preferences set, all labels are enabled by default
+  if (!preferences) return true;
+
+  // Check moveOut categories (meeting_update, marketing)
+  if (preferences.moveOut && labelName in preferences.moveOut) {
+    return preferences.moveOut[labelName] ?? true;
+  }
+
+  // Check keepInbox categories (to_respond, fyi, comment, notifications, awaiting_reply, actioned)
+  if (preferences.keepInbox && labelName in preferences.keepInbox) {
+    return preferences.keepInbox[labelName] ?? true;
+  }
+
+  // Default to enabled for unknown labels
+  return true;
 }
 
 /**
@@ -218,6 +253,10 @@ async function processNewEmail(
   }
 
   try {
+    // Get user's category preferences
+    const userSettings = await getUserDraftSettings(userEmail);
+    const { categoryPreferences } = userSettings;
+
     // 1. Classify email with label
     const emailToClassify = {
       messageId: email.messageId,
@@ -250,8 +289,11 @@ async function processNewEmail(
       // Keep the classification label - it will handle actioned detection
     }
 
-    // 3. Apply label to Gmail
-    if (applyLabel) {
+    // 3. Check if the classified label is enabled by user preferences
+    const labelEnabled = isLabelEnabled(finalLabel, categoryPreferences);
+
+    // 4. Apply label to Gmail only if enabled and auto-labeling is on
+    if (applyLabel && userSettings.autoLabelingEnabled && labelEnabled) {
       const labelResult = await applyLabelToEmail(userEmail, email.messageId, finalLabel, userCode, {
         from: email.from,
         subject: email.subject,
@@ -266,10 +308,13 @@ async function processNewEmail(
       } else {
         console.warn(`[Webhook] Failed to apply label: ${labelResult.error}`);
       }
+    } else if (!labelEnabled) {
+      console.log(`[Webhook] Label "${finalLabel}" is disabled by user preferences, skipping`);
     }
 
-    // 4. Run draft agent if email needs response - pass existing classification to avoid re-classification
-    if (classification.needsResponse) {
+    // 5. Run draft agent if email needs response - pass existing classification to avoid re-classification
+    // Only if the category is a "respond" type and is enabled
+    if (classification.needsResponse && userSettings.enabled) {
       const result = await runEmailDraftAgent(userEmail, email, userCode, classification);
 
       if (result.success) {
@@ -280,7 +325,7 @@ async function processNewEmail(
         console.error(`[Webhook] Draft generation failed: ${result.error}`);
       }
     } else {
-      console.log(`[Webhook] No response needed, label: ${finalLabel}`);
+      console.log(`[Webhook] No response needed or drafts disabled, label: ${finalLabel}`);
     }
   } catch (error) {
     console.error(`[Webhook] Error processing email ${email.messageId}:`, error);

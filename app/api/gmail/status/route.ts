@@ -69,11 +69,13 @@ export async function GET(request: NextRequest) {
       labelCountResult,
       draftCountResult,
     ] = await Promise.all([
-      // Check if Gmail is connected (has tokens)
+      // Check if Gmail is connected (has tokens in integration_tokens table)
       supabase
-        .from('gmail_tokens')
-        .select('id, created_at')
+        .from('integration_tokens')
+        .select('id, created_at, provider_user_id, scopes')
         .eq('user_email', userEmail)
+        .eq('provider', 'gmail')
+        .eq('is_active', true)
         .maybeSingle(),
 
       // Check if labels are setup
@@ -139,6 +141,8 @@ export async function GET(request: NextRequest) {
         labeledEmailCount,
         draftCount,
         connectedAt: tokensResult.data?.created_at ?? null,
+        gmailEmail: tokensResult.data?.provider_user_id ?? userEmail,
+        scopes: tokensResult.data?.scopes ?? [],
       },
       { headers: corsHeaders }
     );

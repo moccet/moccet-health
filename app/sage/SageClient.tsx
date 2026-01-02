@@ -39,6 +39,7 @@ export default function SageClient() {
         </Link>
         <nav className="nav-menu">
           <Link href="/sage" className="nav-link">Sage</Link>
+          <Link href="/moccet-mail" className="nav-link">Mail</Link>
           <Link href="/forge" className="nav-link">Forge</Link>
           <Link href="/news" className="nav-link">Stories</Link>
           <Link href="/#waitlist" className="nav-link">
@@ -70,6 +71,9 @@ export default function SageClient() {
             <div className="mobile-menu-content" onClick={(e) => e.stopPropagation()}>
               <Link href="/sage" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
                 Sage
+              </Link>
+              <Link href="/moccet-mail" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
+                Mail
               </Link>
               <Link href="/forge" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
                 Forge

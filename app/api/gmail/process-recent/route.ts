@@ -41,23 +41,15 @@ async function createGmailClient(
 }
 
 /**
- * Check if a label category is enabled based on user preferences
+ * Check if email should be archived based on category preferences
+ * categories: { categoryId: true/false } where true = move out of inbox (archive)
  */
-function isLabelEnabled(
+function shouldArchive(
   labelName: string,
-  preferences: { moveOut?: Record<string, boolean>; keepInbox?: Record<string, boolean> } | null
+  preferences: { categories?: Record<string, boolean> } | null
 ): boolean {
-  if (!preferences) return true;
-
-  if (preferences.moveOut && labelName in preferences.moveOut) {
-    return preferences.moveOut[labelName] ?? true;
-  }
-
-  if (preferences.keepInbox && labelName in preferences.keepInbox) {
-    return preferences.keepInbox[labelName] ?? true;
-  }
-
-  return true;
+  if (!preferences?.categories) return false;
+  return preferences.categories[labelName] ?? false;
 }
 
 async function fetchEmailContent(
@@ -269,27 +261,23 @@ export async function POST(request: NextRequest) {
           isUnread: true,
         });
 
-        // Check if this label is enabled by user preferences
-        const labelEnabled = isLabelEnabled(classification.moccetLabel, categoryPreferences);
+        // Check if this email should be archived based on category
+        const archiveEmail = shouldArchive(classification.moccetLabel, categoryPreferences);
 
-        // Apply label only if enabled
-        if (labelEnabled) {
-          const labelResult = await applyLabelToEmail(email, fullEmail.messageId, classification.moccetLabel, userCode, {
-            from: fullEmail.from,
-            subject: fullEmail.subject,
-            threadId: fullEmail.threadId,
-            source: classification.labelSource,
-            confidence: classification.confidence,
-            reasoning: classification.labelReasoning,
-          });
+        // Always apply label, optionally archive
+        const labelResult = await applyLabelToEmail(email, fullEmail.messageId, classification.moccetLabel, userCode, {
+          from: fullEmail.from,
+          subject: fullEmail.subject,
+          threadId: fullEmail.threadId,
+          source: classification.labelSource,
+          confidence: classification.confidence,
+          reasoning: classification.labelReasoning,
+        }, archiveEmail);
 
-          if (!labelResult.success) {
-            console.error(`[ProcessRecent] Failed to apply label ${classification.moccetLabel} to ${fullEmail.messageId}: ${labelResult.error}`);
-          } else {
-            console.log(`[ProcessRecent] Applied label ${classification.moccetLabel} to ${fullEmail.messageId}`);
-          }
+        if (!labelResult.success) {
+          console.error(`[ProcessRecent] Failed to apply label ${classification.moccetLabel} to ${fullEmail.messageId}: ${labelResult.error}`);
         } else {
-          console.log(`[ProcessRecent] Label "${classification.moccetLabel}" is disabled by user preferences, skipping`);
+          console.log(`[ProcessRecent] Applied label ${classification.moccetLabel} to ${fullEmail.messageId}${archiveEmail ? ' (archived)' : ''}`);
         }
 
         let draftCreated = false;

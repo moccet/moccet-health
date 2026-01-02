@@ -263,15 +263,17 @@ export async function getUserLabelMapping(
 /**
  * Apply a Moccet label to an email in Gmail
  * Also removes any other Moccet labels from the email
+ * @param archive - If true, also removes INBOX label (archives the email)
  */
 export async function applyLabelToEmail(
   userEmail: string,
   messageId: string,
   labelName: MoccetLabelName,
   userCode?: string,
-  metadata?: { from?: string; subject?: string; threadId?: string; source?: string; confidence?: number; reasoning?: string }
+  metadata?: { from?: string; subject?: string; threadId?: string; source?: string; confidence?: number; reasoning?: string },
+  archive: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
-  console.log(`[LabelManager] Applying label ${labelName} to message ${messageId}`);
+  console.log(`[LabelManager] Applying label ${labelName} to message ${messageId}${archive ? ' (archiving)' : ''}`);
 
   const gmail = await createGmailClient(userEmail, userCode);
   if (!gmail) {
@@ -307,13 +309,19 @@ export async function applyLabelToEmail(
       (id) => id !== finalLabelId
     );
 
-    // Apply the new label and remove others
+    // Build remove list - include INBOX if archiving
+    const removeLabelIds = [...allMoccetLabelIds];
+    if (archive) {
+      removeLabelIds.push('INBOX');
+    }
+
+    // Apply the new label and remove others (+ INBOX if archiving)
     await gmail.users.messages.modify({
       userId: 'me',
       id: messageId,
       requestBody: {
         addLabelIds: [finalLabelId],
-        removeLabelIds: allMoccetLabelIds,
+        removeLabelIds: removeLabelIds,
       },
     });
 
@@ -592,6 +600,48 @@ export async function backfillExistingEmails(
   let labeled = 0;
   let skippedSelf = 0;
 
+  // Fetch user's category preferences
+  const supabase = createAdminClient();
+  const { data: settings } = await supabase
+    .from('email_draft_settings')
+    .select('category_preferences')
+    .eq('user_email', userEmail)
+    .maybeSingle();
+
+  const categoryPreferences = settings?.category_preferences as {
+    categories?: Record<string, boolean>;
+    respectExisting?: boolean;
+  } | null;
+
+  // Helper to check if should archive
+  const shouldArchive = (labelName: string): boolean => {
+    if (!categoryPreferences?.categories) return false;
+    return categoryPreferences.categories[labelName] ?? false;
+  };
+
+  // Helper to check if email has user-applied labels (not system labels)
+  const hasUserLabels = (labelIds: string[]): boolean => {
+    // Gmail system labels to ignore
+    const systemLabels = [
+      'INBOX', 'SENT', 'DRAFT', 'TRASH', 'SPAM', 'STARRED', 'IMPORTANT',
+      'UNREAD', 'CATEGORY_PERSONAL', 'CATEGORY_SOCIAL', 'CATEGORY_PROMOTIONS',
+      'CATEGORY_UPDATES', 'CATEGORY_FORUMS'
+    ];
+    // Also ignore moccet labels (we created these)
+    const moccetLabelPrefixes = ['moccet/', 'Label_'];
+
+    return labelIds.some(labelId => {
+      // Skip system labels
+      if (systemLabels.includes(labelId)) return false;
+      // Skip moccet-created labels
+      if (moccetLabelPrefixes.some(prefix => labelId.startsWith(prefix))) return false;
+      // This is a user-applied label
+      return true;
+    });
+  };
+
+  const respectExisting = categoryPreferences?.respectExisting ?? false;
+
   try {
     // Import classifier dynamically to avoid circular dependency
     const { classifyEmailWithLabeling } = await import('@/lib/services/email-classifier');
@@ -629,6 +679,13 @@ export async function backfillExistingEmails(
         if (isEmailFromSelf(fromHeader, userEmail)) {
           console.log(`[LabelManager] Skipping self-email: ${subject.slice(0, 50)}`);
           skippedSelf++;
+          continue;
+        }
+
+        // Skip if email has user-applied labels and respectExisting is enabled
+        const emailLabels = emailResponse.data.labelIds || [];
+        if (respectExisting && hasUserLabels(emailLabels)) {
+          console.log(`[LabelManager] Skipping email with existing labels: ${subject.slice(0, 50)}`);
           continue;
         }
 
@@ -689,7 +746,8 @@ export async function backfillExistingEmails(
           }
         }
 
-        // Apply label
+        // Apply label with archive based on preferences
+        const archiveThisEmail = shouldArchive(finalLabel);
         const applyResult = await applyLabelToEmail(
           userEmail,
           msg.id,
@@ -702,7 +760,8 @@ export async function backfillExistingEmails(
             source: 'heuristic',
             confidence: classification.confidence,
             reasoning: `Backfill: ${labelReasoning}`,
-          }
+          },
+          archiveThisEmail
         );
 
         if (applyResult.success) {

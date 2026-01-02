@@ -129,11 +129,12 @@ async function fetchEmailContent(
 
 /**
  * Category preferences from user settings
+ * categories: { categoryId: true/false } where true = move out of inbox (archive)
+ * respectExisting: if true, skip emails that already have user-applied labels
  */
 interface CategoryPreferences {
-  moveOut: Record<string, boolean>;
-  keepInbox: Record<string, boolean>;
-  respectExisting: boolean;
+  categories: Record<string, boolean>;
+  respectExisting?: boolean;
 }
 
 /**
@@ -169,26 +170,47 @@ async function getUserDraftSettings(userEmail: string): Promise<{
 
 /**
  * Check if a label category is enabled based on user preferences
+ * All categories are enabled by default - preferences just control archive behavior
  */
 function isLabelEnabled(
   labelName: string,
   preferences: CategoryPreferences | null
 ): boolean {
-  // If no preferences set, all labels are enabled by default
-  if (!preferences) return true;
-
-  // Check moveOut categories (meeting_update, marketing)
-  if (preferences.moveOut && labelName in preferences.moveOut) {
-    return preferences.moveOut[labelName] ?? true;
-  }
-
-  // Check keepInbox categories (to_respond, fyi, comment, notifications, awaiting_reply, actioned)
-  if (preferences.keepInbox && labelName in preferences.keepInbox) {
-    return preferences.keepInbox[labelName] ?? true;
-  }
-
-  // Default to enabled for unknown labels
+  // Labels are always enabled - we always apply them
+  // The preferences only control whether to archive (move out of inbox)
   return true;
+}
+
+/**
+ * Check if email should be archived (moved out of inbox) based on category
+ */
+function shouldArchive(
+  labelName: string,
+  preferences: CategoryPreferences | null
+): boolean {
+  // If no preferences set, don't archive by default
+  if (!preferences?.categories) return false;
+
+  // Check if this category is set to archive (true = move out of inbox)
+  return preferences.categories[labelName] ?? false;
+}
+
+/**
+ * Check if email has user-applied labels (not system labels)
+ */
+function hasUserLabels(labelIds: string[]): boolean {
+  const systemLabels = [
+    'INBOX', 'SENT', 'DRAFT', 'TRASH', 'SPAM', 'STARRED', 'IMPORTANT',
+    'UNREAD', 'CATEGORY_PERSONAL', 'CATEGORY_SOCIAL', 'CATEGORY_PROMOTIONS',
+    'CATEGORY_UPDATES', 'CATEGORY_FORUMS'
+  ];
+  const moccetLabelPrefixes = ['moccet/', 'Label_'];
+
+  return labelIds.some(labelId => {
+    if (systemLabels.includes(labelId)) return false;
+    if (moccetLabelPrefixes.some(prefix => labelId.startsWith(prefix))) return false;
+    return true;
+  });
 }
 
 /**
@@ -257,6 +279,13 @@ async function processNewEmail(
     const userSettings = await getUserDraftSettings(userEmail);
     const { categoryPreferences } = userSettings;
 
+    // Check if we should skip emails with existing user labels
+    const respectExisting = categoryPreferences?.respectExisting ?? false;
+    if (respectExisting && email.labels && hasUserLabels(email.labels)) {
+      console.log(`[Webhook] Skipping email with existing labels: ${email.subject}`);
+      return;
+    }
+
     // 1. Classify email with label
     const emailToClassify = {
       messageId: email.messageId,
@@ -289,11 +318,11 @@ async function processNewEmail(
       // Keep the classification label - it will handle actioned detection
     }
 
-    // 3. Check if the classified label is enabled by user preferences
-    const labelEnabled = isLabelEnabled(finalLabel, categoryPreferences);
+    // 3. Check if email should be archived based on category
+    const archiveEmail = shouldArchive(finalLabel, categoryPreferences);
 
-    // 4. Apply label to Gmail only if enabled and auto-labeling is on
-    if (applyLabel && userSettings.autoLabelingEnabled && labelEnabled) {
+    // 4. Apply label to Gmail (always apply labels, they help organize)
+    if (applyLabel && userSettings.autoLabelingEnabled) {
       const labelResult = await applyLabelToEmail(userEmail, email.messageId, finalLabel, userCode, {
         from: email.from,
         subject: email.subject,
@@ -301,15 +330,13 @@ async function processNewEmail(
         source: classification.labelSource,
         confidence: classification.confidence,
         reasoning: classification.labelReasoning,
-      });
+      }, archiveEmail); // Pass archive flag
 
       if (labelResult.success) {
-        console.log(`[Webhook] Applied label "${finalLabel}" to ${email.messageId}`);
+        console.log(`[Webhook] Applied label "${finalLabel}" to ${email.messageId}${archiveEmail ? ' (archived)' : ''}`);
       } else {
         console.warn(`[Webhook] Failed to apply label: ${labelResult.error}`);
       }
-    } else if (!labelEnabled) {
-      console.log(`[Webhook] Label "${finalLabel}" is disabled by user preferences, skipping`);
     }
 
     // 5. Run draft agent if email needs response - pass existing classification to avoid re-classification

@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get valid access token
-    const accessToken = await getValidatedAccessToken(email, 'gmail');
-    if (!accessToken) {
+    const tokenResult = await getValidatedAccessToken(email, 'gmail');
+    if (!tokenResult.token) {
       return NextResponse.json({ error: 'Not connected to Gmail' }, { status: 401 });
     }
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
-    oauth2Client.setCredentials({ access_token: accessToken });
+    oauth2Client.setCredentials({ access_token: tokenResult.token });
 
     // Create calendar client
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get valid access token
-    const accessToken = await getValidatedAccessToken(email, 'gmail');
-    if (!accessToken) {
+    const tokenResult = await getValidatedAccessToken(email, 'gmail');
+    if (!tokenResult.token) {
       return NextResponse.json({ error: 'Not connected to Gmail' }, { status: 401 });
     }
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
-    oauth2Client.setCredentials({ access_token: accessToken });
+    oauth2Client.setCredentials({ access_token: tokenResult.token });
 
     // Create calendar client
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });

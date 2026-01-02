@@ -9,36 +9,26 @@ interface CategorySetting {
   label: string;
   description: string;
   color: string;
-  enabled: boolean;
+  moveOutOfInbox: boolean; // true = archive, false = keep in inbox
 }
 
-const MOVE_OUT_CATEGORIES: CategorySetting[] = [
-  {
-    id: 'meeting_update',
-    name: 'Meeting update',
-    label: 'meeting_update',
-    description: 'Calendar & meeting invites',
-    color: '#5bb5a2',
-    enabled: true,
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    label: 'marketing',
-    description: 'Sales & marketing emails',
-    color: '#666666',
-    enabled: true,
-  },
-];
-
-const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
+// All categories - moveOutOfInbox: true means toggle is ON (will be archived)
+const DEFAULT_CATEGORIES: CategorySetting[] = [
   {
     id: 'to_respond',
     name: 'To respond',
     label: 'to_respond',
     description: 'Need your response',
     color: '#ef4444',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox by default
+  },
+  {
+    id: 'meeting_update',
+    name: 'Meeting update',
+    label: 'meeting_update',
+    description: 'Calendar & meeting invites',
+    color: '#5bb5a2',
+    moveOutOfInbox: true, // Archive by default
   },
   {
     id: 'fyi',
@@ -46,7 +36,7 @@ const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
     label: 'fyi',
     description: 'Important, no reply needed',
     color: '#22c55e',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox
   },
   {
     id: 'comment',
@@ -54,7 +44,7 @@ const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
     label: 'comment',
     description: 'Document comments & chats',
     color: '#a855f7',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox
   },
   {
     id: 'notifications',
@@ -62,7 +52,7 @@ const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
     label: 'notifications',
     description: 'Automated tool notifications',
     color: '#3b82f6',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox
   },
   {
     id: 'awaiting_reply',
@@ -70,7 +60,7 @@ const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
     label: 'awaiting_reply',
     description: 'Waiting for their reply',
     color: '#f97316',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox
   },
   {
     id: 'actioned',
@@ -78,15 +68,22 @@ const KEEP_IN_INBOX_CATEGORIES: CategorySetting[] = [
     label: 'actioned',
     description: 'Resolved & completed threads',
     color: '#eab308',
-    enabled: false,
+    moveOutOfInbox: false, // Keep in inbox
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing',
+    label: 'marketing',
+    description: 'Sales & marketing emails',
+    color: '#666666',
+    moveOutOfInbox: false, // Keep in inbox
   },
 ];
 
 export default function CategorizationPage() {
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'general' | 'advanced'>('general');
-  const [moveOutCategories, setMoveOutCategories] = useState(MOVE_OUT_CATEGORIES);
-  const [keepInboxCategories, setKeepInboxCategories] = useState(KEEP_IN_INBOX_CATEGORIES);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [respectExisting, setRespectExisting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -103,23 +100,15 @@ export default function CategorizationPage() {
           const res = await fetch(`/api/gmail/labels/preferences?email=${encodeURIComponent(session.user.email)}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.preferences) {
+            if (data.preferences?.categories) {
               // Apply saved preferences
-              if (data.preferences.moveOut) {
-                setMoveOutCategories(prev => prev.map(cat => ({
-                  ...cat,
-                  enabled: data.preferences.moveOut[cat.id] ?? cat.enabled
-                })));
-              }
-              if (data.preferences.keepInbox) {
-                setKeepInboxCategories(prev => prev.map(cat => ({
-                  ...cat,
-                  enabled: data.preferences.keepInbox[cat.id] ?? cat.enabled
-                })));
-              }
-              if (data.preferences.respectExisting !== undefined) {
-                setRespectExisting(data.preferences.respectExisting);
-              }
+              setCategories(prev => prev.map(cat => ({
+                ...cat,
+                moveOutOfInbox: data.preferences.categories[cat.id] ?? cat.moveOutOfInbox
+              })));
+            }
+            if (data.preferences?.respectExisting !== undefined) {
+              setRespectExisting(data.preferences.respectExisting);
             }
           }
         } catch (error) {
@@ -130,31 +119,34 @@ export default function CategorizationPage() {
     loadPreferences();
   }, [supabase.auth]);
 
-  const toggleMoveOutCategory = (id: string) => {
-    setMoveOutCategories(prev =>
-      prev.map(cat => cat.id === id ? { ...cat, enabled: !cat.enabled } : cat)
+  const toggleCategory = (id: string) => {
+    setCategories(prev =>
+      prev.map(cat => cat.id === id ? { ...cat, moveOutOfInbox: !cat.moveOutOfInbox } : cat)
     );
   };
 
-  const toggleKeepInboxCategory = (id: string) => {
-    setKeepInboxCategories(prev =>
-      prev.map(cat => cat.id === id ? { ...cat, enabled: !cat.enabled } : cat)
-    );
-  };
+  // Split categories into two groups for display
+  const moveOutCategories = categories.filter(c => c.moveOutOfInbox);
+  const keepInboxCategories = categories.filter(c => !c.moveOutOfInbox);
+
+  const [isLabeling, setIsLabeling] = useState(false);
+  const [labelingProgress, setLabelingProgress] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!userEmail) return;
 
     setIsSaving(true);
     setSaveSuccess(false);
+    setLabelingProgress(null);
 
     try {
       const preferences = {
-        moveOut: Object.fromEntries(moveOutCategories.map(c => [c.id, c.enabled])),
-        keepInbox: Object.fromEntries(keepInboxCategories.map(c => [c.id, c.enabled])),
+        // categories: { id: true/false } where true = move out of inbox
+        categories: Object.fromEntries(categories.map(c => [c.id, c.moveOutOfInbox])),
         respectExisting,
       };
 
+      // Save preferences
       const res = await fetch('/api/gmail/labels/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,7 +155,48 @@ export default function CategorizationPage() {
 
       if (res.ok) {
         setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
+
+        // Auto-label last 100 emails (website only - replaces existing labels)
+        setIsLabeling(true);
+        setLabelingProgress('Setting up labels...');
+
+        try {
+          // First ensure labels are set up in Gmail
+          await fetch('/api/gmail/labels/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail, backfill: false }),
+          });
+
+          setLabelingProgress('Labeling your emails...');
+
+          // Then backfill last 100 emails with labels
+          const backfillRes = await fetch('/api/gmail/labels/backfill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: userEmail,
+              count: 100,
+              replaceExisting: !respectExisting
+            }),
+          });
+
+          if (backfillRes.ok) {
+            const backfillData = await backfillRes.json();
+            setLabelingProgress(`Done! Labeled ${backfillData.labeled || 0} emails`);
+          } else {
+            setLabelingProgress('Preferences saved. Email labeling will apply to new emails.');
+          }
+        } catch (labelError) {
+          console.error('Error labeling emails:', labelError);
+          setLabelingProgress('Preferences saved. Email labeling will apply to new emails.');
+        } finally {
+          setIsLabeling(false);
+          setTimeout(() => {
+            setSaveSuccess(false);
+            setLabelingProgress(null);
+          }, 5000);
+        }
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -199,55 +232,65 @@ export default function CategorizationPage() {
 
         {activeTab === 'general' && (
           <div className="settings-content">
-            {/* Move out of inbox section */}
+            {/* Move out of inbox section - shows categories with toggle ON */}
             <section className="category-section">
               <h2>Move these out of my Inbox</h2>
+              <p className="section-hint">Toggle ON to archive these emails automatically</p>
               <div className="category-list">
-                {moveOutCategories.map((category) => (
-                  <div key={category.id} className="category-item">
-                    <div className="category-info">
-                      <span
-                        className="category-badge"
-                        style={{ backgroundColor: category.color }}
+                {moveOutCategories.length > 0 ? (
+                  moveOutCategories.map((category) => (
+                    <div key={category.id} className="category-item">
+                      <div className="category-info">
+                        <span
+                          className="category-badge"
+                          style={{ backgroundColor: category.color }}
+                        >
+                          {category.name}
+                        </span>
+                        <span className="category-description">{category.description}</span>
+                      </div>
+                      <button
+                        className="toggle active"
+                        onClick={() => toggleCategory(category.id)}
                       >
-                        {category.name}
-                      </span>
-                      <span className="category-description">{category.description}</span>
+                        <span className="toggle-handle"></span>
+                      </button>
                     </div>
-                    <button
-                      className={`toggle ${category.enabled ? 'active' : ''}`}
-                      onClick={() => toggleMoveOutCategory(category.id)}
-                    >
-                      <span className="toggle-handle"></span>
-                    </button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="empty-section">No categories set to archive</p>
+                )}
               </div>
             </section>
 
-            {/* Keep in inbox section */}
+            {/* Keep in inbox section - shows categories with toggle OFF */}
             <section className="category-section">
               <h2>Keep these in my Inbox</h2>
+              <p className="section-hint">Toggle OFF to keep these emails in your inbox</p>
               <div className="category-list">
-                {keepInboxCategories.map((category) => (
-                  <div key={category.id} className="category-item">
-                    <div className="category-info">
-                      <span
-                        className="category-badge"
-                        style={{ backgroundColor: category.color }}
+                {keepInboxCategories.length > 0 ? (
+                  keepInboxCategories.map((category) => (
+                    <div key={category.id} className="category-item">
+                      <div className="category-info">
+                        <span
+                          className="category-badge"
+                          style={{ backgroundColor: category.color }}
+                        >
+                          {category.name}
+                        </span>
+                        <span className="category-description">{category.description}</span>
+                      </div>
+                      <button
+                        className="toggle"
+                        onClick={() => toggleCategory(category.id)}
                       >
-                        {category.name}
-                      </span>
-                      <span className="category-description">{category.description}</span>
+                        <span className="toggle-handle"></span>
+                      </button>
                     </div>
-                    <button
-                      className={`toggle ${category.enabled ? 'active' : ''}`}
-                      onClick={() => toggleKeepInboxCategory(category.id)}
-                    >
-                      <span className="toggle-handle"></span>
-                    </button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="empty-section">All categories set to archive</p>
+                )}
               </div>
             </section>
 
@@ -256,7 +299,10 @@ export default function CategorizationPage() {
               <h3>Existing categories</h3>
               <div className="category-item">
                 <div className="category-info">
-                  <span className="category-description">Respect my categories</span>
+                  <div className="respect-label">
+                    <span className="category-name-text">Respect my categories</span>
+                    <span className="category-description">We won't categorize emails that already have labels applied by you or that have been filtered into a folder.</span>
+                  </div>
                 </div>
                 <button
                   className={`toggle ${respectExisting ? 'active' : ''}`}
@@ -272,10 +318,13 @@ export default function CategorizationPage() {
               <button
                 className={`save-button ${saveSuccess ? 'success' : ''}`}
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || isLabeling}
               >
-                {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Update preferences'}
+                {isSaving ? 'Saving...' : isLabeling ? 'Labeling emails...' : saveSuccess ? 'Saved!' : 'Update preferences'}
               </button>
+              {labelingProgress && (
+                <p className="labeling-progress">{labelingProgress}</p>
+              )}
             </div>
           </div>
         )}
@@ -374,7 +423,37 @@ export default function CategorizationPage() {
           font-weight: 500;
           font-size: 14px;
           color: #1a1a1a;
-          margin: 0 0 20px 0;
+          margin: 0 0 8px 0;
+        }
+
+        .section-hint {
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 12px;
+          color: #999;
+          margin: 0 0 16px 0;
+        }
+
+        .empty-section {
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 13px;
+          color: #999;
+          font-style: italic;
+          padding: 12px 0;
+        }
+
+        .respect-label {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .category-name-text {
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 14px;
+          color: #1a1a1a;
         }
 
         .category-section h3 {
@@ -488,6 +567,15 @@ export default function CategorizationPage() {
 
         .save-button.success {
           background: #22c55e;
+        }
+
+        .labeling-progress {
+          margin-top: 12px;
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 13px;
+          color: #666;
+          text-align: center;
         }
 
         .advanced-notice {

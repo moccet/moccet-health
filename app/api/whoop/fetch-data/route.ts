@@ -372,8 +372,8 @@ export async function POST(request: NextRequest) {
       hrvHealth: hrvAnalysis.avgHRV >= 60 ? 'good' : hrvAnalysis.avgHRV >= 40 ? 'moderate' : 'poor',
     };
 
-    // Store in database
-    const supabase = await createClient();
+    // Store in database (use admin client to bypass RLS for server-side operations)
+    const supabase = createAdminClient();
 
     // Update or insert training data
     const { error: trainingDataError } = await supabase

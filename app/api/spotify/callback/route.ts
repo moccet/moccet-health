@@ -202,29 +202,23 @@ export async function GET(request: NextRequest) {
 
     // Return HTML based on source
     if (isMobileApp) {
-      // Mobile app: Show success message, user will close browser manually
       return new NextResponse(
         `<!DOCTYPE html>
         <html>
           <head>
             <title>Spotify Connected</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
           </head>
-          <body>
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto;">
-              <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
-              <h1 style="color: #1DB954; font-size: 24px; margin-bottom: 12px;">Connected!</h1>
-              <p style="color: #333; font-size: 16px; margin-bottom: 24px;">Spotify has been connected successfully.</p>
-              <p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p>
+          <body style="margin: 0; padding: 0; background: #fff;">
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+              <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+              <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Spotify has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666; margin: 0;">You can now close this window and return to the app.</p>
             </div>
           </body>
         </html>`,
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/html',
-          },
-        }
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
       );
     }
 
@@ -234,35 +228,25 @@ export async function GET(request: NextRequest) {
       <html>
         <head>
           <title>Spotify Connected</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
         </head>
-        <body>
+        <body style="margin: 0; padding: 0; background: #fff;">
           <script>
-            // Check if we're in a popup window (desktop) or full page (mobile browser)
             if (window.opener) {
-              // Desktop: Signal to parent window that connection was successful
               window.opener.postMessage({ type: 'spotify-connected' }, '*');
-              // Close the popup after a short delay
-              setTimeout(() => {
-                window.close();
-              }, 1000);
+              setTimeout(() => { window.close(); }, 1000);
             } else {
-              // Web mobile: Redirect back to onboarding
               window.location.href = '${redirectPath}?auth=spotify&success=true';
             }
           </script>
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
-            <h1 style="color: #1DB954;">✓ Connected</h1>
-            <p>Spotify has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+            <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Spotify has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666; margin: 0;">Redirecting you back...</p>
           </div>
         </body>
       </html>`,
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html',
-        },
-      }
+      { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
 
   } catch (error) {

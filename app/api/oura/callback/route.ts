@@ -160,6 +160,24 @@ export async function GET(request: NextRequest) {
       console.warn('[Oura] No userId available, cannot update user_connectors');
     }
 
+    // Trigger initial data sync in the background (don't await - let it run async)
+    if (userEmail) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.com';
+      fetch(`${baseUrl}/api/oura/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, code: userCode }),
+      }).then(response => {
+        if (response.ok) {
+          console.log(`[Oura] Initial data sync triggered for ${userEmail}`);
+        } else {
+          console.error(`[Oura] Initial data sync failed for ${userEmail}:`, response.status);
+        }
+      }).catch(err => {
+        console.error(`[Oura] Initial data sync error for ${userEmail}:`, err);
+      });
+    }
+
     // Keep cookies for backward compatibility and session validation
     cookieStore.set('oura_access_token', accessToken, {
       httpOnly: true,
@@ -205,13 +223,13 @@ export async function GET(request: NextRequest) {
           <head>
             <title>Oura Connected</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
           </head>
-          <body>
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px; max-width: 400px; margin: 0 auto;">
-              <div style="font-size: 64px; margin-bottom: 20px;">✓</div>
-              <h1 style="color: #4CAF50; font-size: 24px; margin-bottom: 12px;">Connected!</h1>
-              <p style="color: #333; font-size: 16px; margin-bottom: 24px;">Oura Ring has been connected successfully.</p>
-              <p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p>
+          <body style="margin: 0; padding: 0; background: #fff;">
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+              <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+              <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Oura Ring has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666; margin: 0;">You can now close this window and return to the app.</p>
             </div>
           </body>
         </html>`,
@@ -225,8 +243,9 @@ export async function GET(request: NextRequest) {
       <html>
         <head>
           <title>Oura Connected</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
         </head>
-        <body>
+        <body style="margin: 0; padding: 0; background: #fff;">
           <script>
             if (window.opener) {
               window.opener.postMessage({ type: 'oura-connected' }, '*');
@@ -235,10 +254,10 @@ export async function GET(request: NextRequest) {
               window.location.href = '${redirectPath}?auth=oura&success=true';
             }
           </script>
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
-            <h1 style="color: #4CAF50;">✓ Connected</h1>
-            <p>Oura Ring has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+            <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Oura Ring has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666; margin: 0;">Redirecting you back...</p>
           </div>
         </body>
       </html>`,

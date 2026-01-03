@@ -180,13 +180,48 @@ export async function GET(request: NextRequest) {
 
     if (isMobileApp) {
       return new NextResponse(
-        `<!DOCTYPE html><html><head><title>Fitbit Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #00B0B9; font-size: 24px;">Connected!</h1><p>Fitbit has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`,
+        `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Fitbit Connected</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+          </head>
+          <body style="margin: 0; padding: 0; background: #fff;">
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+              <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+              <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Fitbit has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666; margin: 0;">You can now close this window and return to the app.</p>
+            </div>
+          </body>
+        </html>`,
         { status: 200, headers: { 'Content-Type': 'text/html' } }
       );
     }
 
     return new NextResponse(
-      `<!DOCTYPE html><html><head><title>Fitbit Connected</title></head><body><script>if(window.opener){window.opener.postMessage({type:'fitbit-connected'},'*');setTimeout(()=>{window.close();},1000);}else{window.location.href='${redirectPath}?auth=fitbit&success=true';}</script><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;"><h1 style="color: #00B0B9;">✓ Connected</h1><p>Fitbit has been connected successfully.</p></div></body></html>`,
+      `<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Fitbit Connected</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+        </head>
+        <body style="margin: 0; padding: 0; background: #fff;">
+          <script>
+            if(window.opener){
+              window.opener.postMessage({type:'fitbit-connected'},'*');
+              setTimeout(()=>{window.close();},1000);
+            } else {
+              window.location.href='${redirectPath}?auth=fitbit&success=true';
+            }
+          </script>
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+            <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Fitbit has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666; margin: 0;">Redirecting you back...</p>
+          </div>
+        </body>
+      </html>`,
       { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
 

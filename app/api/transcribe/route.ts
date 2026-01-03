@@ -1,127 +1,160 @@
 /**
- * Transcription Endpoint - OpenAI Whisper API
+ * Speech-to-Text API using Deepgram
  *
- * Provides speech-to-text transcription using OpenAI's Whisper model.
- * Better accuracy than native mobile STT, especially for medical terminology.
+ * Accepts audio data and returns transcription using Deepgram's nova-2 model.
+ * Optimized for health/medical terminology.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+interface DeepgramResponse {
+  results?: {
+    channels?: Array<{
+      alternatives?: Array<{
+        transcript?: string;
+        confidence?: number;
+        words?: Array<{
+          word: string;
+          start: number;
+          end: number;
+          confidence: number;
+        }>;
+      }>;
+    }>;
+  };
+  metadata?: {
+    duration?: number;
+    channels?: number;
+  };
+}
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-/**
- * POST /api/transcribe
- *
- * Transcribe audio to text using OpenAI Whisper.
- *
- * Request: multipart/form-data with 'audio' file
- * Response: { text: string, language?: string, duration?: number }
- */
 export async function POST(request: NextRequest) {
-  console.log('[TRANSCRIBE] ========== NEW TRANSCRIPTION REQUEST ==========');
-
   try {
-    // Get the form data
-    const formData = await request.formData();
-    const audioFile = formData.get('audio') as File | null;
-
-    if (!audioFile) {
-      console.log('[TRANSCRIBE] ERROR: No audio file provided');
+    const apiKey = process.env.DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      console.error('[Transcribe] DEEPGRAM_API_KEY not configured');
       return NextResponse.json(
-        { error: 'No audio file provided' },
-        { status: 400 }
-      );
-    }
-
-    console.log('[TRANSCRIBE] Audio file received:', {
-      name: audioFile.name,
-      size: audioFile.size,
-      type: audioFile.type,
-    });
-
-    // Optional parameters
-    const language = formData.get('language') as string | null;
-    const prompt = formData.get('prompt') as string | null;
-
-    // Convert File to Buffer for OpenAI API
-    const arrayBuffer = await audioFile.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Create a File-like object for OpenAI
-    const file = new File([buffer], audioFile.name || 'audio.webm', {
-      type: audioFile.type || 'audio/webm',
-    });
-
-    console.log('[TRANSCRIBE] Calling OpenAI Whisper API...');
-    const startTime = Date.now();
-
-    // Call OpenAI Whisper API
-    const transcription = await openai.audio.transcriptions.create({
-      file,
-      model: 'whisper-1',
-      language: language || undefined,
-      prompt: prompt || 'Health, medical terminology, wellness, sleep, glucose, HRV, supplements, vitamins',
-      response_format: 'verbose_json',
-    });
-
-    const duration = Date.now() - startTime;
-    console.log('[TRANSCRIBE] Transcription complete in', duration, 'ms');
-    console.log('[TRANSCRIBE] Result:', transcription.text?.substring(0, 100));
-
-    return NextResponse.json({
-      text: transcription.text,
-      language: transcription.language,
-      duration: transcription.duration,
-      processingTime: duration,
-    });
-  } catch (error) {
-    console.error('[TRANSCRIBE] ========== ERROR ==========');
-    console.error('[TRANSCRIBE] Error:', error);
-
-    if (error instanceof Error) {
-      // Check for specific OpenAI errors
-      if (error.message.includes('Invalid file format')) {
-        return NextResponse.json(
-          { error: 'Invalid audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm' },
-          { status: 400 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: error.message },
+        { error: 'Transcription service not configured' },
         { status: 500 }
       );
     }
 
+    // Get the audio data from the request
+    const contentType = request.headers.get('content-type') || '';
+    let audioData: ArrayBuffer;
+    let mimeType = 'audio/wav';
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle form data with file upload
+      const formData = await request.formData();
+      const audioFile = formData.get('audio') as File;
+      if (!audioFile) {
+        return NextResponse.json(
+          { error: 'No audio file provided' },
+          { status: 400 }
+        );
+      }
+      audioData = await audioFile.arrayBuffer();
+      mimeType = audioFile.type || 'audio/wav';
+    } else if (contentType.includes('application/json')) {
+      // Handle base64 encoded audio
+      const body = await request.json();
+      if (!body.audio) {
+        return NextResponse.json(
+          { error: 'No audio data provided' },
+          { status: 400 }
+        );
+      }
+      // Decode base64 audio
+      const base64Audio = body.audio.replace(/^data:audio\/\w+;base64,/, '');
+      audioData = Buffer.from(base64Audio, 'base64');
+      mimeType = body.mimeType || 'audio/wav';
+    } else {
+      // Handle raw audio data
+      audioData = await request.arrayBuffer();
+      mimeType = contentType || 'audio/wav';
+    }
+
+    console.log('[Transcribe] Processing audio:', {
+      size: audioData.byteLength,
+      mimeType,
+    });
+
+    // Build Deepgram query params
+    const params = new URLSearchParams({
+      model: 'nova-2',          // Best accuracy model
+      language: 'en',
+      punctuate: 'true',
+      smart_format: 'true',
+      diarize: 'false',         // Single speaker for voice input
+      filler_words: 'false',    // Remove "um", "uh", etc.
+      profanity_filter: 'false',
+    });
+
+    // Add health/medical keywords for better accuracy
+    const healthKeywords = [
+      'glucose', 'HRV', 'heart rate', 'sleep', 'recovery',
+      'calories', 'steps', 'workout', 'nutrition', 'supplement',
+      'vitamin', 'magnesium', 'omega', 'biomarker', 'blood pressure',
+      'cholesterol', 'insulin', 'cortisol', 'melatonin', 'circadian',
+      'REM', 'deep sleep', 'readiness', 'strain', 'Oura', 'Whoop',
+      'Dexcom', 'CGM', 'moccet'
+    ];
+
+    healthKeywords.forEach(keyword => {
+      params.append('keywords', `${keyword}:2`);
+    });
+
+    // Call Deepgram API
+    const response = await fetch(
+      `https://api.deepgram.com/v1/listen?${params.toString()}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${apiKey}`,
+          'Content-Type': mimeType,
+        },
+        body: audioData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Transcribe] Deepgram API error:', response.status, errorText);
+      return NextResponse.json(
+        { error: `Transcription failed: ${response.status}` },
+        { status: response.status }
+      );
+    }
+
+    const result: DeepgramResponse = await response.json();
+
+    // Extract transcript
+    const transcript = result.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    const confidence = result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0;
+    const words = result.results?.channels?.[0]?.alternatives?.[0]?.words || [];
+    const duration = result.metadata?.duration || 0;
+
+    console.log('[Transcribe] Success:', {
+      transcript: transcript.substring(0, 50) + '...',
+      confidence,
+      duration,
+      wordCount: words.length,
+    });
+
+    return NextResponse.json({
+      success: true,
+      transcript,
+      confidence,
+      words,
+      duration,
+    });
+
+  } catch (error) {
+    console.error('[Transcribe] Error:', error);
     return NextResponse.json(
-      { error: 'Transcription failed' },
+      { error: error instanceof Error ? error.message : 'Transcription failed' },
       { status: 500 }
     );
   }
-}
-
-/**
- * GET /api/transcribe
- *
- * Health check and supported formats info
- */
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    service: 'OpenAI Whisper Transcription',
-    supportedFormats: ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'],
-    maxFileSize: '25MB',
-    features: [
-      'High accuracy for medical terminology',
-      'Multiple language support',
-      'Custom prompts for context',
-    ],
-  });
 }

@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         await supabase.from('user_connectors').upsert({
           user_id: mobileUserId,
           user_email: userEmail || null, // Store email for queries that use user_email
-          connector_name: 'Google',
+          connector_name: 'Gmail',  // Match Flutter's expected name
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -166,62 +166,13 @@ export async function GET(request: NextRequest) {
         <head>
           <title>Gmail Connected</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              text-align: center;
-              padding: 60px 20px;
-              background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-              min-height: 100vh;
-              margin: 0;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-            }
-            .success-icon {
-              width: 80px;
-              height: 80px;
-              background: #4CAF50;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              margin-bottom: 24px;
-            }
-            .success-icon svg {
-              width: 40px;
-              height: 40px;
-              fill: white;
-            }
-            h1 {
-              color: #1a1a1a;
-              font-size: 24px;
-              margin: 0 0 12px 0;
-            }
-            p {
-              color: #666;
-              font-size: 16px;
-              margin: 0 0 8px 0;
-            }
-            .hint {
-              font-size: 14px;
-              color: #888;
-              margin-top: 32px;
-              padding: 16px;
-              background: rgba(255,255,255,0.8);
-              border-radius: 12px;
-            }
-          </style>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
         </head>
-        <body>
-          <div class="success-icon">
-            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-          </div>
-          <h1>Gmail Connected!</h1>
-          <p>Your account has been linked successfully.</p>
-          <div class="hint">
-            You can now close this window<br>and return to the moccet app.
+        <body style="margin: 0; padding: 0; background: #fff;">
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+            <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Gmail has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666; margin: 0;">You can now close this window and return to the app.</p>
           </div>
         </body>
       </html>
@@ -230,27 +181,22 @@ export async function GET(request: NextRequest) {
       <html>
         <head>
           <title>Gmail Connected</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
         </head>
-        <body>
+        <body style="margin: 0; padding: 0; background: #fff;">
           <script>
-            // Check if we're in a popup window (desktop) or full page (web)
             if (window.opener) {
-              // Desktop: Signal to parent window that connection was successful
               window.opener.postMessage({ type: 'gmail-connected', email: '${userEmail}' }, '*');
-              // Close the popup after a short delay
-              setTimeout(() => {
-                window.close();
-              }, 1000);
+              setTimeout(() => { window.close(); }, 1000);
             } else {
-              // Web: Redirect back to onboarding (moccet-mail for Supabase users, forge for others)
               const returnPath = '${stateUserEmail ? '/moccet-mail/onboarding' : '/forge/onboarding'}';
               window.location.href = returnPath + '?auth=gmail&success=true';
             }
           </script>
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;">
-            <h1 style="color: #4CAF50;">✓ Connected</h1>
-            <p>Gmail has been connected successfully.</p>
-            <p style="font-size: 14px; color: #666;">Redirecting you back...</p>
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+            <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+            <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Gmail has been connected successfully.</p>
+            <p style="font-size: 14px; color: #666; margin: 0;">Redirecting you back...</p>
           </div>
         </body>
       </html>

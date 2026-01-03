@@ -197,8 +197,43 @@ export async function GET(request: NextRequest) {
 
     // Return HTML based on source (isMobileApp already set above from state parsing)
     const html = isMobileApp
-      ? `<!DOCTYPE html><html><head><title>Slack Connected</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;"><div style="font-size: 64px; margin-bottom: 20px;">✓</div><h1 style="color: #4A154B; font-size: 24px;">Connected!</h1><p>Slack has been connected successfully.</p><p style="font-size: 14px; color: #666;">You can now close this window and return to the app.</p></div></body></html>`
-      : `<!DOCTYPE html><html><head><title>Slack Connected</title></head><body><script>if(window.opener){window.opener.postMessage({type:'slack-connected',team:'${teamName}'},'*');setTimeout(()=>{window.close();},1000);}else{window.location.href='${redirectPath}?auth=slack&success=true';}</script><div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 40px;"><h1 style="color: #4A154B;">✓ Connected</h1><p>Slack has been connected successfully.</p></div></body></html>`;
+      ? `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Slack Connected</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+          </head>
+          <body style="margin: 0; padding: 0; background: #fff;">
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+              <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+              <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Slack has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666; margin: 0;">You can now close this window and return to the app.</p>
+            </div>
+          </body>
+        </html>`
+      : `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>Slack Connected</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+          </head>
+          <body style="margin: 0; padding: 0; background: #fff;">
+            <script>
+              if(window.opener){
+                window.opener.postMessage({type:'slack-connected',team:'${teamName}'},'*');
+                setTimeout(()=>{window.close();},1000);
+              } else {
+                window.location.href='${redirectPath}?auth=slack&success=true';
+              }
+            </script>
+            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px;">
+              <div style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 48px; color: #000; margin-bottom: 24px;">moccet</div>
+              <p style="font-size: 18px; color: #2E8B57; margin: 0 0 12px 0;">Slack has been connected successfully.</p>
+              <p style="font-size: 14px; color: #666; margin: 0;">Redirecting you back...</p>
+            </div>
+          </body>
+        </html>`;
 
     const response = new NextResponse(html, {
       status: 200,

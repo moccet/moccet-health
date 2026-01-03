@@ -400,14 +400,38 @@ export async function fetchOuraData(
   try {
     const supabase = await createClient();
 
-    // First check if user actually has Oura connected
-    const { data: connector } = await supabase
-      .from('user_connectors')
-      .select('is_connected')
-      .eq('user_email', email)
-      .eq('connector_name', 'Oura Ring')
-      .eq('is_connected', true)
+    // First look up user_id from email (user_connectors uses user_id, not email)
+    const adminClient = createAdminClient();
+    const { data: users } = await adminClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
       .maybeSingle();
+
+    // Check if user has Oura connected - try by user_id first, then by user_email fallback
+    let connector = null;
+    if (users?.id) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_id', users.id)
+        .eq('connector_name', 'Oura Ring')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
+
+    // Fallback: check by user_email (some callbacks store this)
+    if (!connector) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_email', email)
+        .eq('connector_name', 'Oura Ring')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
 
     if (!connector) {
       return {
@@ -761,14 +785,38 @@ export async function fetchDexcomData(
   try {
     const supabase = await createClient();
 
-    // First check if user actually has Dexcom connected
-    const { data: connector } = await supabase
-      .from('user_connectors')
-      .select('is_connected')
-      .eq('user_email', email)
-      .eq('connector_name', 'Dexcom')
-      .eq('is_connected', true)
+    // First look up user_id from email (user_connectors uses user_id, not email)
+    const adminClient = createAdminClient();
+    const { data: users } = await adminClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
       .maybeSingle();
+
+    // Check if user has Dexcom connected - try by user_id first, then by user_email fallback
+    let connector = null;
+    if (users?.id) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_id', users.id)
+        .eq('connector_name', 'Dexcom')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
+
+    // Fallback: check by user_email (some callbacks store this)
+    if (!connector) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_email', email)
+        .eq('connector_name', 'Dexcom')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
 
     if (!connector) {
       return {
@@ -1156,14 +1204,38 @@ export async function fetchWhoopData(email: string): Promise<EcosystemDataSource
   try {
     const supabase = await createClient();
 
-    // First check if user actually has Whoop connected
-    const { data: connector } = await supabase
-      .from('user_connectors')
-      .select('is_connected')
-      .eq('user_email', email)
-      .eq('connector_name', 'Whoop')
-      .eq('is_connected', true)
+    // First look up user_id from email (user_connectors uses user_id, not email)
+    const adminClient = createAdminClient();
+    const { data: users } = await adminClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
       .maybeSingle();
+
+    // Check if user has Whoop connected - try by user_id first, then by user_email fallback
+    let connector = null;
+    if (users?.id) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_id', users.id)
+        .eq('connector_name', 'Whoop')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
+
+    // Fallback: check by user_email (some callbacks store this)
+    if (!connector) {
+      const { data } = await adminClient
+        .from('user_connectors')
+        .select('is_connected')
+        .eq('user_email', email)
+        .eq('connector_name', 'Whoop')
+        .eq('is_connected', true)
+        .maybeSingle();
+      connector = data;
+    }
 
     if (!connector) {
       return {

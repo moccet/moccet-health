@@ -123,12 +123,13 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         await supabase.from('user_connectors').upsert({
           user_id: supabaseUserId,
+          user_email: userEmail || null, // Store email for queries that use user_email
           connector_name: 'Strava',
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id,connector_name' });
-        console.log(`[Strava] Updated user_connectors for user ${supabaseUserId}`);
+        console.log(`[Strava] Updated user_connectors for user ${supabaseUserId}${userEmail ? ` (email: ${userEmail})` : ''}`);
       } catch (connectorError) {
         console.error('[Strava] Failed to update user_connectors:', connectorError);
       }

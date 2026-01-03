@@ -166,12 +166,13 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         await supabase.from('user_connectors').upsert({
           user_id: supabaseUserId,
+          user_email: userEmail || null, // Store email for queries that use user_email
           connector_name: 'Slack',
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id,connector_name' });
-        console.log(`[Slack] Updated user_connectors for user ${supabaseUserId}`);
+        console.log(`[Slack] Updated user_connectors for user ${supabaseUserId}${userEmail ? ` (email: ${userEmail})` : ''}`);
       } catch (connectorError) {
         console.error('[Slack] Failed to update user_connectors:', connectorError);
       }

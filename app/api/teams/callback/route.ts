@@ -151,12 +151,13 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         await supabase.from('user_connectors').upsert({
           user_id: supabaseUserId,
+          user_email: storedUserEmail || null, // Store email for queries that use user_email
           connector_name: 'Teams',
           is_connected: true,
           connected_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id,connector_name' });
-        console.log(`[Teams] Updated user_connectors for user ${supabaseUserId}`);
+        console.log(`[Teams] Updated user_connectors for user ${supabaseUserId}${storedUserEmail ? ` (email: ${storedUserEmail})` : ''}`);
       } catch (connectorError) {
         console.error('[Teams] Failed to update user_connectors:', connectorError);
       }

@@ -29,7 +29,7 @@ interface ProcessResult {
 }
 
 /**
- * Debug function to fetch and return raw Whoop data
+ * Debug function to fetch and return raw Whoop data using v2 API
  */
 export async function fetchWhoopDataForDebug(
   email: string,
@@ -42,10 +42,10 @@ export async function fetchWhoopDataForDebug(
     const endDate = new Date();
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Fetch cycles - recovery is nested in completed cycles
-    const cycleEndpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    // Fetch from v2 recovery endpoint
+    const recoveryEndpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
 
-    const response = await fetch(`https://api.prod.whoop.com/developer/v1${cycleEndpoint}`, {
+    const response = await fetch(`https://api.prod.whoop.com/developer/v2${recoveryEndpoint}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -54,38 +54,24 @@ export async function fetchWhoopDataForDebug(
 
     if (!response.ok) {
       const errorText = await response.text();
-      return { error: `API error ${response.status}`, details: errorText };
+      return { error: `API error ${response.status}`, details: errorText, endpoint: recoveryEndpoint };
     }
 
     const data = await response.json();
     const records = data.records || data || [];
 
-    // Find completed cycles (have end date) with recovery data
-    // Recovery is a nested object: cycle.recovery.score, cycle.recovery.hrv_rmssd_milli, etc.
-    const completedCycles = records.filter((r: { end: string | null }) => r.end !== null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cyclesWithRecovery = records.filter((r: any) => r.recovery?.score !== undefined);
-    const latestWithRecovery = cyclesWithRecovery[0];
-
-    // Get a completed cycle to see its full structure
-    const sampleCompletedCycle = completedCycles[0];
+    const latestRecord = records[0];
 
     return {
-      total_cycles: records.length,
-      completed_cycles: completedCycles.length,
-      cycles_with_recovery: cyclesWithRecovery.length,
-      latest_cycle_end: records[0]?.end,
-      sample_completed_cycle: sampleCompletedCycle ? {
-        id: sampleCompletedCycle.id,
-        end: sampleCompletedCycle.end,
-        has_recovery_object: !!sampleCompletedCycle.recovery,
-        recovery_raw: sampleCompletedCycle.recovery,
-        score_raw: sampleCompletedCycle.score,
-        all_keys: Object.keys(sampleCompletedCycle),
-      } : null,
-      latest_with_recovery: latestWithRecovery ? {
-        id: latestWithRecovery.id,
-        recovery_score: latestWithRecovery.recovery?.score,
+      api_version: 'v2',
+      endpoint: recoveryEndpoint,
+      total_records: records.length,
+      latest_record: latestRecord ? {
+        cycle_id: latestRecord.cycle_id,
+        sleep_id: latestRecord.sleep_id,
+        score_state: latestRecord.score_state,
+        score: latestRecord.score,
+        all_keys: Object.keys(latestRecord),
       } : null,
     };
   } catch (error) {
@@ -153,24 +139,26 @@ export async function processWhoopWebhookEvent(
 
 /**
  * Fetch the specific data related to the webhook event
+ * Uses Whoop API v2 endpoints
  */
 async function fetchEventData(
   accessToken: string,
   event: WhoopWebhookEvent
 ): Promise<Record<string, unknown> | null> {
-  const baseUrl = 'https://api.prod.whoop.com/developer/v1';
+  const baseUrl = 'https://api.prod.whoop.com/developer/v2';
 
   try {
     let endpoint = '';
     const eventType = event.type;
 
-    // Whoop API - recovery data is inside cycle records (for completed cycles)
     const endDate = new Date();
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days
 
-    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
-        eventType === 'cycle.updated' || eventType === 'cycle.created') {
-      // Recovery is nested in cycle data - fetch cycles
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created') {
+      // v2 has separate recovery endpoint
+      endpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    } else if (eventType === 'cycle.updated' || eventType === 'cycle.created') {
+      // Cycle data (strain)
       endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else if (eventType === 'sleep.updated' || eventType === 'sleep.created') {
       // Sleep data
@@ -183,6 +171,8 @@ async function fetchEventData(
       return null;
     }
 
+    logger.info('Fetching from Whoop v2 API', { endpoint });
+
     const response = await fetch(`${baseUrl}${endpoint}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -192,7 +182,7 @@ async function fetchEventData(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error('Whoop API error', { status: response.status, error: errorText });
+      logger.error('Whoop API error', { status: response.status, error: errorText, endpoint });
       return null;
     }
 
@@ -201,25 +191,13 @@ async function fetchEventData(
     const records = data.records || data || [];
 
     if (records.length === 0) {
+      logger.info('No records returned from Whoop API', { endpoint });
       return null;
     }
 
-    // For recovery events, find a completed cycle with recovery data
-    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
-        eventType === 'cycle.updated' || eventType === 'cycle.created') {
-      // Find cycles with recovery data - recovery is nested object with score property
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cyclesWithRecovery = records.filter((r: any) => r.recovery?.score !== undefined);
-      if (cyclesWithRecovery.length > 0) {
-        logger.info('Found cycle with recovery', { recovery_score: cyclesWithRecovery[0].recovery?.score });
-        return { type: eventType, record: cyclesWithRecovery[0], all_records: records };
-      }
-      // If no recovery data yet, return null (cycle still in progress)
-      logger.info('No completed cycles with recovery data found', { total_cycles: records.length });
-      return null;
-    }
+    logger.info('Whoop API returned data', { endpoint, record_count: records.length });
 
-    // For other events, return the most recent record
+    // Return the most recent record
     return { type: eventType, record: records[0], all_records: records };
   } catch (error) {
     logger.error('Error fetching Whoop data', error);
@@ -296,11 +274,14 @@ async function generateRecoveryInsights(
     severity: string;
   }> = [];
 
-  // Handle both cycle structure (recovery nested) and direct recovery structure
-  const recovery = record.recovery || record.score || record;
-  const score = recovery.score ?? recovery.recovery_score;
-  const hrv = recovery.hrv_rmssd ?? recovery.hrv_rmssd_milli;
-  const restingHR = recovery.resting_heart_rate;
+  // v2 API: recovery record has score object with recovery_score, hrv_rmssd_milli, etc.
+  // Structure: { score: { recovery_score, hrv_rmssd_milli, resting_heart_rate, ... } }
+  const scoreObj = record.score || record;
+  const score = scoreObj.recovery_score;
+  const hrv = scoreObj.hrv_rmssd_milli;
+  const restingHR = scoreObj.resting_heart_rate;
+
+  logger.info('Parsing recovery data', { score, hrv, restingHR, raw_score_obj: scoreObj });
 
   if (score === undefined) return insights;
 

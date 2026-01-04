@@ -41,27 +41,31 @@ export async function fetchWhoopDataForDebug(
 
     const endDate = new Date();
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
 
-    const response = await fetch(`https://api.prod.whoop.com/developer/v1${endpoint}`, {
+    // Fetch from recovery endpoint (separate from cycle)
+    const recoveryEndpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+
+    const response = await fetch(`https://api.prod.whoop.com/developer/v1${recoveryEndpoint}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
       },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { error: `API error ${response.status}`, details: errorText };
+    }
 
     const data = await response.json();
     const records = data.records || data || [];
     const latestRecord = records[0];
 
     return {
+      endpoint_used: recoveryEndpoint,
       total_records: records.length,
       latest_record: latestRecord,
-      recovery_path: latestRecord?.score?.recovery_score,
-      recovery_nested: latestRecord?.recovery?.score,
-      strain: latestRecord?.score?.strain,
+      score_object: latestRecord?.score,
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' };
@@ -139,14 +143,15 @@ async function fetchEventData(
     let endpoint = '';
     const eventType = event.type;
 
-    // Whoop API v1 uses /cycle endpoint which includes recovery data
-    // For all event types, we fetch cycles and extract relevant data
+    // Whoop API has separate endpoints for each data type
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days for better context
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days
 
-    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
-        eventType === 'cycle.updated' || eventType === 'cycle.created') {
-      // Cycles contain recovery scores
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created') {
+      // Recovery endpoint has recovery_score, hrv, resting_hr
+      endpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    } else if (eventType === 'cycle.updated' || eventType === 'cycle.created') {
+      // Cycle endpoint has strain data
       endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else if (eventType === 'sleep.updated' || eventType === 'sleep.created') {
       // Sleep data

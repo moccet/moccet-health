@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET endpoint to fetch connector status for a user
+ * Checks both user_connectors table AND integration_tokens for OAuth connections
  */
 export async function GET(request: NextRequest) {
   try {
@@ -74,7 +75,12 @@ export async function GET(request: NextRequest) {
     // Use admin client to bypass RLS
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
+    // First, get user's email from auth
+    const { data: userData } = await supabase.auth.admin.getUserById(user_id);
+    const userEmail = userData?.user?.email;
+
+    // Check user_connectors table
+    const { data: connectorData, error } = await supabase
       .from('user_connectors')
       .select('connector_name, is_connected, connected_at, updated_at')
       .eq('user_id', user_id);
@@ -84,17 +90,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Build a map of connector status
+    // Build a map of connector status from user_connectors
     const connectors: Record<string, boolean> = {};
-    for (const row of data || []) {
+    for (const row of connectorData || []) {
       connectors[row.connector_name] = row.is_connected;
+    }
+
+    // Also check integration_tokens for OAuth providers (Whoop, Oura, etc.)
+    if (userEmail) {
+      const { data: tokenData } = await supabase
+        .from('integration_tokens')
+        .select('provider, is_active')
+        .eq('user_email', userEmail)
+        .eq('is_active', true);
+
+      // Map provider names to connector names
+      const providerToConnector: Record<string, string> = {
+        'whoop': 'Whoop',
+        'oura': 'Oura Ring',
+        'gmail': 'Gmail',
+        'outlook': 'Outlook',
+        'spotify': 'Spotify',
+        'strava': 'Strava',
+        'fitbit': 'Fitbit',
+        'slack': 'Slack',
+        'dexcom': 'Dexcom',
+      };
+
+      for (const token of tokenData || []) {
+        const connectorName = providerToConnector[token.provider];
+        if (connectorName && token.is_active) {
+          connectors[connectorName] = true;
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
       user_id,
       connectors,
-      raw: data,
+      raw: connectorData,
     });
   } catch (error) {
     console.error('[Connector Update] Error:', error);

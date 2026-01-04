@@ -235,46 +235,64 @@ async function generateRecoveryInsights(
   const baselineRecovery = baseline?.recovery_score_avg || 65;
   const baselineHRV = baseline?.hrv_avg || 50;
 
-  // Check for significant recovery events
+  // Always generate recovery insight with optimization recommendations
   let insightToCreate = null;
 
   if (score <= 33) {
     // Red recovery - significant concern
     insightToCreate = {
       title: 'Low Recovery Alert',
-      message: `Your recovery score is ${score}% (red zone). Consider taking it easy today and prioritizing rest. Your body needs time to recover.`,
+      message: `Your recovery score is ${score}% (red zone). Your body needs rest to recover properly.`,
       insight_type: 'recovery_alert',
       severity: 'high',
-      actionable_recommendation: 'Reduce training intensity today. Focus on light movement, hydration, and sleep tonight.',
+      actionable_recommendation: 'Skip intense training today. Focus on light stretching, hydration (3L water), and aim for 8+ hours of sleep. Consider magnesium before bed.',
     };
-  } else if (score <= 50 && baselineRecovery - score > 15) {
-    // Below baseline
+  } else if (score <= 50) {
+    // Yellow-low recovery
     insightToCreate = {
-      title: 'Recovery Below Baseline',
-      message: `Your recovery of ${score}% is significantly below your baseline of ${Math.round(baselineRecovery)}%. This may indicate accumulated fatigue or stress.`,
-      insight_type: 'recovery_trend',
+      title: 'Recovery Needs Attention',
+      message: `Your recovery is ${score}% (yellow zone). You can train but consider moderating intensity.`,
+      insight_type: 'recovery_moderate',
       severity: 'medium',
-      actionable_recommendation: 'Consider reducing training load this week. Monitor for signs of overtraining.',
+      actionable_recommendation: 'Opt for moderate intensity today (60-70% effort). Prioritize protein intake, stay hydrated, and aim for bed 30 min earlier than usual.',
     };
-  } else if (score >= 85) {
-    // Excellent recovery
+  } else if (score <= 66) {
+    // Yellow-moderate recovery
+    insightToCreate = {
+      title: 'Moderate Recovery',
+      message: `Recovery at ${score}%. You're in the yellow zone - balanced training is optimal today.`,
+      insight_type: 'recovery_insight',
+      severity: 'low',
+      actionable_recommendation: 'Good day for steady-state cardio or skill work. To boost tomorrow\'s recovery: cold shower post-workout, avoid alcohol, and get quality sleep.',
+    };
+  } else if (score <= 84) {
+    // Green-moderate recovery
+    insightToCreate = {
+      title: 'Good Recovery',
+      message: `Nice! Recovery at ${score}% (green zone). Your body is ready for a solid training session.`,
+      insight_type: 'recovery_good',
+      severity: 'low',
+      actionable_recommendation: 'Great day for strength training or intervals. Push yourself today. Refuel with protein within 2 hours post-workout.',
+    };
+  } else {
+    // Excellent recovery (85+)
     insightToCreate = {
       title: 'Excellent Recovery',
-      message: `Great news! Your recovery score is ${score}% (green zone). You're well-recovered and ready for high-intensity training.`,
-      insight_type: 'recovery_positive',
+      message: `Peak performance day! Recovery at ${score}%. You're fully recovered and primed for high intensity.`,
+      insight_type: 'recovery_excellent',
       severity: 'low',
-      actionable_recommendation: 'Perfect day for a challenging workout. Your body is primed for performance.',
+      actionable_recommendation: 'Ideal day for your hardest workout of the week. Go for a PR, HIIT session, or competition. Your body can handle max effort.',
     };
   }
 
-  // Check HRV drop
+  // Override with HRV alert if significant drop detected
   if (hrv && baselineHRV && hrv < baselineHRV * 0.8) {
     insightToCreate = {
       title: 'HRV Drop Detected',
-      message: `Your HRV of ${Math.round(hrv)}ms is ${Math.round((1 - hrv/baselineHRV) * 100)}% below your baseline. This may indicate stress, illness, or insufficient recovery.`,
+      message: `Your HRV of ${Math.round(hrv)}ms is ${Math.round((1 - hrv/baselineHRV) * 100)}% below your baseline. This often signals stress, poor sleep, or oncoming illness.`,
       insight_type: 'hrv_alert',
       severity: 'medium',
-      actionable_recommendation: 'Prioritize sleep and stress management. Consider reducing training intensity until HRV normalizes.',
+      actionable_recommendation: 'Listen to your body today. Consider box breathing (4-4-4-4), limit caffeine, and prioritize 8+ hours of sleep. If feeling unwell, rest completely.',
     };
   }
 

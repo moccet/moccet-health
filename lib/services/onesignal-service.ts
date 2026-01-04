@@ -64,14 +64,15 @@ export async function sendPushNotification(
       return 0;
     }
 
-    if (!tokens || tokens.length === 0) {
-      console.log(`[OneSignal Service] No device tokens for ${email}`);
-      return 0;
+    // Even if no tokens in DB, we can still send via external_id
+    // (if the user has called OneSignal.login(email) in the app)
+    const hasTokens = tokens && tokens.length > 0;
+
+    if (hasTokens) {
+      console.log(`[OneSignal Service] Found ${tokens.length} device token(s) for ${email}`);
+    } else {
+      console.log(`[OneSignal Service] No device tokens for ${email}, trying external_id targeting`);
     }
-
-    const playerIds = tokens.map((t) => t.device_token);
-
-    console.log(`[OneSignal Service] Sending to ${playerIds.length} device(s) for ${email}`);
 
     // Prepare notification payload - use external_id (email) for targeting
     // This is more reliable than player_ids since we set external_id via OneSignal.login()

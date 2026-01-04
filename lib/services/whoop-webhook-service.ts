@@ -67,18 +67,25 @@ export async function fetchWhoopDataForDebug(
     const cyclesWithRecovery = records.filter((r: any) => r.recovery?.score !== undefined);
     const latestWithRecovery = cyclesWithRecovery[0];
 
+    // Get a completed cycle to see its full structure
+    const sampleCompletedCycle = completedCycles[0];
+
     return {
       total_cycles: records.length,
       completed_cycles: completedCycles.length,
       cycles_with_recovery: cyclesWithRecovery.length,
       latest_cycle_end: records[0]?.end,
+      sample_completed_cycle: sampleCompletedCycle ? {
+        id: sampleCompletedCycle.id,
+        end: sampleCompletedCycle.end,
+        has_recovery_object: !!sampleCompletedCycle.recovery,
+        recovery_raw: sampleCompletedCycle.recovery,
+        score_raw: sampleCompletedCycle.score,
+        all_keys: Object.keys(sampleCompletedCycle),
+      } : null,
       latest_with_recovery: latestWithRecovery ? {
         id: latestWithRecovery.id,
-        end: latestWithRecovery.end,
         recovery_score: latestWithRecovery.recovery?.score,
-        hrv: latestWithRecovery.recovery?.hrv_rmssd_milli,
-        resting_hr: latestWithRecovery.recovery?.resting_heart_rate,
-        strain: latestWithRecovery.score?.strain,
       } : null,
     };
   } catch (error) {

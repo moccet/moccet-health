@@ -99,26 +99,21 @@ async function fetchEventData(
     let endpoint = '';
     const eventType = event.type;
 
-    if (eventType === 'recovery.updated' || eventType === 'recovery.created') {
-      // Fetch latest recovery data
-      const endDate = new Date();
-      const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // Last 24 hours
-      endpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    // Whoop API v1 uses /cycle endpoint which includes recovery data
+    // For all event types, we fetch cycles and extract relevant data
+    const endDate = new Date();
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days for better context
+
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
+        eventType === 'cycle.updated' || eventType === 'cycle.created') {
+      // Cycles contain recovery scores
+      endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else if (eventType === 'sleep.updated' || eventType === 'sleep.created') {
-      // Fetch latest sleep data
-      const endDate = new Date();
-      const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Sleep data
       endpoint = `/activity/sleep?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else if (eventType === 'workout.updated' || eventType === 'workout.created') {
-      // Fetch latest workout data
-      const endDate = new Date();
-      const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Workout data
       endpoint = `/activity/workout?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
-    } else if (eventType === 'cycle.updated' || eventType === 'cycle.created') {
-      // Fetch latest cycle data
-      const endDate = new Date();
-      const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else {
       logger.warn('Unknown event type', { type: eventType });
       return null;
@@ -199,6 +194,7 @@ async function generateInsights(
 
 /**
  * Generate recovery-specific insights
+ * Handles both cycle data (recovery nested) and direct recovery data
  */
 async function generateRecoveryInsights(
   email: string,
@@ -221,9 +217,11 @@ async function generateRecoveryInsights(
     severity: string;
   }> = [];
 
-  const score = record.score?.recovery_score;
-  const hrv = record.score?.hrv_rmssd_milli;
-  const restingHR = record.score?.resting_heart_rate;
+  // Handle both cycle structure (recovery nested) and direct recovery structure
+  const recovery = record.recovery || record.score || record;
+  const score = recovery.score ?? recovery.recovery_score;
+  const hrv = recovery.hrv_rmssd ?? recovery.hrv_rmssd_milli;
+  const restingHR = recovery.resting_heart_rate;
 
   if (score === undefined) return insights;
 

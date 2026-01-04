@@ -29,6 +29,46 @@ interface ProcessResult {
 }
 
 /**
+ * Debug function to fetch and return raw Whoop data
+ */
+export async function fetchWhoopDataForDebug(
+  email: string,
+  event: WhoopWebhookEvent
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { token } = await getAccessToken(email, 'whoop');
+    if (!token) return null;
+
+    const endDate = new Date();
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+
+    const response = await fetch(`https://api.prod.whoop.com/developer/v1${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const records = data.records || data || [];
+    const latestRecord = records[0];
+
+    return {
+      total_records: records.length,
+      latest_record: latestRecord,
+      recovery_path: latestRecord?.score?.recovery_score,
+      recovery_nested: latestRecord?.recovery?.score,
+      strain: latestRecord?.score?.strain,
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
  * Process an incoming Whoop webhook event
  */
 export async function processWhoopWebhookEvent(

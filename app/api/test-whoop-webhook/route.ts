@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { processWhoopWebhookEvent } from '@/lib/services/whoop-webhook-service';
+import { processWhoopWebhookEvent, fetchWhoopDataForDebug } from '@/lib/services/whoop-webhook-service';
 
 /**
  * POST /api/test-whoop-webhook
@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
       received_at: new Date().toISOString(),
     });
 
+    // Fetch raw data for debugging
+    const debugData = await fetchWhoopDataForDebug(email, testEvent);
+
     // Process the webhook event
     const result = await processWhoopWebhookEvent(email, testEvent);
 
@@ -59,6 +62,7 @@ export async function POST(request: NextRequest) {
       success: true,
       whoop_user_id: whoopUserId,
       event_simulated: testEvent.type,
+      debug_data: debugData,
       ...result,
     });
 

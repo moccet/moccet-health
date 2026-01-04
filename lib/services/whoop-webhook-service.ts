@@ -42,10 +42,10 @@ export async function fetchWhoopDataForDebug(
     const endDate = new Date();
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Fetch from recovery endpoint (separate from cycle)
-    const recoveryEndpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    // Fetch cycles - recovery is nested in completed cycles
+    const cycleEndpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
 
-    const response = await fetch(`https://api.prod.whoop.com/developer/v1${recoveryEndpoint}`, {
+    const response = await fetch(`https://api.prod.whoop.com/developer/v1${cycleEndpoint}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
@@ -59,13 +59,27 @@ export async function fetchWhoopDataForDebug(
 
     const data = await response.json();
     const records = data.records || data || [];
-    const latestRecord = records[0];
+
+    // Find completed cycles (have end date) with recovery data
+    // Recovery is a nested object: cycle.recovery.score, cycle.recovery.hrv_rmssd_milli, etc.
+    const completedCycles = records.filter((r: { end: string | null }) => r.end !== null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cyclesWithRecovery = records.filter((r: any) => r.recovery?.score !== undefined);
+    const latestWithRecovery = cyclesWithRecovery[0];
 
     return {
-      endpoint_used: recoveryEndpoint,
-      total_records: records.length,
-      latest_record: latestRecord,
-      score_object: latestRecord?.score,
+      total_cycles: records.length,
+      completed_cycles: completedCycles.length,
+      cycles_with_recovery: cyclesWithRecovery.length,
+      latest_cycle_end: records[0]?.end,
+      latest_with_recovery: latestWithRecovery ? {
+        id: latestWithRecovery.id,
+        end: latestWithRecovery.end,
+        recovery_score: latestWithRecovery.recovery?.score,
+        hrv: latestWithRecovery.recovery?.hrv_rmssd_milli,
+        resting_hr: latestWithRecovery.recovery?.resting_heart_rate,
+        strain: latestWithRecovery.score?.strain,
+      } : null,
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Unknown error' };
@@ -143,15 +157,13 @@ async function fetchEventData(
     let endpoint = '';
     const eventType = event.type;
 
-    // Whoop API has separate endpoints for each data type
+    // Whoop API - recovery data is inside cycle records (for completed cycles)
     const endDate = new Date();
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days
 
-    if (eventType === 'recovery.updated' || eventType === 'recovery.created') {
-      // Recovery endpoint has recovery_score, hrv, resting_hr
-      endpoint = `/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
-    } else if (eventType === 'cycle.updated' || eventType === 'cycle.created') {
-      // Cycle endpoint has strain data
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
+        eventType === 'cycle.updated' || eventType === 'cycle.created') {
+      // Recovery is nested in cycle data - fetch cycles
       endpoint = `/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
     } else if (eventType === 'sleep.updated' || eventType === 'sleep.created') {
       // Sleep data
@@ -185,7 +197,22 @@ async function fetchEventData(
       return null;
     }
 
-    // Return the most recent record
+    // For recovery events, find a completed cycle with recovery data
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created' ||
+        eventType === 'cycle.updated' || eventType === 'cycle.created') {
+      // Find cycles with recovery data - recovery is nested object with score property
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cyclesWithRecovery = records.filter((r: any) => r.recovery?.score !== undefined);
+      if (cyclesWithRecovery.length > 0) {
+        logger.info('Found cycle with recovery', { recovery_score: cyclesWithRecovery[0].recovery?.score });
+        return { type: eventType, record: cyclesWithRecovery[0], all_records: records };
+      }
+      // If no recovery data yet, return null (cycle still in progress)
+      logger.info('No completed cycles with recovery data found', { total_cycles: records.length });
+      return null;
+    }
+
+    // For other events, return the most recent record
     return { type: eventType, record: records[0], all_records: records };
   } catch (error) {
     logger.error('Error fetching Whoop data', error);

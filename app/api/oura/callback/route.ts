@@ -161,9 +161,11 @@ export async function GET(request: NextRequest) {
       console.warn('[Oura] No userId available, cannot update user_connectors');
     }
 
-    // Trigger initial data sync in the background (don't await - let it run async)
+    // Trigger initial data sync and webhook subscription in the background (don't await - let it run async)
     if (userEmail) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.com';
+
+      // Initial data sync
       fetch(`${baseUrl}/api/oura/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,6 +178,21 @@ export async function GET(request: NextRequest) {
         }
       }).catch(err => {
         console.error(`[Oura] Initial data sync error for ${userEmail}:`, err);
+      });
+
+      // Subscribe to Oura webhooks for real-time updates
+      fetch(`${baseUrl}/api/oura/webhook/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      }).then(response => {
+        if (response.ok) {
+          console.log(`[Oura] Webhook subscription triggered for ${userEmail}`);
+        } else {
+          console.error(`[Oura] Webhook subscription failed for ${userEmail}:`, response.status);
+        }
+      }).catch(err => {
+        console.error(`[Oura] Webhook subscription error for ${userEmail}:`, err);
       });
     }
 

@@ -160,9 +160,11 @@ export async function GET(request: NextRequest) {
       console.warn('[Whoop] No userId available, cannot update user_connectors');
     }
 
-    // Trigger initial data sync in the background (don't await - let it run async)
+    // Trigger initial data sync and webhook subscription in the background (don't await - let it run async)
     if (userEmail) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.com';
+
+      // Initial data sync
       fetch(`${baseUrl}/api/whoop/fetch-data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,6 +177,21 @@ export async function GET(request: NextRequest) {
         }
       }).catch(err => {
         console.error(`[Whoop] Initial data sync error for ${userEmail}:`, err);
+      });
+
+      // Subscribe to Whoop webhooks for real-time updates
+      fetch(`${baseUrl}/api/whoop/webhook/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      }).then(response => {
+        if (response.ok) {
+          console.log(`[Whoop] Webhook subscription triggered for ${userEmail}`);
+        } else {
+          console.error(`[Whoop] Webhook subscription failed for ${userEmail}:`, response.status);
+        }
+      }).catch(err => {
+        console.error(`[Whoop] Webhook subscription error for ${userEmail}:`, err);
       });
     }
 

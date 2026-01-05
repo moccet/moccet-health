@@ -495,9 +495,26 @@ async function triggerMeetingProcessing(meetingId: string, botId: string): Promi
         console.error('[RecallBot] Failed to trigger processing API:', err);
       }
     } else {
-      // No transcript from Recall.ai, use Deepgram directly
-      // This will be handled by the process API
+      // No transcript from Recall.ai, use Deepgram for transcription
+      console.log('[RecallBot] No transcript from Recall.ai, using Deepgram...');
       try {
+        // First, transcribe the recording using Deepgram
+        const transcribeResponse = await fetch(`${APP_URL}/api/meetings/${meetingId}/transcribe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!transcribeResponse.ok) {
+          const errorText = await transcribeResponse.text();
+          console.error('[RecallBot] Transcription failed:', errorText);
+          return;
+        }
+
+        console.log('[RecallBot] Transcription complete, triggering processing...');
+
+        // Then process (generate summaries, extract action items)
         await fetch(`${APP_URL}/api/meetings/${meetingId}/process`, {
           method: 'POST',
           headers: {
@@ -506,7 +523,7 @@ async function triggerMeetingProcessing(meetingId: string, botId: string): Promi
           },
         });
       } catch (err) {
-        console.error('[RecallBot] Failed to trigger processing API:', err);
+        console.error('[RecallBot] Failed to process meeting:', err);
       }
     }
   } catch (error) {

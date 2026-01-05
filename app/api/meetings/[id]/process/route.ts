@@ -279,22 +279,25 @@ async function sendProcessingCompleteNotification(
   // Skip if no user email
   if (!meeting.user_email) return;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://moccet.ai');
 
-  // For now, just log - you could integrate with your email service here
-  console.log('[ProcessAPI] Would send notification to:', meeting.user_email, {
-    meetingTitle: meeting.title,
-    recordingUrl: `${appUrl}/moccet-mail/dashboard/meetings/recordings/${meeting.id}`,
-  });
+  console.log('[ProcessAPI] Sending summary email to:', meeting.user_email);
 
-  // Example: Send via your email service
-  // await sendEmail({
-  //   to: meeting.user_email,
-  //   subject: `Meeting Summary Ready: ${meeting.title}`,
-  //   template: 'meeting-summary-ready',
-  //   data: {
-  //     meetingTitle: meeting.title,
-  //     viewUrl: `${appUrl}/moccet-mail/dashboard/meetings/recordings/${meeting.id}`,
-  //   },
-  // });
+  try {
+    // Call the send-summary endpoint
+    const response = await fetch(`${appUrl}/api/meetings/${meeting.id}/send-summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: meeting.user_email }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[ProcessAPI] Failed to send summary email:', errorText);
+    } else {
+      console.log('[ProcessAPI] Summary email sent successfully');
+    }
+  } catch (error) {
+    console.error('[ProcessAPI] Error sending summary email:', error);
+  }
 }

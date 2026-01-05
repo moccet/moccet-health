@@ -16,7 +16,7 @@ import { BotJoinRequest, BotJoinResult, BotWebhookEvent } from './types';
 
 const RECALL_API_URL = process.env.MEETING_BOT_SERVICE_URL || 'https://api.recall.ai/api/v1';
 const RECALL_API_KEY = process.env.MEETING_BOT_API_KEY;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://moccet.ai');
 const WEBHOOK_SECRET = process.env.MEETING_BOT_WEBHOOK_SECRET;
 
 // Default bot configuration

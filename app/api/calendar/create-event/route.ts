@@ -56,25 +56,10 @@ export async function POST(request: NextRequest) {
     // Get access token using token-manager
     const tokenResult = await getAccessToken(email, 'gmail', code);
 
-    if (!tokenResult.success || !tokenResult.accessToken) {
+    if (!tokenResult.token) {
       console.error('[Calendar] Token error:', tokenResult.error);
       return NextResponse.json(
         { error: 'Gmail/Calendar not connected. Please reconnect with updated permissions.', needsAuth: true },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has the calendar.events scope
-    // If not, they need to re-authenticate
-    const scopes = tokenResult.scopes || [];
-    const hasWriteScope = scopes.some(s =>
-      s.includes('calendar.events') || s.includes('calendar') && !s.includes('readonly')
-    );
-
-    if (!hasWriteScope && scopes.length > 0) {
-      console.log('[Calendar] User needs to re-authenticate for calendar.events scope');
-      return NextResponse.json(
-        { error: 'Calendar write permission not granted. Please reconnect Gmail/Calendar.', needsAuth: true },
         { status: 401 }
       );
     }
@@ -86,7 +71,7 @@ export async function POST(request: NextRequest) {
       process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/gmail/callback'
     );
 
-    oauth2Client.setCredentials({ access_token: tokenResult.accessToken });
+    oauth2Client.setCredentials({ access_token: tokenResult.token });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 

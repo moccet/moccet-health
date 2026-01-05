@@ -20,6 +20,14 @@
     {
       "path": "/api/cron/proactive-engagement?time=evening",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/daily-digest",
+      "schedule": "0,15,30,45 * * * *"
+    },
+    {
+      "path": "/api/cron/decay-preferences",
+      "schedule": "0 3 * * 0"
     }
   ]
 }

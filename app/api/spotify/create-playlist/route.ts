@@ -66,14 +66,14 @@ export async function POST(request: NextRequest) {
 
     // Get Spotify access token
     const tokenResult = await getAccessToken(email, 'spotify', userCode);
-    if (!tokenResult.success || !tokenResult.accessToken) {
+    if (!tokenResult.token) {
       return NextResponse.json(
         { error: 'Spotify not connected. Please connect Spotify first.', needsAuth: true },
         { status: 401 }
       );
     }
 
-    const accessToken = tokenResult.accessToken;
+    const accessToken = tokenResult.token;
 
     // Step 1: Get user's Spotify ID
     const userResponse = await fetch('https://api.spotify.com/v1/me', {

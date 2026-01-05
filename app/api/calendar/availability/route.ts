@@ -59,7 +59,8 @@ export async function GET(request: NextRequest) {
     // Get access token
     const tokenResult = await getAccessToken(email, 'gmail', code);
 
-    if (!tokenResult.success || !tokenResult.accessToken) {
+    if (!tokenResult.token) {
+      console.log(`[Calendar] No token found for ${email}: ${tokenResult.error}`);
       return NextResponse.json(
         { error: 'Gmail/Calendar not connected', needsAuth: true },
         { status: 401 }
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
       process.env.GOOGLE_REDIRECT_URI
     );
 
-    oauth2Client.setCredentials({ access_token: tokenResult.accessToken });
+    oauth2Client.setCredentials({ access_token: tokenResult.token });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 

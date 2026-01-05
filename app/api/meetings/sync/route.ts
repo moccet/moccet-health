@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             meetingId: meeting.id,
             googleMeetUrl: meeting.google_meet_url,
             userEmail: email,
-            botName: 'Moccet Notetaker',
+            botName: 'moccet notetaker',
             scheduledStart: new Date(meeting.scheduled_start),
             maxDurationMinutes: 120,
           });

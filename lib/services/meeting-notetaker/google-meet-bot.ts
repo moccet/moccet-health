@@ -20,7 +20,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `ht
 const WEBHOOK_SECRET = process.env.MEETING_BOT_WEBHOOK_SECRET;
 
 // Default bot configuration
-const DEFAULT_BOT_NAME = 'Moccet Notetaker';
+const DEFAULT_BOT_NAME = 'moccet notetaker';
 const DEFAULT_MAX_DURATION_MINUTES = 120; // 2 hours
 
 // ============================================================================

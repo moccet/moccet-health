@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         meetingId: meeting.id,
         googleMeetUrl,
         userEmail: email,
-        botName: 'Moccet Notetaker',
+        botName: 'moccet notetaker',
         scheduledStart: new Date(scheduledStart),
         maxDurationMinutes: 120,
       });

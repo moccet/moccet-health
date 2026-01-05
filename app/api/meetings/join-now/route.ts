@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         meeting_url: meetingUrl,
-        bot_name: 'Moccet Notetaker',
+        bot_name: 'moccet notetaker',
 
         // No join_at = join immediately
 

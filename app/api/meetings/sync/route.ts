@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { syncUpcomingMeetingsForUser } from '@/lib/services/meeting-notetaker/google-meet-bot';
+import { syncUpcomingMeetingsForUser, scheduleBotJoin } from '@/lib/services/meeting-notetaker/google-meet-bot';
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Run the sync
+    // Run the sync for new meetings
     const result = await syncUpcomingMeetingsForUser(email, code);
 
     console.log('[MeetingSync] Sync complete:', {
@@ -71,6 +71,46 @@ export async function POST(request: NextRequest) {
       scheduled: result.scheduled,
       errors: result.errors,
     });
+
+    // Retry bot scheduling for existing meetings without bots
+    const { data: meetingsWithoutBots } = await supabase
+      .from('meeting_recordings')
+      .select('id, google_meet_url, scheduled_start')
+      .eq('user_email', email)
+      .is('bot_session_id', null)
+      .eq('status', 'scheduled')
+      .not('google_meet_url', 'is', null)
+      .gte('scheduled_start', new Date().toISOString());
+
+    let botsRetried = 0;
+    let retryErrors = 0;
+
+    if (meetingsWithoutBots && meetingsWithoutBots.length > 0) {
+      console.log(`[MeetingSync] Retrying bot scheduling for ${meetingsWithoutBots.length} meetings`);
+
+      for (const meeting of meetingsWithoutBots) {
+        try {
+          const botResult = await scheduleBotJoin({
+            meetingId: meeting.id,
+            googleMeetUrl: meeting.google_meet_url,
+            userEmail: email,
+            botName: 'Moccet Notetaker',
+            scheduledStart: new Date(meeting.scheduled_start),
+            maxDurationMinutes: 120,
+          });
+
+          if (botResult.success) {
+            botsRetried++;
+          } else {
+            console.error(`[MeetingSync] Bot retry failed for ${meeting.id}:`, botResult.error);
+            retryErrors++;
+          }
+        } catch (err) {
+          console.error(`[MeetingSync] Bot retry exception for ${meeting.id}:`, err);
+          retryErrors++;
+        }
+      }
+    }
 
     // Get the list of upcoming meetings that are now scheduled
     const { data: upcomingMeetings } = await supabase
@@ -81,13 +121,17 @@ export async function POST(request: NextRequest) {
       .order('scheduled_start', { ascending: true })
       .limit(10);
 
+    const totalScheduled = result.scheduled + botsRetried;
+    const totalErrors = result.errors + retryErrors;
+
     return NextResponse.json({
       success: true,
-      message: result.scheduled > 0
-        ? `Scheduled ${result.scheduled} meeting(s) for notetaker`
+      message: totalScheduled > 0
+        ? `Scheduled ${totalScheduled} meeting(s) for notetaker`
         : 'No new meetings to schedule',
       scheduled: result.scheduled,
-      errors: result.errors,
+      botsRetried,
+      errors: totalErrors,
       upcoming_meetings: upcomingMeetings?.map(m => ({
         id: m.id,
         title: m.title,

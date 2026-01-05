@@ -609,9 +609,9 @@ export async function syncUpcomingMeetingsForUser(
       return { scheduled: 0, errors: 1 };
     }
 
-    const { meetings } = await calendarResponse.json();
+    const { events } = await calendarResponse.json();
 
-    for (const meeting of meetings || []) {
+    for (const meeting of events || []) {
       // Skip if no Google Meet link
       if (!meeting.hangoutLink) continue;
 

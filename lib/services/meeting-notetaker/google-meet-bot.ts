@@ -70,20 +70,6 @@ export async function scheduleBotJoin(
           everyone_left_timeout: 60, // 1 minute after everyone leaves
         },
 
-        // Recording settings
-        recording_mode: 'speaker_view', // or 'gallery_view', 'audio_only'
-
-        // Transcription settings (Recall.ai can do transcription)
-        transcription_options: {
-          provider: 'deepgram', // Use Deepgram for transcription
-        },
-
-        // Real-time transcription
-        real_time_transcription: {
-          destination_url: `${APP_URL}/api/meetings/transcription-webhook`,
-          partial_results: false,
-        },
-
         // Webhook for status updates
         webhook_url: `${APP_URL}/api/meetings/webhook`,
 

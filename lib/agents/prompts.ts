@@ -89,10 +89,29 @@ export function buildUserPrompt(
 ): string {
   let prompt = `## Current Task
 ${task}
-
-## User Context
-${JSON.stringify(context, null, 2)}
 `;
+
+  // Format conversation history as readable back-and-forth
+  const conversationHistory = context?.conversationHistory || [];
+  if (conversationHistory.length > 0) {
+    prompt += `
+## Recent Conversation (respond in context of this conversation)
+${conversationHistory.map((msg: { role: string; content: string }) =>
+  `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+).join('\n\n')}
+
+IMPORTANT: The user's current message may be responding to your previous question above. Consider the full conversation context.
+`;
+  }
+
+  // Add other context (excluding conversationHistory which we formatted above)
+  const { conversationHistory: _, ...otherContext } = context || {};
+  if (Object.keys(otherContext).length > 0) {
+    prompt += `
+## User Context
+${JSON.stringify(otherContext, null, 2)}
+`;
+  }
 
   if (previousSteps.length > 0) {
     prompt += `

@@ -329,17 +329,6 @@ export async function POST(request: NextRequest) {
         recoveryData = recoveryJson.records || recoveryJson || [];
         console.log(`[Whoop Fetch] Retrieved ${recoveryData.length} recovery records`);
 
-        // Debug: Log first recovery record structure
-        if (recoveryData.length > 0) {
-          console.log(`[Whoop Fetch] Sample recovery record:`, JSON.stringify(recoveryData[0], null, 2));
-        }
-
-        // Debug: Log cycle IDs for matching
-        const cycleIds = cycles.map(c => c.id);
-        const recoveryIds = recoveryData.map((r: any) => r.cycle_id);
-        console.log(`[Whoop Fetch] Cycle IDs: ${cycleIds.slice(0, 3).join(', ')}...`);
-        console.log(`[Whoop Fetch] Recovery cycle_ids: ${recoveryIds.slice(0, 3).join(', ')}...`);
-
         // Merge recovery data into cycles by matching cycle_id
         for (const cycle of cycles) {
           const matchingRecovery = recoveryData.find((r: any) => r.cycle_id === cycle.id);
@@ -538,13 +527,6 @@ export async function POST(request: NextRequest) {
         correlations: healthAnalysisResult.correlations.length,
         summary: healthAnalysisResult.summary,
       } : null,
-      // Debug info - remove after fixing
-      _debug: {
-        recoveryRecordsCount: recoveryData.length,
-        cyclesWithRecovery: cycles.filter(c => c.recovery).length,
-        sampleRecovery: recoveryData[0] || null,
-        sampleCycleId: cycles[0]?.id,
-      },
     });
 
   } catch (error) {

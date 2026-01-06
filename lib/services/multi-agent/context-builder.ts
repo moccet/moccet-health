@@ -23,13 +23,25 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     const { data: whoopData } = await supabase
       .from('forge_training_data')
       .select('*')
-      .eq('user_email', email)
-      .order('analyzed_at', { ascending: false })
+      .eq('email', email)
+      .eq('provider', 'whoop')
+      .order('sync_date', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (whoopData?.analysis_result) {
-      context.whoop = whoopData.analysis_result;
+    if (whoopData) {
+      // Map the database columns to our expected format
+      context.whoop = {
+        avgRecoveryScore: whoopData.recovery_score?.average,
+        avgStrainScore: whoopData.recovery_score?.avgStrain,
+        avgHRV: whoopData.hrv_trends?.average,
+        avgRestingHR: whoopData.resting_hr_trends?.avg,
+        recoveryTrend: whoopData.recovery_score?.trend,
+        strainTrend: whoopData.recovery_score?.strainTrend,
+        recoveryZones: whoopData.recovery_score?.zones,
+        hrvPatterns: whoopData.hrv_trends,
+        sleepPerformance: whoopData.recovery_score?.avgSleepPerformance,
+      };
       availableDataSources.push('whoop');
       console.log('[ContextBuilder] Found Whoop data');
     }
@@ -69,9 +81,9 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     const { data: gmailData } = await supabase
       .from('behavioral_patterns')
       .select('*')
-      .eq('user_email', email)
+      .eq('email', email)
       .eq('source', 'gmail')
-      .order('analyzed_at', { ascending: false })
+      .order('sync_date', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -89,9 +101,9 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     const { data: slackData } = await supabase
       .from('behavioral_patterns')
       .select('*')
-      .eq('user_email', email)
+      .eq('email', email)
       .eq('source', 'slack')
-      .order('analyzed_at', { ascending: false })
+      .order('sync_date', { ascending: false })
       .limit(1)
       .maybeSingle();
 

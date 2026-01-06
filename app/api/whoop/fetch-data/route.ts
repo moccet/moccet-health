@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '@/lib/services/token-manager';
+import { getValidatedAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
+
+// Validation function to test if Whoop token is valid
+async function validateWhoopToken(token: string): Promise<boolean> {
+  try {
+    // Quick API call to validate token - use user profile endpoint (lightweight)
+    const response = await fetch('https://api.prod.whoop.com/developer/v1/user/profile/basic', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -246,8 +262,17 @@ export async function POST(request: NextRequest) {
       console.log(`[Whoop Fetch] Using user code: ${userCode}`);
     }
 
-    // Get access token using token-manager (handles refresh automatically)
-    const { token, error: tokenError } = await getAccessToken(email, 'whoop', userCode);
+    // Get access token using token-manager with validation (auto-refreshes if invalid)
+    const { token, error: tokenError, wasRefreshed } = await getValidatedAccessToken(
+      email,
+      'whoop',
+      userCode,
+      validateWhoopToken  // Validates token against Whoop API, refreshes if invalid
+    );
+
+    if (wasRefreshed) {
+      console.log(`[Whoop Fetch] Token was refreshed for ${email}`);
+    }
 
     if (!token || tokenError) {
       console.error('[Whoop Fetch] Token error:', tokenError);

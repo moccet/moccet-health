@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import type { calendar_v3 } from 'googleapis';
-import { getAccessToken } from '@/lib/services/token-manager';
+import { getValidatedAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { GmailPatterns } from '@/lib/services/ecosystem-fetcher';
 import {
@@ -10,6 +10,22 @@ import {
   analyzeEmailsForLifeContext,
   storeLifeContext,
 } from '@/lib/services/content-sentiment-analyzer';
+
+// Validation function to test if Gmail token is valid
+async function validateGmailToken(token: string): Promise<boolean> {
+  try {
+    // Quick API call to validate token - use userinfo endpoint (lightweight)
+    const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -642,8 +658,17 @@ export async function POST(request: NextRequest) {
       console.log(`[Gmail Fetch] Using user code: ${userCode}`);
     }
 
-    // Get access token using token-manager (handles refresh automatically)
-    const { token, error: tokenError } = await getAccessToken(email, 'gmail', userCode);
+    // Get access token using token-manager with validation (auto-refreshes if invalid)
+    const { token, error: tokenError, wasRefreshed } = await getValidatedAccessToken(
+      email,
+      'gmail',
+      userCode,
+      validateGmailToken  // Validates token against Google API, refreshes if invalid
+    );
+
+    if (wasRefreshed) {
+      console.log(`[Gmail Fetch] Token was refreshed for ${email}`);
+    }
 
     if (!token || tokenError) {
       console.error('[Gmail Fetch] Token error:', tokenError);

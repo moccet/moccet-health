@@ -31,19 +31,32 @@ export async function buildUserContext(email: string, userId?: string): Promise<
 
     if (whoopData) {
       // Map the database columns to our expected format
+      // recovery_score contains: { avgRecoveryScore, trend, greenDays, yellowDays, redDays }
+      // hrv_trends contains: { avgHRV, trend, baseline }
+      const rs = whoopData.recovery_score || {};
+      const hrv = whoopData.hrv_trends || {};
+      const rhr = whoopData.resting_hr_trends || {};
+
       context.whoop = {
-        avgRecoveryScore: whoopData.recovery_score?.average,
-        avgStrainScore: whoopData.recovery_score?.avgStrain,
-        avgHRV: whoopData.hrv_trends?.average,
-        avgRestingHR: whoopData.resting_hr_trends?.avg,
-        recoveryTrend: whoopData.recovery_score?.trend,
-        strainTrend: whoopData.recovery_score?.strainTrend,
-        recoveryZones: whoopData.recovery_score?.zones,
-        hrvPatterns: whoopData.hrv_trends,
-        sleepPerformance: whoopData.recovery_score?.avgSleepPerformance,
+        avgRecoveryScore: rs.avgRecoveryScore,
+        avgStrainScore: rs.avgDailyStrain,
+        avgHRV: hrv.avgHRV,
+        avgRestingHR: rhr.avg,
+        recoveryTrend: rs.trend,
+        strainTrend: rs.strainTrend,
+        recoveryZones: {
+          greenDays: rs.greenDays || 0,
+          yellowDays: rs.yellowDays || 0,
+          redDays: rs.redDays || 0,
+        },
+        hrvPatterns: {
+          baseline: hrv.baseline,
+          currentWeekAvg: hrv.avgHRV,
+          trend: hrv.trend,
+        },
       };
       availableDataSources.push('whoop');
-      console.log('[ContextBuilder] Found Whoop data');
+      console.log('[ContextBuilder] Found Whoop data:', JSON.stringify(context.whoop));
     }
   } catch (e) {
     console.log('[ContextBuilder] No Whoop data:', e);

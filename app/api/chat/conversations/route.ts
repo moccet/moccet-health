@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
 
     const { data: conversations, error } = await supabase
-      .from('chat_conversations')
+      .from('conversations')
       .select('*')
       .eq('user_email', email)
       .eq('status', 'active')
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Try to insert into database
     const { data: conversation, error } = await supabase
-      .from('chat_conversations')
+      .from('conversations')
       .insert({
         id: conversationId,
         user_email: email,

@@ -37,7 +37,7 @@ export async function GET(
     const supabase = createAdminClient();
 
     const { data: conversation, error } = await supabase
-      .from('chat_conversations')
+      .from('conversations')
       .select('*')
       .eq('id', id)
       .eq('user_email', email)
@@ -107,7 +107,7 @@ export async function PATCH(
     if (title) updates.title = title;
 
     const { data: conversation, error } = await supabase
-      .from('chat_conversations')
+      .from('conversations')
       .update(updates)
       .eq('id', id)
       .eq('user_email', email)

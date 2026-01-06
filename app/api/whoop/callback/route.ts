@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
         refreshToken,
         expiresAt,
         providerUserId: userId,
-        scopes: ['read:recovery', 'read:cycles', 'read:sleep', 'read:workout', 'read:profile', 'read:body_measurement'],
+        scopes: ['offline', 'read:recovery', 'read:cycles', 'read:sleep', 'read:workout', 'read:profile', 'read:body_measurement'],
       }, userCode);
 
       if (storeResult.success) {

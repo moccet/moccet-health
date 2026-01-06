@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     // Request all Whoop scopes for comprehensive health data
-    // Note: Whoop returns refresh_token by default (no offline_access scope needed)
-    authUrl.searchParams.append('scope', 'read:recovery read:cycles read:sleep read:workout read:profile read:body_measurement');
+    // 'offline' scope is required to receive a refresh_token for long-lived access
+    authUrl.searchParams.append('scope', 'offline read:recovery read:cycles read:sleep read:workout read:profile read:body_measurement');
     authUrl.searchParams.append('state', state);
 
     return NextResponse.json(

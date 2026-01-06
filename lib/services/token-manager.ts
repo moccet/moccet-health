@@ -432,6 +432,11 @@ async function callProviderRefresh(
       client_secret: clientSecret,
     });
 
+    // Whoop requires 'offline' scope in refresh request to continue receiving refresh tokens
+    if (provider === 'whoop') {
+      body.append('scope', 'offline read:recovery read:cycles read:sleep read:workout read:profile read:body_measurement');
+    }
+
     // Special case for Fitbit (uses Basic Auth)
     // Note: Whoop uses client_secret_post (credentials in body), not Basic Auth
     const headers: Record<string, string> = {

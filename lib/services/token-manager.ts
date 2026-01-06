@@ -263,22 +263,47 @@ export async function refreshToken(
     // Use admin client to bypass RLS for token refresh
     const supabase = createAdminClient();
 
-    // Get current token data - prioritize user_code if available
-    let query = supabase
-      .from('integration_tokens')
-      .select('*')
-      .eq('provider', provider)
-      .eq('is_active', true);
+    // Strategy: Try by code first, then fallback to email (same as getAccessToken)
+    let data: any = null;
+    let fetchError: any = null;
 
+    // Step 1: Try lookup by user_code if provided
     if (userCode) {
-      query = query.eq('user_code', userCode);
-    } else {
-      query = query.eq('user_email', userEmail);
+      const codeResult = await supabase
+        .from('integration_tokens')
+        .select('*')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_code', userCode)
+        .single();
+
+      if (codeResult.data) {
+        console.log(`[TokenManager] Found token by code ${userCode} for refresh`);
+        data = codeResult.data;
+      }
+      fetchError = codeResult.error;
     }
 
-    const { data, error: fetchError } = await query.single();
+    // Step 2: If no token found by code, try by email
+    if (!data) {
+      console.log(`[TokenManager] No token by code for refresh, trying email ${userEmail}/${provider}`);
+      const emailResult = await supabase
+        .from('integration_tokens')
+        .select('*')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_email', userEmail)
+        .single();
 
-    if (fetchError || !data) {
+      if (emailResult.data) {
+        console.log(`[TokenManager] Found token by email for refresh`);
+        data = emailResult.data;
+      }
+      fetchError = emailResult.error;
+    }
+
+    if (!data) {
+      console.error(`[TokenManager] No token found for refresh: ${userEmail}/${provider}`);
       return { success: false, error: 'No token found to refresh' };
     }
 

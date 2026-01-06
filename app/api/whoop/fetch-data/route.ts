@@ -264,7 +264,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Whoop Fetch] Fetching cycles from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
-    // Fetch cycles (Whoop's main data structure - includes recovery, sleep, strain)
+    // Fetch cycles (Whoop's main data structure - contains strain data)
+    // Note: Recovery data requires separate /v1/recovery endpoint call
     // Use circuit breaker to protect against cascading failures
     let cyclesResponse: Response;
     try {
@@ -307,6 +308,48 @@ export async function POST(request: NextRequest) {
     // Whoop API returns { records: [...] } not a direct array
     const cycles: WhoopCycle[] = cyclesData.records || cyclesData || [];
     console.log(`[Whoop Fetch] Retrieved ${cycles.length} cycles`);
+
+    // Fetch recovery data separately (Whoop API requires separate endpoint)
+    let recoveryData: any[] = [];
+    try {
+      const recoveryResponse = await circuitBreakers.whoop.execute(async () => {
+        return fetch(
+          `https://api.prod.whoop.com/developer/v1/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+      });
+
+      if (recoveryResponse.ok) {
+        const recoveryJson = await recoveryResponse.json();
+        recoveryData = recoveryJson.records || recoveryJson || [];
+        console.log(`[Whoop Fetch] Retrieved ${recoveryData.length} recovery records`);
+
+        // Merge recovery data into cycles by matching cycle_id
+        for (const cycle of cycles) {
+          const matchingRecovery = recoveryData.find((r: any) => r.cycle_id === cycle.id);
+          if (matchingRecovery) {
+            cycle.recovery = {
+              score: matchingRecovery.score?.recovery_score || 0,
+              resting_heart_rate: matchingRecovery.score?.resting_heart_rate || 0,
+              hrv_rmssd: matchingRecovery.score?.hrv_rmssd_milli || 0,
+              spo2_percentage: matchingRecovery.score?.spo2_percentage,
+              skin_temp_celsius: matchingRecovery.score?.skin_temp_celsius,
+            };
+          }
+        }
+        console.log(`[Whoop Fetch] Merged recovery data into ${cycles.filter(c => c.recovery).length} cycles`);
+      } else {
+        console.warn(`[Whoop Fetch] Recovery endpoint returned ${recoveryResponse.status}`);
+      }
+    } catch (recoveryError) {
+      console.warn('[Whoop Fetch] Failed to fetch recovery data:', recoveryError);
+      // Continue without recovery data - strain data is still useful
+    }
 
     // Analyze recovery trends
     const recoveryAnalysis = analyzeRecoveryTrends(cycles);

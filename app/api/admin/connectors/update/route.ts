@@ -1,5 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { revokeToken, Provider } from '@/lib/services/token-manager';
+
+// Map connector names to OAuth provider names
+const connectorToProvider: Record<string, Provider> = {
+  'Whoop': 'whoop',
+  'whoop': 'whoop',
+  'Oura Ring': 'oura',
+  'oura': 'oura',
+  'Gmail': 'gmail',
+  'gmail': 'gmail',
+  'Outlook': 'outlook',
+  'outlook': 'outlook',
+  'Spotify': 'spotify',
+  'spotify': 'spotify',
+  'Strava': 'strava',
+  'strava': 'strava',
+  'Fitbit': 'fitbit',
+  'fitbit': 'fitbit',
+  'Slack': 'slack',
+  'slack': 'slack',
+  'Dexcom': 'dexcom',
+  'dexcom': 'dexcom',
+};
 
 /**
  * API endpoint for mobile app to update connector status.
@@ -25,6 +48,26 @@ export async function POST(request: NextRequest) {
 
     // Use admin client to bypass RLS
     const supabase = createAdminClient();
+
+    // If disconnecting, also revoke the OAuth token from integration_tokens
+    if (!is_connected) {
+      const provider = connectorToProvider[connector_name];
+      if (provider) {
+        // Get user's email to revoke token
+        const { data: userData } = await supabase.auth.admin.getUserById(user_id);
+        const userEmail = userData?.user?.email;
+
+        if (userEmail) {
+          console.log(`[Connector Update] Revoking ${provider} token for ${userEmail}`);
+          const revokeResult = await revokeToken(userEmail, provider);
+          if (!revokeResult.success) {
+            console.warn(`[Connector Update] Failed to revoke token: ${revokeResult.error}`);
+          } else {
+            console.log(`[Connector Update] Successfully revoked ${provider} token`);
+          }
+        }
+      }
+    }
 
     // Upsert the connector status
     const { error } = await supabase.from('user_connectors').upsert({

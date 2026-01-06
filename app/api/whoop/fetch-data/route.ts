@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
     try {
       cyclesResponse = await circuitBreakers.whoop.execute(async () => {
         return fetch(
-          `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=30`,
+          `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=25`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
     try {
       const recoveryResponse = await circuitBreakers.whoop.execute(async () => {
         return fetch(
-          `https://api.prod.whoop.com/developer/v2/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=30`,
+          `https://api.prod.whoop.com/developer/v2/recovery?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=25`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,

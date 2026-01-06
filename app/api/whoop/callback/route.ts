@@ -52,6 +52,12 @@ export async function GET(request: NextRequest) {
     const refreshToken = tokenData.refresh_token;
     const expiresIn = tokenData.expires_in; // seconds
 
+    // Log token info for debugging (without exposing actual tokens)
+    console.log(`[Whoop] Token exchange successful: access_token=${!!accessToken}, refresh_token=${!!refreshToken}, expires_in=${expiresIn}`);
+    if (!refreshToken) {
+      console.warn('[Whoop] No refresh_token received - user will need to re-authenticate when token expires');
+    }
+
     // Fetch user profile from Whoop API
     const userInfoResponse = await fetch('https://api.prod.whoop.com/developer/v1/user/profile/basic', {
       headers: {

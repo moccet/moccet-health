@@ -63,28 +63,41 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     console.log('[ContextBuilder] No Whoop data:', e);
   }
 
-  // Fetch Oura data
+  // Fetch Oura data from oura_data table (where sync stores it)
   try {
     const { data: ouraData } = await supabase
-      .from('oura_daily_data')
+      .from('oura_data')
       .select('*')
-      .eq('user_email', email)
-      .order('date', { ascending: false })
-      .limit(30);
+      .eq('email', email)
+      .order('sync_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (ouraData && ouraData.length > 0) {
-      // Aggregate Oura data
-      const avgSleepScore = average(ouraData.map((d) => d.sleep_score).filter(Boolean));
-      const avgReadinessScore = average(ouraData.map((d) => d.readiness_score).filter(Boolean));
-      const avgHRV = average(ouraData.map((d) => d.hrv).filter(Boolean));
+    if (ouraData) {
+      // Extract metrics from sleep_data, readiness_data arrays
+      const sleepData = ouraData.sleep_data || [];
+      const readinessData = ouraData.readiness_data || [];
+
+      // Calculate averages from recent data
+      const avgSleepScore = average(sleepData.map((d: { score?: number }) => d.score).filter(Boolean));
+      const avgReadinessScore = average(readinessData.map((d: { score?: number }) => d.score).filter(Boolean));
+      const avgHRV = average(readinessData.map((d: { contributors?: { hrv_balance?: number } }) =>
+        d.contributors?.hrv_balance).filter(Boolean));
 
       context.oura = {
         avgSleepScore,
         avgReadinessScore,
         avgHRV,
+        sleepData: sleepData.slice(0, 7), // Last 7 days
+        readinessData: readinessData.slice(0, 7),
       };
       availableDataSources.push('oura');
-      console.log('[ContextBuilder] Found Oura data');
+      console.log('[ContextBuilder] Found Oura data:', {
+        sleepRecords: sleepData.length,
+        readinessRecords: readinessData.length,
+        avgSleepScore,
+        avgReadinessScore,
+      });
     }
   } catch (e) {
     console.log('[ContextBuilder] No Oura data:', e);

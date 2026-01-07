@@ -29,6 +29,7 @@ import {
   // Work & Stress Domain
   StressAgent,
   CalendarAgent,
+  DeepContentAgent,
   // Lifestyle Domain
   MusicAgent,
   ContextAgent,
@@ -58,6 +59,7 @@ export class MultiAgentOrchestrator {
       // Work & Stress Domain
       new StressAgent(),
       new CalendarAgent(),
+      new DeepContentAgent(), // Analyzes specific tasks/messages from Gmail/Slack
       // Lifestyle Domain
       new MusicAgent(),
       new ContextAgent(),

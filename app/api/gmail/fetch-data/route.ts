@@ -71,6 +71,9 @@ interface EmailData {
   isWeekend: boolean;
   isAfterHours: boolean;
   subject?: string; // For sentiment analysis
+  from?: string; // Sender name/email for deep content analysis
+  snippet?: string; // Email preview for deep content analysis
+  messageId?: string; // Gmail message ID
 }
 
 /**
@@ -740,7 +743,7 @@ export async function POST(request: NextRequest) {
           userId: 'me',
           id: message.id!,
           format: 'metadata',
-          metadataHeaders: ['Date', 'Subject'] // Added Subject for sentiment analysis
+          metadataHeaders: ['Date', 'Subject', 'From'] // Added From for deep content analysis
         });
 
         const dateHeader = messageDetail.data.payload?.headers?.find(
@@ -750,6 +753,19 @@ export async function POST(request: NextRequest) {
         const subjectHeader = messageDetail.data.payload?.headers?.find(
           h => h.name?.toLowerCase() === 'subject'
         );
+
+        const fromHeader = messageDetail.data.payload?.headers?.find(
+          h => h.name?.toLowerCase() === 'from'
+        );
+
+        // Extract sender name from "Name <email@domain.com>" format
+        const fromValue = fromHeader?.value || '';
+        const senderName = fromValue.includes('<')
+          ? fromValue.split('<')[0].trim().replace(/"/g, '')
+          : fromValue.split('@')[0];
+
+        // Get snippet (email preview) - this is a top-level field
+        const snippet = messageDetail.data.snippet || '';
 
         if (dateHeader?.value) {
           const date = new Date(dateHeader.value);
@@ -765,7 +781,10 @@ export async function POST(request: NextRequest) {
             dayOfWeek,
             isWeekend,
             isAfterHours,
-            subject: subjectHeader?.value || ''
+            subject: subjectHeader?.value || '',
+            from: senderName,
+            snippet: snippet,
+            messageId: message.id!,
           });
         }
       } catch (err) {
@@ -910,21 +929,27 @@ export async function POST(request: NextRequest) {
     // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
     // =====================================================
     try {
-      // Prepare emails for deep analysis
+      // Prepare emails for deep analysis with full context (snippet + sender)
       const emailsForDeepAnalysis = emailData
         .filter(e => e.subject && e.subject.trim().length > 0)
         .slice(0, 50)
         .map((e, i) => ({
-          id: `gmail_${i}`,
+          id: e.messageId || `gmail_${i}`,
           subject: e.subject!,
-          snippet: '', // We don't fetch snippets currently, but could add
-          from: '', // We don't fetch sender currently, would need to add
+          snippet: e.snippet || '', // Now includes actual email preview
+          from: e.from || '', // Now includes sender name
           timestamp: e.timestamp,
           isAfterHours: e.isAfterHours,
         }));
 
+      // Log sample to verify we have real data
+      if (emailsForDeepAnalysis.length > 0) {
+        const sample = emailsForDeepAnalysis[0];
+        console.log(`[Gmail Fetch] Sample email for deep analysis: from="${sample.from}", subject="${sample.subject?.substring(0, 50)}...", snippet="${sample.snippet?.substring(0, 50)}..."`);
+      }
+
       if (emailsForDeepAnalysis.length >= 5) {
-        console.log(`[Gmail Fetch] Running deep content analysis on ${emailsForDeepAnalysis.length} emails`);
+        console.log(`[Gmail Fetch] Running deep content analysis on ${emailsForDeepAnalysis.length} emails with full context`);
 
         const deepAnalysis = await analyzeGmailDeepContent(emailsForDeepAnalysis, email);
         await storeDeepContentAnalysis(email, deepAnalysis);

@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Debug: Check what tokens exist for this user
-  const { createClient } = await import('@/lib/supabase/server');
-  const supabase = await createClient();
+  const { createAdminClient } = await import('@/lib/supabase/server');
+  const supabase = createAdminClient();
   const { data: allTokens } = await supabase
     .from('user_device_tokens')
     .select('id, platform, provider, is_active')

@@ -11,7 +11,7 @@
  * @module lib/services/onesignal-service
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export interface PushNotificationPayload {
   title: string;
@@ -39,7 +39,7 @@ export async function sendPushNotification(
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Debug: First check all tokens for this user
     const { data: allTokens } = await supabase

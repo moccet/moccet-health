@@ -233,8 +233,19 @@ export async function buildUserContext(email: string, userId?: string): Promise<
 
   // Fetch deep content analysis (tasks, urgency, interruptions)
   try {
+    console.log(`[ContextBuilder] Fetching deep content for ${email}...`);
     const deepAnalysis = await getCombinedDeepAnalysis(email);
-    if (deepAnalysis && (deepAnalysis.pendingTasks.length > 0 || deepAnalysis.responseDebt.count > 0)) {
+    console.log(`[ContextBuilder] Deep analysis result:`, deepAnalysis ? {
+      pendingTasks: deepAnalysis.pendingTasks?.length || 0,
+      responseDebtCount: deepAnalysis.responseDebt?.count || 0,
+      activeThreads: deepAnalysis.activeThreads?.length || 0,
+    } : 'null');
+
+    if (deepAnalysis && (
+      deepAnalysis.pendingTasks.length > 0 ||
+      deepAnalysis.responseDebt.count > 0 ||
+      (deepAnalysis.activeThreads && deepAnalysis.activeThreads.length > 0)
+    )) {
       context.deepContent = {
         pendingTasks: deepAnalysis.pendingTasks.map(t => ({
           id: t.id,
@@ -263,7 +274,8 @@ export async function buildUserContext(email: string, userId?: string): Promise<
         activeThreads: deepAnalysis.activeThreads.slice(0, 5).map(t => ({
           topic: t.topic,
           urgency: t.urgency,
-          pendingActions: t.pendingActions,
+          participants: t.participants || [],
+          pendingActions: t.pendingActions || [],
         })),
         analyzedAt: deepAnalysis.analyzedAt,
       };

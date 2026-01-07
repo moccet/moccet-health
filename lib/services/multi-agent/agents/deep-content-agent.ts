@@ -61,15 +61,22 @@ CRITICAL RULES:
    * Override canAnalyze to require deep content with actual items
    */
   canAnalyze(context: UserContext): boolean {
-    // Only run if we have deep content with actual tasks or messages
-    return !!(
-      context.deepContent &&
-      (
-        (context.deepContent.pendingTasks && context.deepContent.pendingTasks.length > 0) ||
-        (context.deepContent.responseDebt && context.deepContent.responseDebt.count > 0) ||
-        (context.deepContent.activeThreads && context.deepContent.activeThreads.length > 0)
-      )
-    );
+    const hasDeepContent = !!context.deepContent;
+    const hasTasks = context.deepContent?.pendingTasks && context.deepContent.pendingTasks.length > 0;
+    const hasResponseDebt = context.deepContent?.responseDebt && context.deepContent.responseDebt.count > 0;
+    const hasThreads = context.deepContent?.activeThreads && context.deepContent.activeThreads.length > 0;
+
+    const canRun = hasDeepContent && (hasTasks || hasResponseDebt || hasThreads);
+
+    console.log(`[DeepContentAgent] canAnalyze check:`, {
+      hasDeepContent,
+      hasTasks,
+      hasResponseDebt,
+      hasThreads,
+      canRun,
+    });
+
+    return canRun;
   }
 
   extractRelevantData(context: UserContext): Record<string, unknown> {

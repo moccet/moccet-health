@@ -151,6 +151,41 @@ export async function GET(request: NextRequest) {
 
       if (storeResult.success) {
         console.log(`[Slack] Tokens stored in database for ${userEmail}${userCode ? ` (code: ${userCode})` : ''}`);
+
+        // Auto-fetch behavioral patterns for Max tier users (for deep insights)
+        try {
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          );
+
+          const { data: userData } = await supabase
+            .from('users')
+            .select('subscription_tier')
+            .eq('email', userEmail)
+            .single();
+
+          if (userData?.subscription_tier === 'max') {
+            console.log(`[Slack] Max tier user - triggering behavioral pattern sync for ${userEmail}`);
+            // Trigger fetch-data in background (don't await)
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://moccet.ai'}/api/slack/fetch-data`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: userEmail }),
+            }).then(res => {
+              if (res.ok) {
+                console.log(`[Slack] Behavioral pattern sync triggered successfully for ${userEmail}`);
+              } else {
+                console.error(`[Slack] Behavioral pattern sync failed: ${res.status}`);
+              }
+            }).catch(err => {
+              console.error(`[Slack] Behavioral pattern sync error:`, err);
+            });
+          }
+        } catch (tierCheckError) {
+          console.error('[Slack] Error checking user tier:', tierCheckError);
+        }
       } else {
         console.error(`[Slack] Failed to store tokens:`, storeResult.error);
       }

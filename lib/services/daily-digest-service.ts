@@ -65,30 +65,60 @@ class DailyDigestServiceClass {
 
       logger.info('Finding users for digest', { targetTime });
 
-      // Get users whose preferred time matches (within 30 min window)
-      // We'll do timezone conversion in the query
-      const { data: users, error } = await this.supabase
+      // Get users with explicit preferences
+      const { data: usersWithPrefs, error: prefsError } = await this.supabase
         .from('user_content_preferences')
         .select('user_email, preferred_time, timezone')
         .not('user_email', 'is', null);
 
-      if (error) {
-        logger.error('Error fetching users for digest', { error });
-        return [];
+      if (prefsError) {
+        logger.error('Error fetching user preferences', { error: prefsError });
+      }
+
+      // Also get users with active integrations (for auto-enrollment)
+      const { data: integratedUsers, error: integrationError } = await this.supabase
+        .from('integration_tokens')
+        .select('user_email')
+        .eq('is_active', true);
+
+      if (integrationError) {
+        logger.error('Error fetching integrated users', { error: integrationError });
+      }
+
+      // Build a map of user preferences
+      const userPrefsMap = new Map<string, { preferredTime: string; timezone: string }>();
+      for (const user of usersWithPrefs || []) {
+        if (user.user_email && user.preferred_time) {
+          userPrefsMap.set(user.user_email, {
+            preferredTime: user.preferred_time as string,
+            timezone: user.timezone || 'UTC',
+          });
+        }
+      }
+
+      // Add integrated users without preferences (default to 08:00 in their detected timezone)
+      const integratedEmails = [...new Set((integratedUsers || []).map(u => u.user_email).filter(Boolean))] as string[];
+      for (const email of integratedEmails) {
+        if (!userPrefsMap.has(email)) {
+          // Default preference: 8am UTC (users can customize later)
+          userPrefsMap.set(email, {
+            preferredTime: '08:00',
+            timezone: 'UTC',
+          });
+          logger.info('Auto-enrolled user for digest', { email, defaultTime: '08:00 UTC' });
+        }
       }
 
       // Filter users based on their local time
       const eligibleUsers: { email: string; timezone: string; preferredTime: string }[] = [];
 
-      for (const user of users || []) {
-        if (!user.user_email || !user.preferred_time) continue;
-
-        const userLocalTime = this.getUserLocalTime(user.timezone || 'UTC');
+      for (const [email, prefs] of userPrefsMap.entries()) {
+        const userLocalTime = this.getUserLocalTime(prefs.timezone);
         const userHour = userLocalTime.getHours();
         const userMinute = userLocalTime.getMinutes();
 
         // Parse user's preferred time
-        const [prefHour, prefMinute] = (user.preferred_time as string).split(':').map(Number);
+        const [prefHour, prefMinute] = prefs.preferredTime.split(':').map(Number);
 
         // Check if within 15-minute window of preferred time
         const prefTotalMinutes = prefHour * 60 + prefMinute;
@@ -97,14 +127,14 @@ class DailyDigestServiceClass {
 
         if (diff <= 15 || diff >= (24 * 60 - 15)) {
           eligibleUsers.push({
-            email: user.user_email,
-            timezone: user.timezone || 'UTC',
-            preferredTime: user.preferred_time as string,
+            email,
+            timezone: prefs.timezone,
+            preferredTime: prefs.preferredTime,
           });
         }
       }
 
-      logger.info('Found eligible users', { count: eligibleUsers.length });
+      logger.info('Found eligible users', { count: eligibleUsers.length, totalUsers: userPrefsMap.size });
       return eligibleUsers;
     } catch (error) {
       logger.error('Error in getUsersForDigest', { error });

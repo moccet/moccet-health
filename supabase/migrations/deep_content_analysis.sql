@@ -119,47 +119,59 @@ ALTER TABLE interruption_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE people_context ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (users can only see their own data)
+-- Use DROP IF EXISTS to make migration idempotent
+DROP POLICY IF EXISTS "Users can view own deep content analysis" ON deep_content_analysis;
 CREATE POLICY "Users can view own deep content analysis"
     ON deep_content_analysis FOR SELECT
     USING (auth.jwt() ->> 'email' = user_email);
 
+DROP POLICY IF EXISTS "Users can view own extracted tasks" ON extracted_tasks;
 CREATE POLICY "Users can view own extracted tasks"
     ON extracted_tasks FOR SELECT
     USING (auth.jwt() ->> 'email' = user_email);
 
+DROP POLICY IF EXISTS "Users can update own extracted tasks" ON extracted_tasks;
 CREATE POLICY "Users can update own extracted tasks"
     ON extracted_tasks FOR UPDATE
     USING (auth.jwt() ->> 'email' = user_email);
 
+DROP POLICY IF EXISTS "Users can view own message urgency" ON message_urgency_history;
 CREATE POLICY "Users can view own message urgency"
     ON message_urgency_history FOR SELECT
     USING (auth.jwt() ->> 'email' = user_email);
 
+DROP POLICY IF EXISTS "Users can view own interruption events" ON interruption_events;
 CREATE POLICY "Users can view own interruption events"
     ON interruption_events FOR SELECT
     USING (auth.jwt() ->> 'email' = user_email);
 
+DROP POLICY IF EXISTS "Users can view own people context" ON people_context;
 CREATE POLICY "Users can view own people context"
     ON people_context FOR SELECT
     USING (auth.jwt() ->> 'email' = user_email);
 
 -- Service role can do everything
+DROP POLICY IF EXISTS "Service role full access deep_content" ON deep_content_analysis;
 CREATE POLICY "Service role full access deep_content"
     ON deep_content_analysis FOR ALL
     USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access tasks" ON extracted_tasks;
 CREATE POLICY "Service role full access tasks"
     ON extracted_tasks FOR ALL
     USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access urgency" ON message_urgency_history;
 CREATE POLICY "Service role full access urgency"
     ON message_urgency_history FOR ALL
     USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access interruptions" ON interruption_events;
 CREATE POLICY "Service role full access interruptions"
     ON interruption_events FOR ALL
     USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access people" ON people_context;
 CREATE POLICY "Service role full access people"
     ON people_context FOR ALL
     USING (auth.role() = 'service_role');

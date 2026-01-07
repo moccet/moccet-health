@@ -55,6 +55,9 @@ interface MessageData {
   isThreadStarter: boolean;
   mentions: string[]; // User IDs mentioned in message
   text?: string;
+  senderId?: string; // User ID who sent the message
+  senderName?: string; // Display name of sender (for deep content)
+  isFromOther?: boolean; // True if message is from someone else (potential task)
 }
 
 // User ID to name mapping
@@ -619,29 +622,36 @@ export async function POST(request: NextRequest) {
 
         if (historyData.ok && historyData.messages) {
           for (const message of historyData.messages) {
-            // Filter to current user's messages only (requires user token from user_scope OAuth)
-            if (message.ts && !message.bot_id && message.user === currentUserId) {
-              const date = new Date(parseFloat(message.ts) * 1000);
-              const hour = date.getHours();
-              const dayOfWeek = date.getDay();
-              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-              // FIXED: After-hours is now 9am-5pm (was 7am-7pm)
-              const isAfterHours = hour < 9 || hour >= 17;
+            // Skip bot messages
+            if (message.bot_id || !message.ts) continue;
 
-              // Extract mentions from message text
-              const mentions: string[] = [];
-              if (message.text) {
-                const matches = message.text.matchAll(mentionRegex);
-                for (const match of matches) {
-                  mentions.push(match[1]);
-                }
+            const date = new Date(parseFloat(message.ts) * 1000);
+            const hour = date.getHours();
+            const dayOfWeek = date.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            // FIXED: After-hours is now 9am-5pm (was 7am-7pm)
+            const isAfterHours = hour < 9 || hour >= 17;
+
+            // Extract mentions from message text
+            const mentions: string[] = [];
+            if (message.text) {
+              const matches = message.text.matchAll(mentionRegex);
+              for (const match of matches) {
+                mentions.push(match[1]);
               }
+            }
 
-              // Detect thread participation
-              const threadTs = message.thread_ts;
-              const isThreadReply = !!(threadTs && threadTs !== message.ts);
-              const isThreadStarter = !!(threadTs && threadTs === message.ts);
+            // Detect thread participation
+            const threadTs = message.thread_ts;
+            const isThreadReply = !!(threadTs && threadTs !== message.ts);
+            const isThreadStarter = !!(threadTs && threadTs === message.ts);
 
+            // Check if this is user's own message or from someone else
+            const isFromCurrentUser = message.user === currentUserId;
+            const mentionsCurrentUser = mentions.includes(currentUserId);
+
+            // Include: user's own messages OR messages that mention the user
+            if (isFromCurrentUser || mentionsCurrentUser) {
               messageData.push({
                 timestamp: date.toISOString(),
                 hour,
@@ -653,7 +663,10 @@ export async function POST(request: NextRequest) {
                 isThreadReply,
                 isThreadStarter,
                 mentions,
-                text: message.text
+                text: message.text,
+                senderId: message.user,
+                senderName: userMap[message.user] || message.user,
+                isFromOther: !isFromCurrentUser,
               });
             }
           }
@@ -808,15 +821,17 @@ export async function POST(request: NextRequest) {
     // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
     // =====================================================
     try {
-      // Prepare messages for deep analysis
+      // Prepare messages for deep analysis - prioritize messages FROM others (potential tasks)
       const messagesForDeepAnalysis = messageData
         .filter(m => m.text && m.text.trim().length > 0)
+        // Prioritize messages from others that might need response
+        .sort((a, b) => (b.isFromOther ? 1 : 0) - (a.isFromOther ? 1 : 0))
         .slice(0, 50)
         .map((m, i) => ({
           id: `slack_${i}_${m.timestamp}`,
           text: m.text!,
-          user: '', // We have channelId but not user ID readily available here
-          userName: '', // Would need to map from userMap
+          user: m.senderId || '',
+          userName: m.senderName || '',
           channel: m.channelId,
           channelName: m.channelName,
           timestamp: m.timestamp,
@@ -825,8 +840,15 @@ export async function POST(request: NextRequest) {
           mentions: m.mentions,
         }));
 
+      // Log sample to verify we have real data
+      const messagesFromOthers = messagesForDeepAnalysis.filter(m => m.userName && m.userName !== currentUserId);
+      if (messagesFromOthers.length > 0) {
+        const sample = messagesFromOthers[0];
+        console.log(`[Slack Fetch] Sample message for deep analysis: from="${sample.userName}", channel="${sample.channelName}", text="${sample.text?.substring(0, 50)}..."`);
+      }
+
       if (messagesForDeepAnalysis.length >= 5) {
-        console.log(`[Slack Fetch] Running deep content analysis on ${messagesForDeepAnalysis.length} messages`);
+        console.log(`[Slack Fetch] Running deep content analysis on ${messagesForDeepAnalysis.length} messages (${messagesFromOthers.length} from others)`);
 
         const deepAnalysis = await analyzeSlackDeepContent(messagesForDeepAnalysis, currentUserId);
         await storeDeepContentAnalysis(email, deepAnalysis);

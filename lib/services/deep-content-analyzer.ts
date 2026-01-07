@@ -399,19 +399,40 @@ function normalizeDeepAnalysis(
 ): DeepContentAnalysis {
   const now = new Date().toISOString();
 
+  // Valid enum values for validation
+  const validRequesterRoles = ['manager', 'peer', 'direct_report', 'external', 'unknown'] as const;
+  const validUrgencyLevels = ['critical', 'high', 'medium', 'low'] as const;
+  const validCategories = ['review', 'respond', 'create', 'meeting', 'decision', 'info', 'other'] as const;
+
   return {
     pendingTasks: ((parsed.pendingTasks as unknown[]) || []).map((t: unknown, i: number) => {
       const task = t as Record<string, unknown>;
+      // Validate requesterRole - LLM might return invalid values like "automated"
+      const rawRole = task.requesterRole as string;
+      const requesterRole = validRequesterRoles.includes(rawRole as typeof validRequesterRoles[number])
+        ? rawRole as ExtractedTask['requesterRole']
+        : 'unknown';
+      // Validate urgency
+      const rawUrgency = task.urgency as string;
+      const urgency = validUrgencyLevels.includes(rawUrgency as typeof validUrgencyLevels[number])
+        ? rawUrgency as ExtractedTask['urgency']
+        : 'medium';
+      // Validate category
+      const rawCategory = task.category as string;
+      const category = validCategories.includes(rawCategory as typeof validCategories[number])
+        ? rawCategory as ExtractedTask['category']
+        : 'other';
+
       return {
         id: (task.id as string) || `task_${i}`,
         description: (task.description as string) || '',
         source,
         requester: task.requester as string | undefined,
-        requesterRole: (task.requesterRole as ExtractedTask['requesterRole']) || 'unknown',
+        requesterRole,
         deadline: task.deadline as string | undefined,
-        urgency: (task.urgency as ExtractedTask['urgency']) || 'medium',
-        urgencyScore: typeof task.urgencyScore === 'number' ? task.urgencyScore : 50,
-        category: (task.category as ExtractedTask['category']) || 'other',
+        urgency,
+        urgencyScore: typeof task.urgencyScore === 'number' ? Math.min(100, Math.max(0, task.urgencyScore)) : 50,
+        category,
         status: 'pending',
         extractedAt: now,
       };

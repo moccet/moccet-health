@@ -956,8 +956,8 @@ export async function POST(request: NextRequest) {
       breakFrequency: patterns.meetingDensity.backToBackPercentage > 50 ? 'insufficient' : 'adequate'
     };
 
-    // Store in database
-    const supabase = await createClient();
+    // Store in database - use admin client since this may be called server-to-server
+    const supabase = createAdminClient();
 
     // Check if pattern already exists for this user and source
     const { data: existingPattern } = await supabase

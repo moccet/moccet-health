@@ -72,12 +72,31 @@ export interface PersonContext {
   messageCount: number;
 }
 
+// Stress and emotional context from communications
+export interface StressIndicators {
+  overallStressLevel: 'low' | 'moderate' | 'high' | 'overwhelming';
+  stressScore: number; // 0-100
+  pressureSources: Array<{
+    source: string; // person, project, or situation
+    type: 'deadline' | 'person' | 'workload' | 'conflict' | 'uncertainty';
+    intensity: 'low' | 'medium' | 'high';
+    description: string;
+  }>;
+  emotionalTone: 'positive' | 'neutral' | 'stressed' | 'overwhelmed';
+  supportiveInsight: string; // empathetic observation
+  actionableSteps: string[]; // 2-3 concrete things they can do
+  affirmation: string; // positive, encouraging message
+}
+
 export interface DeepContentAnalysis {
   // Extracted tasks that need attention
   pendingTasks: ExtractedTask[];
 
   // Urgency analysis of recent messages
   urgentMessages: MessageUrgency[];
+
+  // Stress and emotional context (wellness coaching)
+  stressIndicators?: StressIndicators;
 
   // Interruption patterns
   interruptionSummary: {
@@ -286,16 +305,39 @@ function getDeepAnalysisSystemPrompt(source: 'gmail' | 'slack'): string {
 - Thread replies awaiting user input
 - Time-sensitive requests`;
 
-  return `You are an expert at analyzing ${source} communications to extract actionable intelligence.
+  return `You are an expert at analyzing ${source} communications to extract actionable intelligence AND provide emotional support and wellness coaching.
 
 ## Your Goals
 1. **Extract Tasks**: Identify actionable items the user needs to handle
 2. **Score Urgency**: Rate each message's urgency (0-100) with reasoning
-3. **Classify Interruptions**: Categorize messages as urgent_request, question, fyi, social, or automated
-4. **Detect Response Expectations**: When does the sender expect a reply?
-5. **Identify Key People**: Who communicates most urgently with this user?
+3. **Detect Stress & Pressure**: Identify sources of stress, deadline pressure, and emotional tone
+4. **Provide Supportive Coaching**: Offer empathetic insights, actionable steps, and positive affirmations
+5. **Classify Interruptions**: Categorize messages as urgent_request, question, fyi, social, or automated
+6. **Detect Response Expectations**: When does the sender expect a reply?
+7. **Identify Key People**: Who communicates most urgently with this user?
 
 ${sourceSpecific}
+
+## Stress Detection Guidelines
+Look for signals of pressure and stress:
+- **Deadline pressure**: Multiple urgent deadlines, "ASAP" requests, overdue items
+- **Person pressure**: Demanding requesters, manager escalations, repeated follow-ups
+- **Workload pressure**: High volume of tasks, competing priorities, context switching
+- **Conflict signals**: Tense language, disagreements, difficult conversations
+- **Uncertainty**: Unclear expectations, ambiguous requests, missing information
+
+## Emotional Tone Detection
+- **Positive**: Appreciation, good news, celebrations, supportive messages
+- **Neutral**: Normal work communications, informational
+- **Stressed**: Urgent language, multiple deadlines, pressure signals
+- **Overwhelmed**: Too many urgent items, signs of being underwater
+
+## Coaching Response Guidelines
+When providing supportive insights:
+- Be empathetic and understanding, not judgmental
+- Acknowledge the pressure they're facing
+- Provide 2-3 specific, actionable steps they can take RIGHT NOW
+- End with a genuine, personalized affirmation that builds confidence
 
 ## Urgency Scoring Guidelines
 - **90-100 (Critical)**: Production issues, executive requests, hard deadlines today
@@ -344,6 +386,32 @@ ${sourceSpecific}
       "requester": "Mike Johnson"
     }
   ],
+  "stressIndicators": {
+    "overallStressLevel": "moderate",
+    "stressScore": 55,
+    "pressureSources": [
+      {
+        "source": "James",
+        "type": "deadline",
+        "intensity": "high",
+        "description": "The Q4 report deadline is creating time pressure"
+      },
+      {
+        "source": "Multiple PRs awaiting review",
+        "type": "workload",
+        "intensity": "medium",
+        "description": "3 pending code reviews competing for attention"
+      }
+    ],
+    "emotionalTone": "stressed",
+    "supportiveInsight": "I notice you're juggling several deadlines right now, especially pressure from James on the Q4 report. That's a lot on your plate, and it's completely normal to feel stretched.",
+    "actionableSteps": [
+      "Start with a quick 15-min block on James's Q4 report to show progress and ease that pressure",
+      "Batch the 3 PR reviews into one focused 30-min session this afternoon",
+      "Send a brief status update to James to buy yourself breathing room"
+    ],
+    "affirmation": "You've navigated tight deadlines before and delivered. One thing at a time - you've got this."
+  },
   "interruptionSummary": {
     "totalInterruptions": 15,
     "urgentInterruptions": 3,
@@ -385,6 +453,7 @@ ${sourceSpecific}
   }
 }
 
+IMPORTANT: Always include stressIndicators - even if stress is low, provide a positive affirmation and supportive insight.
 Be thorough but only report high-confidence findings. Don't invent tasks or urgency.`;
 }
 
@@ -450,6 +519,47 @@ function normalizeDeepAnalysis(
         detectedAt: now,
       };
     }),
+    // Parse stress indicators for wellness coaching
+    stressIndicators: parsed.stressIndicators ? (() => {
+      const stress = parsed.stressIndicators as Record<string, unknown>;
+      const validStressLevels = ['low', 'moderate', 'high', 'overwhelming'] as const;
+      const validEmotionalTones = ['positive', 'neutral', 'stressed', 'overwhelmed'] as const;
+      const validPressureTypes = ['deadline', 'person', 'workload', 'conflict', 'uncertainty'] as const;
+      const validIntensities = ['low', 'medium', 'high'] as const;
+
+      const rawStressLevel = stress.overallStressLevel as string;
+      const rawTone = stress.emotionalTone as string;
+
+      return {
+        overallStressLevel: validStressLevels.includes(rawStressLevel as typeof validStressLevels[number])
+          ? rawStressLevel as StressIndicators['overallStressLevel']
+          : 'low',
+        stressScore: typeof stress.stressScore === 'number'
+          ? Math.min(100, Math.max(0, stress.stressScore))
+          : 20,
+        pressureSources: ((stress.pressureSources as unknown[]) || []).map((p: unknown) => {
+          const pressure = p as Record<string, unknown>;
+          const rawType = pressure.type as string;
+          const rawIntensity = pressure.intensity as string;
+          return {
+            source: (pressure.source as string) || 'Unknown',
+            type: validPressureTypes.includes(rawType as typeof validPressureTypes[number])
+              ? rawType as StressIndicators['pressureSources'][0]['type']
+              : 'workload',
+            intensity: validIntensities.includes(rawIntensity as typeof validIntensities[number])
+              ? rawIntensity as StressIndicators['pressureSources'][0]['intensity']
+              : 'medium',
+            description: (pressure.description as string) || '',
+          };
+        }),
+        emotionalTone: validEmotionalTones.includes(rawTone as typeof validEmotionalTones[number])
+          ? rawTone as StressIndicators['emotionalTone']
+          : 'neutral',
+        supportiveInsight: (stress.supportiveInsight as string) || "You're doing great - keep going!",
+        actionableSteps: ((stress.actionableSteps as string[]) || []).slice(0, 5),
+        affirmation: (stress.affirmation as string) || "You've got this. One step at a time.",
+      };
+    })() : undefined,
     interruptionSummary: {
       totalInterruptions: (parsed.interruptionSummary as Record<string, unknown>)?.totalInterruptions as number || 0,
       urgentInterruptions: (parsed.interruptionSummary as Record<string, unknown>)?.urgentInterruptions as number || 0,
@@ -502,6 +612,15 @@ function getEmptyDeepAnalysis(source: 'gmail' | 'slack' | 'combined', messageCou
   return {
     pendingTasks: [],
     urgentMessages: [],
+    stressIndicators: {
+      overallStressLevel: 'low',
+      stressScore: 10,
+      pressureSources: [],
+      emotionalTone: 'positive',
+      supportiveInsight: "Your inbox looks clear - great job staying on top of things!",
+      actionableSteps: [],
+      affirmation: "You're in control of your day. Keep up the great work!",
+    },
     interruptionSummary: {
       totalInterruptions: 0,
       urgentInterruptions: 0,
@@ -545,6 +664,7 @@ export async function storeDeepContentAnalysis(
         source: analysis.source,
         pending_tasks: analysis.pendingTasks,
         urgent_messages: analysis.urgentMessages,
+        stress_indicators: analysis.stressIndicators || null,
         interruption_summary: analysis.interruptionSummary,
         key_people: analysis.keyPeople,
         active_threads: analysis.activeThreads,
@@ -615,6 +735,7 @@ export async function getDeepContentAnalysis(
   return {
     pendingTasks: data.pending_tasks || [],
     urgentMessages: data.urgent_messages || [],
+    stressIndicators: data.stress_indicators || undefined,
     interruptionSummary: data.interruption_summary || {
       totalInterruptions: 0,
       urgentInterruptions: 0,
@@ -828,10 +949,62 @@ export async function getCombinedDeepAnalysis(email: string): Promise<DeepConten
       ].slice(0, 10),
     },
 
+    // Merge stress indicators (take the higher stress level, combine pressure sources)
+    stressIndicators: mergeStressIndicators(
+      gmailAnalysis?.stressIndicators,
+      slackAnalysis?.stressIndicators
+    ),
+
     analyzedAt: new Date().toISOString(),
     messageCount: (gmailAnalysis?.messageCount || 0) + (slackAnalysis?.messageCount || 0),
     source: 'combined',
   };
 
   return combined;
+}
+
+/**
+ * Merge stress indicators from multiple sources
+ */
+function mergeStressIndicators(
+  gmail?: StressIndicators,
+  slack?: StressIndicators
+): StressIndicators | undefined {
+  if (!gmail && !slack) return undefined;
+  if (!gmail) return slack;
+  if (!slack) return gmail;
+
+  // Map stress levels to numeric values for comparison
+  const stressLevelOrder: Record<string, number> = {
+    low: 0,
+    moderate: 1,
+    high: 2,
+    overwhelming: 3,
+  };
+
+  // Take the higher stress level
+  const gmailLevel = stressLevelOrder[gmail.overallStressLevel] || 0;
+  const slackLevel = stressLevelOrder[slack.overallStressLevel] || 0;
+  const higherStress = gmailLevel >= slackLevel ? gmail : slack;
+
+  return {
+    overallStressLevel: higherStress.overallStressLevel,
+    stressScore: Math.max(gmail.stressScore, slack.stressScore),
+    // Combine pressure sources from both, remove duplicates by source name
+    pressureSources: [
+      ...(gmail.pressureSources || []),
+      ...(slack.pressureSources || []),
+    ].filter((source, index, self) =>
+      index === self.findIndex(s => s.source === source.source)
+    ),
+    emotionalTone: higherStress.emotionalTone,
+    // Use the insight from the more stressed source
+    supportiveInsight: higherStress.supportiveInsight,
+    // Combine actionable steps
+    actionableSteps: [
+      ...(gmail.actionableSteps || []),
+      ...(slack.actionableSteps || []),
+    ].slice(0, 5),
+    affirmation: higherStress.affirmation,
+  };
 }

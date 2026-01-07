@@ -257,7 +257,8 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     if (deepAnalysis && (
       deepAnalysis.pendingTasks.length > 0 ||
       deepAnalysis.responseDebt.count > 0 ||
-      (deepAnalysis.activeThreads && deepAnalysis.activeThreads.length > 0)
+      (deepAnalysis.activeThreads && deepAnalysis.activeThreads.length > 0) ||
+      deepAnalysis.stressIndicators
     )) {
       context.deepContent = {
         pendingTasks: deepAnalysis.pendingTasks.map(t => ({
@@ -277,6 +278,16 @@ export async function buildUserContext(email: string, userId?: string): Promise<
           oldestPending: deepAnalysis.responseDebt.oldestPending,
           messages: deepAnalysis.responseDebt.messages.slice(0, 5),
         },
+        // Include stress indicators for wellness coaching
+        stressIndicators: deepAnalysis.stressIndicators ? {
+          overallStressLevel: deepAnalysis.stressIndicators.overallStressLevel,
+          stressScore: deepAnalysis.stressIndicators.stressScore,
+          pressureSources: deepAnalysis.stressIndicators.pressureSources || [],
+          emotionalTone: deepAnalysis.stressIndicators.emotionalTone,
+          supportiveInsight: deepAnalysis.stressIndicators.supportiveInsight,
+          actionableSteps: deepAnalysis.stressIndicators.actionableSteps || [],
+          affirmation: deepAnalysis.stressIndicators.affirmation,
+        } : undefined,
         interruptionSummary: deepAnalysis.interruptionSummary,
         keyPeople: deepAnalysis.keyPeople.map(p => ({
           name: p.name,
@@ -292,7 +303,10 @@ export async function buildUserContext(email: string, userId?: string): Promise<
         })),
         analyzedAt: deepAnalysis.analyzedAt,
       };
-      console.log(`[ContextBuilder] Found deep content: ${deepAnalysis.pendingTasks.length} tasks, ${deepAnalysis.responseDebt.count} awaiting response`);
+      const stressInfo = deepAnalysis.stressIndicators
+        ? `, stress: ${deepAnalysis.stressIndicators.overallStressLevel}`
+        : '';
+      console.log(`[ContextBuilder] Found deep content: ${deepAnalysis.pendingTasks.length} tasks, ${deepAnalysis.responseDebt.count} awaiting response${stressInfo}`);
     }
   } catch (e) {
     console.log('[ContextBuilder] No deep content analysis:', e);

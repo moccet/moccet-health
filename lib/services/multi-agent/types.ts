@@ -292,12 +292,31 @@ export interface KeyPerson {
   avgUrgencyOfRequests: number;
 }
 
+// Stress and emotional context from communications (wellness coaching)
+export interface StressIndicatorsContext {
+  overallStressLevel: 'low' | 'moderate' | 'high' | 'overwhelming';
+  stressScore: number; // 0-100
+  pressureSources: Array<{
+    source: string;
+    type: 'deadline' | 'person' | 'workload' | 'conflict' | 'uncertainty';
+    intensity: 'low' | 'medium' | 'high';
+    description: string;
+  }>;
+  emotionalTone: 'positive' | 'neutral' | 'stressed' | 'overwhelmed';
+  supportiveInsight: string;
+  actionableSteps: string[];
+  affirmation: string;
+}
+
 export interface DeepContentContext {
   // Tasks extracted from messages
   pendingTasks: ExtractedTask[];
 
   // Messages awaiting response
   responseDebt: ResponseDebt;
+
+  // Stress and emotional context (wellness coaching)
+  stressIndicators?: StressIndicatorsContext;
 
   // Interruption patterns
   interruptionSummary: InterruptionSummary;

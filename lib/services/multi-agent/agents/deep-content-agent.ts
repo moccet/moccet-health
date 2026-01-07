@@ -6,6 +6,9 @@
  *
  * This agent generates insights that reference SPECIFIC items from the user's inbox/messages,
  * not just patterns or statistics.
+ *
+ * WELLNESS COACHING: Also detects stress/pressure and provides supportive coaching,
+ * actionable steps to overcome challenges, and positive affirmations.
  */
 
 import { BaseAgent } from '../base-agent';
@@ -58,21 +61,23 @@ CRITICAL RULES:
   }
 
   /**
-   * Override canAnalyze to require deep content with actual items
+   * Override canAnalyze to require deep content with actual items OR stress indicators
    */
   canAnalyze(context: UserContext): boolean {
     const hasDeepContent = !!context.deepContent;
     const hasTasks = context.deepContent?.pendingTasks && context.deepContent.pendingTasks.length > 0;
     const hasResponseDebt = context.deepContent?.responseDebt && context.deepContent.responseDebt.count > 0;
     const hasThreads = context.deepContent?.activeThreads && context.deepContent.activeThreads.length > 0;
+    const hasStressIndicators = !!context.deepContent?.stressIndicators;
 
-    const canRun = hasDeepContent && (hasTasks || hasResponseDebt || hasThreads);
+    const canRun = hasDeepContent && (hasTasks || hasResponseDebt || hasThreads || hasStressIndicators);
 
     console.log(`[DeepContentAgent] canAnalyze check:`, {
       hasDeepContent,
       hasTasks,
       hasResponseDebt,
       hasThreads,
+      hasStressIndicators,
       canRun,
     });
 
@@ -94,29 +99,46 @@ CRITICAL RULES:
       return 'No deep content available.';
     }
 
-    const parts: string[] = [
-      `You are a Communication Workload Analyst for Max tier users.
+    // Check stress level to adjust tone
+    const stressLevel = deepContent.stressIndicators?.overallStressLevel || 'low';
+    const isUnderPressure = stressLevel === 'high' || stressLevel === 'overwhelming' || stressLevel === 'moderate';
 
-Your job is to analyze SPECIFIC tasks, messages, and threads from the user's Gmail and Slack
-and generate insights that reference these SPECIFIC items by name.
+    const parts: string[] = [
+      `You are a Communication Workload Analyst AND Wellness Coach for Max tier users.
+
+Your job is to:
+1. Analyze SPECIFIC tasks, messages, and threads from the user's Gmail and Slack
+2. Recognize emotional signals and pressure they're under
+3. Provide supportive, empathetic insights with actionable coaching
+4. End with an encouraging affirmation that builds confidence
+
+${isUnderPressure ? `⚠️ STRESS DETECTED: The user appears to be under ${stressLevel} pressure. Be especially empathetic and supportive. Acknowledge the challenge before offering solutions.` : ''}
 
 CRITICAL: You must mention SPECIFIC items from the data - task names, sender names, deadlines, etc.
 Do NOT generate generic insights like "you have pending tasks" - be SPECIFIC.
 
 INSIGHT TYPES TO GENERATE:
-1. Urgent deadline insights - tasks with approaching deadlines
+1. Urgent deadline insights - tasks with approaching deadlines (empathetic tone)
 2. Response debt insights - important messages awaiting reply
 3. Thread priority insights - active conversations needing attention
-4. Workload overwhelm insights - if too many high-priority items
+4. Stress/pressure insights - acknowledge overwhelm and provide coping strategies
+5. Positive momentum insights - celebrate wins and manageable workloads
 
-EXAMPLE GOOD dataQuote:
-"Your inbox shows 3 high-priority items: (1) The SendGrid payment notification from billing@sendgrid.com has been pending since Jan 4th - this could affect your production email service. (2) Sarah's request for the Q1 roadmap doc needs a response by tomorrow. (3) The Slack thread about the API outage has 12 unread messages and your input was requested 2 hours ago."
+TONE GUIDELINES:
+- Be warm and supportive, like a trusted colleague who genuinely cares
+- Acknowledge challenges before jumping to solutions
+- Frame tasks as achievable, not overwhelming
+- Include breathing room in recommendations
+- End with genuine encouragement, not generic positivity
 
-EXAMPLE BAD dataQuote (too generic):
+EXAMPLE GOOD dataQuote (with empathy):
+"I see you're juggling a lot right now - James's deadline for the Q4 report is creating real pressure, and you have 2 other high-priority items competing for attention. That's genuinely challenging. Here's how to tackle this strategically: Start with a quick 15-min block on James's report to show progress, then batch the PR reviews together. You've handled tight deadlines before - one thing at a time."
+
+EXAMPLE BAD dataQuote (cold/generic):
 "You have several pending tasks and messages to respond to."
 
 Generate 1 insight that specifically addresses the most important items from the user's communications.
-Reference tasks, people, and deadlines BY NAME.
+Reference tasks, people, and deadlines BY NAME. Be supportive and actionable.
 
 === EXTRACTED COMMUNICATION DATA ===
 `,
@@ -184,6 +206,36 @@ Reference tasks, people, and deadlines BY NAME.
       if (deepContent.interruptionSummary.peakInterruptionHours.length > 0) {
         parts.push(`  Peak hours: ${deepContent.interruptionSummary.peakInterruptionHours.join(', ')}`);
       }
+      parts.push('');
+    }
+
+    // Stress indicators for wellness coaching
+    if (deepContent.stressIndicators) {
+      const stress = deepContent.stressIndicators;
+      parts.push('🧘 WELLNESS CONTEXT:');
+      parts.push(`  Stress Level: ${stress.overallStressLevel} (${stress.stressScore}/100)`);
+      parts.push(`  Emotional Tone: ${stress.emotionalTone}`);
+
+      if (stress.pressureSources && stress.pressureSources.length > 0) {
+        parts.push('  Pressure Sources:');
+        for (const source of stress.pressureSources) {
+          parts.push(`    - ${source.source} (${source.type}, ${source.intensity} intensity): ${source.description}`);
+        }
+      }
+
+      // Include pre-generated coaching if available (for reference)
+      if (stress.supportiveInsight) {
+        parts.push(`  Pre-analyzed insight: "${stress.supportiveInsight}"`);
+      }
+      if (stress.actionableSteps && stress.actionableSteps.length > 0) {
+        parts.push(`  Suggested actions: ${stress.actionableSteps.join('; ')}`);
+      }
+      if (stress.affirmation) {
+        parts.push(`  Affirmation: "${stress.affirmation}"`);
+      }
+      parts.push('');
+      parts.push('NOTE: Use this wellness context to inform your insight. If the user is under stress,');
+      parts.push('acknowledge it empathetically and weave the affirmation naturally into your response.');
     }
 
     return parts.join('\n');

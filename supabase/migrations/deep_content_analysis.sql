@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS deep_content_analysis (
     source TEXT NOT NULL CHECK (source IN ('gmail', 'slack', 'combined')),
     pending_tasks JSONB DEFAULT '[]',
     urgent_messages JSONB DEFAULT '[]',
+    stress_indicators JSONB DEFAULT '{}', -- Wellness coaching: stress level, pressure sources, affirmations
     interruption_summary JSONB DEFAULT '{}',
     key_people JSONB DEFAULT '[]',
     active_threads JSONB DEFAULT '[]',
@@ -17,6 +18,17 @@ CREATE TABLE IF NOT EXISTS deep_content_analysis (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(user_email, source)
 );
+
+-- Add stress_indicators column if table already exists (for existing databases)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'deep_content_analysis' AND column_name = 'stress_indicators'
+    ) THEN
+        ALTER TABLE deep_content_analysis ADD COLUMN stress_indicators JSONB DEFAULT '{}';
+    END IF;
+END $$;
 
 -- Indexes for efficient querying
 CREATE INDEX IF NOT EXISTS idx_deep_content_user_email ON deep_content_analysis(user_email);

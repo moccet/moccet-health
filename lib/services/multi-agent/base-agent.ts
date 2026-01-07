@@ -122,7 +122,7 @@ Return a JSON object with an "insights" array. Each insight must have:
 - id: unique string
 - title: concise, positive title (5-10 words)
 - finding: what you discovered
-- dataQuote: SPECIFIC numbers (e.g., "HRV: 45ms avg, up 8% from 42ms last week")
+- dataQuote: A 1-2 sentence summary of the relevant data WITH CONTEXT explaining what it means. Include specific numbers AND their significance. Example: "Your HRV averaged 45ms this week, up 8% from last week's 42ms - this indicates your nervous system is recovering well and you have capacity for higher training loads."
 - recommendation: one actionable recommendation
 - scienceExplanation: 2-3 sentences on WHY this matters
 - actionSteps: array of 3 HIGHLY SPECIFIC steps (see requirements below)
@@ -132,7 +132,9 @@ Return a JSON object with an "insights" array. Each insight must have:
 - crossDomainRelevance: optional, which other domain this relates to
 
 CRITICAL REQUIREMENTS:
-1. dataQuote MUST contain specific numbers, not vague phrases
+1. dataQuote MUST explain the data, not just list numbers. Tell the user what their data MEANS for their health.
+   BAD: "After-Hours Email: 64%, After-Hours Messages: 50%"
+   GOOD: "You're sending 64% of emails and 50% of messages outside work hours - this 'always on' pattern is likely elevating your cortisol and impacting sleep quality."
 2. Generate 1-2 high-quality insights, not many low-quality ones
 3. Each insight must suggest a NEW action, not maintain status quo
 4. Title should be positive and inspiring, not alarming

@@ -14,7 +14,7 @@
 import OpenAI from 'openai';
 import { BaseAgent } from '../base-agent';
 import { AgentFinding, UserContext } from '../types';
-import { StressAgent, CalendarAgent } from '../agents';
+import { StressAgent, CalendarAgent, DeepContentAgent } from '../agents';
 import { BaseCoordinator, CrossDomainFlag, CoordinatorConfig, Conflict } from './base-coordinator';
 
 const WORK_COORDINATOR_CONFIG: CoordinatorConfig = {
@@ -33,6 +33,7 @@ export class WorkCoordinator extends BaseCoordinator {
     return [
       new StressAgent(),
       new CalendarAgent(),
+      new DeepContentAgent(), // Max tier - analyzes specific tasks/messages from Gmail/Slack
     ];
   }
 

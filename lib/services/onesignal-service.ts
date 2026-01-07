@@ -74,13 +74,14 @@ export async function sendPushNotification(
       console.log(`[OneSignal Service] No device tokens for ${email}, trying external_id targeting`);
     }
 
-    // Prepare notification payload - use external_id (email) for targeting
-    // This is more reliable than player_ids since we set external_id via OneSignal.login()
+    // Extract valid player IDs from tokens
+    const playerIds = tokens
+      ?.filter(t => t.device_token && t.device_token.length > 10)
+      .map(t => t.device_token) || [];
+
+    // Prepare notification payload
     const notificationPayload: Record<string, unknown> = {
       app_id: appId,
-      // Target by external user ID (email) instead of player IDs
-      include_aliases: { external_id: [email] },
-      target_channel: 'push',
       headings: { en: payload.title },
       contents: { en: payload.body },
       data: payload.data || {},
@@ -90,6 +91,16 @@ export async function sendPushNotification(
       ios_badgeCount: 1,
       priority: 10,
     };
+
+    // Use player IDs if available (more reliable), otherwise fall back to external_id
+    if (playerIds.length > 0) {
+      console.log(`[OneSignal Service] Using ${playerIds.length} player IDs for targeting`);
+      notificationPayload.include_player_ids = playerIds;
+    } else {
+      console.log(`[OneSignal Service] No player IDs, falling back to external_id: ${email}`);
+      notificationPayload.include_aliases = { external_id: [email] };
+      notificationPayload.target_channel = 'push';
+    }
 
     // Send notification via OneSignal REST API
     const response = await fetch('https://api.onesignal.com/notifications', {

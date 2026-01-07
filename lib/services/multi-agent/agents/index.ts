@@ -16,6 +16,7 @@ export { MovementAgent } from './movement-agent';
 // Work & Stress Domain
 export { StressAgent } from './stress-agent';
 export { CalendarAgent } from './calendar-agent';
+export { DeepContentAgent } from './deep-content-agent';
 
 // Lifestyle Domain
 export { MusicAgent } from './music-agent';

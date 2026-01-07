@@ -17,12 +17,22 @@ import {
 } from './types';
 import { BaseAgent } from './base-agent';
 import {
+  // Health & Recovery Domain
   RecoveryAgent,
   SleepAgent,
-  StressAgent,
-  ActivityAgent,
-  BloodAgent,
   GlucoseAgent,
+  BloodAgent,
+  // Activity & Fitness Domain
+  ActivityAgent,
+  CardioAgent,
+  MovementAgent,
+  // Work & Stress Domain
+  StressAgent,
+  CalendarAgent,
+  // Lifestyle Domain
+  MusicAgent,
+  ContextAgent,
+  NutritionAgent,
 } from './agents';
 
 export class MultiAgentOrchestrator {
@@ -36,19 +46,22 @@ export class MultiAgentOrchestrator {
 
   private initializeAgents(): BaseAgent[] {
     return [
+      // Health & Recovery Domain
       new RecoveryAgent(),
       new SleepAgent(),
-      new StressAgent(),
-      new ActivityAgent(),
-      new BloodAgent(),
       new GlucoseAgent(),
-      // Phase 2 agents can be added here:
-      // new CardioAgent(),
-      // new MovementAgent(),
-      // new MusicAgent(),
-      // new ContextAgent(),
-      // new NutritionAgent(),
-      // new CalendarAgent(),
+      new BloodAgent(),
+      // Activity & Fitness Domain
+      new ActivityAgent(),
+      new CardioAgent(),
+      new MovementAgent(),
+      // Work & Stress Domain
+      new StressAgent(),
+      new CalendarAgent(),
+      // Lifestyle Domain
+      new MusicAgent(),
+      new ContextAgent(),
+      new NutritionAgent(),
     ];
   }
 

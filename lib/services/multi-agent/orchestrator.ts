@@ -34,6 +34,7 @@ import {
   MusicAgent,
   ContextAgent,
   NutritionAgent,
+  TravelContextAgent,
 } from './agents';
 
 export class MultiAgentOrchestrator {
@@ -64,6 +65,7 @@ export class MultiAgentOrchestrator {
       new MusicAgent(),
       new ContextAgent(),
       new NutritionAgent(),
+      new TravelContextAgent(), // Detects travel via timezone and suggests hotel workouts, jet lag management
     ];
   }
 

@@ -298,6 +298,52 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     console.log('[ContextBuilder] No deep content analysis:', e);
   }
 
+  // Fetch Travel Context (detect if user is traveling based on timezone changes)
+  try {
+    // Get the most recent device context entries
+    const { data: deviceContextData } = await supabase
+      .from('user_device_context')
+      .select('timezone, timezone_offset, travel_detected, synced_at')
+      .eq('email', email)
+      .order('synced_at', { ascending: false })
+      .limit(10);
+
+    if (deviceContextData && deviceContextData.length > 0) {
+      const latestContext = deviceContextData[0];
+
+      // Determine home timezone (most common timezone in history, or first one)
+      const timezoneCounts: Record<string, number> = {};
+      deviceContextData.forEach(dc => {
+        timezoneCounts[dc.timezone] = (timezoneCounts[dc.timezone] || 0) + 1;
+      });
+      const homeTimezone = Object.entries(timezoneCounts)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] || latestContext.timezone;
+
+      // Check if currently traveling (different timezone than home)
+      const isCurrentlyTraveling = latestContext.timezone !== homeTimezone;
+
+      if (isCurrentlyTraveling || latestContext.travel_detected) {
+        // Find when travel started (first different timezone)
+        const travelStart = deviceContextData.find(dc => dc.timezone !== homeTimezone);
+
+        context.travelContext = {
+          isCurrentlyTraveling: true,
+          homeTimezone,
+          currentTimezone: latestContext.timezone,
+          timezoneOffsetChange: latestContext.timezone_offset - (deviceContextData.find(dc => dc.timezone === homeTimezone)?.timezone_offset || 0),
+          travelStartDate: travelStart?.synced_at,
+          travelType: Math.abs(latestContext.timezone_offset - (deviceContextData.find(dc => dc.timezone === homeTimezone)?.timezone_offset || 0)) > 3
+            ? 'international'
+            : 'timezone_shift',
+          lastSyncedAt: latestContext.synced_at,
+        };
+        console.log(`[ContextBuilder] Travel detected: ${homeTimezone} -> ${latestContext.timezone}`);
+      }
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] No travel context:', e);
+  }
+
   console.log(`[ContextBuilder] Built context with ${availableDataSources.length} data sources`);
 
   return context;

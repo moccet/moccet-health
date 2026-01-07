@@ -30,10 +30,28 @@ interface HealthSyncPayload {
     total_active_minutes?: number;
     heart_rate?: number;
     resting_hr?: number;
+    hrv?: number;
     sleep_duration_hours?: number;
     deep_sleep_minutes?: number;
     rem_sleep_minutes?: number;
     distance_meters?: number;
+    flights_climbed?: number;
+    mindfulness_minutes?: number;
+  };
+  workouts?: Array<{
+    type: string;
+    duration: number;
+    calories: number;
+    distance: number;
+    date: string;
+  }>;
+  deviceContext?: {
+    timezone: string;
+    timezoneOffset: number;
+    localTime: string;
+    utcTime: string;
+    platform: string;
+    locale: string;
   };
   periodDays?: number;
   syncedAt?: string;
@@ -91,15 +109,75 @@ export async function POST(request: NextRequest) {
     // Update goals that track these metrics
     await updateGoalProgress(body.email, body.metrics);
 
+    // Store workouts if provided
+    let workoutsStored = 0;
+    if (body.workouts && body.workouts.length > 0) {
+      for (const workout of body.workouts) {
+        const { error } = await supabase
+          .from('user_workouts')
+          .upsert({
+            email: body.email,
+            workout_type: workout.type,
+            duration_minutes: workout.duration,
+            calories_burned: workout.calories,
+            distance_meters: workout.distance,
+            workout_date: workout.date,
+            source: body.source,
+            synced_at: new Date().toISOString(),
+          }, { onConflict: 'email,workout_date,workout_type' });
+
+        if (!error) workoutsStored++;
+      }
+      logger.info('Workouts stored', { email: body.email, count: workoutsStored });
+    }
+
+    // Store device context and detect travel
+    let travelDetected = false;
+    if (body.deviceContext) {
+      const { data: previousContext } = await supabase
+        .from('user_device_context')
+        .select('timezone, timezone_offset')
+        .eq('email', body.email)
+        .order('synced_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Detect timezone change (potential travel)
+      if (previousContext && previousContext.timezone !== body.deviceContext.timezone) {
+        travelDetected = true;
+        logger.info('Travel detected via timezone change', {
+          email: body.email,
+          from: previousContext.timezone,
+          to: body.deviceContext.timezone,
+        });
+      }
+
+      // Store current device context
+      await supabase.from('user_device_context').insert({
+        email: body.email,
+        timezone: body.deviceContext.timezone,
+        timezone_offset: body.deviceContext.timezoneOffset,
+        local_time: body.deviceContext.localTime,
+        platform: body.deviceContext.platform,
+        locale: body.deviceContext.locale,
+        travel_detected: travelDetected,
+        synced_at: new Date().toISOString(),
+      });
+    }
+
     logger.info('Health sync completed', {
       email: body.email,
       metricsUpdated: updates.length,
+      workoutsStored,
+      travelDetected,
     });
 
     return NextResponse.json({
       success: true,
       message: `Synced ${updates.length} health metrics`,
       metrics: updates.map(u => u.metric),
+      workoutsStored,
+      travelDetected,
     });
   } catch (error) {
     logger.error('Health sync failed', { error });

@@ -22,6 +22,7 @@ export { DeepContentAgent } from './deep-content-agent';
 export { MusicAgent } from './music-agent';
 export { ContextAgent } from './context-agent';
 export { NutritionAgent } from './nutrition-agent';
+export { TravelContextAgent } from './travel-context-agent';
 
 // Re-export base agent
 export { BaseAgent } from '../base-agent';

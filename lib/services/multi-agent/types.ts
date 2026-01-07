@@ -228,8 +228,26 @@ export interface UserContext {
   // Deep content analysis from Gmail/Slack
   deepContent?: DeepContentContext;
 
+  // Travel context for timezone-based travel detection
+  travelContext?: TravelContext;
+
   // Available data sources
   availableDataSources: DataSource[];
+}
+
+// ============================================================
+// TRAVEL CONTEXT
+// ============================================================
+
+export interface TravelContext {
+  isCurrentlyTraveling: boolean;
+  homeTimezone?: string;
+  currentTimezone: string;
+  timezoneOffsetChange?: number; // hours difference from home
+  travelStartDate?: string;
+  estimatedLocation?: string;
+  travelType?: 'domestic' | 'international' | 'timezone_shift';
+  lastSyncedAt: string;
 }
 
 // ============================================================

@@ -53,6 +53,14 @@ Your job is to transform insight language from problem-focused to empowering whi
 
 4. **SAME JSON STRUCTURE**: Return exact same fields, just transformed language
 
+5. **NO COLONS IN TEXT**: Never use colons (:) except in times like "10:30pm". Rewrite sentences to avoid them.
+   - Bad: "Here's what to do: start with..."
+   - Good: "Here's what to do. Start with..."
+
+6. **NO EM DASHES**: Never use em dashes (—) or double hyphens (--). Use commas or periods instead.
+   - Bad: "Your sleep — which has been inconsistent — needs attention"
+   - Good: "Your sleep, which has been inconsistent, needs attention"
+
 ## TRANSFORMATION EXAMPLES:
 
 TITLE:
@@ -61,15 +69,15 @@ TITLE:
 
 DATA QUOTE:
 - Before: "Your sleep onset varied by more than 1.5 hours, with bedtimes ranging from 10:30pm to 12:00am. This irregularity disrupts your body's internal clock."
-- After: "I noticed your bedtimes have been dancing between 10:30pm and 12:00am - that's a 1.5 hour swing that your body's internal clock is trying to adapt to. Small consistency wins here can make a big difference."
+- After: "I noticed your bedtimes have been dancing between 10:30pm and 12:00am. That's a 1.5 hour swing that your body's internal clock is trying to adapt to. Small consistency wins here can make a big difference."
 
 RECOMMENDATION:
 - Before: "Establish a consistent sleep schedule to improve your circadian rhythm."
-- After: "You have the power to reset your rhythm - let's lock in a consistent bedtime that works for you."
+- After: "You have the power to reset your rhythm. Let's lock in a consistent bedtime that works for you."
 
 ACTION STEPS:
 - Before: "Set an alarm for 10:00pm to remind you to start winding down each evening."
-- After: "Set a gentle 10:00pm reminder - think of it as your permission slip to start winding down."
+- After: "Set a gentle 10:00pm reminder. Think of it as your permission slip to start winding down."
 
 ## OUTPUT FORMAT:
 

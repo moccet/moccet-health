@@ -265,7 +265,7 @@ class DailyDigestServiceClass {
           item_count: digest.items.length.toString(),
           first_item_id: firstItem.id,
           first_item_type: firstItem.type,
-          action_url: '/wisdom',
+          action_url: '/sage',
         },
       });
 

@@ -165,6 +165,12 @@ export async function sendInsightNotification(
     message: string;
     insight_type: string;
     severity: string;
+    // Rich content for notification detail screen
+    category?: string;
+    data_quote?: string;
+    recommendation?: string;
+    science_explanation?: string;
+    action_steps?: string[];
   }
 ): Promise<number> {
   return sendPushNotification(email, {
@@ -174,7 +180,12 @@ export async function sendInsightNotification(
       insight_id: insight.id,
       insight_type: insight.insight_type,
       severity: insight.severity,
-      action_url: `/insights/${insight.id}`,
+      // Rich content for full-screen detail view
+      category: insight.category || insight.insight_type,
+      data_quote: insight.data_quote,
+      recommendation: insight.recommendation,
+      science_explanation: insight.science_explanation,
+      action_steps: insight.action_steps,
     },
   });
 }

@@ -54,6 +54,12 @@ export interface ProactiveNotification {
   title: string;
   message: string;
   context_data: Record<string, unknown>;
+  // Rich content for notification detail screen
+  category?: string;
+  data_quote?: string;
+  recommendation?: string;
+  science_explanation?: string;
+  action_steps?: string[];
 }
 
 // ============================================================================
@@ -359,11 +365,28 @@ Be like a caring friend checking in, not a health app.`;
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Format data quote from context
+  const dataQuoteParts: string[] = [];
+  if (context.criticalTasks) dataQuoteParts.push(`${context.criticalTasks} critical tasks pending`);
+  if (context.urgentMessageCount) dataQuoteParts.push(`${context.urgentMessageCount} urgent messages`);
+  if (context.messageVolume) dataQuoteParts.push(`${context.messageVolume} messages per day`);
+  if (context.hrvDrop) dataQuoteParts.push(`HRV ${context.hrvDrop}% below your baseline`);
+  if (context.recovery) dataQuoteParts.push(`Recovery at ${context.recovery}%`);
+
   return {
     type: 'stress_support',
     title: "Hey, checking in on you",
     message,
     context_data: context,
+    category: 'STRESS',
+    data_quote: dataQuoteParts.length > 0
+      ? `I noticed: ${dataQuoteParts.join(', ')}. That's a lot to carry.`
+      : undefined,
+    action_steps: [
+      'Take 3 deep breaths right now',
+      'Pick your most important task and focus just on that',
+      'Give yourself permission to say no to something today',
+    ],
   };
 }
 
@@ -753,6 +776,12 @@ async function sendProactiveNotification(
       message: notification.message,
       insight_type: notification.type,
       severity: 'info',
+      // Rich content for notification detail screen
+      category: notification.category,
+      data_quote: notification.data_quote,
+      recommendation: notification.recommendation,
+      science_explanation: notification.science_explanation,
+      action_steps: notification.action_steps,
     });
 
     if (sentCount > 0) {

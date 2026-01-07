@@ -9,7 +9,7 @@
  * - Achievement celebrations
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import {
   fetchAllEcosystemData,
@@ -720,7 +720,7 @@ async function sendProactiveNotification(
   email: string,
   notification: ProactiveNotification
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Store in real_time_insights
   const { data, error } = await supabase
@@ -781,7 +781,7 @@ async function canSendNotificationType(
   type: EngagementType,
   minHoursBetween: number
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const cutoffTime = new Date();
   cutoffTime.setHours(cutoffTime.getHours() - minHoursBetween);
@@ -802,7 +802,7 @@ async function canSendNotificationType(
  * Max 2 proactive notifications per day
  */
 async function canSendMoreToday(email: string): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -996,7 +996,7 @@ export async function processProactiveEngagement(
  * Get all users who have opted into proactive notifications
  */
 export async function getUsersForProactiveEngagement(): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get users with active integrations
   // In the future, could add a user preference table for notification settings

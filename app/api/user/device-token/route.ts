@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('user_device_tokens')
-      .select('id, platform, provider, is_active, created_at, updated_at')
+      .select('id, device_token, platform, provider, is_active, created_at, updated_at')
       .eq('email', email);
 
     if (error) {

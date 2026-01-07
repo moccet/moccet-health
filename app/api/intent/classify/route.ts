@@ -20,15 +20,22 @@ const openai = new OpenAI({
 
 // Task types that can be classified
 const TASK_TYPES = [
-  'calendar',      // Schedule events, meetings
-  'email',         // Email-related tasks
-  'spotify',       // Music playback
-  'health_insight', // Health-related queries
-  'supplement',    // Supplement recommendations
-  'nutrition',     // Food/diet related
-  'fitness',       // Exercise related
-  'sleep',         // Sleep optimization
-  'unknown',       // Cannot classify
+  'calendar',           // Schedule events, meetings
+  'email',              // Email-related tasks
+  'spotify',            // Music playback
+  'health_insight',     // Health-related queries
+  'supplement',         // Supplement recommendations
+  'fitness',            // Exercise related
+  'sleep',              // Sleep optimization
+  // Sage (Moccet Chef) task types - for food/nutrition actions
+  'sage_food_log',      // Log food, meals, track what was eaten
+  'sage_water_log',     // Log water intake, hydration
+  'sage_fasting',       // Start/stop fasting timer
+  'sage_weight_log',    // Log weight measurements
+  'sage_meal_update',   // Change/swap meals in meal plan
+  'sage_meal_suggest',  // Get meal suggestions/recommendations
+  'sage_progress',      // Query nutrition progress, calories, macros
+  'unknown',            // Cannot classify
 ];
 
 export async function POST(request: NextRequest) {
@@ -44,19 +51,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Use GPT-4 for classification
-    const systemPrompt = `You are an intent classifier for a health AI assistant.
-Classify the user's input into one of these task types:
-- calendar: scheduling events, meetings, reminders
-- email: sending or managing emails
-- spotify: playing music, creating playlists
-- health_insight: general health questions or insights
-- supplement: supplement recommendations
-- nutrition: food, diet, meal planning
-- fitness: exercise, workouts, activity
-- sleep: sleep optimization, bedtime routines
-- unknown: cannot determine intent
+    const systemPrompt = `You are an intent classifier for Moccet, a health AI assistant with nutrition tracking.
 
-Respond with JSON in this exact format:
+Classify the user's input into one of these task types:
+
+## Sage (Moccet Chef) - Food & Nutrition Actions:
+- sage_food_log: User wants to LOG/ADD/TRACK food they ate (e.g., "add a mocha", "log my breakfast", "I had chicken", "track my lunch", "add to my food log", "log this meal")
+- sage_water_log: User wants to log water intake (e.g., "add 500ml water", "I drank water", "log hydration")
+- sage_fasting: User wants to start/stop fasting (e.g., "start fasting", "break my fast", "end fast")
+- sage_weight_log: User wants to log weight (e.g., "log weight 75kg", "I weigh 150 lbs")
+- sage_meal_update: User wants to change/swap a meal in their plan (e.g., "change dinner to pasta", "swap my lunch")
+- sage_meal_suggest: User wants meal suggestions/recommendations (e.g., "what should I eat", "suggest a meal", "recipe ideas")
+- sage_progress: User asks about nutrition stats (e.g., "how many calories today", "my macros", "nutrition progress")
+
+## Other Task Types:
+- calendar: Scheduling events, meetings, reminders
+- email: Sending or managing emails
+- spotify: Playing music, creating playlists
+- health_insight: General health questions (not food logging actions)
+- supplement: Supplement recommendations
+- fitness: Exercise, workouts, activity tracking
+- sleep: Sleep optimization, bedtime routines
+- unknown: Cannot determine intent
+
+IMPORTANT: If the user mentions "add", "log", "track", or similar ACTION words with food/drink items, classify as sage_food_log or sage_water_log. These are ACTIONS to record data, not questions.
+
+Respond with JSON:
 {
   "primary": "task_type",
   "secondary": ["other_relevant_types"],

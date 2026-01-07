@@ -100,8 +100,11 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/content/engage?contentId=xxx
- * Get engagement history for a specific content item
+ * GET /api/content/engage
+ *
+ * Query params:
+ * - contentId: Get engagement for specific content
+ * - state=true: Get user's liked/saved content IDs (for restoring UI state)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -121,6 +124,39 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const contentId = searchParams.get('contentId');
+    const getState = searchParams.get('state') === 'true';
+
+    // If state=true, return liked and saved content IDs
+    if (getState) {
+      const { data: engagements, error } = await supabase
+        .from('content_engagement')
+        .select('content_id, signal_type')
+        .eq('user_email', user.email)
+        .in('signal_type', ['like', 'save']);
+
+      if (error) {
+        logger.error('Error fetching engagement state', { error, email: user.email });
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      // Group by signal type
+      const liked: string[] = [];
+      const saved: string[] = [];
+
+      for (const e of engagements || []) {
+        if (e.signal_type === 'like') {
+          liked.push(e.content_id);
+        } else if (e.signal_type === 'save') {
+          saved.push(e.content_id);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        liked: [...new Set(liked)], // Deduplicate
+        saved: [...new Set(saved)],
+      });
+    }
 
     // Get user's engagement history
     const history = await PreferenceLearner.getEngagementHistory(

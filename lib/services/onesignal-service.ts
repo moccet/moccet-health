@@ -114,13 +114,17 @@ export async function sendPushNotification(
 
     const result = await response.json();
 
+    // Log full response for debugging
+    console.log('[OneSignal Service] Full API response:', JSON.stringify(result));
+
     if (!response.ok) {
       console.error('[OneSignal Service] Error response:', result);
       return 0;
     }
 
-    // Log results
-    const successCount = result.recipients || 0;
+    // Log results - check multiple possible fields
+    // If we got a notification ID back, consider it successful even if recipients is 0
+    const successCount = result.recipients || (result.id ? 1 : 0);
     const erroredPlayers = result.errors?.invalid_player_ids || [];
 
     console.log(

@@ -32,6 +32,7 @@ import {
 import { ConsensusValidator, ConsensusResult } from './consensus-validator';
 import { AgentMemoryService, HistoricalContext, formatHistoricalContextForPrompt } from './agent-memory';
 import { DebateEngine, DebateConflict, DebateResolution as FullDebateResolution, formatDebateResolution } from './debate-engine';
+import { optimizeInsightLanguage } from './language-optimizer';
 
 // ============================================================================
 // TYPES
@@ -270,7 +271,11 @@ export class CoordinatorOrchestrator {
       resolutions
     );
 
-    const finalInsights = this.prioritizeInsights(structuredInsights, maxInsights);
+    const prioritizedInsights = this.prioritizeInsights(structuredInsights, maxInsights);
+
+    // Apply positive language optimization
+    console.log(`[CoordinatorOrchestrator] Applying language optimization...`);
+    const finalInsights = await optimizeInsightLanguage(prioritizedInsights);
 
     console.log(`[CoordinatorOrchestrator] Final insights: ${finalInsights.length}`);
     console.log(`[CoordinatorOrchestrator] Total time: ${Date.now() - startTime}ms`);

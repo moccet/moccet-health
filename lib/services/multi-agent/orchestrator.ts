@@ -16,6 +16,7 @@ import {
   UserContext,
 } from './types';
 import { BaseAgent } from './base-agent';
+import { optimizeInsightLanguage } from './language-optimizer';
 import {
   // Health & Recovery Domain
   RecoveryAgent,
@@ -138,7 +139,11 @@ export class MultiAgentOrchestrator {
     );
 
     // Prioritize and limit
-    const finalInsights = this.prioritizeInsights(structuredInsights, maxInsights);
+    const prioritizedInsights = this.prioritizeInsights(structuredInsights, maxInsights);
+
+    // Apply positive language optimization
+    console.log(`[Orchestrator] Applying language optimization...`);
+    const finalInsights = await optimizeInsightLanguage(prioritizedInsights);
 
     console.log(`[Orchestrator] Final insights: ${finalInsights.length}`);
     console.log(`[Orchestrator] Total processing time: ${Date.now() - startTime}ms`);

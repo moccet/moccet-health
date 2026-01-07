@@ -73,12 +73,29 @@ export class ConnectionService {
 
   /**
    * Send a friend request to another user
+   * Requires the requester to have a display name set (for privacy with privaterelay emails)
    */
   async sendRequest(
     requesterEmail: string,
     addresseeEmail: string
   ): Promise<{ success: boolean; error?: string; connection?: Connection }> {
     try {
+      // Check if requester has a display name set
+      // This is required so recipients can identify who is sending the request
+      // (especially important for Apple privaterelay emails)
+      const { data: requesterProfile } = await this.supabase
+        .from('user_profiles')
+        .select('display_name')
+        .eq('user_email', requesterEmail)
+        .single();
+
+      if (!requesterProfile?.display_name) {
+        return {
+          success: false,
+          error: 'Please set a display name in your profile before sending friend requests'
+        };
+      }
+
       // Check if connection already exists
       const { data: existing } = await this.supabase
         .from('user_connections')

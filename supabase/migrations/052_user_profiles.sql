@@ -37,17 +37,9 @@ CREATE POLICY "Users can read all profiles"
   ON user_profiles FOR SELECT
   USING (true);
 
--- Allow users to update only their own profile
-CREATE POLICY "Users can update own profile"
-  ON user_profiles FOR UPDATE
-  USING (user_email = current_setting('request.jwt.claims', true)::json->>'email');
-
--- Allow users to insert their own profile
-CREATE POLICY "Users can insert own profile"
-  ON user_profiles FOR INSERT
-  WITH CHECK (user_email = current_setting('request.jwt.claims', true)::json->>'email');
-
--- Service role can do anything
+-- Allow service role full access (used by backend API)
 CREATE POLICY "Service role has full access"
   ON user_profiles FOR ALL
-  USING (auth.role() = 'service_role');
+  TO service_role
+  USING (true)
+  WITH CHECK (true);

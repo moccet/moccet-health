@@ -16,6 +16,8 @@ import {
   EcosystemData,
 } from './ecosystem-fetcher';
 import { sendInsightNotification } from './onesignal-service';
+import { getUserContext, UserContext } from './user-context-service';
+import { getCombinedDeepAnalysis, DeepContentAnalysis } from './deep-content-analyzer';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -34,7 +36,18 @@ export type EngagementType =
   | 'evening_reflection'
   | 'challenge_encouragement'
   | 'health_tip'
-  | 'mindfulness_prompt';
+  | 'mindfulness_prompt'
+  | 'biomarker_reminder'
+  | 'goal_progress';
+
+/**
+ * Enriched context combining ecosystem data, user profile, labs, and deep analysis
+ */
+export interface EnrichedContext {
+  ecosystemData: EcosystemData;
+  userContext: UserContext | null;
+  deepAnalysis: DeepContentAnalysis | null;
+}
 
 export interface ProactiveNotification {
   type: EngagementType;
@@ -94,8 +107,9 @@ Never use generic platitudes. Always reference specific details from the context
  */
 async function generateDailyDigest(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
   const highlights: string[] = [];
   const concerns: string[] = [];
 
@@ -187,10 +201,27 @@ async function generateDailyDigest(
  */
 async function generateMorningMotivation(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
+  const userContext = ctx.userContext;
   const context: Record<string, unknown> = {};
   let prompt = 'Generate a warm, personalized morning message for the user. ';
+
+  // Add user's goals to context
+  if (userContext?.profile?.goals?.length) {
+    context.goals = userContext.profile.goals;
+    prompt += `Their current goals are: ${userContext.profile.goals.join(', ')}. Reference a goal if relevant. `;
+  }
+
+  // Add biomarker context if available
+  if (userContext?.labResults?.length) {
+    const lowBiomarkers = userContext.labResults.filter(l => l.status === 'low' || l.status === 'deficient');
+    if (lowBiomarkers.length > 0) {
+      context.biomarkerConcerns = lowBiomarkers.map(l => l.biomarker);
+      prompt += `They have low ${lowBiomarkers.map(l => l.biomarker).join(', ')} - you could mention a food that helps with this. `;
+    }
+  }
 
   // Check recovery state
   if (ecosystemData.whoop?.data) {
@@ -247,10 +278,29 @@ async function generateMorningMotivation(
  */
 async function generateStressSupport(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
+  const deepAnalysis = ctx.deepAnalysis;
+  const userContext = ctx.userContext;
   const stressSignals: string[] = [];
   const context: Record<string, unknown> = {};
+
+  // Add deep analysis signals
+  if (deepAnalysis) {
+    if (deepAnalysis.pendingTasks?.filter(t => t.urgency === 'critical').length) {
+      stressSignals.push('critical tasks pending');
+      context.criticalTasks = deepAnalysis.pendingTasks.filter(t => t.urgency === 'critical').length;
+    }
+    if (deepAnalysis.urgentMessages?.length > 3) {
+      stressSignals.push('multiple urgent messages');
+      context.urgentMessageCount = deepAnalysis.urgentMessages.length;
+    }
+    if (deepAnalysis.interruptionScore && deepAnalysis.interruptionScore > 70) {
+      stressSignals.push('high interruption day');
+      context.interruptionScore = deepAnalysis.interruptionScore;
+    }
+  }
 
   // Check Slack patterns for stress indicators
   if (ecosystemData.slack?.available && ecosystemData.slack.data) {
@@ -326,9 +376,16 @@ Be like a caring friend checking in, not a health app.`;
  */
 async function generateAchievementCelebration(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
+  const userContext = ctx.userContext;
   const achievements: string[] = [];
+
+  // Check goal-related achievements
+  if (userContext?.profile?.goals?.length) {
+    // Could add logic to check goal progress from database
+  }
   const context: Record<string, unknown> = {};
 
   // Check for streaks and milestones
@@ -395,9 +452,29 @@ Make them feel proud of their progress.`;
  */
 async function generateEveningReflection(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
+  const deepAnalysis = ctx.deepAnalysis;
+  const userContext = ctx.userContext;
   const context: Record<string, unknown> = {};
+
+  // Add completed tasks for reflection
+  if (deepAnalysis?.pendingTasks) {
+    const completedToday = deepAnalysis.pendingTasks.filter(t => t.status === 'completed');
+    const stillPending = deepAnalysis.pendingTasks.filter(t => t.status === 'pending');
+    if (completedToday.length > 0) {
+      context.tasksCompleted = completedToday.length;
+    }
+    if (stillPending.length > 0) {
+      context.tasksPending = stillPending.length;
+    }
+  }
+
+  // Add goals for evening reflection
+  if (userContext?.profile?.goals?.length) {
+    context.goals = userContext.profile.goals;
+  }
   let prompt = 'Generate a calming evening reflection message. ';
 
   // Check how their day went
@@ -446,8 +523,9 @@ async function generateEveningReflection(
  */
 async function generateMindfulnessPrompt(
   email: string,
-  ecosystemData: EcosystemData
+  ctx: EnrichedContext
 ): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
   const context: Record<string, unknown> = {};
 
   // Check if they could benefit from a pause
@@ -482,6 +560,150 @@ Don't be preachy - just offer a gentle invitation to take a breath.`;
   return {
     type: 'mindfulness_prompt',
     title: 'Quick Pause',
+    message,
+    context_data: context,
+  };
+}
+
+// ============================================================================
+// NEW: BIOMARKER, TASK & GOAL GENERATORS
+// ============================================================================
+
+/**
+ * Generate biomarker-related reminders based on lab results
+ */
+async function generateBiomarkerReminder(
+  email: string,
+  ctx: EnrichedContext,
+  timeOfDay: 'morning' | 'midday' | 'evening'
+): Promise<ProactiveNotification | null> {
+  const labResults = ctx.userContext?.labResults;
+  if (!labResults?.length) return null;
+
+  const context: Record<string, unknown> = {};
+  const lowBiomarkers = labResults.filter(l => l.status === 'low' || l.status === 'deficient');
+
+  if (lowBiomarkers.length === 0) return null;
+
+  // Different reminders based on time of day
+  let prompt = '';
+  if (timeOfDay === 'morning') {
+    const vitaminD = lowBiomarkers.find(b => b.biomarker.toLowerCase().includes('vitamin d'));
+    const iron = lowBiomarkers.find(b => b.biomarker.toLowerCase().includes('iron') || b.biomarker.toLowerCase().includes('ferritin'));
+    const b12 = lowBiomarkers.find(b => b.biomarker.toLowerCase().includes('b12'));
+
+    if (vitaminD) {
+      context.biomarker = 'Vitamin D';
+      prompt = `Generate a brief morning reminder about vitamin D. The user has low vitamin D (${vitaminD.value} ${vitaminD.unit}). Suggest taking supplement with breakfast or getting morning sun. Keep it friendly and brief.`;
+    } else if (iron) {
+      context.biomarker = 'Iron';
+      prompt = `Generate a brief morning reminder about iron. The user has low iron/ferritin (${iron.value} ${iron.unit}). Suggest iron-rich breakfast foods or taking supplement with vitamin C. Keep it friendly.`;
+    } else if (b12) {
+      context.biomarker = 'B12';
+      prompt = `Generate a brief morning reminder about B12. The user has low B12 (${b12.value} ${b12.unit}). Suggest B12-rich foods or supplement. Keep it friendly.`;
+    } else {
+      context.biomarker = lowBiomarkers[0].biomarker;
+      prompt = `Generate a brief, friendly reminder about their low ${lowBiomarkers[0].biomarker} (${lowBiomarkers[0].value} ${lowBiomarkers[0].unit}). Suggest one actionable thing they can do today.`;
+    }
+  } else {
+    return null; // Only send biomarker reminders in morning for now
+  }
+
+  context.labResults = lowBiomarkers.map(l => ({ biomarker: l.biomarker, value: l.value, status: l.status }));
+
+  const message = await generatePersonalizedMessage(prompt, context);
+  if (!message) return null;
+
+  return {
+    type: 'biomarker_reminder',
+    title: `${context.biomarker} Reminder`,
+    message,
+    context_data: context,
+  };
+}
+
+/**
+ * Generate task reminder based on deep content analysis
+ */
+async function generateTaskReminder(
+  email: string,
+  ctx: EnrichedContext,
+  urgentTasks: Array<{ description: string; requester?: string; deadline?: string; urgency: string }>
+): Promise<ProactiveNotification | null> {
+  if (!urgentTasks.length) return null;
+
+  const context: Record<string, unknown> = {
+    taskCount: urgentTasks.length,
+    tasks: urgentTasks.slice(0, 3).map(t => ({
+      description: t.description.substring(0, 100),
+      requester: t.requester,
+      deadline: t.deadline,
+    })),
+    recovery: ctx.ecosystemData.whoop?.data?.avgRecoveryScore,
+  };
+
+  const prompt = `Generate a brief, supportive task reminder. The user has ${urgentTasks.length} urgent task(s):
+${urgentTasks.slice(0, 3).map(t => `- ${t.description.substring(0, 80)}${t.requester ? ` (from ${t.requester})` : ''}${t.deadline ? ` due ${t.deadline}` : ''}`).join('\n')}
+
+${ctx.ecosystemData.whoop?.data?.avgRecoveryScore && ctx.ecosystemData.whoop.data.avgRecoveryScore < 50 ? 'Note: Their recovery is low, so be gentle.' : ''}
+
+Be supportive, not stressful. Help them prioritize if multiple tasks.`;
+
+  const message = await generatePersonalizedMessage(prompt, context);
+  if (!message) return null;
+
+  return {
+    type: 'challenge_encouragement',
+    title: urgentTasks.length === 1 ? 'Task Reminder' : `${urgentTasks.length} Tasks Need Attention`,
+    message,
+    context_data: context,
+  };
+}
+
+/**
+ * Generate goal progress update
+ */
+async function generateGoalProgress(
+  email: string,
+  ctx: EnrichedContext
+): Promise<ProactiveNotification | null> {
+  const goals = ctx.userContext?.profile?.goals;
+  if (!goals?.length) return null;
+
+  const context: Record<string, unknown> = {
+    goals,
+    recovery: ctx.ecosystemData.whoop?.data?.avgRecoveryScore,
+    sleepHours: ctx.ecosystemData.oura?.data?.avgSleepHours,
+    strain: ctx.ecosystemData.whoop?.data?.avgStrainScore,
+  };
+
+  // Check if we have relevant data for their goals
+  const healthGoals = goals.filter(g =>
+    g.toLowerCase().includes('sleep') ||
+    g.toLowerCase().includes('fitness') ||
+    g.toLowerCase().includes('recovery') ||
+    g.toLowerCase().includes('stress') ||
+    g.toLowerCase().includes('weight') ||
+    g.toLowerCase().includes('energy')
+  );
+
+  if (healthGoals.length === 0) return null;
+
+  const prompt = `Generate a brief goal progress check-in. The user's goals include: ${healthGoals.join(', ')}.
+
+Their current metrics:
+- Sleep: ${ctx.ecosystemData.oura?.data?.avgSleepHours?.toFixed(1) || 'unknown'} hours
+- Recovery: ${ctx.ecosystemData.whoop?.data?.avgRecoveryScore ? Math.round(ctx.ecosystemData.whoop.data.avgRecoveryScore) + '%' : 'unknown'}
+- Strain: ${ctx.ecosystemData.whoop?.data?.avgStrainScore?.toFixed(1) || 'unknown'}
+
+Connect their data to one of their goals. Be encouraging and specific. One sentence max.`;
+
+  const message = await generatePersonalizedMessage(prompt, context);
+  if (!message) return null;
+
+  return {
+    type: 'goal_progress',
+    title: 'Goal Check-in',
     message,
     context_data: context,
   };
@@ -642,6 +864,35 @@ export async function processProactiveEngagement(
       return 0;
     }
 
+    // Fetch full user context (profile, labs, goals, conversation history) - MAX tier for full access
+    let userContext: UserContext | null = null;
+    let deepAnalysis: DeepContentAnalysis | null = null;
+
+    try {
+      userContext = await getUserContext(email, 'proactive engagement notification', {
+        subscriptionTier: 'max',
+        includeConversation: true,
+      });
+      console.log(`[Proactive Engagement] Got user context: profile=${!!userContext?.profile}, labs=${userContext?.labResults?.length || 0}, goals=${userContext?.profile?.goals?.length || 0}`);
+    } catch (e) {
+      console.error(`[Proactive Engagement] Error fetching user context:`, e);
+    }
+
+    // Fetch deep content analysis (tasks, urgency, interruptions) for work context
+    try {
+      deepAnalysis = await getCombinedDeepAnalysis(email);
+      console.log(`[Proactive Engagement] Got deep analysis: tasks=${deepAnalysis?.pendingTasks?.length || 0}, urgent=${deepAnalysis?.urgentMessages?.length || 0}`);
+    } catch (e) {
+      console.error(`[Proactive Engagement] Error fetching deep analysis:`, e);
+    }
+
+    // Create enriched context
+    const enrichedContext: EnrichedContext = {
+      ecosystemData,
+      userContext,
+      deepAnalysis,
+    };
+
     // Morning: Only send if there's something notable about their morning state
     if (timeOfDay === 'morning') {
       // Only send morning motivation if recovery is notably good OR bad (not average)
@@ -651,44 +902,70 @@ export async function processProactiveEngagement(
                               (readiness && (readiness >= 80 || readiness < 55));
 
       if (hasNotableState && await canSendNotificationType(email, 'morning_motivation', 24)) {
-        const motivation = await generateMorningMotivation(email, ecosystemData);
+        const motivation = await generateMorningMotivation(email, enrichedContext);
         if (motivation && await sendProactiveNotification(email, motivation)) {
           notificationsSent++;
+        }
+      }
+
+      // NEW: Check for biomarker-related morning reminders (e.g., vitamin D with breakfast)
+      if (notificationsSent === 0 && userContext?.labResults?.length) {
+        const biomarkerReminder = await generateBiomarkerReminder(email, enrichedContext, 'morning');
+        if (biomarkerReminder && await canSendNotificationType(email, 'biomarker_reminder', 48)) {
+          if (await sendProactiveNotification(email, biomarkerReminder)) {
+            notificationsSent++;
+          }
         }
       }
     }
 
     // Midday: Prioritize by importance, stop after sending one
     if (timeOfDay === 'midday' && await canSendMoreToday(email)) {
+      // Priority 0: Urgent tasks from deep analysis
+      if (notificationsSent === 0 && deepAnalysis?.pendingTasks?.length) {
+        const urgentTasks = deepAnalysis.pendingTasks.filter(t => t.urgency === 'critical' || t.urgency === 'high');
+        if (urgentTasks.length > 0 && await canSendNotificationType(email, 'challenge_encouragement', 12)) {
+          const taskReminder = await generateTaskReminder(email, enrichedContext, urgentTasks);
+          if (taskReminder && await sendProactiveNotification(email, taskReminder)) {
+            notificationsSent++;
+          }
+        }
+      }
+
       // Priority 1: Stress support - only if multiple stress signals detected
       // (the function already requires 2+ signals to return a notification)
       if (notificationsSent === 0 && await canSendNotificationType(email, 'stress_support', 24)) {
-        const support = await generateStressSupport(email, ecosystemData);
+        const support = await generateStressSupport(email, enrichedContext);
         if (support && await sendProactiveNotification(email, support)) {
           notificationsSent++;
         }
       }
 
-      // Priority 2: Achievement celebration - only if there's a real achievement
+      // Priority 2: Goal progress check - if user has goals
+      if (notificationsSent === 0 && userContext?.profile?.goals?.length && await canSendNotificationType(email, 'goal_progress', 48)) {
+        const goalProgress = await generateGoalProgress(email, enrichedContext);
+        if (goalProgress && await sendProactiveNotification(email, goalProgress)) {
+          notificationsSent++;
+        }
+      }
+
+      // Priority 3: Achievement celebration - only if there's a real achievement
       // (the function already checks for actual achievements)
       if (notificationsSent === 0 && await canSendNotificationType(email, 'achievement_celebration', 48)) {
-        const achievement = await generateAchievementCelebration(email, ecosystemData);
+        const achievement = await generateAchievementCelebration(email, enrichedContext);
         if (achievement && await sendProactiveNotification(email, achievement)) {
           notificationsSent++;
         }
       }
 
-      // Priority 3: Daily digest - only if there's noteworthy content
+      // Priority 4: Daily digest - only if there's noteworthy content
       // (the function returns null if nothing interesting)
       if (notificationsSent === 0 && await canSendNotificationType(email, 'daily_digest', 24)) {
-        const digest = await generateDailyDigest(email, ecosystemData);
+        const digest = await generateDailyDigest(email, enrichedContext);
         if (digest && await sendProactiveNotification(email, digest)) {
           notificationsSent++;
         }
       }
-
-      // Skip mindfulness - too generic, remove from regular rotation
-      // Only send mindfulness prompts in response to specific detected stress
     }
 
     // Evening: Only send if they had a demanding day or are working late
@@ -697,9 +974,10 @@ export async function processProactiveEngagement(
                               ecosystemData.whoop.data.avgStrainScore > 14;
       const workingLate = ecosystemData.gmail?.data?.emailVolume?.afterHoursPercentage &&
                           ecosystemData.gmail.data.emailVolume.afterHoursPercentage > 25;
+      const hasUnfinishedTasks = deepAnalysis?.pendingTasks?.filter(t => t.status === 'pending').length || 0;
 
-      if ((hadDemandingDay || workingLate) && await canSendNotificationType(email, 'evening_reflection', 24)) {
-        const reflection = await generateEveningReflection(email, ecosystemData);
+      if ((hadDemandingDay || workingLate || hasUnfinishedTasks > 0) && await canSendNotificationType(email, 'evening_reflection', 24)) {
+        const reflection = await generateEveningReflection(email, enrichedContext);
         if (reflection && await sendProactiveNotification(email, reflection)) {
           notificationsSent++;
         }

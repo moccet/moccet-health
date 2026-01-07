@@ -30,11 +30,13 @@ export class CalendarAgent extends BaseAgent {
       };
     }
 
-    if (context.slack?.focusMetrics) {
-      data.slackFocus = {
-        deepWorkWindows: context.slack.focusMetrics.deepWorkWindows,
-        longestFocusPeriod: context.slack.focusMetrics.longestFocusPeriod,
-        contextSwitchingScore: context.slack.focusMetrics.contextSwitchingScore,
+    // Include FULL Slack data for interruption analysis, not just focus metrics
+    if (context.slack) {
+      data.slack = {
+        messageVolume: context.slack.messageVolume,
+        collaborationIntensity: context.slack.collaborationIntensity,
+        stressIndicators: context.slack.stressIndicators,
+        focusMetrics: context.slack.focusMetrics,
       };
     }
 
@@ -77,21 +79,28 @@ YOUR EXPERTISE:
 AVAILABLE DATA:
 ${JSON.stringify(relevantData, null, 2)}
 
+CRITICAL INSIGHT - MEETINGS ≠ INTERRUPTIONS:
+A "meeting-free day" is NOT the same as an "interruption-free day". Look at BOTH:
+1. Calendar meetings (Gmail/Outlook data)
+2. Slack message volume and patterns
+
+If someone has meeting-free days BUT high Slack message volume, they still have NO true focus time.
+The real metric is: time without meetings AND without constant Slack messages.
+
 ANALYSIS INSTRUCTIONS:
 1. Calculate effective meeting load (% of work hours in meetings)
-2. Identify back-to-back meeting patterns
-3. Assess available focus time blocks (2+ hours uninterrupted)
-4. Look for meeting clustering vs. fragmentation
+2. CORRELATE meeting-free time with Slack activity - are "free" hours actually interrupted?
+3. Identify if high Slack volume is destroying meeting-free productivity
+4. Assess REAL focus time (low meetings AND low Slack interruptions)
 5. Consider recovery/readiness when suggesting schedule changes
-6. Recommend specific calendar interventions
+6. Recommend specific interventions that address BOTH calendar AND Slack
 
-KEY INSIGHTS TO PROVIDE:
-- Back-to-back meetings prevent mental recovery and reduce effectiveness
-- 2+ hour focus blocks are necessary for complex cognitive work
-- Meeting-free days improve weekly productivity by 30%+
-- Morning meetings can disrupt the highest-productivity hours (9-11am)
-- Energy follows recovery - schedule demanding meetings on high-recovery days
+KEY INSIGHTS:
+- Meeting-free days are worthless if Slack is constant
+- True deep work requires: no meetings + Slack DND + phone away
+- High "collaboration intensity" + meeting-free = still fragmented attention
+- Context switching from Slack is as costly as context switching from meetings
 
-Generate 1-2 high-quality insights about schedule optimization with specific meeting metrics.`;
+Generate 1-2 high-quality insights that account for BOTH meeting load AND Slack interruptions.`;
   }
 }

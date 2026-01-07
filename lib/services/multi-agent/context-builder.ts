@@ -3,7 +3,8 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { DataSource, UserContext } from './types';
+import { DataSource, UserContext, UserPreferences, LearnedPattern, PatternType, DeepContentContext } from './types';
+import { getCombinedDeepAnalysis } from '@/lib/services/deep-content-analyzer';
 
 /**
  * Build UserContext by fetching all available data for a user
@@ -207,6 +208,71 @@ export async function buildUserContext(email: string, userId?: string): Promise<
   }
 
   context.availableDataSources = availableDataSources;
+
+  // Fetch learned patterns from user feedback
+  try {
+    const userPreferences = await fetchUserPreferences(supabase, email);
+    if (userPreferences) {
+      context.userPreferences = userPreferences;
+      console.log('[ContextBuilder] Found user preferences from feedback');
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] No learned patterns:', e);
+  }
+
+  // Fetch recent feedback comments for additional context
+  try {
+    const recentComments = await fetchRecentFeedbackComments(supabase, email);
+    if (recentComments.length > 0) {
+      context.recentFeedbackComments = recentComments;
+      console.log(`[ContextBuilder] Found ${recentComments.length} recent feedback comments`);
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] No recent feedback:', e);
+  }
+
+  // Fetch deep content analysis (tasks, urgency, interruptions)
+  try {
+    const deepAnalysis = await getCombinedDeepAnalysis(email);
+    if (deepAnalysis && (deepAnalysis.pendingTasks.length > 0 || deepAnalysis.responseDebt.count > 0)) {
+      context.deepContent = {
+        pendingTasks: deepAnalysis.pendingTasks.map(t => ({
+          id: t.id,
+          description: t.description,
+          source: t.source,
+          requester: t.requester,
+          requesterRole: t.requesterRole,
+          deadline: t.deadline,
+          urgency: t.urgency,
+          urgencyScore: t.urgencyScore,
+          category: t.category,
+        })),
+        responseDebt: {
+          count: deepAnalysis.responseDebt.count,
+          highPriorityCount: deepAnalysis.responseDebt.highPriorityCount,
+          oldestPending: deepAnalysis.responseDebt.oldestPending,
+          messages: deepAnalysis.responseDebt.messages.slice(0, 5),
+        },
+        interruptionSummary: deepAnalysis.interruptionSummary,
+        keyPeople: deepAnalysis.keyPeople.map(p => ({
+          name: p.name,
+          relationship: p.relationship,
+          communicationFrequency: p.communicationFrequency,
+          avgUrgencyOfRequests: p.avgUrgencyOfRequests,
+        })),
+        activeThreads: deepAnalysis.activeThreads.slice(0, 5).map(t => ({
+          topic: t.topic,
+          urgency: t.urgency,
+          pendingActions: t.pendingActions,
+        })),
+        analyzedAt: deepAnalysis.analyzedAt,
+      };
+      console.log(`[ContextBuilder] Found deep content: ${deepAnalysis.pendingTasks.length} tasks, ${deepAnalysis.responseDebt.count} awaiting response`);
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] No deep content analysis:', e);
+  }
+
   console.log(`[ContextBuilder] Built context with ${availableDataSources.length} data sources`);
 
   return context;
@@ -215,4 +281,148 @@ export async function buildUserContext(email: string, userId?: string): Promise<
 function average(numbers: number[]): number {
   if (numbers.length === 0) return 0;
   return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+}
+
+/**
+ * Fetch and process learned patterns into UserPreferences
+ */
+async function fetchUserPreferences(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<UserPreferences | null> {
+  // First get the user ID from email
+  const { data: userData } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (!userData?.id) {
+    // Try auth.users table as fallback
+    const { data: authData } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (!authData?.id) return null;
+  }
+
+  const userId = userData?.id;
+
+  // Fetch learned patterns
+  const { data: patterns } = await supabase
+    .from('learned_patterns')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('confidence', 0.5) // Only patterns with reasonable confidence
+    .order('last_updated', { ascending: false });
+
+  if (!patterns || patterns.length === 0) return null;
+
+  // Process patterns into UserPreferences
+  const avoidances: UserPreferences['avoidances'] = [];
+  const preferences: UserPreferences['preferences'] = [];
+  const typicalModifications: UserPreferences['typicalModifications'] = [];
+  const constraints: UserPreferences['constraints'] = [];
+
+  for (const pattern of patterns) {
+    const patternType = pattern.pattern_type as PatternType;
+    const conditions = pattern.conditions as Record<string, unknown>;
+
+    switch (patternType) {
+      case 'avoidance':
+        avoidances.push({
+          taskType: pattern.task_type,
+          reason: conditions.reason as string | undefined,
+          confidence: pattern.confidence,
+        });
+        break;
+
+      case 'preference':
+        preferences.push({
+          taskType: pattern.task_type,
+          preferredTime: conditions.preferred_time as string | undefined,
+          confidence: pattern.confidence,
+        });
+        break;
+
+      case 'timing':
+        preferences.push({
+          taskType: pattern.task_type,
+          preferredTime: conditions.preferred_time as string | undefined,
+          confidence: pattern.confidence,
+        });
+        break;
+
+      case 'modification':
+        const mods = conditions.modifications as string[] | undefined;
+        const commonMods = conditions.common_modifications as Record<string, unknown> | undefined;
+        if (mods && mods.length > 0) {
+          typicalModifications.push({
+            taskType: pattern.task_type,
+            modification: mods[mods.length - 1], // Most recent modification
+            confidence: pattern.confidence,
+          });
+        }
+        if (commonMods?.common_keywords) {
+          typicalModifications.push({
+            taskType: pattern.task_type,
+            modification: `Common themes: ${(commonMods.common_keywords as string[]).join(', ')}`,
+            confidence: pattern.confidence,
+          });
+        }
+        break;
+    }
+  }
+
+  // Only return if we have meaningful preferences
+  if (avoidances.length === 0 && preferences.length === 0 &&
+      typicalModifications.length === 0 && constraints.length === 0) {
+    return null;
+  }
+
+  return {
+    avoidances,
+    preferences,
+    typicalModifications,
+    constraints,
+  };
+}
+
+/**
+ * Fetch recent feedback comments that provide context
+ */
+async function fetchRecentFeedbackComments(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<Array<{ taskType: string; action: string; comment: string; timestamp: Date }>> {
+  // First get the user ID from email
+  const { data: userData } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (!userData?.id) return [];
+
+  // Fetch recent feedback with comments
+  const { data: feedback } = await supabase
+    .from('user_feedback')
+    .select('task_type, action, user_comment, timestamp')
+    .eq('user_id', userData.id)
+    .not('user_comment', 'is', null)
+    .order('timestamp', { ascending: false })
+    .limit(10);
+
+  if (!feedback) return [];
+
+  return feedback
+    .filter((f) => f.user_comment && f.user_comment.trim().length > 0)
+    .map((f) => ({
+      taskType: f.task_type,
+      action: f.action,
+      comment: f.user_comment!,
+      timestamp: new Date(f.timestamp),
+    }));
 }

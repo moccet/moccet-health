@@ -22,6 +22,8 @@ import {
   GoalStatus,
   GoalCategory,
 } from '@/lib/services/goals-service';
+import { syncGoalProgress, getCurrentMetrics } from '@/lib/services/goal-progress-sync';
+import { generateGoalSuggestions, getSuggestionForInsight } from '@/lib/services/goal-suggestion-service';
 
 /**
  * GET /api/user/goals
@@ -34,6 +36,11 @@ import {
  * - context: If 'true', return AI prompt context instead of goals
  * - templates: If 'true', return goal templates for a category
  * - metrics: If 'true', return available metrics for a category
+ * - current_metrics: If 'true', return current health metric values
+ * - sync: If 'true', sync progress from health data before returning goals
+ * - suggestions: If 'true', return AI-generated personalized goal suggestions
+ * - suggestion_category: Category to prioritize for suggestions (e.g., 'SLEEP')
+ * - suggestion_insight_id: If provided with suggestions, link suggestion to this insight
  * - limit: Max number of goals to return
  */
 export async function GET(request: NextRequest) {
@@ -47,6 +54,53 @@ export async function GET(request: NextRequest) {
     const getContext = searchParams.get('context') === 'true';
     const getTemplates = searchParams.get('templates') === 'true';
     const getMetrics = searchParams.get('metrics') === 'true';
+    const getMetricsValues = searchParams.get('current_metrics') === 'true';
+    const shouldSync = searchParams.get('sync') === 'true';
+
+    // Return current health metric values
+    if (getMetricsValues && email) {
+      const currentMetrics = await getCurrentMetrics(email);
+      return NextResponse.json({
+        success: true,
+        metrics: currentMetrics,
+      });
+    }
+
+    // Return AI-generated personalized goal suggestions
+    const getSuggestions = searchParams.get('suggestions') === 'true';
+    const suggestionCategory = searchParams.get('suggestion_category');
+    const suggestionInsightId = searchParams.get('suggestion_insight_id');
+
+    if (getSuggestions && email) {
+      try {
+        let suggestions;
+        if (suggestionInsightId && suggestionCategory) {
+          // Get single suggestion for a specific insight
+          const suggestion = await getSuggestionForInsight(email, suggestionCategory, suggestionInsightId);
+          suggestions = suggestion ? [suggestion] : [];
+        } else {
+          // Get general suggestions, optionally prioritizing a category
+          suggestions = await generateGoalSuggestions(
+            email,
+            parseInt(searchParams.get('limit') || '3'),
+            suggestionCategory || undefined
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          suggestions,
+          count: suggestions.length,
+        });
+      } catch (e) {
+        console.error('[Goals API] Suggestion generation error:', e);
+        return NextResponse.json({
+          success: true,
+          suggestions: [],
+          count: 0,
+          error: 'Failed to generate suggestions',
+        });
+      }
+    }
 
     // Return goal templates
     if (getTemplates) {
@@ -96,6 +150,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Sync progress from health data if requested or for active goals
+    let syncResults = null;
+    if (shouldSync || status === 'active') {
+      try {
+        syncResults = await syncGoalProgress(email);
+        console.log(`[Goals API] Synced ${syncResults.filter(r => r.updated).length} goals`);
+      } catch (e) {
+        console.error('[Goals API] Sync error:', e);
+      }
+    }
+
     // Standard query
     const goals = await getGoals(email, {
       status: status || undefined,
@@ -107,6 +172,7 @@ export async function GET(request: NextRequest) {
       success: true,
       goals,
       count: goals.length,
+      synced: syncResults ? syncResults.filter(r => r.updated).length : 0,
     });
   } catch (error) {
     console.error('[Goals API] GET error:', error);

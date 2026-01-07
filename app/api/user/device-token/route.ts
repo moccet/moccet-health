@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import {
   registerDeviceTokenSchema,
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     const { email, device_token, platform, provider } = validation.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Upsert the device token (insert or update if exists)
     const { error } = await supabase
@@ -95,7 +95,7 @@ export async function DELETE(request: NextRequest) {
 
     const { email, device_token } = validation.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Mark the token as inactive instead of deleting
     const { error } = await supabase
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     const { email } = validation.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('user_device_tokens')

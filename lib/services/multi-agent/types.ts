@@ -214,8 +214,88 @@ export interface UserContext {
   // Life context for deep analysis
   lifeContext?: LifeContext;
 
+  // Learned preferences from user feedback
+  userPreferences?: UserPreferences;
+
+  // Recent feedback comments for context
+  recentFeedbackComments?: Array<{
+    taskType: string;
+    action: string;
+    comment: string;
+    timestamp: Date;
+  }>;
+
+  // Deep content analysis from Gmail/Slack
+  deepContent?: DeepContentContext;
+
   // Available data sources
   availableDataSources: DataSource[];
+}
+
+// ============================================================
+// DEEP CONTENT ANALYSIS CONTEXT
+// ============================================================
+
+export interface ExtractedTask {
+  id: string;
+  description: string;
+  source: 'gmail' | 'slack';
+  requester?: string;
+  requesterRole?: 'manager' | 'peer' | 'direct_report' | 'external' | 'unknown';
+  deadline?: string;
+  urgency: 'critical' | 'high' | 'medium' | 'low';
+  urgencyScore: number;
+  category: 'review' | 'respond' | 'create' | 'meeting' | 'decision' | 'info' | 'other';
+}
+
+export interface ResponseDebt {
+  count: number;
+  highPriorityCount: number;
+  oldestPending: string;
+  messages: Array<{
+    from: string;
+    summary: string;
+    urgency: string;
+  }>;
+}
+
+export interface InterruptionSummary {
+  totalInterruptions: number;
+  urgentInterruptions: number;
+  avgInterruptionsPerDay: number;
+  peakInterruptionHours: string[];
+  topInterrupters: string[];
+}
+
+export interface KeyPerson {
+  name: string;
+  relationship: 'manager' | 'peer' | 'direct_report' | 'external' | 'unknown';
+  communicationFrequency: 'daily' | 'weekly' | 'monthly' | 'rare';
+  avgUrgencyOfRequests: number;
+}
+
+export interface DeepContentContext {
+  // Tasks extracted from messages
+  pendingTasks: ExtractedTask[];
+
+  // Messages awaiting response
+  responseDebt: ResponseDebt;
+
+  // Interruption patterns
+  interruptionSummary: InterruptionSummary;
+
+  // Key communication partners
+  keyPeople: KeyPerson[];
+
+  // Active threads needing attention
+  activeThreads: Array<{
+    topic: string;
+    urgency: 'high' | 'medium' | 'low';
+    pendingActions: string[];
+  }>;
+
+  // When this was analyzed
+  analyzedAt: string;
 }
 
 // Data type interfaces (simplified - actual types may be more complex)
@@ -387,4 +467,51 @@ export interface LifeContext {
     ongoingChallenges?: string[];
     teamDynamics?: string;
   };
+}
+
+// ============================================================
+// LEARNED PATTERNS FROM USER FEEDBACK
+// ============================================================
+
+export type PatternType = 'preference' | 'avoidance' | 'timing' | 'modification' | 'trigger';
+
+export interface LearnedPattern {
+  id: string;
+  userId: string;
+  taskType: string;
+  patternType: PatternType;
+  conditions: Record<string, unknown>;
+  confidence: number;
+  sampleCount: number;
+  lastUpdated: Date;
+}
+
+export interface UserConstraint {
+  type: string;
+  description: string;
+  source: 'feedback' | 'explicit' | 'inferred';
+  confidence: number;
+}
+
+export interface UserPreferences {
+  // Things the user consistently rejects
+  avoidances: Array<{
+    taskType: string;
+    reason?: string;
+    confidence: number;
+  }>;
+  // Things the user prefers
+  preferences: Array<{
+    taskType: string;
+    preferredTime?: string;
+    confidence: number;
+  }>;
+  // Common modifications user makes
+  typicalModifications: Array<{
+    taskType: string;
+    modification: string;
+    confidence: number;
+  }>;
+  // Explicit constraints from user comments
+  constraints: UserConstraint[];
 }

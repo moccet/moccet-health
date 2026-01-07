@@ -8,6 +8,10 @@ import {
   analyzeSlackForLifeContext,
   mergeAndStoreLifeContext,
 } from '@/lib/services/content-sentiment-analyzer';
+import {
+  analyzeSlackDeepContent,
+  storeDeepContentAnalysis,
+} from '@/lib/services/deep-content-analyzer';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -798,6 +802,40 @@ export async function POST(request: NextRequest) {
     } catch (sentimentError) {
       console.error('[Slack Fetch] Content analysis error:', sentimentError);
       // Don't fail the whole request if analysis fails
+    }
+
+    // =====================================================
+    // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
+    // =====================================================
+    try {
+      // Prepare messages for deep analysis
+      const messagesForDeepAnalysis = messageData
+        .filter(m => m.text && m.text.trim().length > 0)
+        .slice(0, 50)
+        .map((m, i) => ({
+          id: `slack_${i}_${m.timestamp}`,
+          text: m.text!,
+          user: '', // We have channelId but not user ID readily available here
+          userName: '', // Would need to map from userMap
+          channel: m.channelId,
+          channelName: m.channelName,
+          timestamp: m.timestamp,
+          isAfterHours: m.isAfterHours,
+          threadTs: undefined,
+          mentions: m.mentions,
+        }));
+
+      if (messagesForDeepAnalysis.length >= 5) {
+        console.log(`[Slack Fetch] Running deep content analysis on ${messagesForDeepAnalysis.length} messages`);
+
+        const deepAnalysis = await analyzeSlackDeepContent(messagesForDeepAnalysis, currentUserId);
+        await storeDeepContentAnalysis(email, deepAnalysis);
+
+        console.log(`[Slack Fetch] Deep content analysis complete: ${deepAnalysis.pendingTasks.length} tasks, ${deepAnalysis.responseDebt.count} response debt`);
+      }
+    } catch (deepContentError) {
+      // Don't fail the entire request if deep analysis fails
+      console.error('[Slack Fetch] Deep content analysis error (non-fatal):', deepContentError);
     }
 
     // Calculate metrics

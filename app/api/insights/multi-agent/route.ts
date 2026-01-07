@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { MultiAgentOrchestrator } from '@/lib/services/multi-agent/orchestrator';
+import { CoordinatorOrchestrator } from '@/lib/services/multi-agent/coordinator-orchestrator';
 import { buildUserContext } from '@/lib/services/multi-agent/context-builder';
 import { ExecutionMode } from '@/lib/services/multi-agent/types';
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, userId, mode = 'standard', maxInsights = 5 } = body;
+    const { email, userId, mode = 'standard', maxInsights = 5, version = 'v1' } = body;
 
     // Validate required fields
     if (!email) {
@@ -34,7 +35,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[MultiAgent API] Request for ${email} (mode: ${mode}, maxInsights: ${maxInsights})`);
+    // Validate version
+    const validVersions = ['v1', 'v2'];
+    if (!validVersions.includes(version)) {
+      return NextResponse.json(
+        { error: `version must be one of: ${validVersions.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    const useCoordinators = version === 'v2';
+    console.log(`[MultiAgent API] Request for ${email} (mode: ${mode}, version: ${version}, maxInsights: ${maxInsights})`);
 
     // Get OpenAI API key
     const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -80,24 +91,49 @@ export async function POST(request: NextRequest) {
     }
 
     // Create orchestrator and generate insights
-    console.log('[MultiAgent API] Running orchestrator...');
-    const orchestrator = new MultiAgentOrchestrator(openaiApiKey);
-    const result = await orchestrator.generateInsights(context, mode, maxInsights);
+    console.log(`[MultiAgent API] Running ${useCoordinators ? 'Coordinator' : 'Flat'} orchestrator...`);
+
+    let result;
+    if (useCoordinators) {
+      // v2: Coordinator-based hierarchical system
+      const orchestrator = new CoordinatorOrchestrator(openaiApiKey);
+      result = await orchestrator.generateInsights(context, mode, maxInsights);
+    } else {
+      // v1: Original flat agent system
+      const orchestrator = new MultiAgentOrchestrator(openaiApiKey);
+      result = await orchestrator.generateInsights(context, mode, maxInsights);
+    }
 
     console.log(`[MultiAgent API] Complete: ${result.finalInsights.length} insights in ${result.totalProcessingTimeMs}ms`);
+
+    // Build response metadata
+    const metadata: Record<string, unknown> = {
+      mode: result.mode,
+      version,
+      agentsRun: result.agentFindings.length,
+      agentNames: result.agentFindings.map((f) => f.agentName),
+      crossDomainInsights: result.crossDomainInsights.length,
+      conflictsDetected: result.conflicts?.length || 0,
+      conflictsResolved: result.resolutions?.length || 0,
+      apiCallsUsed: result.apiCallsUsed,
+      processingTimeMs: result.totalProcessingTimeMs,
+      availableDataSources: context.availableDataSources,
+    };
+
+    // Add coordinator-specific metadata for v2
+    if (useCoordinators && 'coordinatorResults' in result) {
+      metadata.coordinators = result.coordinatorResults;
+    }
+
+    // Add consensus validation results for v2
+    if (useCoordinators && 'consensusResults' in result) {
+      metadata.consensusValidation = result.consensusResults;
+    }
 
     return NextResponse.json({
       success: true,
       insights: result.finalInsights,
-      metadata: {
-        mode: result.mode,
-        agentsRun: result.agentFindings.length,
-        agentNames: result.agentFindings.map((f) => f.agentName),
-        crossDomainInsights: result.crossDomainInsights.length,
-        apiCallsUsed: result.apiCallsUsed,
-        processingTimeMs: result.totalProcessingTimeMs,
-        availableDataSources: context.availableDataSources,
-      },
+      metadata,
     });
   } catch (error) {
     console.error('[MultiAgent API] Error:', error);

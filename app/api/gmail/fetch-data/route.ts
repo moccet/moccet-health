@@ -10,6 +10,10 @@ import {
   analyzeEmailsForLifeContext,
   storeLifeContext,
 } from '@/lib/services/content-sentiment-analyzer';
+import {
+  analyzeGmailDeepContent,
+  storeDeepContentAnalysis,
+} from '@/lib/services/deep-content-analyzer';
 
 // Validation function to test if Gmail token is valid
 async function validateGmailToken(token: string): Promise<boolean> {
@@ -900,6 +904,36 @@ export async function POST(request: NextRequest) {
     } catch (sentimentError) {
       // Don't fail the entire request if analysis fails
       console.error('[Gmail Fetch] Content analysis error (non-fatal):', sentimentError);
+    }
+
+    // =====================================================
+    // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
+    // =====================================================
+    try {
+      // Prepare emails for deep analysis
+      const emailsForDeepAnalysis = emailData
+        .filter(e => e.subject && e.subject.trim().length > 0)
+        .slice(0, 50)
+        .map((e, i) => ({
+          id: `gmail_${i}`,
+          subject: e.subject!,
+          snippet: '', // We don't fetch snippets currently, but could add
+          from: '', // We don't fetch sender currently, would need to add
+          timestamp: e.timestamp,
+          isAfterHours: e.isAfterHours,
+        }));
+
+      if (emailsForDeepAnalysis.length >= 5) {
+        console.log(`[Gmail Fetch] Running deep content analysis on ${emailsForDeepAnalysis.length} emails`);
+
+        const deepAnalysis = await analyzeGmailDeepContent(emailsForDeepAnalysis, email);
+        await storeDeepContentAnalysis(email, deepAnalysis);
+
+        console.log(`[Gmail Fetch] Deep content analysis complete: ${deepAnalysis.pendingTasks.length} tasks, ${deepAnalysis.responseDebt.count} response debt`);
+      }
+    } catch (deepContentError) {
+      // Don't fail the entire request if deep analysis fails
+      console.error('[Gmail Fetch] Deep content analysis error (non-fatal):', deepContentError);
     }
 
     // Calculate metrics

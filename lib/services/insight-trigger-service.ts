@@ -2175,7 +2175,7 @@ Generate insights that make premium users feel like they're getting genuine valu
 // ============================================================================
 
 /**
- * Check if a similar insight was already generated recently (within 24 hours)
+ * Check if a similar insight was already generated recently (within 7 days)
  * to prevent repetitive/duplicate insights
  */
 async function isDuplicateInsight(
@@ -2184,7 +2184,7 @@ async function isDuplicateInsight(
   insightType: string,
   title: string
 ): Promise<boolean> {
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data } = await supabase
     .from('real_time_insights')
@@ -2192,7 +2192,7 @@ async function isDuplicateInsight(
     .eq('email', email)
     .eq('insight_type', insightType)
     .ilike('title', `%${title.substring(0, 30)}%`) // Match on first 30 chars of title
-    .gte('created_at', twentyFourHoursAgo)
+    .gte('created_at', sevenDaysAgo)
     .is('dismissed_at', null) // Don't count dismissed insights
     .limit(1);
 

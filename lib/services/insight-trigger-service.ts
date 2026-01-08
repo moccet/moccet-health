@@ -2176,49 +2176,52 @@ Generate insights that make premium users feel like they're getting genuine valu
 
 /**
  * Check if a similar insight was already generated recently (within 7 days)
- * to prevent repetitive/duplicate insights
+ * to prevent repetitive recommendations
  *
- * Checks multiple criteria:
- * 1. Same insight_type in the last 7 days
- * 2. Similar title keywords
- * 3. Similar message content keywords
+ * Focus: Prevent the same ACTIONABLE ADVICE from being repeated.
+ * It's OK to mention the same health topics as supporting data,
+ * but not OK to repeatedly tell someone "take magnesium" or "supplement iron".
  */
 async function isDuplicateInsight(
   supabase: any,
   email: string,
   insightType: string,
   title: string,
-  message?: string
+  message?: string,
+  recommendation?: string
 ): Promise<boolean> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Check 1: Same insight type in last 7 days (most aggressive)
-  const { data: typeMatch } = await supabase
+  // Check 1: Exact same title in last 7 days
+  const { data: titleMatch } = await supabase
     .from('real_time_insights')
     .select('id')
     .eq('email', email)
-    .eq('insight_type', insightType)
+    .ilike('title', title)
     .gte('created_at', sevenDaysAgo)
     .is('dismissed_at', null)
     .limit(1);
 
-  if ((typeMatch?.length ?? 0) > 0) {
+  if ((titleMatch?.length ?? 0) > 0) {
     return true;
   }
 
-  // Check 2: Extract key topics from title and check for similar topics
-  const titleKeywords = extractKeywords(title);
-  for (const keyword of titleKeywords) {
-    const { data: keywordMatch } = await supabase
+  // Check 2: Extract actionable recommendations and check for duplicates
+  // This is the key - we want to prevent repeated advice, not repeated topics
+  const actionKeywords = extractActionableKeywords(recommendation || message || title);
+
+  for (const keyword of actionKeywords) {
+    const { data: actionMatch } = await supabase
       .from('real_time_insights')
       .select('id')
       .eq('email', email)
-      .or(`title.ilike.%${keyword}%,message.ilike.%${keyword}%`)
+      .or(`actionable_recommendation.ilike.%${keyword}%,message.ilike.%${keyword}%`)
       .gte('created_at', sevenDaysAgo)
       .is('dismissed_at', null)
       .limit(1);
 
-    if ((keywordMatch?.length ?? 0) > 0) {
+    if ((actionMatch?.length ?? 0) > 0) {
+      logger.info('Blocking duplicate recommendation', { email, keyword });
       return true;
     }
   }
@@ -2227,33 +2230,50 @@ async function isDuplicateInsight(
 }
 
 /**
- * Extract important keywords from text for deduplication matching
- * Focuses on health-related terms that indicate the topic
+ * Extract actionable recommendation keywords
+ * These are specific actions/supplements/behaviors that shouldn't be repeated
  */
-function extractKeywords(text: string): string[] {
+function extractActionableKeywords(text: string): string[] {
+  if (!text) return [];
   const lowered = text.toLowerCase();
 
-  // Health topic keywords to check for
-  const healthTopics = [
-    'blood', 'glucose', 'sugar', 'insulin', 'a1c', 'hemoglobin',
-    'sleep', 'rest', 'insomnia', 'fatigue', 'tired',
-    'heart', 'hrv', 'cardiovascular', 'resting heart',
-    'stress', 'cortisol', 'anxiety', 'burnout',
-    'vitamin', 'iron', 'b12', 'folate', 'magnesium', 'zinc',
-    'cholesterol', 'ldl', 'hdl', 'triglyceride',
-    'thyroid', 'tsh', 't3', 't4',
-    'liver', 'kidney', 'creatinine',
-    'inflammation', 'crp', 'ferritin',
-    'recovery', 'strain', 'workout', 'exercise',
-    'weight', 'bmi', 'body composition',
-    'hydration', 'water',
-    'protein', 'carbs', 'fat', 'nutrition', 'diet',
+  // Supplement/medication recommendations - block repeats of these
+  const supplementActions = [
+    'magnesium supplement', 'take magnesium', 'magnesium citrate', 'magnesium glycinate',
+    'iron supplement', 'take iron', 'iron intake',
+    'vitamin d', 'take vitamin d', 'vitamin d3',
+    'vitamin b12', 'take b12', 'b12 supplement',
+    'zinc supplement', 'take zinc',
+    'omega-3', 'fish oil', 'take omega',
+    'melatonin', 'take melatonin',
+    'probiotics', 'take probiotics',
+    'creatine', 'take creatine',
+    'electrolytes', 'electrolyte supplement',
   ];
 
+  // Behavioral recommendations - block repeats of these
+  const behaviorActions = [
+    'reduce caffeine', 'cut caffeine', 'limit caffeine',
+    'earlier bedtime', 'go to bed earlier', 'sleep earlier',
+    'morning sunlight', 'get morning sun', 'sunlight exposure',
+    'reduce screen time', 'limit screen', 'blue light',
+    'meditation', 'try meditation', 'practice meditation',
+    'breathing exercises', 'deep breathing',
+    'cold shower', 'cold exposure',
+    'reduce alcohol', 'limit alcohol', 'cut alcohol',
+    'increase protein', 'eat more protein', 'protein intake',
+    'reduce sugar', 'limit sugar', 'cut sugar',
+    'drink more water', 'increase water', 'stay hydrated',
+  ];
+
+  const allActions = [...supplementActions, ...behaviorActions];
   const found: string[] = [];
-  for (const topic of healthTopics) {
-    if (lowered.includes(topic)) {
-      found.push(topic);
+
+  for (const action of allActions) {
+    if (lowered.includes(action)) {
+      // Use a shorter version for matching
+      const shortAction = action.split(' ').slice(0, 2).join(' ');
+      found.push(shortAction);
     }
   }
 
@@ -2267,13 +2287,14 @@ function extractKeywords(text: string): string[] {
 async function storeInsight(email: string, insight: GeneratedInsight): Promise<string | null> {
   const supabase = await createClient();
 
-  // Check for duplicate insight in last 7 days (by type, title, and content)
+  // Check for duplicate insight in last 7 days (by title and actionable recommendations)
   const isDuplicate = await isDuplicateInsight(
     supabase,
     email,
     insight.insight_type,
     insight.title,
-    insight.message
+    insight.message,
+    insight.actionable_recommendation
   );
 
   if (isDuplicate) {

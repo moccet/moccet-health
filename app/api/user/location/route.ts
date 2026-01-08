@@ -29,48 +29,71 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Upsert into user_device_context table
-    // This table is used by insight generation for location context
-    const { error } = await supabase
+    // Check if user already has a device context record
+    const { data: existingDevice } = await supabase
       .from('user_device_context')
-      .upsert(
-        {
+      .select('id')
+      .eq('email', email)
+      .limit(1)
+      .single();
+
+    if (existingDevice) {
+      // Update existing record
+      const { error } = await supabase
+        .from('user_device_context')
+        .update({
+          timezone: timezone || 'UTC',
+          timezone_offset: timezone_offset || 0,
+          locale: location,
+          synced_at: new Date().toISOString(),
+        })
+        .eq('email', email);
+
+      if (error) {
+        logger.error('Error updating user location', { error, email });
+        return NextResponse.json(
+          { error: 'Failed to update location', details: error.message },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Insert new record
+      const { error } = await supabase
+        .from('user_device_context')
+        .insert({
           email,
           timezone: timezone || 'UTC',
           timezone_offset: timezone_offset || 0,
-          locale: location, // Store full location string in locale field
+          locale: location,
           synced_at: new Date().toISOString(),
           travel_detected: false,
-        },
-        {
-          onConflict: 'email',
-        }
-      );
+        });
 
-    if (error) {
-      logger.error('Error storing user location', { error, email });
-      return NextResponse.json(
-        { error: 'Failed to store location', details: error.message },
-        { status: 500 }
-      );
+      if (error) {
+        logger.error('Error inserting user location', { error, email });
+        return NextResponse.json(
+          { error: 'Failed to store location', details: error.message },
+          { status: 500 }
+        );
+      }
     }
 
-    // Also store in user_travel_context for more detailed location tracking
-    await supabase.from('user_travel_context').upsert(
-      {
-        email,
-        current_timezone: timezone || 'UTC',
-        timezone_offset_change: 0,
-        estimated_location: location,
-        travel_type: 'home', // User's home/preferred location
-        insights_generated: false,
-        created_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'email',
-        ignoreDuplicates: false,
-      }
-    );
+    // Also update travel context - delete old and insert new
+    await supabase
+      .from('user_travel_context')
+      .delete()
+      .eq('email', email)
+      .eq('travel_type', 'home');
+
+    await supabase.from('user_travel_context').insert({
+      email,
+      current_timezone: timezone || 'UTC',
+      timezone_offset_change: 0,
+      estimated_location: location,
+      travel_type: 'home',
+      insights_generated: false,
+      created_at: new Date().toISOString(),
+    });
 
     logger.info('User location updated', { email, location, timezone });
 

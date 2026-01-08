@@ -136,6 +136,15 @@ async function getUserLocationContext(email: string): Promise<UserLocationContex
     .limit(1)
     .single();
 
+  // Check if locale contains explicit location (e.g., "Kyoto, Japan")
+  if (deviceData?.locale && deviceData.locale.includes(',')) {
+    return {
+      location: deviceData.locale,
+      timezone: deviceData.timezone,
+      isTravel: false,
+    };
+  }
+
   if (deviceData?.timezone) {
     // Map common timezones to approximate locations
     const timezoneLocationMap: Record<string, string> = {

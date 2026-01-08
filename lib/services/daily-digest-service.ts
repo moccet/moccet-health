@@ -281,46 +281,46 @@ class DailyDigestServiceClass {
    * Get notification title based on content
    */
   private getNotificationTitle(item: DigestItem): string {
-    const titles = [
-      'Your daily wisdom is ready',
-      'Fresh insights for you',
-      "Today's wisdom",
-      'Something to ponder',
-      'Daily dose of wisdom',
-    ];
+    // Use the actual title from the wisdom entry for more context
+    // But keep it concise for push notification
+    let title = item.title;
 
-    // Vary based on category
-    switch (item.category) {
-      case 'self_development':
-        return 'Grow today';
-      case 'fitness':
-        return 'Fuel your workout';
-      case 'cooking':
-        return 'Kitchen wisdom';
-      case 'productivity':
-        return 'Work smarter';
-      case 'life_advice':
-        return 'Life insight';
-      default:
-        return titles[Math.floor(Math.random() * titles.length)];
+    // Truncate if too long for a notification title
+    if (title.length > 50) {
+      title = title.substring(0, 47) + '...';
     }
+
+    return title;
   }
 
   /**
-   * Get notification body
+   * Get notification body - now includes actionable content
    */
   private getNotificationBody(digest: DailyDigest): string {
     const item = digest.items[0];
 
-    // Truncate title if needed
-    let body = item.title;
-    if (body.length > 50) {
-      body = body.substring(0, 47) + '...';
+    // Build a more in-depth notification body
+    let body = '';
+
+    // Use actionable tip if available (most valuable for user)
+    if (item.actionableTip) {
+      body = item.actionableTip;
+    } else if (item.content) {
+      // Fall back to content
+      body = item.content;
+    } else {
+      // Last resort: use title
+      body = item.title;
     }
 
-    // Add source if available
-    if (item.source) {
-      body += ` — ${item.source}`;
+    // Truncate to reasonable push notification length (150 chars for readability)
+    if (body.length > 150) {
+      body = body.substring(0, 147) + '...';
+    }
+
+    // Add source attribution on new line if space allows
+    if (item.source && body.length < 120) {
+      body += `\n— ${item.source}`;
     }
 
     return body;

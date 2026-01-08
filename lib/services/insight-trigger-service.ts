@@ -95,6 +95,93 @@ export interface BaselineChange {
 }
 
 /**
+ * User location context for location-aware insights
+ */
+interface UserLocationContext {
+  location: string | null; // e.g., "Kyoto, Japan" or "Paris, France"
+  timezone: string | null;
+  isTravel: boolean;
+}
+
+/**
+ * Fetch user's current location from device context and travel context
+ * Used to generate location-aware, personalized insights
+ */
+async function getUserLocationContext(email: string): Promise<UserLocationContext> {
+  const supabase = await createClient();
+
+  // First, check for explicit travel context with estimated location
+  const { data: travelData } = await supabase
+    .from('user_travel_context')
+    .select('estimated_location, current_timezone')
+    .eq('email', email)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (travelData?.estimated_location) {
+    return {
+      location: travelData.estimated_location,
+      timezone: travelData.current_timezone,
+      isTravel: true,
+    };
+  }
+
+  // Fall back to device context for timezone-based location inference
+  const { data: deviceData } = await supabase
+    .from('user_device_context')
+    .select('timezone, locale')
+    .eq('email', email)
+    .order('synced_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (deviceData?.timezone) {
+    // Map common timezones to approximate locations
+    const timezoneLocationMap: Record<string, string> = {
+      'Asia/Tokyo': 'Japan',
+      'Asia/Seoul': 'South Korea',
+      'Asia/Shanghai': 'China',
+      'Asia/Hong_Kong': 'Hong Kong',
+      'Asia/Singapore': 'Singapore',
+      'Asia/Bangkok': 'Thailand',
+      'Asia/Jakarta': 'Indonesia',
+      'Asia/Kolkata': 'India',
+      'Asia/Dubai': 'UAE',
+      'Europe/London': 'United Kingdom',
+      'Europe/Paris': 'France',
+      'Europe/Berlin': 'Germany',
+      'Europe/Rome': 'Italy',
+      'Europe/Madrid': 'Spain',
+      'Europe/Amsterdam': 'Netherlands',
+      'Europe/Stockholm': 'Sweden',
+      'Europe/Zurich': 'Switzerland',
+      'America/New_York': 'Eastern United States',
+      'America/Chicago': 'Central United States',
+      'America/Denver': 'Mountain United States',
+      'America/Los_Angeles': 'Western United States',
+      'America/Toronto': 'Canada',
+      'America/Mexico_City': 'Mexico',
+      'America/Sao_Paulo': 'Brazil',
+      'America/Buenos_Aires': 'Argentina',
+      'Australia/Sydney': 'Australia',
+      'Australia/Melbourne': 'Australia',
+      'Pacific/Auckland': 'New Zealand',
+    };
+
+    const inferredLocation = timezoneLocationMap[deviceData.timezone] || null;
+
+    return {
+      location: inferredLocation,
+      timezone: deviceData.timezone,
+      isTravel: false,
+    };
+  }
+
+  return { location: null, timezone: null, isTravel: false };
+}
+
+/**
  * Combined data from all connectors for cross-source analysis
  */
 interface AllConnectorData {
@@ -1623,6 +1710,26 @@ async function generateAIInsights(
       }
     }
 
+    // Location Context - Fetch user's current location for location-aware insights
+    const locationContext = await getUserLocationContext(email);
+    if (locationContext.location) {
+      const locationParts: string[] = [];
+      locationParts.push(`Current Location: ${locationContext.location}`);
+      if (locationContext.timezone) locationParts.push(`Timezone: ${locationContext.timezone}`);
+      if (locationContext.isTravel) locationParts.push(`Status: Currently traveling`);
+
+      locationParts.push('');
+      locationParts.push('**IMPORTANT: Tailor your recommendations to this location:**');
+      locationParts.push('- Consider local climate and seasonal factors');
+      locationParts.push('- Reference locally available foods and ingredients');
+      locationParts.push('- Suggest activities appropriate for the region');
+      locationParts.push('- Account for cultural wellness practices if relevant');
+
+      contextSections.push(`## Location Context\n${locationParts.join('\n')}`);
+
+      logger.info('Added location context to insights', { email, location: locationContext.location });
+    }
+
     // Learned Facts - Things the user explicitly told us via insight feedback
     // CRITICAL: These should inform all insights (e.g., "works night shifts" means don't criticize late sleep)
     if (userContext?.learnedFacts && userContext.learnedFacts.length > 0) {
@@ -2059,10 +2166,53 @@ Generate insights that make premium users feel like they're getting genuine valu
 // ============================================================================
 
 /**
+ * Check if a similar insight was already generated recently (within 24 hours)
+ * to prevent repetitive/duplicate insights
+ */
+async function isDuplicateInsight(
+  supabase: any,
+  email: string,
+  insightType: string,
+  title: string
+): Promise<boolean> {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data } = await supabase
+    .from('real_time_insights')
+    .select('id')
+    .eq('email', email)
+    .eq('insight_type', insightType)
+    .ilike('title', `%${title.substring(0, 30)}%`) // Match on first 30 chars of title
+    .gte('created_at', twentyFourHoursAgo)
+    .is('dismissed_at', null) // Don't count dismissed insights
+    .limit(1);
+
+  return (data?.length ?? 0) > 0;
+}
+
+/**
  * Store a generated insight in the database and send push notification
+ * Now includes deduplication check to prevent repetitive insights
  */
 async function storeInsight(email: string, insight: GeneratedInsight): Promise<string | null> {
   const supabase = await createClient();
+
+  // Check for duplicate insight in last 24 hours
+  const isDuplicate = await isDuplicateInsight(
+    supabase,
+    email,
+    insight.insight_type,
+    insight.title
+  );
+
+  if (isDuplicate) {
+    logger.info('Skipping duplicate insight', {
+      email,
+      type: insight.insight_type,
+      title: insight.title.substring(0, 50),
+    });
+    return null;
+  }
 
   const { data, error } = await supabase
     .from('real_time_insights')

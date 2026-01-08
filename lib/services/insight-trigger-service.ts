@@ -2177,26 +2177,87 @@ Generate insights that make premium users feel like they're getting genuine valu
 /**
  * Check if a similar insight was already generated recently (within 7 days)
  * to prevent repetitive/duplicate insights
+ *
+ * Checks multiple criteria:
+ * 1. Same insight_type in the last 7 days
+ * 2. Similar title keywords
+ * 3. Similar message content keywords
  */
 async function isDuplicateInsight(
   supabase: any,
   email: string,
   insightType: string,
-  title: string
+  title: string,
+  message?: string
 ): Promise<boolean> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data } = await supabase
+  // Check 1: Same insight type in last 7 days (most aggressive)
+  const { data: typeMatch } = await supabase
     .from('real_time_insights')
     .select('id')
     .eq('email', email)
     .eq('insight_type', insightType)
-    .ilike('title', `%${title.substring(0, 30)}%`) // Match on first 30 chars of title
     .gte('created_at', sevenDaysAgo)
-    .is('dismissed_at', null) // Don't count dismissed insights
+    .is('dismissed_at', null)
     .limit(1);
 
-  return (data?.length ?? 0) > 0;
+  if ((typeMatch?.length ?? 0) > 0) {
+    return true;
+  }
+
+  // Check 2: Extract key topics from title and check for similar topics
+  const titleKeywords = extractKeywords(title);
+  for (const keyword of titleKeywords) {
+    const { data: keywordMatch } = await supabase
+      .from('real_time_insights')
+      .select('id')
+      .eq('email', email)
+      .or(`title.ilike.%${keyword}%,message.ilike.%${keyword}%`)
+      .gte('created_at', sevenDaysAgo)
+      .is('dismissed_at', null)
+      .limit(1);
+
+    if ((keywordMatch?.length ?? 0) > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Extract important keywords from text for deduplication matching
+ * Focuses on health-related terms that indicate the topic
+ */
+function extractKeywords(text: string): string[] {
+  const lowered = text.toLowerCase();
+
+  // Health topic keywords to check for
+  const healthTopics = [
+    'blood', 'glucose', 'sugar', 'insulin', 'a1c', 'hemoglobin',
+    'sleep', 'rest', 'insomnia', 'fatigue', 'tired',
+    'heart', 'hrv', 'cardiovascular', 'resting heart',
+    'stress', 'cortisol', 'anxiety', 'burnout',
+    'vitamin', 'iron', 'b12', 'folate', 'magnesium', 'zinc',
+    'cholesterol', 'ldl', 'hdl', 'triglyceride',
+    'thyroid', 'tsh', 't3', 't4',
+    'liver', 'kidney', 'creatinine',
+    'inflammation', 'crp', 'ferritin',
+    'recovery', 'strain', 'workout', 'exercise',
+    'weight', 'bmi', 'body composition',
+    'hydration', 'water',
+    'protein', 'carbs', 'fat', 'nutrition', 'diet',
+  ];
+
+  const found: string[] = [];
+  for (const topic of healthTopics) {
+    if (lowered.includes(topic)) {
+      found.push(topic);
+    }
+  }
+
+  return found;
 }
 
 /**
@@ -2206,12 +2267,13 @@ async function isDuplicateInsight(
 async function storeInsight(email: string, insight: GeneratedInsight): Promise<string | null> {
   const supabase = await createClient();
 
-  // Check for duplicate insight in last 24 hours
+  // Check for duplicate insight in last 7 days (by type, title, and content)
   const isDuplicate = await isDuplicateInsight(
     supabase,
     email,
     insight.insight_type,
-    insight.title
+    insight.title,
+    insight.message
   );
 
   if (isDuplicate) {

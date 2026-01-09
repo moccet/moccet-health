@@ -452,6 +452,7 @@ class DailyDigestServiceClass {
 
   /**
    * Send digest notification to user
+   * Sends wisdom title + contextualized body with health data
    */
   async sendDigestNotification(
     email: string,
@@ -463,10 +464,25 @@ class DailyDigestServiceClass {
         return false;
       }
 
-      // Build notification content
-      const firstItem = digest.items[0];
-      const title = this.getNotificationTitle(firstItem);
-      const body = this.getNotificationBody(digest);
+      // Find health insight and wisdom items
+      const healthItem = digest.items.find(item => item.type === 'health_insight');
+      const wisdomItem = digest.items.find(item => item.type === 'wisdom');
+
+      // Use wisdom for the notification (title + content)
+      // Fall back to first item if no wisdom
+      const mainItem = wisdomItem || digest.items[0];
+
+      // Title: Use wisdom title
+      let title = mainItem.title;
+      if (title.length > 50) {
+        title = title.substring(0, 47) + '...';
+      }
+
+      // Body: Wisdom content (health context is baked into item selection)
+      let body = mainItem.content;
+      if (body.length > 200) {
+        body = body.substring(0, 197) + '...';
+      }
 
       const sent = await sendPushNotification(email, {
         title,
@@ -474,73 +490,27 @@ class DailyDigestServiceClass {
         data: {
           type: 'daily_digest',
           item_count: digest.items.length.toString(),
-          first_item_id: firstItem.id,
-          first_item_type: firstItem.type,
-          category: firstItem.category,
+          first_item_id: mainItem.id,
+          first_item_type: mainItem.type,
+          category: mainItem.category,
           // Include full content for rich detail view
-          content: firstItem.content,
-          recommendation: firstItem.actionableTip,
-          source: firstItem.source,
-          source_type: firstItem.sourceType,
+          content: mainItem.content,
+          recommendation: mainItem.actionableTip,
+          source: mainItem.source,
+          source_type: mainItem.sourceType,
+          // Include health context in data for detail screen
+          health_summary: healthItem?.content,
+          health_tip: healthItem?.actionableTip,
           action_url: '/sage',
         },
       });
 
-      logger.info('Digest notification sent', { email, sent: sent > 0 });
+      logger.info('Digest notification sent', { email, sent: sent > 0, title });
       return sent > 0;
     } catch (error) {
       logger.error('Error sending digest notification', { error, email });
       return false;
     }
-  }
-
-  /**
-   * Get notification title based on content
-   */
-  private getNotificationTitle(item: DigestItem): string {
-    // Use the actual title from the wisdom entry for more context
-    // But keep it concise for push notification
-    let title = item.title;
-
-    // Truncate if too long for a notification title
-    if (title.length > 50) {
-      title = title.substring(0, 47) + '...';
-    }
-
-    return title;
-  }
-
-  /**
-   * Get notification body - now includes actionable content
-   */
-  private getNotificationBody(digest: DailyDigest): string {
-    const item = digest.items[0];
-
-    // Build a more in-depth notification body
-    let body = '';
-
-    // Use actionable tip if available (most valuable for user)
-    if (item.actionableTip) {
-      body = item.actionableTip;
-    } else if (item.content) {
-      // Fall back to content
-      body = item.content;
-    } else {
-      // Last resort: use title
-      body = item.title;
-    }
-
-    // Truncate to reasonable push notification length (150 chars for readability)
-    if (body.length > 150) {
-      body = body.substring(0, 147) + '...';
-    }
-
-    // Add source attribution on new line if space allows
-    if (item.source && body.length < 120) {
-      body += `\n— ${item.source}`;
-    }
-
-    return body;
   }
 
   /**

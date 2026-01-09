@@ -478,10 +478,20 @@ class DailyDigestServiceClass {
         title = title.substring(0, 47) + '...';
       }
 
-      // Body: Wisdom content (health context is baked into item selection)
+      // Body: Prepend brief health context to wisdom content
       let body = mainItem.content;
-      if (body.length > 200) {
-        body = body.substring(0, 197) + '...';
+
+      // Add health context at the start if available
+      if (healthItem?.content) {
+        // Extract key metric from health summary (first sentence or short version)
+        const healthBrief = healthItem.content.split('.')[0];
+        if (healthBrief && healthBrief.length < 60) {
+          body = `${healthBrief}. ${body}`;
+        }
+      }
+
+      if (body.length > 250) {
+        body = body.substring(0, 247) + '...';
       }
 
       const sent = await sendPushNotification(email, {
@@ -496,9 +506,7 @@ class DailyDigestServiceClass {
           // Include full content for rich detail view
           content: mainItem.content,
           recommendation: mainItem.actionableTip,
-          source: mainItem.source,
-          source_type: mainItem.sourceType,
-          // Include health context in data for detail screen
+          // Health context for detail screen
           health_summary: healthItem?.content,
           health_tip: healthItem?.actionableTip,
           action_url: '/sage',

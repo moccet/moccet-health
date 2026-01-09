@@ -262,6 +262,82 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+// DELETE - Delete tasks (single, auto-created, or all pending)
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
+    const taskId = searchParams.get('taskId');
+    const clearAutoCreated = searchParams.get('clearAutoCreated') === 'true';
+    const clearPending = searchParams.get('clearPending') === 'true';
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    // Delete specific task
+    if (taskId) {
+      const { error } = await supabase
+        .from('agent_tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_email', email);
+
+      if (error) {
+        console.error('Error deleting task:', error);
+        return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'Task deleted', deleted: 1 });
+    }
+
+    // Delete all auto-created tasks
+    if (clearAutoCreated) {
+      const { data, error } = await supabase
+        .from('agent_tasks')
+        .delete()
+        .eq('user_email', email)
+        .eq('auto_created', true)
+        .select('id');
+
+      if (error) {
+        console.error('Error deleting auto-created tasks:', error);
+        return NextResponse.json({ error: 'Failed to delete auto-created tasks' }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        message: 'Auto-created tasks deleted',
+        deleted: data?.length || 0
+      });
+    }
+
+    // Delete all pending/awaiting tasks (not completed or executing)
+    if (clearPending) {
+      const { data, error } = await supabase
+        .from('agent_tasks')
+        .delete()
+        .eq('user_email', email)
+        .in('status', ['pending', 'awaiting_approval'])
+        .select('id');
+
+      if (error) {
+        console.error('Error deleting pending tasks:', error);
+        return NextResponse.json({ error: 'Failed to delete pending tasks' }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        message: 'Pending tasks deleted',
+        deleted: data?.length || 0
+      });
+    }
+
+    return NextResponse.json({ error: 'Specify taskId, clearAutoCreated=true, or clearPending=true' }, { status: 400 });
+  } catch (error) {
+    console.error('Error in DELETE /api/agent/tasks:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // Helper function to get task configuration based on type
 function getTaskConfig(type: string, params?: Record<string, any>) {
   const configs: Record<string, {

@@ -733,6 +733,115 @@ Connect their data to one of their goals. Be encouraging and specific. One sente
 }
 
 // ============================================================================
+// DAILY HEALTH SUMMARY (Always sends - not selective)
+// ============================================================================
+
+/**
+ * Generate a daily health summary that ALWAYS sends regardless of thresholds.
+ * This ensures users get at least one health insight per day.
+ */
+async function generateDailyHealthSummary(
+  email: string,
+  ctx: EnrichedContext
+): Promise<ProactiveNotification | null> {
+  const ecosystemData = ctx.ecosystemData;
+  const userContext = ctx.userContext;
+  const context: Record<string, unknown> = {};
+  const metrics: string[] = [];
+  const dataPoints: string[] = [];
+
+  // Collect all available metrics
+  if (ecosystemData.whoop?.available && ecosystemData.whoop.data) {
+    const whoop = ecosystemData.whoop.data;
+    if (whoop.avgRecoveryScore) {
+      metrics.push(`Recovery: ${Math.round(whoop.avgRecoveryScore)}%`);
+      context.recovery = Math.round(whoop.avgRecoveryScore);
+      dataPoints.push(`Your recovery is at ${Math.round(whoop.avgRecoveryScore)}%`);
+    }
+    if (whoop.avgStrainScore) {
+      metrics.push(`Strain: ${whoop.avgStrainScore.toFixed(1)}`);
+      context.strain = whoop.avgStrainScore;
+    }
+    if (whoop.avgHRV) {
+      metrics.push(`HRV: ${Math.round(whoop.avgHRV)}ms`);
+      context.hrv = Math.round(whoop.avgHRV);
+    }
+  }
+
+  if (ecosystemData.oura?.available && ecosystemData.oura.data) {
+    const oura = ecosystemData.oura.data;
+    if (oura.avgReadinessScore) {
+      metrics.push(`Readiness: ${Math.round(oura.avgReadinessScore)}`);
+      context.readiness = Math.round(oura.avgReadinessScore);
+      dataPoints.push(`Readiness score: ${Math.round(oura.avgReadinessScore)}`);
+    }
+    if (oura.avgSleepHours) {
+      metrics.push(`Sleep: ${oura.avgSleepHours.toFixed(1)}h`);
+      context.sleepHours = oura.avgSleepHours;
+      dataPoints.push(`You slept ${oura.avgSleepHours.toFixed(1)} hours`);
+    }
+  }
+
+  if (ecosystemData.dexcom?.available && ecosystemData.dexcom.data) {
+    const dexcom = ecosystemData.dexcom.data;
+    if (dexcom.timeInRange) {
+      metrics.push(`Glucose in range: ${Math.round(dexcom.timeInRange)}%`);
+      context.glucoseInRange = Math.round(dexcom.timeInRange);
+      dataPoints.push(`Time in glucose range: ${Math.round(dexcom.timeInRange)}%`);
+    }
+    if (dexcom.avgGlucose) {
+      metrics.push(`Avg glucose: ${Math.round(dexcom.avgGlucose)} mg/dL`);
+      context.avgGlucose = Math.round(dexcom.avgGlucose);
+    }
+  }
+
+  // If no metrics available, return null
+  if (metrics.length === 0) {
+    console.log(`[Proactive Engagement] No health metrics available for daily summary`);
+    return null;
+  }
+
+  context.metrics = metrics;
+  context.goals = userContext?.profile?.goals;
+
+  // Generate a friendly summary message
+  const prompt = `Generate a brief, friendly daily health summary. Here are today's metrics:
+${metrics.join(', ')}
+
+${userContext?.profile?.goals?.length ? `User's goals: ${userContext.profile.goals.join(', ')}` : ''}
+
+Create a warm, conversational 1-2 sentence summary that:
+- Mentions 1-2 key metrics naturally
+- Feels like a friend checking in, not a medical report
+- Includes one small actionable suggestion if relevant
+- Stays positive but honest
+
+Example tone: "Your body got ${context.sleepHours || 7} hours of rest and recovery is looking solid at ${context.recovery || 70}%. A good day to stay active!"`;
+
+  const message = await generatePersonalizedMessage(prompt, context);
+  if (!message) return null;
+
+  // Build data quote from available metrics
+  const dataQuote = dataPoints.length > 0
+    ? dataPoints.slice(0, 3).join(' · ')
+    : metrics.slice(0, 3).join(' · ');
+
+  return {
+    type: 'daily_digest',
+    title: 'Your Daily Health Summary',
+    message,
+    context_data: context,
+    category: 'HEALTH',
+    data_quote: dataQuote,
+    recommendation: context.recovery && (context.recovery as number) >= 70
+      ? 'Great recovery - good day for a workout!'
+      : context.recovery && (context.recovery as number) < 50
+        ? 'Recovery is low - prioritize rest today'
+        : 'Listen to your body and stay hydrated',
+  };
+}
+
+// ============================================================================
 // MAIN ORCHESTRATION
 // ============================================================================
 
@@ -992,6 +1101,16 @@ export async function processProactiveEngagement(
       if (notificationsSent === 0 && await canSendNotificationType(email, 'daily_digest', 24)) {
         const digest = await generateDailyDigest(email, enrichedContext);
         if (digest && await sendProactiveNotification(email, digest)) {
+          notificationsSent++;
+        }
+      }
+
+      // Priority 5: Daily Health Summary - ALWAYS sends as fallback
+      // This ensures users get at least one health insight per day
+      if (notificationsSent === 0 && await canSendNotificationType(email, 'daily_digest', 24)) {
+        console.log(`[Proactive Engagement] No selective notifications triggered, sending daily health summary to ${email}`);
+        const healthSummary = await generateDailyHealthSummary(email, enrichedContext);
+        if (healthSummary && await sendProactiveNotification(email, healthSummary)) {
           notificationsSent++;
         }
       }

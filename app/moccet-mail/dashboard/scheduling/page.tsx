@@ -47,9 +47,9 @@ export default function SchedulingPage() {
           const statusRes = await fetch(`/api/gmail/status?email=${encodeURIComponent(session.user.email)}`);
           if (statusRes.ok) {
             const statusData = await statusRes.json();
-            setIsConnected(statusData.connected);
+            setIsConnected(statusData.isConnected);
 
-            if (statusData.connected) {
+            if (statusData.isConnected) {
               // Load scheduling settings
               const settingsRes = await fetch(`/api/gmail/calendar/settings?email=${encodeURIComponent(session.user.email)}`);
               if (settingsRes.ok) {

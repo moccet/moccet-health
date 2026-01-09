@@ -333,10 +333,44 @@ class DailyDigestServiceClass {
   }
 
   /**
+   * Check if user already received a digest today (prevents duplicate sends)
+   */
+  async alreadySentToday(email: string): Promise<boolean> {
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const { data } = await this.supabase
+        .from('daily_digests')
+        .select('id')
+        .eq('user_email', email)
+        .gte('generated_at', todayStart.toISOString())
+        .limit(1);
+
+      return data && data.length > 0;
+    } catch (error) {
+      logger.warn('Error checking if digest sent today', { error, email });
+      return false; // Allow sending if check fails
+    }
+  }
+
+  /**
    * Process and deliver digest to a single user
    */
   async deliverDigestToUser(email: string): Promise<DigestDeliveryResult> {
     try {
+      // Check if we already sent a digest today (prevent duplicates)
+      if (await this.alreadySentToday(email)) {
+        logger.info('Digest already sent today, skipping', { email });
+        return {
+          email,
+          success: true,
+          itemCount: 0,
+          notificationSent: false,
+          error: 'Already sent today',
+        };
+      }
+
       // Generate digest
       const digest = await this.generateDigest(email, 2);
 

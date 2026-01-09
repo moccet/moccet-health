@@ -132,6 +132,11 @@ export default function CategorizationPage() {
   const [isLabeling, setIsLabeling] = useState(false);
   const [labelingProgress, setLabelingProgress] = useState<string | null>(null);
 
+  // Manual categorisation state
+  const [emailCount, setEmailCount] = useState<number>(100);
+  const [isCategorising, setIsCategorising] = useState(false);
+  const [categoriseProgress, setCategoriseProgress] = useState<string | null>(null);
+
   const handleSave = async () => {
     if (!userEmail) return;
 
@@ -202,6 +207,50 @@ export default function CategorizationPage() {
       console.error('Error saving preferences:', error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCategorise = async () => {
+    if (!userEmail) return;
+
+    setIsCategorising(true);
+    setCategoriseProgress('Setting up labels...');
+
+    try {
+      // First ensure labels are set up in Gmail
+      await fetch('/api/gmail/labels/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, backfill: false }),
+      });
+
+      setCategoriseProgress(`Categorising last ${emailCount} emails...`);
+
+      // Backfill the specified number of emails
+      const backfillRes = await fetch('/api/gmail/labels/backfill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          count: emailCount,
+          replaceExisting: !respectExisting
+        }),
+      });
+
+      if (backfillRes.ok) {
+        const backfillData = await backfillRes.json();
+        setCategoriseProgress(`Done! Categorised ${backfillData.labeled || 0} emails`);
+      } else {
+        setCategoriseProgress('Failed to categorise emails. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error categorising emails:', error);
+      setCategoriseProgress('An error occurred. Please try again.');
+    } finally {
+      setIsCategorising(false);
+      setTimeout(() => {
+        setCategoriseProgress(null);
+      }, 5000);
     }
   };
 
@@ -311,6 +360,39 @@ export default function CategorizationPage() {
                   <span className="toggle-handle"></span>
                 </button>
               </div>
+            </section>
+
+            {/* Manual categorisation section */}
+            <section className="category-section categorise-section">
+              <h3>Categorise existing emails</h3>
+              <p className="section-hint">Run categorisation on your recent emails</p>
+              <div className="categorise-controls">
+                <div className="email-count-selector">
+                  <label htmlFor="emailCount">Number of emails:</label>
+                  <select
+                    id="emailCount"
+                    value={emailCount}
+                    onChange={(e) => setEmailCount(Number(e.target.value))}
+                    disabled={isCategorising}
+                  >
+                    <option value={25}>Last 25 emails</option>
+                    <option value={50}>Last 50 emails</option>
+                    <option value={100}>Last 100 emails</option>
+                    <option value={200}>Last 200 emails</option>
+                    <option value={500}>Last 500 emails</option>
+                  </select>
+                </div>
+                <button
+                  className="categorise-button"
+                  onClick={handleCategorise}
+                  disabled={isCategorising || !userEmail}
+                >
+                  {isCategorising ? 'Categorising...' : 'Categorise'}
+                </button>
+              </div>
+              {categoriseProgress && (
+                <p className="categorise-progress">{categoriseProgress}</p>
+              )}
             </section>
 
             {/* Save button */}
@@ -578,6 +660,92 @@ export default function CategorizationPage() {
           text-align: center;
         }
 
+        .categorise-section {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+
+        .categorise-controls {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-top: 16px;
+        }
+
+        .email-count-selector {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .email-count-selector label {
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 14px;
+          color: #666;
+          white-space: nowrap;
+        }
+
+        .email-count-selector select {
+          flex: 1;
+          padding: 10px 14px;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 14px;
+          color: #1a1a1a;
+          background: white;
+          cursor: pointer;
+          transition: border-color 0.15s ease;
+        }
+
+        .email-count-selector select:hover {
+          border-color: #ccc;
+        }
+
+        .email-count-selector select:focus {
+          outline: none;
+          border-color: #1a1a1a;
+        }
+
+        .email-count-selector select:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .categorise-button {
+          padding: 10px 20px;
+          background: #1a1a1a;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-weight: 500;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .categorise-button:hover {
+          opacity: 0.9;
+        }
+
+        .categorise-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .categorise-progress {
+          margin-top: 12px;
+          font-family: "Inter", Helvetica;
+          font-weight: 400;
+          font-size: 13px;
+          color: #666;
+        }
+
         .advanced-notice {
           text-align: center;
           padding: 48px 24px;
@@ -608,6 +776,21 @@ export default function CategorizationPage() {
             flex-direction: column;
             align-items: flex-start;
             gap: 4px;
+          }
+
+          .categorise-controls {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .email-count-selector {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+          }
+
+          .categorise-button {
+            width: 100%;
           }
         }
       `}</style>

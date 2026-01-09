@@ -2,18 +2,41 @@
  * Daily Digest Service
  *
  * Generates and sends personalized daily digests to users.
- * Combines wisdom library content with health insights based on preferences.
+ * Combines health summary with relevant wisdom based on current health state.
  *
  * @module lib/services/daily-digest-service
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
-import { WisdomLibraryService, WisdomEntry } from './wisdom-library-service';
+import { WisdomLibraryService, WisdomEntry, WisdomCategory } from './wisdom-library-service';
 import { PreferenceLearner } from './preference-learner';
 import { sendPushNotification } from './onesignal-service';
+import { fetchAllEcosystemData } from './ecosystem-fetcher';
+import OpenAI from 'openai';
 
 const logger = createLogger('DailyDigestService');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+/**
+ * Health context derived from ecosystem data
+ */
+interface HealthContext {
+  recovery?: number;
+  strain?: number;
+  hrv?: number;
+  sleepHours?: number;
+  readiness?: number;
+  glucoseInRange?: number;
+  stressLevel: 'low' | 'moderate' | 'high';
+  energyLevel: 'low' | 'moderate' | 'high';
+  recommendedFocus: WisdomCategory;
+  healthSummary: string;
+  dataPoints: string[];
+}
 
 export interface DigestItem {
   id: string;
@@ -41,6 +64,135 @@ export interface DigestDeliveryResult {
   itemCount: number;
   notificationSent: boolean;
   error?: string;
+}
+
+/**
+ * Analyze ecosystem data and determine health context + recommended wisdom category
+ */
+async function analyzeHealthContext(email: string): Promise<HealthContext | null> {
+  try {
+    const ecosystemData = await fetchAllEcosystemData(email);
+    const dataPoints: string[] = [];
+    let recovery: number | undefined;
+    let strain: number | undefined;
+    let hrv: number | undefined;
+    let sleepHours: number | undefined;
+    let readiness: number | undefined;
+    let glucoseInRange: number | undefined;
+
+    // Extract metrics from Whoop
+    if (ecosystemData.whoop?.available && ecosystemData.whoop.data) {
+      const whoop = ecosystemData.whoop.data;
+      if (whoop.avgRecoveryScore) {
+        recovery = Math.round(whoop.avgRecoveryScore);
+        dataPoints.push(`Recovery: ${recovery}%`);
+      }
+      if (whoop.avgStrainScore) {
+        strain = whoop.avgStrainScore;
+        dataPoints.push(`Strain: ${strain.toFixed(1)}`);
+      }
+      if (whoop.avgHRV) {
+        hrv = Math.round(whoop.avgHRV);
+        dataPoints.push(`HRV: ${hrv}ms`);
+      }
+    }
+
+    // Extract metrics from Oura
+    if (ecosystemData.oura?.available && ecosystemData.oura.data) {
+      const oura = ecosystemData.oura.data;
+      if (oura.avgReadinessScore) {
+        readiness = Math.round(oura.avgReadinessScore);
+        dataPoints.push(`Readiness: ${readiness}`);
+      }
+      if (oura.avgSleepHours) {
+        sleepHours = oura.avgSleepHours;
+        dataPoints.push(`Sleep: ${sleepHours.toFixed(1)}h`);
+      }
+    }
+
+    // Extract metrics from Dexcom
+    if (ecosystemData.dexcom?.available && ecosystemData.dexcom.data) {
+      const dexcom = ecosystemData.dexcom.data;
+      if (dexcom.timeInRange) {
+        glucoseInRange = Math.round(dexcom.timeInRange);
+        dataPoints.push(`Glucose in range: ${glucoseInRange}%`);
+      }
+    }
+
+    // If no health data available, return null
+    if (dataPoints.length === 0) {
+      logger.info('No health data available for digest', { email });
+      return null;
+    }
+
+    // Determine stress and energy levels
+    let stressLevel: 'low' | 'moderate' | 'high' = 'moderate';
+    let energyLevel: 'low' | 'moderate' | 'high' = 'moderate';
+
+    if (recovery !== undefined) {
+      if (recovery >= 67) energyLevel = 'high';
+      else if (recovery < 40) energyLevel = 'low';
+    }
+
+    if (hrv !== undefined && recovery !== undefined) {
+      if (recovery < 50 || hrv < 40) stressLevel = 'high';
+      else if (recovery >= 70 && hrv >= 60) stressLevel = 'low';
+    }
+
+    // Determine recommended wisdom category based on health state
+    let recommendedFocus: WisdomCategory = 'life_advice';
+
+    if (energyLevel === 'low' || (sleepHours !== undefined && sleepHours < 6)) {
+      recommendedFocus = 'self_development'; // Rest, recovery, self-care
+    } else if (stressLevel === 'high') {
+      recommendedFocus = 'productivity'; // Stress management, mindfulness
+    } else if (energyLevel === 'high') {
+      recommendedFocus = 'fitness'; // Great day for activity
+    } else if (sleepHours !== undefined && sleepHours >= 7.5) {
+      recommendedFocus = 'productivity'; // Well-rested, productive day
+    }
+
+    // Generate health summary with AI
+    let healthSummary = '';
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a friendly health companion. Generate a brief, personalized 1-2 sentence health summary based on the user's metrics. Be warm, specific, and include one actionable suggestion. Don't be preachy.`,
+          },
+          {
+            role: 'user',
+            content: `Today's metrics: ${dataPoints.join(', ')}. Energy level: ${energyLevel}. Stress level: ${stressLevel}.`,
+          },
+        ],
+        max_tokens: 100,
+        temperature: 0.8,
+      });
+      healthSummary = response.choices[0]?.message?.content?.trim() || '';
+    } catch (e) {
+      logger.error('Error generating health summary', { error: e });
+      healthSummary = `Your metrics today: ${dataPoints.slice(0, 2).join(', ')}.`;
+    }
+
+    return {
+      recovery,
+      strain,
+      hrv,
+      sleepHours,
+      readiness,
+      glucoseInRange,
+      stressLevel,
+      energyLevel,
+      recommendedFocus,
+      healthSummary,
+      dataPoints,
+    };
+  } catch (error) {
+    logger.error('Error analyzing health context', { error, email });
+    return null;
+  }
 }
 
 class DailyDigestServiceClass {
@@ -170,31 +322,90 @@ class DailyDigestServiceClass {
 
   /**
    * Generate a daily digest for a specific user
+   * Combines personalized health summary with relevant wisdom
    */
   async generateDigest(email: string, itemCount: number = 2): Promise<DailyDigest | null> {
     try {
-      logger.info('Generating digest', { email, itemCount });
+      logger.info('Generating personalized digest', { email });
 
       // Get user preferences
       const prefs = await PreferenceLearner.getPreferences(email);
 
-      // Get wisdom content
-      const wisdomEntries = await WisdomLibraryService.getDigestContent(email, itemCount);
+      const items: DigestItem[] = [];
 
-      // Transform to digest items
-      const items: DigestItem[] = wisdomEntries.map((entry: WisdomEntry) => ({
-        id: entry.id,
-        type: 'wisdom' as const,
-        category: entry.category,
-        title: entry.title,
-        content: entry.content,
-        source: entry.source,
-        sourceType: entry.source_type,
-        actionableTip: entry.actionable_tip,
-      }));
+      // Step 1: Get health context and create health summary item
+      const healthContext = await analyzeHealthContext(email);
+
+      if (healthContext) {
+        // Add health summary as the first item
+        items.push({
+          id: `health_summary_${Date.now()}`,
+          type: 'health_insight',
+          category: 'HEALTH',
+          title: 'Your Daily Health Summary',
+          content: healthContext.healthSummary,
+          actionableTip: healthContext.energyLevel === 'high'
+            ? 'Great energy today - perfect for tackling something challenging!'
+            : healthContext.energyLevel === 'low'
+              ? 'Take it easy today. Rest is productive too.'
+              : 'Listen to your body and pace yourself.',
+        });
+
+        logger.info('Added health summary to digest', {
+          email,
+          energyLevel: healthContext.energyLevel,
+          stressLevel: healthContext.stressLevel,
+          recommendedFocus: healthContext.recommendedFocus,
+        });
+
+        // Step 2: Get ONE wisdom entry relevant to their current health state
+        try {
+          const relevantWisdom = await WisdomLibraryService.getUnseen(email, healthContext.recommendedFocus);
+          if (relevantWisdom) {
+            items.push({
+              id: relevantWisdom.id,
+              type: 'wisdom',
+              category: relevantWisdom.category,
+              title: relevantWisdom.title,
+              content: relevantWisdom.content,
+              source: relevantWisdom.source,
+              sourceType: relevantWisdom.source_type,
+              actionableTip: relevantWisdom.actionable_tip,
+            });
+            logger.info('Added relevant wisdom to digest', {
+              email,
+              category: relevantWisdom.category,
+              reason: `Matched to ${healthContext.recommendedFocus} based on energy=${healthContext.energyLevel}, stress=${healthContext.stressLevel}`,
+            });
+          }
+        } catch (wisdomError) {
+          logger.warn('Could not fetch relevant wisdom', { error: wisdomError, email });
+        }
+      } else {
+        // Fallback: No health data, just get wisdom content
+        logger.info('No health data available, falling back to wisdom only', { email });
+        const wisdomEntries = await WisdomLibraryService.getDigestContent(email, itemCount);
+        for (const entry of wisdomEntries) {
+          items.push({
+            id: entry.id,
+            type: 'wisdom',
+            category: entry.category,
+            title: entry.title,
+            content: entry.content,
+            source: entry.source,
+            sourceType: entry.source_type,
+            actionableTip: entry.actionable_tip,
+          });
+        }
+      }
+
+      if (items.length === 0) {
+        logger.warn('No items generated for digest', { email });
+        return null;
+      }
 
       const digest: DailyDigest = {
-        userId: '', // Will be filled if needed
+        userId: '',
         email,
         items,
         generatedAt: new Date(),
@@ -202,7 +413,7 @@ class DailyDigestServiceClass {
         timezone: prefs.timezone,
       };
 
-      logger.info('Digest generated', { email, itemCount: items.length });
+      logger.info('Personalized digest generated', { email, itemCount: items.length, hasHealthData: !!healthContext });
       return digest;
     } catch (error) {
       logger.error('Error generating digest', { error, email });

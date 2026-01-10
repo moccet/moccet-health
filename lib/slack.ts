@@ -474,6 +474,112 @@ export async function notifyForgeOnboardingComplete(
 /**
  * Sends plan generation queued notification to Slack
  */
+/**
+ * Sends culture assessment completion notification to Slack
+ */
+export async function notifyCultureAssessmentComplete(
+  data: {
+    email: string;
+    name?: string;
+    role?: string;
+    overallScore: number;
+    categoryScores: Record<string, { score: number; max: number; label: string }>;
+    selfRating?: number;
+    managerRating?: number;
+  }
+): Promise<boolean> {
+  const scoreEmoji = data.overallScore >= 80 ? '🌟' : data.overallScore >= 60 ? '✅' : '📋';
+  const ratingGap = data.selfRating && data.managerRating
+    ? data.selfRating - data.managerRating
+    : null;
+  const gapIndicator = ratingGap !== null
+    ? (ratingGap > 2 ? '⚠️ +' + ratingGap : ratingGap < -2 ? '📉 ' + ratingGap : '✓ ' + ratingGap)
+    : 'N/A';
+
+  // Build category scores summary
+  const topCategories = Object.entries(data.categoryScores)
+    .map(([key, val]) => ({ label: val.label, pct: Math.round((val.score / val.max) * 100) }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 4);
+
+  const categoryText = topCategories
+    .map(c => `${c.label}: ${c.pct}%`)
+    .join(' | ');
+
+  const payload = {
+    text: `${scoreEmoji} New Culture Assessment: ${data.email} (${data.overallScore}%)`,
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `${scoreEmoji} New Culture Assessment Submission`,
+          emoji: true,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Name:*\n${data.name || 'Not provided'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Email:*\n${data.email}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Role Applied:*\n${data.role || 'Not provided'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Overall Score:*\n${data.overallScore}%`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Top Categories:*\n${categoryText}`,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Self Rating:*\n${data.selfRating || 'N/A'}/10`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Manager Rating:*\n${data.managerRating || 'N/A'}/10`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Rating Gap:*\n${gapIndicator}`,
+          },
+        ],
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `Submitted: <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return sendSlackNotification(payload);
+}
+
+/**
+ * Sends plan generation queued notification to Slack
+ */
 export async function notifyPlanQueued(
   email: string,
   planType: 'Sage' | 'Forge',

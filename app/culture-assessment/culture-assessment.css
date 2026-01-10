@@ -166,7 +166,7 @@ html {
   background: #000000;
   color: #FFFFFF;
   border: none;
-  padding: 10px 24px;
+  padding: 6px 24px;
   border-radius: 8px;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-stretch: expanded;
@@ -195,7 +195,7 @@ html {
   background: #000000;
   color: #FFFFFF;
   border: none;
-  padding: 8px 16px;
+  padding: 5px 16px;
   border-radius: 6px;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-stretch: expanded;
@@ -650,44 +650,234 @@ html {
   align-items: center;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
+/* Responsive - Tablet */
+@media (max-width: 768px) {
   .culture-assessment .content {
     padding: 20px;
     padding-bottom: 100px;
-  }
-
-  .culture-assessment .logo {
-    padding: 20px;
-  }
-
-  .culture-assessment .welcome h1 {
-    font-size: 24px;
-  }
-
-  .culture-assessment .question-text {
-    font-size: 20px;
-  }
-
-  .culture-assessment .text-input {
-    font-size: 18px;
-  }
-
-  .culture-assessment .option-btn {
-    padding: 14px;
-  }
-
-  .culture-assessment .option-text {
-    font-size: 15px;
+    min-height: calc(100dvh - 100px);
   }
 
   .culture-assessment .keyboard-hint {
     display: none;
   }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 640px) {
+  .culture-assessment {
+    min-height: 100dvh;
+  }
+
+  .culture-assessment .app {
+    min-height: 100dvh;
+  }
+
+  .culture-assessment .content {
+    padding: 16px;
+    padding-bottom: 90px;
+    min-height: calc(100dvh - 80px);
+  }
+
+  .culture-assessment .logo {
+    padding: 16px;
+  }
+
+  .culture-assessment .logo-text {
+    font-size: 18px;
+  }
+
+  .culture-assessment .welcome h1 {
+    font-size: 22px;
+  }
+
+  .culture-assessment .welcome p {
+    font-size: 15px;
+  }
+
+  .culture-assessment .welcome .time {
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .culture-assessment .honesty-note {
+    font-size: 12px;
+    margin-bottom: 20px;
+    padding: 8px 0;
+  }
+
+  .culture-assessment .btn-primary {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .culture-assessment .btn-ok {
+    padding: 8px 16px;
+    font-size: 13px;
+    min-height: 44px;
+    margin-top: 16px;
+  }
+
+  .culture-assessment .question-number {
+    font-size: 11px;
+  }
+
+  .culture-assessment .question-text {
+    font-size: 18px;
+  }
+
+  .culture-assessment .question-helper {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .culture-assessment .text-input {
+    font-size: 16px;
+    padding: 10px 0;
+  }
+
+  .culture-assessment .textarea-input {
+    font-size: 16px;
+    padding: 14px;
+    min-height: 100px;
+  }
+
+  .culture-assessment .option-btn {
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .culture-assessment .option-key {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .culture-assessment .option-text {
+    font-size: 14px;
+  }
+
+  .culture-assessment .scale-container {
+    gap: 4px;
+    margin-top: 20px;
+  }
 
   .culture-assessment .scale-btn {
     height: 44px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+
+  .culture-assessment .scale-labels {
+    font-size: 10px;
+    margin-top: 8px;
+  }
+
+  .culture-assessment .nav-footer {
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .culture-assessment .nav-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .culture-assessment .nav-progress {
+    font-size: 12px;
+  }
+
+  .culture-assessment .results h1 {
+    font-size: 20px;
+  }
+
+  .culture-assessment .results .subtitle {
     font-size: 14px;
+  }
+
+  .culture-assessment .overall-score-value {
+    font-size: 40px;
+  }
+
+  .culture-assessment .overall-score-label {
+    font-size: 11px;
+  }
+
+  .culture-assessment .insights-title {
+    font-size: 11px;
+  }
+
+  .culture-assessment .insight-label {
+    font-size: 13px;
+  }
+
+  .culture-assessment .insight-value {
+    font-size: 13px;
+  }
+
+  .culture-assessment .insight-bar-container {
+    width: 60px;
+  }
+
+  .culture-assessment .written-note {
+    font-size: 12px;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 375px) {
+  .culture-assessment .content {
+    padding: 12px;
+    padding-bottom: 85px;
+  }
+
+  .culture-assessment .logo {
+    padding: 12px;
+  }
+
+  .culture-assessment .logo-text {
+    font-size: 16px;
+  }
+
+  .culture-assessment .welcome h1 {
+    font-size: 20px;
+  }
+
+  .culture-assessment .welcome p {
+    font-size: 14px;
+  }
+
+  .culture-assessment .question-text {
+    font-size: 16px;
+  }
+
+  .culture-assessment .option-btn {
+    padding: 10px;
+  }
+
+  .culture-assessment .option-text {
+    font-size: 13px;
+  }
+
+  .culture-assessment .scale-btn {
+    height: 40px;
+    font-size: 12px;
+  }
+
+  .culture-assessment .overall-score-value {
+    font-size: 36px;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .culture-assessment .nav-footer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .culture-assessment .content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
   }
 }
 

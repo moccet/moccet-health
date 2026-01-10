@@ -401,6 +401,8 @@ export default function CultureAssessmentPage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionClass, setTransitionClass] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const getTotalQuestions = () => {
     return questions.filter(q => q.type === 'choice').length;
@@ -560,6 +562,46 @@ export default function CultureAssessmentPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStep, isTransitioning, goBack, goForward, handleAnswer, transition]);
+
+  // Submit results to API when assessment is completed
+  useEffect(() => {
+    if (showResults && !hasSubmitted && !isSubmitting) {
+      const submitResults = async () => {
+        setIsSubmitting(true);
+        try {
+          const { totalScore, categoryScores, maxScore } = calculateScores();
+          const overallScore = Math.round((totalScore / maxScore) * 100);
+
+          const response = await fetch('/api/culture-assessment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              name,
+              role,
+              overallScore,
+              categoryScores,
+              answers,
+              textAnswers,
+            }),
+          });
+
+          if (response.ok) {
+            console.log('[Culture Assessment] ✅ Results submitted successfully');
+          } else {
+            console.error('[Culture Assessment] Failed to submit results');
+          }
+        } catch (error) {
+          console.error('[Culture Assessment] Error submitting results:', error);
+        } finally {
+          setIsSubmitting(false);
+          setHasSubmitted(true);
+        }
+      };
+
+      submitResults();
+    }
+  }, [showResults, hasSubmitted, isSubmitting, email, name, role, answers, textAnswers]);
 
   const current = questions[currentStep];
   const progressPercent = (currentStep / (questions.length - 1)) * 100;

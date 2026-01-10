@@ -72,7 +72,8 @@ interface EmailData {
   isAfterHours: boolean;
   subject?: string; // For sentiment analysis
   from?: string; // Sender name/email for deep content analysis
-  snippet?: string; // Email preview for deep content analysis
+  snippet?: string; // Email preview fallback
+  body?: string; // Full email body for deep content analysis
   messageId?: string; // Gmail message ID
 }
 
@@ -742,21 +743,30 @@ export async function POST(request: NextRequest) {
         const messageDetail = await gmail.users.messages.get({
           userId: 'me',
           id: message.id!,
-          format: 'metadata',
-          metadataHeaders: ['Date', 'Subject', 'From'] // Added From for deep content analysis
+          format: 'full', // Full body for deep content analysis
         });
 
-        const dateHeader = messageDetail.data.payload?.headers?.find(
-          h => h.name?.toLowerCase() === 'date'
-        );
+        const headers = messageDetail.data.payload?.headers || [];
+        const getHeader = (name: string) =>
+          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
 
-        const subjectHeader = messageDetail.data.payload?.headers?.find(
-          h => h.name?.toLowerCase() === 'subject'
-        );
+        const dateHeader = headers.find(h => h.name?.toLowerCase() === 'date');
+        const subjectHeader = headers.find(h => h.name?.toLowerCase() === 'subject');
+        const fromHeader = headers.find(h => h.name?.toLowerCase() === 'from');
 
-        const fromHeader = messageDetail.data.payload?.headers?.find(
-          h => h.name?.toLowerCase() === 'from'
-        );
+        // Extract email body from full format
+        let body = '';
+        const payload = messageDetail.data.payload;
+        if (payload?.body?.data) {
+          body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+        } else if (payload?.parts) {
+          for (const part of payload.parts) {
+            if (part.mimeType === 'text/plain' && part.body?.data) {
+              body = Buffer.from(part.body.data, 'base64').toString('utf-8');
+              break;
+            }
+          }
+        }
 
         // Extract sender name from "Name <email@domain.com>" format
         const fromValue = fromHeader?.value || '';
@@ -764,7 +774,7 @@ export async function POST(request: NextRequest) {
           ? fromValue.split('<')[0].trim().replace(/"/g, '')
           : fromValue.split('@')[0];
 
-        // Get snippet (email preview) - this is a top-level field
+        // Get snippet as fallback
         const snippet = messageDetail.data.snippet || '';
 
         if (dateHeader?.value) {
@@ -784,6 +794,7 @@ export async function POST(request: NextRequest) {
             subject: subjectHeader?.value || '',
             from: senderName,
             snippet: snippet,
+            body: body, // Full email body for deep content analysis
             messageId: message.id!,
           });
         }

@@ -342,9 +342,9 @@ export async function POST(request: NextRequest) {
     const chats: MSChat[] = chatsData.value || [];
     console.log(`[Teams Fetch] Found ${chats.length} chats`);
 
-    // Fetch message history from chats (limit to first 20 chats for performance)
+    // Fetch message history from ALL chats (up to 100 for practical limits)
     const messageData: MessageData[] = [];
-    const chatsToCheck = chats.slice(0, 20);
+    const chatsToCheck = chats.slice(0, 100); // Increased from 20 to 100
 
     for (const chat of chatsToCheck) {
       try {

@@ -55,6 +55,9 @@ interface EmailData {
   isWeekend: boolean;
   isAfterHours: boolean;
   subject?: string; // For sentiment/life context analysis
+  body?: string; // Full email body for deep content analysis
+  bodyPreview?: string; // Preview fallback
+  from?: string; // Sender name
 }
 
 /**
@@ -429,7 +432,7 @@ export async function POST(request: NextRequest) {
         console.error('[Outlook Fetch] Calendar error:', err);
         return { ok: false, json: async () => ({ value: [] }) };
       }),
-      fetch(`https://graph.microsoft.com/v1.0/me/messages?$top=200&$select=receivedDateTime,subject&$filter=receivedDateTime ge ${startDate.toISOString()}`, {
+      fetch(`https://graph.microsoft.com/v1.0/me/messages?$top=200&$select=receivedDateTime,subject,bodyPreview,from,body&$filter=receivedDateTime ge ${startDate.toISOString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -441,7 +444,13 @@ export async function POST(request: NextRequest) {
     ]);
 
     let calendarEvents: MSCalendarEvent[] = [];
-    let emailMessages: Array<{ receivedDateTime: string; subject?: string }> = [];
+    let emailMessages: Array<{
+      receivedDateTime: string;
+      subject?: string;
+      bodyPreview?: string;
+      body?: { content?: string; contentType?: string };
+      from?: { emailAddress?: { name?: string; address?: string } };
+    }> = [];
 
     if (calendarResponse.ok) {
       const calendarData = await calendarResponse.json();
@@ -459,7 +468,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Outlook Fetch] Retrieved ${calendarEvents.length} calendar events and ${emailMessages.length} email messages`);
 
-    // Process email metadata
+    // Process email metadata with full body
     const emailData: EmailData[] = emailMessages.map(message => {
       const date = new Date(message.receivedDateTime);
       const hour = date.getHours();
@@ -467,13 +476,23 @@ export async function POST(request: NextRequest) {
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const isAfterHours = hour < 9 || hour >= 17; // Fixed: 9am-5pm work hours
 
+      // Extract body content (prefer text, strip HTML if needed)
+      let bodyContent = message.body?.content || '';
+      if (message.body?.contentType === 'html') {
+        // Strip HTML tags for analysis
+        bodyContent = bodyContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
       return {
         timestamp: date.toISOString(),
         hour,
         dayOfWeek,
         isWeekend,
         isAfterHours,
-        subject: message.subject || ''
+        subject: message.subject || '',
+        body: bodyContent,
+        bodyPreview: message.bodyPreview || '',
+        from: message.from?.emailAddress?.name || message.from?.emailAddress?.address || ''
       };
     });
 

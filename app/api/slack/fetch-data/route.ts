@@ -599,9 +599,9 @@ export async function POST(request: NextRequest) {
       channelNameMap[ch.id] = ch.name || ch.id;
     });
 
-    // Fetch message history from channels (limit to first 20 channels for performance)
+    // Fetch message history from ALL channels (up to 100 for practical limits)
     const messageData: MessageData[] = [];
-    const channelsToCheck = channels.slice(0, 20);
+    const channelsToCheck = channels.slice(0, 100); // Increased from 20 to 100
 
     // Regex to extract @mentions from message text
     const mentionRegex = /<@([A-Z0-9]+)>/g;

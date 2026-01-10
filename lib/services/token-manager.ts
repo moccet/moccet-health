@@ -12,7 +12,8 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 export type Provider =
   | 'oura' | 'dexcom' | 'fitbit' | 'strava' | 'vital'
   | 'gmail' | 'slack' | 'outlook' | 'teams' | 'apple_calendar' | 'apple_health'
-  | 'whoop' | 'myfitnesspal' | 'cronometer' | 'spotify';
+  | 'whoop' | 'myfitnesspal' | 'cronometer' | 'spotify'
+  | 'notion' | 'linear';
 
 export interface TokenData {
   accessToken: string;

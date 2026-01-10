@@ -13,6 +13,11 @@
 
 import OpenAI from 'openai';
 import { createAdminClient } from '@/lib/supabase/server';
+import {
+  correlateAcrossPlatforms,
+  getStoredCorrelations,
+  type CrossPlatformCorrelation,
+} from './cross-platform-correlator';
 
 const openai = new OpenAI();
 
@@ -135,6 +140,26 @@ export interface DeepContentAnalysis {
   analyzedAt: string;
   messageCount: number;
   source: 'gmail' | 'slack' | 'combined';
+
+  // Cross-platform correlation (optional, populated by enhanced analysis)
+  crossPlatformCorrelation?: {
+    relatedThreads: Array<{
+      topic: string;
+      platforms: string[];
+      participants: string[];
+      urgency: 'critical' | 'high' | 'medium' | 'low';
+    }>;
+    linkedTasks: Array<{
+      taskTitle: string;
+      taskSource: 'notion' | 'linear';
+      mentionCount: number;
+    }>;
+    unifiedContacts: Array<{
+      name: string;
+      platforms: string[];
+      communicationScore: number;
+    }>;
+  };
 }
 
 // ============================================================================
@@ -1007,4 +1032,197 @@ function mergeStressIndicators(
     ].slice(0, 5),
     affirmation: higherStress.affirmation,
   };
+}
+
+// ============================================================================
+// ENHANCED ANALYSIS WITH CROSS-PLATFORM CORRELATION
+// ============================================================================
+
+/**
+ * Enhanced deep analysis that includes cross-platform correlation
+ * Links Gmail/Slack/Outlook/Teams conversations with Notion/Linear tasks
+ */
+export async function getEnhancedDeepAnalysis(
+  email: string
+): Promise<DeepContentAnalysis | null> {
+  // Get base combined analysis
+  const combined = await getCombinedDeepAnalysis(email);
+  if (!combined) {
+    return null;
+  }
+
+  // Get or run cross-platform correlation
+  let correlation: CrossPlatformCorrelation | null = null;
+
+  try {
+    // First try to get stored correlations (fast)
+    const stored = await getStoredCorrelations(email);
+
+    if (stored.threads.length > 0 || stored.tasks.length > 0) {
+      correlation = {
+        relatedThreads: stored.threads,
+        linkedTasks: stored.tasks,
+        unifiedContacts: [],
+        analyzedAt: new Date().toISOString(),
+      };
+    }
+  } catch (error) {
+    console.error('[Deep Content Analyzer] Error getting correlations:', error);
+  }
+
+  // Transform correlation data to match interface
+  if (correlation) {
+    combined.crossPlatformCorrelation = {
+      relatedThreads: correlation.relatedThreads.map(t => ({
+        topic: t.topic,
+        platforms: [
+          t.gmail ? 'gmail' : null,
+          t.slack ? 'slack' : null,
+          t.outlook ? 'outlook' : null,
+          t.teams ? 'teams' : null,
+        ].filter((p): p is string => p !== null),
+        participants: t.participants,
+        urgency: t.urgency,
+      })),
+      linkedTasks: correlation.linkedTasks.map(t => ({
+        taskTitle: t.taskTitle,
+        taskSource: t.taskSource,
+        mentionCount: t.mentions.length,
+      })),
+      unifiedContacts: correlation.unifiedContacts.slice(0, 10).map(c => ({
+        name: c.canonicalName,
+        platforms: c.platforms,
+        communicationScore: c.communicationScore,
+      })),
+    };
+  }
+
+  return combined;
+}
+
+/**
+ * Run full cross-platform correlation for a user
+ * This is more expensive and should be run periodically, not on every request
+ */
+export async function runFullCrossPlatformCorrelation(
+  email: string,
+  options?: {
+    gmail?: Array<{ id: string; subject?: string; body?: string; from?: string; timestamp: string }>;
+    slack?: Array<{ id: string; body?: string; from?: string; channel?: string; timestamp: string }>;
+    outlook?: Array<{ id: string; subject?: string; body?: string; from?: string; timestamp: string }>;
+    teams?: Array<{ id: string; body?: string; from?: string; channel?: string; timestamp: string }>;
+    notion?: Array<{ id: string; title: string; status?: string; project?: string }>;
+    linear?: Array<{ id: string; title: string; status?: string; project?: string }>;
+  }
+): Promise<CrossPlatformCorrelation | null> {
+  if (!options) {
+    console.log('[Deep Content Analyzer] No data provided for correlation');
+    return null;
+  }
+
+  try {
+    const correlation = await correlateAcrossPlatforms(email, {
+      gmail: options.gmail?.map(m => ({
+        id: m.id,
+        source: 'gmail' as const,
+        subject: m.subject,
+        body: m.body,
+        from: m.from,
+        timestamp: m.timestamp,
+      })),
+      slack: options.slack?.map(m => ({
+        id: m.id,
+        source: 'slack' as const,
+        body: m.body,
+        from: m.from,
+        channel: m.channel,
+        timestamp: m.timestamp,
+      })),
+      outlook: options.outlook?.map(m => ({
+        id: m.id,
+        source: 'outlook' as const,
+        subject: m.subject,
+        body: m.body,
+        from: m.from,
+        timestamp: m.timestamp,
+      })),
+      teams: options.teams?.map(m => ({
+        id: m.id,
+        source: 'teams' as const,
+        body: m.body,
+        from: m.from,
+        channel: m.channel,
+        timestamp: m.timestamp,
+      })),
+      notion: options.notion?.map(t => ({
+        id: t.id,
+        source: 'notion' as const,
+        title: t.title,
+        status: t.status,
+        project: t.project,
+      })),
+      linear: options.linear?.map(t => ({
+        id: t.id,
+        source: 'linear' as const,
+        title: t.title,
+        status: t.status,
+        project: t.project,
+      })),
+    });
+
+    return correlation;
+  } catch (error) {
+    console.error('[Deep Content Analyzer] Cross-platform correlation error:', error);
+    return null;
+  }
+}
+
+/**
+ * Format cross-platform correlation for prompt context
+ */
+export function formatCrossPlatformCorrelationForPrompt(
+  correlation: DeepContentAnalysis['crossPlatformCorrelation']
+): string {
+  if (!correlation) {
+    return '';
+  }
+
+  const parts: string[] = [];
+  parts.push('\n## Cross-Platform Activity');
+  parts.push('');
+
+  // Related threads
+  if (correlation.relatedThreads.length > 0) {
+    parts.push('### Related Conversations Across Platforms');
+    for (const thread of correlation.relatedThreads.slice(0, 5)) {
+      const platforms = thread.platforms.join(', ');
+      const participants = thread.participants.slice(0, 3).join(', ');
+      parts.push(`- [${thread.urgency.toUpperCase()}] "${thread.topic}" (${platforms})`);
+      if (participants) {
+        parts.push(`  Participants: ${participants}`);
+      }
+    }
+    parts.push('');
+  }
+
+  // Linked tasks
+  if (correlation.linkedTasks.length > 0) {
+    parts.push('### Tasks Mentioned in Communications');
+    for (const task of correlation.linkedTasks.slice(0, 5)) {
+      parts.push(`- [${task.taskSource}] "${task.taskTitle}" - mentioned ${task.mentionCount} times`);
+    }
+    parts.push('');
+  }
+
+  // Unified contacts
+  if (correlation.unifiedContacts.length > 0) {
+    parts.push('### Key Cross-Platform Contacts');
+    for (const contact of correlation.unifiedContacts.slice(0, 5)) {
+      const platforms = contact.platforms.join(', ');
+      parts.push(`- ${contact.name} (${platforms}) - activity score: ${contact.communicationScore}`);
+    }
+    parts.push('');
+  }
+
+  return parts.join('\n');
 }

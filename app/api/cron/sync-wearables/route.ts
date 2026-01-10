@@ -617,7 +617,71 @@ async function processAppleHealthForUser(email: string): Promise<{
 }
 
 /**
- * GET - Run Whoop + Oura + Dexcom + Strava + Apple Health sync for all users
+ * Fetch Notion data for a single user
+ */
+async function fetchNotionDataForUser(email: string): Promise<{
+  success: boolean;
+  tasksAnalyzed?: number;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://moccet.ai'}/api/notion/fetch-data`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { success: true, tasksAnalyzed: data.tasks || 0 };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Fetch Linear data for a single user
+ */
+async function fetchLinearDataForUser(email: string): Promise<{
+  success: boolean;
+  issuesAnalyzed?: number;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://moccet.ai'}/api/linear/fetch-data`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { success: true, issuesAnalyzed: data.totalIssues || 0 };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * GET - Run Whoop + Oura + Dexcom + Strava + Apple Health + Notion + Linear sync for all users
  */
 export async function GET(request: NextRequest) {
   if (!isValidCronRequest(request)) {
@@ -664,13 +728,29 @@ export async function GET(request: NextRequest) {
       .select('email')
       .not('apple_health_data', 'is', null);
 
+    // Get all users with active Notion integrations
+    const { data: notionUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'notion')
+      .eq('is_active', true);
+
+    // Get all users with active Linear integrations
+    const { data: linearUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'linear')
+      .eq('is_active', true);
+
     const whoopEmails = [...new Set(whoopUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const ouraEmails = [...new Set(ouraUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const dexcomEmails = [...new Set(dexcomUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const stravaEmails = [...new Set(stravaUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const appleHealthEmails = [...new Set(appleHealthUsers?.map((u) => u.email).filter(Boolean))] as string[];
+    const notionEmails = [...new Set(notionUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const linearEmails = [...new Set(linearUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
 
-    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava, ${appleHealthEmails.length} Apple Health users`);
+    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava, ${appleHealthEmails.length} Apple Health, ${notionEmails.length} Notion, ${linearEmails.length} Linear users`);
 
     const results = {
       whoop: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
@@ -678,6 +758,8 @@ export async function GET(request: NextRequest) {
       dexcom: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       strava: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       appleHealth: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      notion: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      linear: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
     };
 
     // Process Whoop users in batches
@@ -817,9 +899,63 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Process Notion users in batches
+    for (let i = 0; i < notionEmails.length; i += BATCH_SIZE) {
+      const batch = notionEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchNotionDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.notion.processed++;
+        if (result.success) {
+          results.notion.success++;
+          console.log(`[Notion Sync] Synced ${result.email}: ${result.tasksAnalyzed} tasks`);
+        } else {
+          results.notion.failed++;
+          results.notion.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < notionEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    // Process Linear users in batches
+    for (let i = 0; i < linearEmails.length; i += BATCH_SIZE) {
+      const batch = linearEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchLinearDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.linear.processed++;
+        if (result.success) {
+          results.linear.success++;
+          console.log(`[Linear Sync] Synced ${result.email}: ${result.issuesAnalyzed} issues`);
+        } else {
+          results.linear.failed++;
+          results.linear.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < linearEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(
-      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}, Apple Health: ${results.appleHealth.success}/${results.appleHealth.processed}`
+      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}, Apple Health: ${results.appleHealth.success}/${results.appleHealth.processed}, Notion: ${results.notion.success}/${results.notion.processed}, Linear: ${results.linear.success}/${results.linear.processed}`
     );
 
     return NextResponse.json({
@@ -853,6 +989,18 @@ export async function GET(request: NextRequest) {
         successful: results.appleHealth.success,
         failed: results.appleHealth.failed,
         errors: results.appleHealth.errors.length > 0 ? results.appleHealth.errors.slice(0, 5) : undefined,
+      },
+      notion: {
+        users_processed: results.notion.processed,
+        successful: results.notion.success,
+        failed: results.notion.failed,
+        errors: results.notion.errors.length > 0 ? results.notion.errors.slice(0, 5) : undefined,
+      },
+      linear: {
+        users_processed: results.linear.processed,
+        successful: results.linear.success,
+        failed: results.linear.failed,
+        errors: results.linear.errors.length > 0 ? results.linear.errors.slice(0, 5) : undefined,
       },
       duration_ms: duration,
     });

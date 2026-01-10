@@ -165,6 +165,24 @@ export async function GET(request: NextRequest) {
       console.warn('[Teams] No userId available, cannot update user_connectors');
     }
 
+    // Subscribe to Teams webhooks for real-time updates
+    if (storedUserEmail) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://moccet.ai';
+      fetch(`${baseUrl}/api/teams/setup-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: storedUserEmail, code: userCode }),
+      }).then(response => {
+        if (response.ok) {
+          console.log(`[Teams] Webhook subscription triggered for ${storedUserEmail}`);
+        } else {
+          console.error(`[Teams] Webhook subscription failed for ${storedUserEmail}:`, response.status);
+        }
+      }).catch(err => {
+        console.error(`[Teams] Webhook subscription error for ${storedUserEmail}:`, err);
+      });
+    }
+
     // Set cookies with tokens (for backward compatibility)
     cookieStore.set('teams_access_token', accessToken, {
       httpOnly: true,

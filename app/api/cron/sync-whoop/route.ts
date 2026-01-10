@@ -1,7 +1,7 @@
 /**
- * Whoop Auto-Sync Cron Job
+ * Wearables Auto-Sync Cron Job
  *
- * Automatically fetches fresh Whoop data for all users with active Whoop integrations.
+ * Automatically fetches fresh data from Whoop and Oura for all users with active integrations.
  * Runs twice daily (morning and evening) to keep health metrics up to date.
  *
  * Vercel Cron config (in vercel.json):
@@ -10,12 +10,12 @@
  *   "schedule": "0 6,18 * * *"
  * }
  *
- * GET /api/cron/sync-whoop - Run Whoop sync for all users
+ * GET /api/cron/sync-whoop - Run Whoop + Oura sync for all users
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { getValidatedAccessToken } from '@/lib/services/token-manager';
+import { getValidatedAccessToken, getAccessToken } from '@/lib/services/token-manager';
 import { syncGoalProgress } from '@/lib/services/goal-progress-sync';
 
 export const maxDuration = 300; // 5 minutes max
@@ -219,94 +219,252 @@ async function fetchWhoopDataForUser(email: string): Promise<{
 }
 
 /**
- * GET - Run Whoop sync for all users
+ * Fetch Oura data for a single user
+ */
+async function fetchOuraDataForUser(email: string): Promise<{
+  success: boolean;
+  recordsAnalyzed?: number;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminClient();
+
+    // Get user code from onboarding data
+    let userCode: string | null = null;
+    const { data: forgeData } = await supabase
+      .from('forge_onboarding_data')
+      .select('form_data')
+      .eq('email', email)
+      .single();
+
+    if (forgeData?.form_data?.uniqueCode) {
+      userCode = forgeData.form_data.uniqueCode;
+    } else {
+      const { data: sageData } = await supabase
+        .from('sage_onboarding_data')
+        .select('form_data')
+        .eq('email', email)
+        .single();
+      if (sageData?.form_data?.uniqueCode) {
+        userCode = sageData.form_data.uniqueCode;
+      }
+    }
+
+    // Get token
+    const { token, error: tokenError } = await getAccessToken(email, 'oura', userCode);
+
+    if (!token || tokenError) {
+      return { success: false, error: tokenError || 'No valid token' };
+    }
+
+    // Date range (30 days)
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Fetch data from Oura API
+    const dataTypes = [
+      { name: 'sleep', endpoint: 'sleep' },
+      { name: 'daily_activity', endpoint: 'daily_activity' },
+      { name: 'daily_readiness', endpoint: 'daily_readiness' },
+    ];
+
+    const allData: Record<string, unknown[]> = {};
+    let totalRecords = 0;
+
+    for (const dataType of dataTypes) {
+      try {
+        const url = `https://api.ouraring.com/v2/usercollection/${dataType.endpoint}?start_date=${startDate}&end_date=${endDate}`;
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          allData[dataType.name] = data.data || [];
+          totalRecords += allData[dataType.name].length;
+        }
+      } catch (e) {
+        console.warn(`[Oura Sync] Failed to fetch ${dataType.name}:`, e);
+      }
+    }
+
+    // Store in oura_data table
+    const { error: dbError } = await supabase.from('oura_data').insert({
+      email,
+      sync_date: new Date().toISOString(),
+      start_date: startDate,
+      end_date: endDate,
+      sleep_data: allData.sleep || [],
+      activity_data: allData.daily_activity || [],
+      readiness_data: allData.daily_readiness || [],
+      heart_rate_data: [],
+      workout_data: [],
+      raw_data: allData,
+    });
+
+    if (dbError) {
+      console.error(`[Oura Sync] DB error for ${email}:`, dbError);
+    }
+
+    // Also update oura_daily_data for goal tracking
+    const sleepData = allData.sleep as any[] || [];
+    const readinessData = allData.daily_readiness as any[] || [];
+
+    for (const sleep of sleepData.slice(-7)) { // Last 7 days
+      const day = sleep.day;
+      if (!day) continue;
+
+      const readiness = readinessData.find((r: any) => r.day === day);
+
+      await supabase.from('oura_daily_data').upsert(
+        {
+          user_email: email,
+          date: day,
+          sleep_score: sleep.score,
+          total_sleep_duration: sleep.total_sleep_duration,
+          deep_sleep_duration: sleep.deep_sleep_duration,
+          rem_sleep_duration: sleep.rem_sleep_duration,
+          sleep_efficiency: sleep.efficiency,
+          readiness_score: readiness?.score,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_email,date' }
+      );
+    }
+
+    // Sync goal progress
+    try {
+      await syncGoalProgress(email);
+    } catch (goalError) {
+      console.warn(`[Oura Sync] Goal sync error for ${email}:`, goalError);
+    }
+
+    return { success: true, recordsAnalyzed: totalRecords };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * GET - Run Whoop + Oura sync for all users
  */
 export async function GET(request: NextRequest) {
   if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  console.log('[Whoop Sync Cron] Starting sync for all users');
+  console.log('[Wearables Sync Cron] Starting sync for all users');
   const startTime = Date.now();
 
   try {
     const supabase = createAdminClient();
 
     // Get all users with active Whoop integrations
-    const { data: whoopUsers, error: queryError } = await supabase
+    const { data: whoopUsers } = await supabase
       .from('integration_tokens')
       .select('user_email')
       .eq('provider', 'whoop')
       .eq('is_active', true);
 
-    if (queryError) {
-      console.error('[Whoop Sync Cron] Query error:', queryError);
-      return NextResponse.json(
-        { error: 'Failed to get users', details: queryError.message },
-        { status: 500 }
-      );
-    }
+    // Get all users with active Oura integrations
+    const { data: ouraUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'oura')
+      .eq('is_active', true);
 
-    const users = [...new Set(whoopUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
-    console.log(`[Whoop Sync Cron] Found ${users.length} users with Whoop`);
+    const whoopEmails = [...new Set(whoopUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const ouraEmails = [...new Set(ouraUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
 
-    if (users.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No users with Whoop integration',
-        users_processed: 0,
-        duration_ms: Date.now() - startTime,
-      });
-    }
+    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop users, ${ouraEmails.length} Oura users`);
 
-    // Process users in batches
+    const results = {
+      whoop: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      oura: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+    };
+
+    // Process Whoop users in batches
     const BATCH_SIZE = 5;
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
 
-    for (let i = 0; i < users.length; i += BATCH_SIZE) {
-      const batch = users.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < whoopEmails.length; i += BATCH_SIZE) {
+      const batch = whoopEmails.slice(i, i + BATCH_SIZE);
 
-      const results = await Promise.all(
+      const batchResults = await Promise.all(
         batch.map(async (email) => {
           const result = await fetchWhoopDataForUser(email);
           return { email, ...result };
         })
       );
 
-      for (const result of results) {
+      for (const result of batchResults) {
+        results.whoop.processed++;
         if (result.success) {
-          successCount++;
-          console.log(`[Whoop Sync Cron] Synced ${result.email}: ${result.cyclesAnalyzed} cycles`);
+          results.whoop.success++;
+          console.log(`[Whoop Sync] Synced ${result.email}: ${result.cyclesAnalyzed} cycles`);
         } else {
-          errorCount++;
-          errors.push(`${result.email}: ${result.error}`);
-          console.warn(`[Whoop Sync Cron] Failed ${result.email}: ${result.error}`);
+          results.whoop.failed++;
+          results.whoop.errors.push(`${result.email}: ${result.error}`);
         }
       }
 
-      // Small delay between batches
-      if (i + BATCH_SIZE < users.length) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      if (i + BATCH_SIZE < whoopEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    // Process Oura users in batches
+    for (let i = 0; i < ouraEmails.length; i += BATCH_SIZE) {
+      const batch = ouraEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchOuraDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.oura.processed++;
+        if (result.success) {
+          results.oura.success++;
+          console.log(`[Oura Sync] Synced ${result.email}: ${result.recordsAnalyzed} records`);
+        } else {
+          results.oura.failed++;
+          results.oura.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < ouraEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
     }
 
     const duration = Date.now() - startTime;
     console.log(
-      `[Whoop Sync Cron] Completed in ${duration}ms. Success: ${successCount}, Failed: ${errorCount}`
+      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}`
     );
 
     return NextResponse.json({
       success: true,
-      users_processed: users.length,
-      successful: successCount,
-      failed: errorCount,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+      whoop: {
+        users_processed: results.whoop.processed,
+        successful: results.whoop.success,
+        failed: results.whoop.failed,
+        errors: results.whoop.errors.length > 0 ? results.whoop.errors.slice(0, 5) : undefined,
+      },
+      oura: {
+        users_processed: results.oura.processed,
+        successful: results.oura.success,
+        failed: results.oura.failed,
+        errors: results.oura.errors.length > 0 ? results.oura.errors.slice(0, 5) : undefined,
+      },
       duration_ms: duration,
     });
   } catch (error) {
-    console.error('[Whoop Sync Cron] Fatal error:', error);
+    console.error('[Wearables Sync Cron] Fatal error:', error);
     return NextResponse.json(
       {
         success: false,

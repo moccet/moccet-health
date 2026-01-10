@@ -413,7 +413,7 @@ export async function POST(request: NextRequest) {
 
     // Date ranges
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 90 days ago
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days future
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
 

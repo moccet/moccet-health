@@ -547,11 +547,11 @@ export async function POST(request: NextRequest) {
       console.warn('[Slack Fetch] Could not fetch reactions:', err);
     }
 
-    // Calculate timestamp for 30 days ago
+    // Calculate timestamp for 90 days ago
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = Math.floor(startDate.getTime() / 1000);
-    const totalDays = 30;
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = Math.floor(startDate.getTime() / 1000);
+    const totalDays = 90;
 
     console.log(`[Slack Fetch] Fetching data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
@@ -609,7 +609,7 @@ export async function POST(request: NextRequest) {
     for (const channel of channelsToCheck) {
       try {
         const historyResponse = await fetch(
-          `https://slack.com/api/conversations.history?channel=${channel.id}&oldest=${thirtyDaysAgo}&limit=200`,
+          `https://slack.com/api/conversations.history?channel=${channel.id}&oldest=${ninetyDaysAgo}&limit=200`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,

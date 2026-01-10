@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Set default date range: last 30 days
     const end = endDate || new Date().toISOString();
-    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     console.log(`[Dexcom Sync] Fetching data for ${email} from ${start} to ${end}`);
 

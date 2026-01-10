@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
 
     // Date ranges (past 30 days)
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const totalDays = 30;
 
     console.log(`[Whoop Fetch] Fetching cycles from ${startDate.toISOString()} to ${endDate.toISOString()}`);

@@ -6,8 +6,9 @@
 }
 
 .culture-assessment {
-  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #FFFFFF;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
+  background: #fbfaf4;
   min-height: 100vh;
   min-height: -webkit-fill-available;
   color: #1A1A1A;
@@ -58,6 +59,7 @@ html {
   font-family: var(--font-inter), sans-serif;
   font-size: 20px;
   font-weight: 900;
+  font-stretch: normal;
   color: #000000;
   letter-spacing: -0.02em;
 }
@@ -114,14 +116,24 @@ html {
 .culture-assessment .welcome h1 {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
+  font-stretch: expanded;
   font-size: 28px;
   margin-bottom: 16px;
   line-height: 1.3;
   letter-spacing: -0.02em;
 }
 
-.culture-assessment .welcome p {
+.culture-assessment .welcome h1 .moccet-text {
   font-family: var(--font-inter), sans-serif;
+  font-weight: 900;
+  font-stretch: normal;
+  letter-spacing: -0.02em;
+}
+
+.culture-assessment .welcome p {
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-stretch: expanded;
   font-size: 16px;
   color: #666666;
   margin-bottom: 16px;
@@ -129,7 +141,9 @@ html {
 }
 
 .culture-assessment .welcome .time {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-stretch: expanded;
   font-size: 14px;
   color: #999999;
   margin-bottom: 32px;
@@ -137,7 +151,9 @@ html {
 
 /* Honesty nudge */
 .culture-assessment .honesty-note {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-stretch: expanded;
   font-size: 13px;
   color: #999999;
   margin-bottom: 28px;
@@ -150,9 +166,10 @@ html {
   background: #000000;
   color: #FFFFFF;
   border: none;
-  padding: 16px 32px;
+  padding: 10px 24px;
   border-radius: 8px;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -178,9 +195,10 @@ html {
   background: #000000;
   color: #FFFFFF;
   border: none;
-  padding: 12px 20px;
+  padding: 8px 16px;
   border-radius: 6px;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -206,7 +224,8 @@ html {
 }
 
 .culture-assessment .question-number {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 12px;
   font-weight: 500;
   color: #999999;
@@ -217,6 +236,7 @@ html {
 .culture-assessment .question-text {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
+  font-stretch: expanded;
   font-size: 22px;
   line-height: 1.4;
   letter-spacing: -0.01em;
@@ -224,7 +244,8 @@ html {
 }
 
 .culture-assessment .question-helper {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 14px;
   color: #666666;
   margin-top: 8px;
@@ -241,7 +262,8 @@ html {
   border: none;
   border-bottom: 2px solid #E5E5E5;
   background: transparent;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 20px;
   padding: 12px 0;
   color: #1A1A1A;
@@ -263,7 +285,8 @@ html {
 
 .culture-assessment .error-message {
   color: #FF4444;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 13px;
   margin-top: 8px;
   display: none;
@@ -279,7 +302,8 @@ html {
   border: 1px solid #E5E5E5;
   border-radius: 8px;
   background: #FAFAFA;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 15px;
   padding: 16px;
   color: #1A1A1A;
@@ -312,7 +336,8 @@ html {
   border: 1px solid #E5E5E5;
   border-radius: 6px;
   background: #FFFFFF;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 15px;
   font-weight: 500;
   color: #333333;
@@ -334,7 +359,8 @@ html {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 11px;
   color: #999999;
 }
@@ -406,7 +432,8 @@ html {
   height: 26px;
   border: 1px solid #DDDDDD;
   border-radius: 4px;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 12px;
   font-weight: 600;
   color: #888888;
@@ -415,14 +442,16 @@ html {
 }
 
 .culture-assessment .option-text {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 16px;
   color: #333333;
   line-height: 1.5;
 }
 
 .culture-assessment .keyboard-hint {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 12px;
   color: #AAAAAA;
   margin-top: 16px;
@@ -435,7 +464,7 @@ html {
   left: 0;
   right: 0;
   padding: 16px 24px;
-  background: #FFFFFF;
+  background: #fbfaf4;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -477,7 +506,8 @@ html {
 }
 
 .culture-assessment .nav-progress {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 13px;
   color: #AAAAAA;
 }
@@ -508,13 +538,15 @@ html {
 .culture-assessment .results h1 {
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 500;
+  font-stretch: expanded;
   font-size: 24px;
   margin-bottom: 12px;
   letter-spacing: -0.02em;
 }
 
 .culture-assessment .results .subtitle {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 15px;
   color: #666666;
   margin-bottom: 40px;
@@ -530,6 +562,7 @@ html {
 .culture-assessment .overall-score-value {
   display: block;
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 48px;
   font-weight: 500;
   color: #000000;
@@ -537,7 +570,8 @@ html {
 }
 
 .culture-assessment .overall-score-label {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 13px;
   color: #999999;
   text-transform: uppercase;
@@ -549,7 +583,8 @@ html {
 }
 
 .culture-assessment .written-note {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 13px;
   color: #999999;
   text-align: center;
@@ -557,7 +592,8 @@ html {
 }
 
 .culture-assessment .insights-title {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
@@ -579,13 +615,15 @@ html {
 }
 
 .culture-assessment .insight-label {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 14px;
   color: #666666;
 }
 
 .culture-assessment .insight-value {
-  font-family: var(--font-inter), sans-serif;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch: expanded;
   font-size: 14px;
   font-weight: 500;
   color: #1A1A1A;

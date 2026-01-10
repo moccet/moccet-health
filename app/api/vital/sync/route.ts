@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Set default date range: last 30 days
     const end = endDate || new Date().toISOString().split('T')[0];
-    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     console.log(`[Vital Sync] Fetching data for user ${userId} from ${start} to ${end}`);
 

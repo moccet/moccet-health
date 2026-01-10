@@ -636,7 +636,7 @@ export default function CultureAssessmentPage() {
           <div className={`question-container ${transitionClass}`}>
             {current.type === 'welcome' && (
               <div className="welcome animate-in">
-                <h1>moccet culture assessment</h1>
+                <h1><span className="moccet-text">moccet</span> culture assessment</h1>
                 <p>This helps us understand how you approach challenges, work with others, and grow. There are no trick questions. Answer based on what you&apos;d actually do.</p>
                 <p className="time">Takes about 12 minutes</p>
                 <div className="honesty-note">

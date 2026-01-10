@@ -311,10 +311,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate date range
+    // Calculate date range (90 days)
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const totalDays = 30;
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const totalDays = 90;
 
     console.log(`[Teams Fetch] Fetching data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 

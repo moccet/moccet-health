@@ -101,7 +101,7 @@ async function fetchWhoopDataForUser(email: string): Promise<{
 
     // Fetch cycles (30 days)
     const endDate = new Date();
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
     const cyclesResponse = await fetch(
       `https://api.prod.whoop.com/developer/v1/cycle?start=${startDate.toISOString()}&end=${endDate.toISOString()}&limit=25`,
@@ -259,7 +259,7 @@ async function fetchOuraDataForUser(email: string): Promise<{
 
     // Date range (30 days)
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Fetch data from Oura API
     const dataTypes = [
@@ -482,7 +482,7 @@ async function fetchStravaDataForUser(email: string): Promise<{
     }
 
     // Date range (30 days)
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const unixStart = Math.floor(startDate.getTime() / 1000);
 
     // Fetch activities

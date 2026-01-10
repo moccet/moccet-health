@@ -19,6 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { DailyDigestService } from '@/lib/services/daily-digest-service';
+import { MorningBriefingService } from '@/lib/services/morning-briefing-service';
 import { createLogger } from '@/lib/utils/logger';
 
 const logger = createLogger('DailyDigestCron');
@@ -53,25 +54,43 @@ export async function GET(request: NextRequest) {
 
     logger.info('Daily digest cron job triggered');
 
-    // Run the digest job
-    const result = await DailyDigestService.runDigestJob();
+    // Run the digest job and morning briefing job in parallel
+    const [digestResult, briefingResult] = await Promise.all([
+      DailyDigestService.runDigestJob(),
+      MorningBriefingService.runBriefingJob(),
+    ]);
 
-    logger.info('Daily digest cron job completed', {
-      processed: result.processed,
-      successful: result.successful,
-      notificationsSent: result.notificationsSent,
+    logger.info('Daily digest and morning briefing cron jobs completed', {
+      digest: {
+        processed: digestResult.processed,
+        successful: digestResult.successful,
+        notificationsSent: digestResult.notificationsSent,
+      },
+      briefing: {
+        processed: briefingResult.processed,
+        sent: briefingResult.sent,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Daily digest job completed',
+      message: 'Daily digest and morning briefing jobs completed',
       stats: {
-        processed: result.processed,
-        successful: result.successful,
-        notificationsSent: result.notificationsSent,
+        digest: {
+          processed: digestResult.processed,
+          successful: digestResult.successful,
+          notificationsSent: digestResult.notificationsSent,
+        },
+        briefing: {
+          processed: briefingResult.processed,
+          sent: briefingResult.sent,
+        },
       },
       // Only include detailed results in dev
-      ...(isDev ? { results: result.results } : {}),
+      ...(isDev ? {
+        digestResults: digestResult.results,
+        briefingResults: briefingResult.results,
+      } : {}),
     });
   } catch (error) {
     logger.error('Daily digest cron job failed', { error });

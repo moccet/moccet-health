@@ -24,8 +24,9 @@ const openai = new OpenAI({
 
 /**
  * Health context derived from ecosystem data
+ * Exported for use by morning briefing service
  */
-interface HealthContext {
+export interface HealthContext {
   recovery?: number;
   strain?: number;
   hrv?: number;
@@ -75,8 +76,9 @@ export interface DigestDeliveryResult {
 
 /**
  * Analyze ecosystem data and determine health context + recommended wisdom category
+ * Exported for use by morning briefing service
  */
-async function analyzeHealthContext(email: string): Promise<HealthContext | null> {
+export async function analyzeHealthContext(email: string): Promise<HealthContext | null> {
   try {
     const ecosystemData = await fetchAllEcosystemData(email);
     const dataPoints: string[] = [];

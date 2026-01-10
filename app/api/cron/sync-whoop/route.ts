@@ -349,7 +349,205 @@ async function fetchOuraDataForUser(email: string): Promise<{
 }
 
 /**
- * GET - Run Whoop + Oura sync for all users
+ * Fetch Dexcom data for a single user
+ */
+async function fetchDexcomDataForUser(email: string): Promise<{
+  success: boolean;
+  recordsAnalyzed?: number;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminClient();
+
+    // Get user code
+    let userCode: string | null = null;
+    const { data: forgeData } = await supabase
+      .from('forge_onboarding_data')
+      .select('form_data')
+      .eq('email', email)
+      .single();
+
+    if (forgeData?.form_data?.uniqueCode) {
+      userCode = forgeData.form_data.uniqueCode;
+    }
+
+    // Get token
+    const { token, error: tokenError } = await getAccessToken(email, 'dexcom', userCode);
+
+    if (!token || tokenError) {
+      return { success: false, error: tokenError || 'No valid token' };
+    }
+
+    // Date range (7 days for CGM data - more frequent readings)
+    const endDate = new Date().toISOString();
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Determine base URL
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://api.dexcom.com'
+      : 'https://sandbox-api.dexcom.com';
+
+    // Fetch EGV data (glucose readings)
+    let egvData: any[] = [];
+    try {
+      const url = `${baseUrl}/v2/users/self/egvs?startDate=${startDate}&endDate=${endDate}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        egvData = data.egvs || [];
+      }
+    } catch (e) {
+      console.warn(`[Dexcom Sync] Failed to fetch EGV data:`, e);
+    }
+
+    if (egvData.length === 0) {
+      return { success: true, recordsAnalyzed: 0 };
+    }
+
+    // Calculate glucose metrics
+    const glucoseValues = egvData.map((e: any) => e.value).filter(Boolean);
+    const avgGlucose = glucoseValues.length > 0
+      ? Math.round(glucoseValues.reduce((a: number, b: number) => a + b, 0) / glucoseValues.length)
+      : 0;
+
+    // Time in range (70-180 mg/dL)
+    const inRange = glucoseValues.filter((v: number) => v >= 70 && v <= 180).length;
+    const timeInRange = glucoseValues.length > 0
+      ? Math.round((inRange / glucoseValues.length) * 100)
+      : 0;
+
+    // Store in dexcom_data
+    const { error: dbError } = await supabase.from('dexcom_data').insert({
+      user_email: email,
+      timestamp: new Date().toISOString(),
+      egv_data: egvData,
+      analysis: {
+        avgGlucose,
+        timeInRange,
+        readings: egvData.length,
+      },
+    });
+
+    if (dbError) {
+      console.error(`[Dexcom Sync] DB error for ${email}:`, dbError);
+    }
+
+    // Sync goal progress
+    try {
+      await syncGoalProgress(email);
+    } catch (goalError) {
+      console.warn(`[Dexcom Sync] Goal sync error for ${email}:`, goalError);
+    }
+
+    return { success: true, recordsAnalyzed: egvData.length };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Fetch Strava data for a single user
+ */
+async function fetchStravaDataForUser(email: string): Promise<{
+  success: boolean;
+  activitiesAnalyzed?: number;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminClient();
+
+    // Get user code
+    let userCode: string | null = null;
+    const { data: forgeData } = await supabase
+      .from('forge_onboarding_data')
+      .select('form_data')
+      .eq('email', email)
+      .single();
+
+    if (forgeData?.form_data?.uniqueCode) {
+      userCode = forgeData.form_data.uniqueCode;
+    }
+
+    // Get token
+    const { token, error: tokenError } = await getAccessToken(email, 'strava', userCode);
+
+    if (!token || tokenError) {
+      return { success: false, error: tokenError || 'No valid token' };
+    }
+
+    // Date range (30 days)
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const unixStart = Math.floor(startDate.getTime() / 1000);
+
+    // Fetch activities
+    const response = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?after=${unixStart}&per_page=50`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, error: `Strava API error: ${response.status}` };
+    }
+
+    const activities = await response.json();
+
+    if (activities.length === 0) {
+      return { success: true, activitiesAnalyzed: 0 };
+    }
+
+    // Process and store
+    const processedWorkouts = activities.map((a: any) => ({
+      id: a.id.toString(),
+      type: a.type,
+      startTime: a.start_date,
+      duration: Math.round(a.moving_time / 60),
+      distance: a.distance,
+      avgHeartRate: a.average_heartrate,
+      calories: a.calories,
+    }));
+
+    // Calculate weekly volume
+    const totalMinutes = processedWorkouts.reduce((sum: number, w: any) => sum + w.duration, 0);
+    const weeklyVolume = Math.round(totalMinutes / 4.3); // ~30 days / 7
+
+    // Store in forge_training_data
+    const { error: dbError } = await supabase.from('forge_training_data').upsert(
+      {
+        email,
+        provider: 'strava',
+        workouts: processedWorkouts,
+        weekly_volume: weeklyVolume,
+        data_period_start: startDate.toISOString().split('T')[0],
+        data_period_end: new Date().toISOString().split('T')[0],
+        data_points_analyzed: activities.length,
+        sync_date: new Date().toISOString(),
+      },
+      { onConflict: 'email,provider' }
+    );
+
+    if (dbError) {
+      console.error(`[Strava Sync] DB error for ${email}:`, dbError);
+    }
+
+    return { success: true, activitiesAnalyzed: activities.length };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * GET - Run Whoop + Oura + Dexcom + Strava sync for all users
  */
 export async function GET(request: NextRequest) {
   if (!isValidCronRequest(request)) {
@@ -376,14 +574,32 @@ export async function GET(request: NextRequest) {
       .eq('provider', 'oura')
       .eq('is_active', true);
 
+    // Get all users with active Dexcom integrations
+    const { data: dexcomUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'dexcom')
+      .eq('is_active', true);
+
+    // Get all users with active Strava integrations
+    const { data: stravaUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'strava')
+      .eq('is_active', true);
+
     const whoopEmails = [...new Set(whoopUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const ouraEmails = [...new Set(ouraUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const dexcomEmails = [...new Set(dexcomUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const stravaEmails = [...new Set(stravaUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
 
-    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop users, ${ouraEmails.length} Oura users`);
+    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava users`);
 
     const results = {
       whoop: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       oura: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      dexcom: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      strava: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
     };
 
     // Process Whoop users in batches
@@ -442,9 +658,63 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Process Dexcom users in batches
+    for (let i = 0; i < dexcomEmails.length; i += BATCH_SIZE) {
+      const batch = dexcomEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchDexcomDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.dexcom.processed++;
+        if (result.success) {
+          results.dexcom.success++;
+          console.log(`[Dexcom Sync] Synced ${result.email}: ${result.recordsAnalyzed} readings`);
+        } else {
+          results.dexcom.failed++;
+          results.dexcom.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < dexcomEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    // Process Strava users in batches
+    for (let i = 0; i < stravaEmails.length; i += BATCH_SIZE) {
+      const batch = stravaEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchStravaDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.strava.processed++;
+        if (result.success) {
+          results.strava.success++;
+          console.log(`[Strava Sync] Synced ${result.email}: ${result.activitiesAnalyzed} activities`);
+        } else {
+          results.strava.failed++;
+          results.strava.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < stravaEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(
-      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}`
+      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}`
     );
 
     return NextResponse.json({
@@ -460,6 +730,18 @@ export async function GET(request: NextRequest) {
         successful: results.oura.success,
         failed: results.oura.failed,
         errors: results.oura.errors.length > 0 ? results.oura.errors.slice(0, 5) : undefined,
+      },
+      dexcom: {
+        users_processed: results.dexcom.processed,
+        successful: results.dexcom.success,
+        failed: results.dexcom.failed,
+        errors: results.dexcom.errors.length > 0 ? results.dexcom.errors.slice(0, 5) : undefined,
+      },
+      strava: {
+        users_processed: results.strava.processed,
+        successful: results.strava.success,
+        failed: results.strava.failed,
+        errors: results.strava.errors.length > 0 ? results.strava.errors.slice(0, 5) : undefined,
       },
       duration_ms: duration,
     });

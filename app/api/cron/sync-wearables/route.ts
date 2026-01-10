@@ -547,7 +547,77 @@ async function fetchStravaDataForUser(email: string): Promise<{
 }
 
 /**
- * GET - Run Whoop + Oura + Dexcom + Strava sync for all users
+ * Process Apple Health data for a user
+ * Apple Health is push-based (from iOS app), so we process existing uploaded data
+ */
+async function processAppleHealthForUser(email: string): Promise<{
+  success: boolean;
+  metricsProcessed?: number;
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminClient();
+
+    // Get Apple Health data from sage_onboarding_data
+    const { data: onboardingData } = await supabase
+      .from('sage_onboarding_data')
+      .select('apple_health_data, updated_at')
+      .eq('email', email)
+      .single();
+
+    if (!onboardingData?.apple_health_data) {
+      return { success: false, error: 'No Apple Health data' };
+    }
+
+    const healthData = onboardingData.apple_health_data;
+    const updatedAt = new Date(onboardingData.updated_at);
+    const hoursSinceUpdate = (Date.now() - updatedAt.getTime()) / (1000 * 60 * 60);
+
+    // Skip if data is more than 48 hours old (stale)
+    if (hoursSinceUpdate > 48) {
+      return { success: false, error: 'Data stale (>48h)' };
+    }
+
+    // Extract metrics
+    const steps = healthData.steps?.dailyAverage || 0;
+    const sleepHours = parseFloat(healthData.sleep?.averageHours || '0');
+    const restingHR = healthData.heartRate?.resting || 0;
+    const activeCalories = healthData.activeEnergy?.dailyAverage || 0;
+
+    // Store in oura_daily_data format for goal tracking compatibility
+    const today = new Date().toISOString().split('T')[0];
+
+    await supabase.from('oura_daily_data').upsert(
+      {
+        user_email: email,
+        date: today,
+        steps: steps,
+        total_sleep_duration: sleepHours * 3600, // Convert to seconds
+        active_calories: activeCalories,
+        resting_heart_rate: restingHR,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_email,date' }
+    );
+
+    // Sync goal progress
+    try {
+      await syncGoalProgress(email);
+    } catch (goalError) {
+      console.warn(`[Apple Health Sync] Goal sync error for ${email}:`, goalError);
+    }
+
+    return { success: true, metricsProcessed: 4 };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * GET - Run Whoop + Oura + Dexcom + Strava + Apple Health sync for all users
  */
 export async function GET(request: NextRequest) {
   if (!isValidCronRequest(request)) {
@@ -588,18 +658,26 @@ export async function GET(request: NextRequest) {
       .eq('provider', 'strava')
       .eq('is_active', true);
 
+    // Get users with Apple Health data (push-based, stored in sage_onboarding_data)
+    const { data: appleHealthUsers } = await supabase
+      .from('sage_onboarding_data')
+      .select('email')
+      .not('apple_health_data', 'is', null);
+
     const whoopEmails = [...new Set(whoopUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const ouraEmails = [...new Set(ouraUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const dexcomEmails = [...new Set(dexcomUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const stravaEmails = [...new Set(stravaUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const appleHealthEmails = [...new Set(appleHealthUsers?.map((u) => u.email).filter(Boolean))] as string[];
 
-    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava users`);
+    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava, ${appleHealthEmails.length} Apple Health users`);
 
     const results = {
       whoop: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       oura: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       dexcom: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       strava: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      appleHealth: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
     };
 
     // Process Whoop users in batches
@@ -712,9 +790,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Process Apple Health users in batches
+    for (let i = 0; i < appleHealthEmails.length; i += BATCH_SIZE) {
+      const batch = appleHealthEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await processAppleHealthForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.appleHealth.processed++;
+        if (result.success) {
+          results.appleHealth.success++;
+          console.log(`[Apple Health Sync] Processed ${result.email}: ${result.metricsProcessed} metrics`);
+        } else {
+          results.appleHealth.failed++;
+          results.appleHealth.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < appleHealthEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(
-      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}`
+      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}, Apple Health: ${results.appleHealth.success}/${results.appleHealth.processed}`
     );
 
     return NextResponse.json({
@@ -742,6 +847,12 @@ export async function GET(request: NextRequest) {
         successful: results.strava.success,
         failed: results.strava.failed,
         errors: results.strava.errors.length > 0 ? results.strava.errors.slice(0, 5) : undefined,
+      },
+      appleHealth: {
+        users_processed: results.appleHealth.processed,
+        successful: results.appleHealth.success,
+        failed: results.appleHealth.failed,
+        errors: results.appleHealth.errors.length > 0 ? results.appleHealth.errors.slice(0, 5) : undefined,
       },
       duration_ms: duration,
     });

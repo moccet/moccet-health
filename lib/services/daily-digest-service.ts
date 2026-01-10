@@ -10,6 +10,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import { WisdomLibraryService, WisdomEntry, WisdomCategory } from './wisdom-library-service';
+import { AIWisdomGenerator, WisdomHealthContext, GeneratedWisdom } from './ai-wisdom-generator';
 import { PreferenceLearner } from './preference-learner';
 import { sendPushNotification } from './onesignal-service';
 import { fetchAllEcosystemData } from './ecosystem-fetcher';
@@ -28,7 +29,9 @@ interface HealthContext {
   recovery?: number;
   strain?: number;
   hrv?: number;
+  hrvTrend?: 'rising' | 'stable' | 'declining';
   sleepHours?: number;
+  sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
   readiness?: number;
   glucoseInRange?: number;
   stressLevel: 'low' | 'moderate' | 'high';
@@ -36,17 +39,21 @@ interface HealthContext {
   recommendedFocus: WisdomCategory;
   healthSummary: string;
   dataPoints: string[];
+  recentPatterns?: string[];
 }
 
 export interface DigestItem {
   id: string;
-  type: 'wisdom' | 'health_insight';
+  type: 'wisdom' | 'health_insight' | 'ai_generated';
   category: string;
   title: string;
   content: string;
   source?: string;
   sourceType?: string;
   actionableTip?: string;
+  theme?: string;
+  inspiredBy?: string[];
+  personalizedFor?: string[];
 }
 
 export interface DailyDigest {
@@ -322,18 +329,18 @@ class DailyDigestServiceClass {
 
   /**
    * Generate a daily digest for a specific user
-   * Combines personalized health summary with relevant wisdom
+   * Uses AI to generate personalized wisdom based on health context
    */
   async generateDigest(email: string, itemCount: number = 2): Promise<DailyDigest | null> {
     try {
-      logger.info('Generating personalized digest', { email });
+      logger.info('Generating AI-powered digest', { email });
 
       // Get user preferences
       const prefs = await PreferenceLearner.getPreferences(email);
 
       const items: DigestItem[] = [];
 
-      // Step 1: Get health context and create health summary item
+      // Step 1: Get health context
       const healthContext = await analyzeHealthContext(email);
 
       if (healthContext) {
@@ -358,44 +365,111 @@ class DailyDigestServiceClass {
           recommendedFocus: healthContext.recommendedFocus,
         });
 
-        // Step 2: Get ONE wisdom entry relevant to their current health state
+        // Step 2: Generate personalized wisdom using AI + RAG
         try {
-          const relevantWisdom = await WisdomLibraryService.getUnseen(email, healthContext.recommendedFocus);
-          if (relevantWisdom) {
+          // Convert to WisdomHealthContext for the AI generator
+          const wisdomContext: WisdomHealthContext = {
+            recovery: healthContext.recovery,
+            strain: healthContext.strain,
+            hrv: healthContext.hrv,
+            hrvTrend: healthContext.hrvTrend,
+            sleepHours: healthContext.sleepHours,
+            sleepQuality: healthContext.sleepQuality,
+            readiness: healthContext.readiness,
+            glucoseInRange: healthContext.glucoseInRange,
+            stressLevel: healthContext.stressLevel,
+            energyLevel: healthContext.energyLevel,
+            recommendedFocus: healthContext.recommendedFocus,
+            recentPatterns: healthContext.recentPatterns,
+            dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+            timeOfDay: this.getTimeOfDay(),
+          };
+
+          const generatedWisdom = await AIWisdomGenerator.generate(wisdomContext);
+
+          if (generatedWisdom) {
+            // Store for learning/analytics
+            const wisdomId = await AIWisdomGenerator.store(email, generatedWisdom, wisdomContext);
+
             items.push({
-              id: relevantWisdom.id,
-              type: 'wisdom',
-              category: relevantWisdom.category,
-              title: relevantWisdom.title,
-              content: relevantWisdom.content,
-              source: relevantWisdom.source,
-              sourceType: relevantWisdom.source_type,
-              actionableTip: relevantWisdom.actionable_tip,
+              id: wisdomId || `ai_wisdom_${Date.now()}`,
+              type: 'ai_generated',
+              category: generatedWisdom.category,
+              title: generatedWisdom.title,
+              content: generatedWisdom.content,
+              actionableTip: generatedWisdom.actionableTip,
+              theme: generatedWisdom.theme,
+              inspiredBy: generatedWisdom.inspiredBy,
+              personalizedFor: generatedWisdom.personalizedFor,
             });
-            logger.info('Added relevant wisdom to digest', {
+
+            logger.info('Generated AI wisdom for digest', {
               email,
-              category: relevantWisdom.category,
-              reason: `Matched to ${healthContext.recommendedFocus} based on energy=${healthContext.energyLevel}, stress=${healthContext.stressLevel}`,
+              title: generatedWisdom.title,
+              theme: generatedWisdom.theme,
+              personalizedFor: generatedWisdom.personalizedFor,
             });
+          } else {
+            // Fallback to static library if AI fails
+            logger.warn('AI generation failed, falling back to library', { email });
+            const fallbackWisdom = await WisdomLibraryService.getUnseen(email, healthContext.recommendedFocus);
+            if (fallbackWisdom) {
+              items.push({
+                id: fallbackWisdom.id,
+                type: 'wisdom',
+                category: fallbackWisdom.category,
+                title: fallbackWisdom.title,
+                content: fallbackWisdom.content,
+                source: fallbackWisdom.source,
+                sourceType: fallbackWisdom.source_type,
+                actionableTip: fallbackWisdom.actionable_tip,
+              });
+            }
           }
         } catch (wisdomError) {
-          logger.warn('Could not fetch relevant wisdom', { error: wisdomError, email });
+          logger.error('Error generating wisdom', { error: wisdomError, email });
         }
       } else {
-        // Fallback: No health data, just get wisdom content
-        logger.info('No health data available, falling back to wisdom only', { email });
-        const wisdomEntries = await WisdomLibraryService.getDigestContent(email, itemCount);
-        for (const entry of wisdomEntries) {
+        // No health data - still generate AI wisdom with minimal context
+        logger.info('No health data, generating general wisdom', { email });
+
+        const minimalContext: WisdomHealthContext = {
+          stressLevel: 'moderate',
+          energyLevel: 'moderate',
+          recommendedFocus: 'life_advice',
+          dayOfWeek: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+          timeOfDay: this.getTimeOfDay(),
+        };
+
+        const generatedWisdom = await AIWisdomGenerator.generate(minimalContext);
+
+        if (generatedWisdom) {
+          const wisdomId = await AIWisdomGenerator.store(email, generatedWisdom, minimalContext);
           items.push({
-            id: entry.id,
-            type: 'wisdom',
-            category: entry.category,
-            title: entry.title,
-            content: entry.content,
-            source: entry.source,
-            sourceType: entry.source_type,
-            actionableTip: entry.actionable_tip,
+            id: wisdomId || `ai_wisdom_${Date.now()}`,
+            type: 'ai_generated',
+            category: generatedWisdom.category,
+            title: generatedWisdom.title,
+            content: generatedWisdom.content,
+            actionableTip: generatedWisdom.actionableTip,
+            theme: generatedWisdom.theme,
+            inspiredBy: generatedWisdom.inspiredBy,
           });
+        } else {
+          // Final fallback to static library
+          const wisdomEntries = await WisdomLibraryService.getDigestContent(email, itemCount);
+          for (const entry of wisdomEntries) {
+            items.push({
+              id: entry.id,
+              type: 'wisdom',
+              category: entry.category,
+              title: entry.title,
+              content: entry.content,
+              source: entry.source,
+              sourceType: entry.source_type,
+              actionableTip: entry.actionable_tip,
+            });
+          }
         }
       }
 
@@ -413,12 +487,28 @@ class DailyDigestServiceClass {
         timezone: prefs.timezone,
       };
 
-      logger.info('Personalized digest generated', { email, itemCount: items.length, hasHealthData: !!healthContext });
+      logger.info('AI-powered digest generated', {
+        email,
+        itemCount: items.length,
+        hasHealthData: !!healthContext,
+        isAIGenerated: items.some(i => i.type === 'ai_generated'),
+      });
+
       return digest;
     } catch (error) {
       logger.error('Error generating digest', { error, email });
       return null;
     }
+  }
+
+  /**
+   * Get time of day for context
+   */
+  private getTimeOfDay(): 'morning' | 'afternoon' | 'evening' {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
   }
 
   /**

@@ -2167,7 +2167,8 @@ Generate ${config.insightCount} highly sophisticated, personalized health insigh
 - Show progress or obstacles toward their objectives
 - Suggest optimizations specific to what they're trying to achieve
 
-## Output Format
+## Output Format (JSON)
+Return your response as valid JSON with this structure:
 {
   "insights": [
     {

@@ -844,25 +844,27 @@ export async function POST(request: NextRequest) {
       const adminClient = createAdminClient();
 
       // Check user's subscription tier and preferences in parallel
-      const [prefsResult, userResult] = await Promise.all([
+      const [prefsResult, subResult] = await Promise.all([
         adminClient
           .from('sentiment_analysis_preferences')
           .select('gmail_subject_analysis, gmail_snippet_analysis')
           .eq('user_email', email)
           .single(),
         adminClient
-          .from('users')
-          .select('subscription_tier')
-          .eq('email', email)
+          .from('user_subscriptions')
+          .select('tier, status')
+          .eq('user_email', email)
           .single()
       ]);
 
       const sentimentPrefs = prefsResult.data;
-      const subscriptionTier = userResult.data?.subscription_tier || 'free';
-      const sentimentEnabled = sentimentPrefs?.gmail_subject_analysis || sentimentPrefs?.gmail_snippet_analysis;
+      // Check subscription is active and has a premium tier
+      const subscriptionTier = (subResult.data?.status === 'active' && subResult.data?.tier) || 'free';
       const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
+      // Auto-enable for pro/max users OR if explicitly enabled in preferences
+      const sentimentEnabled = isPremium || sentimentPrefs?.gmail_subject_analysis || sentimentPrefs?.gmail_snippet_analysis;
 
-      // Only analyze if user opted in and we have enough data
+      // Only analyze if we have enough data
       if (sentimentEnabled && emailData.length >= 10) {
         console.log(`[Gmail Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis for ${email} (${subscriptionTier} tier, ${emailData.length} emails)`);
 

@@ -724,22 +724,24 @@ export async function POST(request: NextRequest) {
     let sentimentAnalyzed = false;
     try {
       // Check user's subscription tier and preferences in parallel
-      const [prefsResult, userResult] = await Promise.all([
+      const [prefsResult, subResult] = await Promise.all([
         supabase
           .from('sentiment_analysis_preferences')
           .select('slack_content_analysis')
           .eq('user_email', email)
           .single(),
         supabase
-          .from('users')
-          .select('subscription_tier')
-          .eq('email', email)
+          .from('user_subscriptions')
+          .select('tier, status')
+          .eq('user_email', email)
           .single()
       ]);
 
-      const sentimentEnabled = prefsResult.data?.slack_content_analysis ?? false;
-      const subscriptionTier = userResult.data?.subscription_tier || 'free';
+      // Check subscription is active and has a premium tier
+      const subscriptionTier = (subResult.data?.status === 'active' && subResult.data?.tier) || 'free';
       const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
+      // Auto-enable for pro/max users OR if explicitly enabled in preferences
+      const sentimentEnabled = isPremium || (prefsResult.data?.slack_content_analysis ?? false);
 
       if (sentimentEnabled && messageData.length >= 10) {
         console.log(`[Slack Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis (${subscriptionTier} tier)`);

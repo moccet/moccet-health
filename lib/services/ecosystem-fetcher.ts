@@ -427,6 +427,7 @@ export interface EcosystemFetchResult {
   spotify: EcosystemDataSource;
   notion: EcosystemDataSource;
   linear: EcosystemDataSource;
+  appleHealth: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -1590,6 +1591,114 @@ export async function fetchBloodBiomarkers(
 // ============================================================================
 
 /**
+ * Fetch Apple Health data from user_health_baselines
+ * This data is synced from the Flutter app via /api/health/sync
+ */
+export async function fetchAppleHealthData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = createAdminClient();
+
+    // Fetch all health baselines for this user
+    const { data: baselines, error } = await supabase
+      .from('user_health_baselines')
+      .select('metric_type, baseline_value, last_updated, window_days')
+      .eq('email', email)
+      .order('last_updated', { ascending: false });
+
+    if (error || !baselines || baselines.length === 0) {
+      return {
+        source: 'appleHealth',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: error?.message || 'No Apple Health data found',
+      };
+    }
+
+    // Check if data is recent (within 7 days)
+    const mostRecent = new Date(baselines[0].last_updated);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (mostRecent < sevenDaysAgo) {
+      return {
+        source: 'appleHealth',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+        error: `Apple Health data is stale (last synced: ${mostRecent.toISOString().split('T')[0]})`,
+      };
+    }
+
+    // Transform to usable format
+    const metrics: Record<string, number> = {};
+    for (const b of baselines) {
+      metrics[b.metric_type] = b.baseline_value;
+    }
+
+    const appleHealthData = {
+      dailySteps: metrics.daily_steps || metrics.avg_steps || 0,
+      activeCalories: metrics.active_calories || 0,
+      restingHeartRate: metrics.resting_hr || 0,
+      hrv: metrics.hrv || 0,
+      sleepHours: metrics.sleep_duration_hours || 0,
+      deepSleepMinutes: metrics.deep_sleep_minutes || 0,
+      remSleepMinutes: metrics.rem_sleep_minutes || 0,
+      strainScore: metrics.strain_score || 0,
+      lastSynced: baselines[0].last_updated,
+    };
+
+    // Generate insights from the data
+    const insights: string[] = [];
+
+    if (appleHealthData.dailySteps > 0) {
+      if (appleHealthData.dailySteps >= 10000) {
+        insights.push(`Excellent step count: ${appleHealthData.dailySteps.toLocaleString()} steps/day average.`);
+      } else if (appleHealthData.dailySteps >= 7500) {
+        insights.push(`Good activity level: ${appleHealthData.dailySteps.toLocaleString()} steps/day. ${(10000 - appleHealthData.dailySteps).toLocaleString()} more to hit 10k.`);
+      } else {
+        insights.push(`Step count is ${appleHealthData.dailySteps.toLocaleString()}/day. Consider adding a short walk.`);
+      }
+    }
+
+    if (appleHealthData.restingHeartRate > 0) {
+      if (appleHealthData.restingHeartRate < 60) {
+        insights.push(`Excellent resting heart rate: ${Math.round(appleHealthData.restingHeartRate)} bpm indicates good cardiovascular fitness.`);
+      } else if (appleHealthData.restingHeartRate > 80) {
+        insights.push(`Resting heart rate is elevated at ${Math.round(appleHealthData.restingHeartRate)} bpm. Consider relaxation techniques.`);
+      }
+    }
+
+    if (appleHealthData.sleepHours > 0) {
+      if (appleHealthData.sleepHours < 6) {
+        insights.push(`Sleep duration (${appleHealthData.sleepHours.toFixed(1)}h) is below recommended. Aim for 7-9 hours.`);
+      } else if (appleHealthData.sleepHours >= 7 && appleHealthData.sleepHours <= 9) {
+        insights.push(`Sleep duration (${appleHealthData.sleepHours.toFixed(1)}h) is in the optimal range.`);
+      }
+    }
+
+    return {
+      source: 'appleHealth',
+      available: true,
+      data: appleHealthData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: baselines.length,
+    };
+  } catch (error) {
+    logger.error('Error fetching Apple Health data', error, { email });
+    return {
+      source: 'appleHealth',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Fetch Spotify listening data and analyze mood from audio features
  */
 export async function fetchSpotifyData(email: string): Promise<EcosystemDataSource> {
@@ -2109,7 +2218,7 @@ export async function fetchAllEcosystemData(
   });
 
   // Source names for tracking failures
-  const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify', 'notion', 'linear'];
+  const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify', 'notion', 'linear', 'appleHealth'];
 
   // Fetch all data sources in parallel using Promise.allSettled for graceful degradation
   const results = await Promise.allSettled([
@@ -2125,6 +2234,7 @@ export async function fetchAllEcosystemData(
     fetchSpotifyData(email),
     fetchNotionData(email),
     fetchLinearData(email),
+    fetchAppleHealthData(email),
   ]);
 
   // Extract values from settled results, creating failed sources for rejected promises
@@ -2140,9 +2250,9 @@ export async function fetchAllEcosystemData(
     return createFailedSource(sourceName, result.reason);
   };
 
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear] = results.map(extractResult);
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear, appleHealth] = results.map(extractResult);
 
-  const allSources = [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear];
+  const allSources = [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear, appleHealth];
 
   const result: EcosystemFetchResult = {
     bloodBiomarkers,
@@ -2157,11 +2267,12 @@ export async function fetchAllEcosystemData(
     spotify,
     notion,
     linear,
+    appleHealth,
     fetchTimestamp: new Date().toISOString(),
     successCount: allSources.filter(s => s.available).length,
-    totalSources: 12,
+    totalSources: 13,
     failedSources: failedSources.length > 0 ? failedSources : undefined,
-    partial: failedSources.length > 0 && failedSources.length < 12,
+    partial: failedSources.length > 0 && failedSources.length < 13,
   };
 
   const duration = Date.now() - startTime;

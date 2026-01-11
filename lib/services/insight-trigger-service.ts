@@ -16,6 +16,7 @@ import {
   fetchGmailPatterns,
   fetchSlackPatterns,
   fetchSpotifyData,
+  fetchAppleHealthData,
   OuraData,
   DexcomData,
   WhoopData,
@@ -193,6 +194,18 @@ async function getUserLocationContext(email: string): Promise<UserLocationContex
 /**
  * Combined data from all connectors for cross-source analysis
  */
+interface AppleHealthData {
+  dailySteps: number;
+  activeCalories: number;
+  restingHeartRate: number;
+  hrv: number;
+  sleepHours: number;
+  deepSleepMinutes: number;
+  remSleepMinutes: number;
+  strainScore: number;
+  lastSynced: string;
+}
+
 interface AllConnectorData {
   oura: OuraData | null;
   dexcom: DexcomData | null;
@@ -200,6 +213,7 @@ interface AllConnectorData {
   gmail: GmailPatterns | null;
   slack: SlackPatterns | null;
   spotify: SpotifyData | null;
+  appleHealth: AppleHealthData | null;
 }
 
 /**
@@ -2402,7 +2416,7 @@ export async function processAllProviders(email: string): Promise<{
   logger.info('User subscription tier determined', { email, tier: subscriptionTier });
 
   // Fetch data from all providers AND user context in parallel
-  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, userContext] = await Promise.all([
+  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, appleHealthResult, userContext] = await Promise.all([
     fetchOuraData(email).catch((e) => {
       errors.push(`Oura: ${e.message}`);
       return null;
@@ -2425,6 +2439,10 @@ export async function processAllProviders(email: string): Promise<{
     }),
     fetchSpotifyData(email).catch((e) => {
       errors.push(`Spotify: ${e.message}`);
+      return null;
+    }),
+    fetchAppleHealthData(email).catch((e) => {
+      errors.push(`Apple Health: ${e.message}`);
       return null;
     }),
     // NEW: Fetch comprehensive user context (profile, labs, conversation history, plans)
@@ -2499,6 +2517,7 @@ export async function processAllProviders(email: string): Promise<{
     gmail: (gmailResult?.available && gmailResult.data) ? gmailResult.data as GmailPatterns : null,
     slack: (slackResult?.available && slackResult.data) ? slackResult.data as SlackPatterns : null,
     spotify: (spotifyResult?.available && spotifyResult.data) ? spotifyResult.data as SpotifyData : null,
+    appleHealth: (appleHealthResult?.available && appleHealthResult.data) ? appleHealthResult.data as AppleHealthData : null,
   };
 
   const crossSourceInsights = await generateCrossSourceInsights(email, ecosystemData);

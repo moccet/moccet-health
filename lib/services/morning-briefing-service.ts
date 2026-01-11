@@ -573,7 +573,7 @@ class MorningBriefingServiceClass {
 
   /**
    * Get users eligible for morning briefing
-   * Reuses the same timing logic as daily digest
+   * Checks user's local time against their preferred notification time
    */
   async getUsersForBriefing(): Promise<{ email: string; timezone: string }[]> {
     try {
@@ -595,29 +595,66 @@ class MorningBriefingServiceClass {
           .filter(Boolean) as string[]
       )];
 
+      if (uniqueEmails.length === 0) {
+        return [];
+      }
+
       // Get user preferences for timing
       const { data: prefs } = await this.supabase
         .from('user_content_preferences')
         .select('user_email, preferred_time, timezone, morning_briefing_enabled')
         .in('user_email', uniqueEmails);
 
+      // Get timezone from user_travel_data (set by location service)
+      const { data: travelData } = await this.supabase
+        .from('user_travel_data')
+        .select('user_email, current_timezone, timezone_offset')
+        .in('user_email', uniqueEmails);
+
+      // Get timezone from device_metadata as fallback
+      const { data: deviceData } = await this.supabase
+        .from('device_metadata')
+        .select('user_email, timezone')
+        .in('user_email', uniqueEmails);
+
       const prefMap = new Map(
         (prefs || []).map(p => [p.user_email, p])
       );
+      const travelMap = new Map(
+        (travelData || []).map(t => [t.user_email, t])
+      );
+      const deviceMap = new Map(
+        (deviceData || []).map(d => [d.user_email, d])
+      );
 
       // Filter users by their local time
-      const now = new Date();
       const eligibleUsers: { email: string; timezone: string }[] = [];
 
       for (const email of uniqueEmails) {
         const userPref = prefMap.get(email);
+        const userTravel = travelMap.get(email);
+        const userDevice = deviceMap.get(email);
 
         // Check if briefing is enabled (default: true)
         if (userPref?.morning_briefing_enabled === false) {
           continue;
         }
 
-        const timezone = userPref?.timezone || 'UTC';
+        // Get timezone from multiple sources (preference > travel > device > UTC)
+        let timezone = userPref?.timezone;
+        if (!timezone || timezone === 'UTC') {
+          timezone = userTravel?.current_timezone;
+        }
+        if (!timezone || timezone === 'UTC') {
+          timezone = userDevice?.timezone;
+        }
+        if (!timezone) {
+          timezone = 'UTC';
+        }
+
+        // Convert short timezone names to IANA format for reliable parsing
+        timezone = this.normalizeTimezone(timezone, userTravel?.timezone_offset);
+
         const preferredTime = userPref?.preferred_time || '08:00';
 
         // Get user's local time
@@ -635,6 +672,7 @@ class MorningBriefingServiceClass {
 
         if (diff <= 15 || diff >= (24 * 60 - 15)) {
           eligibleUsers.push({ email, timezone });
+          logger.debug('User eligible for briefing', { email, timezone, preferredTime, userHour, userMinute });
         }
       }
 
@@ -644,6 +682,70 @@ class MorningBriefingServiceClass {
       logger.error('Error getting users for briefing', { error });
       return [];
     }
+  }
+
+  /**
+   * Normalize timezone string to IANA format
+   * Converts short names like "EST", "PST" to proper IANA timezones
+   */
+  private normalizeTimezone(tz: string, offsetHours?: number): string {
+    // Map common abbreviations to IANA timezones
+    const timezoneMap: Record<string, string> = {
+      'EST': 'America/New_York',
+      'EDT': 'America/New_York',
+      'CST': 'America/Chicago',
+      'CDT': 'America/Chicago',
+      'MST': 'America/Denver',
+      'MDT': 'America/Denver',
+      'PST': 'America/Los_Angeles',
+      'PDT': 'America/Los_Angeles',
+      'GMT': 'Europe/London',
+      'BST': 'Europe/London',
+      'CET': 'Europe/Paris',
+      'CEST': 'Europe/Paris',
+      'AST': 'Asia/Riyadh',
+      'GST': 'Asia/Dubai',
+      'IST': 'Asia/Kolkata',
+      'JST': 'Asia/Tokyo',
+      'AEST': 'Australia/Sydney',
+      'AEDT': 'Australia/Sydney',
+    };
+
+    // If it's already an IANA timezone, return as is
+    if (tz.includes('/')) {
+      return tz;
+    }
+
+    // Try to map the abbreviation
+    const mapped = timezoneMap[tz.toUpperCase()];
+    if (mapped) {
+      return mapped;
+    }
+
+    // If we have an offset, try to derive timezone
+    if (offsetHours !== undefined) {
+      // Common offset mappings
+      const offsetMap: Record<number, string> = {
+        '-5': 'America/New_York',
+        '-6': 'America/Chicago',
+        '-7': 'America/Denver',
+        '-8': 'America/Los_Angeles',
+        '0': 'Europe/London',
+        '1': 'Europe/Paris',
+        '3': 'Asia/Riyadh',
+        '4': 'Asia/Dubai',
+        '5.5': 'Asia/Kolkata',
+        '9': 'Asia/Tokyo',
+        '10': 'Australia/Sydney',
+      };
+      const offsetKey = String(offsetHours);
+      if (offsetMap[offsetKey]) {
+        return offsetMap[offsetKey];
+      }
+    }
+
+    // Default to UTC if we can't determine
+    return 'UTC';
   }
 
   /**

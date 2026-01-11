@@ -451,7 +451,7 @@ export async function fetchOuraData(
   endDate?: Date
 ): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // First look up user_id from email (user_connectors uses user_id, not email)
     const adminClient = createAdminClient();
@@ -836,7 +836,7 @@ export async function fetchDexcomData(
   endDate?: Date
 ): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // First look up user_id from email (user_connectors uses user_id, not email)
     const adminClient = createAdminClient();
@@ -990,7 +990,7 @@ export async function fetchVitalData(
   endDate?: Date
 ): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const end = endDate || new Date();
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -1055,7 +1055,7 @@ export async function fetchVitalData(
  */
 export async function fetchGmailPatterns(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('behavioral_patterns')
@@ -1105,7 +1105,7 @@ export async function fetchGmailPatterns(email: string): Promise<EcosystemDataSo
  */
 export async function fetchSlackPatterns(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('behavioral_patterns')
@@ -1155,7 +1155,7 @@ export async function fetchSlackPatterns(email: string): Promise<EcosystemDataSo
  */
 export async function fetchOutlookPatterns(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('behavioral_patterns')
@@ -1205,7 +1205,7 @@ export async function fetchOutlookPatterns(email: string): Promise<EcosystemData
  */
 export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('behavioral_patterns')
@@ -1255,7 +1255,7 @@ export async function fetchTeamsPatterns(email: string): Promise<EcosystemDataSo
  */
 export async function fetchWhoopData(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // First look up user_id from email (user_connectors uses user_id, not email)
     const adminClient = createAdminClient();
@@ -1528,7 +1528,7 @@ export async function fetchBloodBiomarkers(
   planType: 'sage' | 'forge' = 'sage'
 ): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const tableName = planType === 'sage' ? 'sage_onboarding_data' : 'forge_onboarding_data';
 
     const { data, error } = await supabase
@@ -1580,7 +1580,7 @@ export async function fetchBloodBiomarkers(
  */
 export async function fetchSpotifyData(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get Spotify access token
     const { data: tokenData, error: tokenError } = await supabase
@@ -1779,7 +1779,7 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
  */
 export async function fetchNotionData(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if user has Notion connected
     const adminClient = createAdminClient();
@@ -1892,7 +1892,7 @@ export async function fetchNotionData(email: string): Promise<EcosystemDataSourc
  */
 export async function fetchLinearData(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if user has Linear connected
     const adminClient = createAdminClient();

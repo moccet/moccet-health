@@ -7,7 +7,7 @@
  * @module lib/services/insight-trigger-service
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import {
   fetchOuraData,
@@ -2571,7 +2571,8 @@ function extractActionableKeywords(text: string): string[] {
  * Now includes deduplication check to prevent repetitive insights
  */
 async function storeInsight(email: string, insight: GeneratedInsight): Promise<string | null> {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS for deduplication checks and storage
+  const supabase = createAdminClient();
 
   // Check for duplicate insight in last 7 days (by title and actionable recommendations)
   const isDuplicate = await isDuplicateInsight(

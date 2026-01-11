@@ -2077,8 +2077,30 @@ async function generateAIInsights(
     logger.info('Generated AI-powered insights', { email, tier: subscriptionTier, insightCount: insights.length });
     return insights;
   } catch (error) {
-    logger.error('Error generating AI insights', error, { email, tier: subscriptionTier });
-    return [];
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    logger.error('Error generating AI insights', error, {
+      email,
+      tier: subscriptionTier,
+      errorMessage,
+      errorName,
+    });
+    // Return a diagnostic insight instead of silently failing
+    return [{
+      insight_type: 'general_health',
+      title: 'AI Insight Generation Temporarily Unavailable',
+      message: `We encountered an issue generating personalized AI insights. This is usually temporary. Error: ${errorMessage}`,
+      severity: 'info',
+      actionable_recommendation: 'Please try again in a few minutes.',
+      source_provider: 'ai_analysis',
+      source_data_type: 'error_diagnostic',
+      context_data: {
+        ai_generated: false,
+        error: true,
+        error_message: errorMessage,
+        subscription_tier: subscriptionTier,
+      },
+    }];
   }
 }
 

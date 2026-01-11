@@ -54,6 +54,19 @@ export async function POST(request: NextRequest) {
       .select('provider, updated_at')
       .eq('user_email', email);
 
+    // Check behavioral_patterns directly
+    const { data: behavioralPatterns, error: bpError } = await supabase
+      .from('behavioral_patterns')
+      .select('source, sync_date, data_points_analyzed')
+      .eq('email', email)
+      .order('sync_date', { ascending: false });
+
+    // Check forge_training_data for Whoop
+    const { data: forgeData } = await supabase
+      .from('forge_training_data')
+      .select('provider, sync_date, data_points_analyzed')
+      .eq('email', email);
+
     // Fetch ecosystem data with error catching
     const ecosystemResults: Record<string, any> = {};
 
@@ -99,6 +112,9 @@ export async function POST(request: NextRequest) {
       subscription: subData,
       integrationTokens: tokens,
       oauthConnections,
+      behavioralPatterns: behavioralPatterns || [],
+      behavioralPatternsError: bpError?.message,
+      forgeTrainingData: forgeData || [],
       ecosystemData: {
         whoop: {
           available: ecosystemResults.whoop?.available,

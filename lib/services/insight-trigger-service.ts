@@ -2212,12 +2212,14 @@ Generate insights that make premium users feel like they're getting genuine valu
 // ============================================================================
 
 /**
- * Check if a similar insight was already generated recently (within 7 days)
- * to prevent repetitive recommendations
+ * Check if a similar insight was already generated recently to prevent repetitive insights
  *
- * Focus: Prevent the same ACTIONABLE ADVICE from being repeated.
- * It's OK to mention the same health topics as supporting data,
- * but not OK to repeatedly tell someone "take magnesium" or "supplement iron".
+ * Uses different time windows based on insight type:
+ * - Lab/biomarker insights: 30 days (lab values change slowly)
+ * - General health insights: 14 days
+ * - Real-time alerts: 7 days
+ *
+ * Focus: Prevent the same ACTIONABLE ADVICE or BIOMARKER CONCERN from being repeated.
  */
 async function isDuplicateInsight(
   supabase: any,
@@ -2227,24 +2229,52 @@ async function isDuplicateInsight(
   message?: string,
   recommendation?: string
 ): Promise<boolean> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const combinedText = `${title} ${message || ''} ${recommendation || ''}`.toLowerCase();
 
-  // Check 1: Exact same title in last 7 days
+  // Check if this is a lab/biomarker-related insight (use longer window)
+  const labBiomarkers = extractLabBiomarkers(combinedText);
+  const isLabInsight = labBiomarkers.length > 0 || insightType.includes('biomarker') || insightType.includes('lab');
+
+  // Use longer window for lab insights (30 days) vs regular insights (14 days) vs alerts (7 days)
+  const isAlert = insightType.includes('alert') || insightType.includes('spike');
+  const windowDays = isLabInsight ? 30 : (isAlert ? 7 : 14);
+  const cutoffDate = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+
+  // Check 1: Exact same title in window
   const { data: titleMatch } = await supabase
     .from('real_time_insights')
     .select('id')
     .eq('email', email)
     .ilike('title', title)
-    .gte('created_at', sevenDaysAgo)
+    .gte('created_at', cutoffDate)
     .is('dismissed_at', null)
     .limit(1);
 
   if ((titleMatch?.length ?? 0) > 0) {
+    logger.info('Blocking duplicate by title', { email, title: title.substring(0, 50), windowDays });
     return true;
   }
 
-  // Check 2: Extract actionable recommendations and check for duplicates
-  // This is the key - we want to prevent repeated advice, not repeated topics
+  // Check 2: For lab insights, check for same biomarker mentioned
+  if (labBiomarkers.length > 0) {
+    for (const biomarker of labBiomarkers) {
+      const { data: biomarkerMatch } = await supabase
+        .from('real_time_insights')
+        .select('id, title')
+        .eq('email', email)
+        .or(`title.ilike.%${biomarker}%,message.ilike.%${biomarker}%`)
+        .gte('created_at', cutoffDate)
+        .is('dismissed_at', null)
+        .limit(1);
+
+      if ((biomarkerMatch?.length ?? 0) > 0) {
+        logger.info('Blocking duplicate lab insight', { email, biomarker, existingTitle: biomarkerMatch[0]?.title?.substring(0, 50) });
+        return true;
+      }
+    }
+  }
+
+  // Check 3: Extract actionable recommendations and check for duplicates
   const actionKeywords = extractActionableKeywords(recommendation || message || title);
 
   for (const keyword of actionKeywords) {
@@ -2253,17 +2283,75 @@ async function isDuplicateInsight(
       .select('id')
       .eq('email', email)
       .or(`actionable_recommendation.ilike.%${keyword}%,message.ilike.%${keyword}%`)
-      .gte('created_at', sevenDaysAgo)
+      .gte('created_at', cutoffDate)
       .is('dismissed_at', null)
       .limit(1);
 
     if ((actionMatch?.length ?? 0) > 0) {
-      logger.info('Blocking duplicate recommendation', { email, keyword });
+      logger.info('Blocking duplicate recommendation', { email, keyword, windowDays });
       return true;
     }
   }
 
   return false;
+}
+
+/**
+ * Extract lab biomarker names from text
+ * These are specific medical terms that shouldn't be repeated frequently
+ */
+function extractLabBiomarkers(text: string): string[] {
+  if (!text) return [];
+  const lowered = text.toLowerCase();
+
+  // Lab biomarkers that indicate this is a lab-based insight
+  const biomarkers = [
+    // Thyroid markers
+    'thyroglobulin', 'anti-thyroglobulin', 'tsh', 'thyroid',
+    't3', 't4', 'free t3', 'free t4', 'thyroid antibod',
+    // Inflammation markers
+    'crp', 'c-reactive protein', 'inflammation marker',
+    'esr', 'erythrocyte sedimentation', 'sed rate',
+    'interleukin', 'il-6', 'tnf-alpha',
+    // Vitamins & minerals
+    'vitamin d', 'vitamin b12', 'b12 deficien', 'folate',
+    'ferritin', 'iron level', 'iron deficien', 'transferrin',
+    'magnesium level', 'zinc level', 'copper level',
+    // Lipids
+    'cholesterol', 'ldl', 'hdl', 'triglyceride', 'lipid panel',
+    'apolipoprotein', 'apob', 'lp(a)',
+    // Metabolic
+    'hba1c', 'a1c', 'fasting glucose', 'blood sugar',
+    'insulin level', 'insulin resistance', 'homa-ir',
+    // Liver
+    'alt', 'ast', 'liver enzyme', 'bilirubin', 'ggt',
+    'alkaline phosphatase',
+    // Kidney
+    'creatinine', 'bun', 'egfr', 'kidney function',
+    'uric acid', 'gout',
+    // Hormones
+    'testosterone', 'estrogen', 'cortisol', 'dhea',
+    'progesterone', 'prolactin', 'growth hormone',
+    // Blood counts
+    'hemoglobin', 'hematocrit', 'platelet', 'white blood cell',
+    'red blood cell', 'wbc', 'rbc', 'cbc',
+    // Other
+    'homocysteine', 'fibrinogen', 'omega-3 index',
+    'vitamin a', 'vitamin e', 'vitamin k',
+  ];
+
+  const found: string[] = [];
+  for (const marker of biomarkers) {
+    if (lowered.includes(marker)) {
+      // Use the first word as the key for matching
+      const key = marker.split(' ')[0];
+      if (!found.includes(key)) {
+        found.push(key);
+      }
+    }
+  }
+
+  return found;
 }
 
 /**

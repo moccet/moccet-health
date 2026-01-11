@@ -1290,6 +1290,20 @@ export async function fetchWhoopData(email: string): Promise<EcosystemDataSource
       connector = data;
     }
 
+    // Final fallback: check integration_tokens table (newer storage)
+    if (!connector) {
+      const { data } = await adminClient
+        .from('integration_tokens')
+        .select('is_active')
+        .eq('user_email', email)
+        .eq('provider', 'whoop')
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data) {
+        connector = { is_connected: true };
+      }
+    }
+
     if (!connector) {
       return {
         source: 'whoop',
@@ -1582,15 +1596,37 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
   try {
     const supabase = createAdminClient();
 
-    // Get Spotify access token
-    const { data: tokenData, error: tokenError } = await supabase
+    // Get Spotify access token - try user_oauth_connections first, then integration_tokens
+    let accessToken: string | null = null;
+
+    // Try user_oauth_connections first (legacy)
+    const { data: tokenData } = await supabase
       .from('user_oauth_connections')
       .select('access_token')
       .eq('user_email', email)
       .eq('provider', 'spotify')
       .maybeSingle();
 
-    if (tokenError || !tokenData?.access_token) {
+    if (tokenData?.access_token) {
+      accessToken = tokenData.access_token;
+    }
+
+    // Fallback to integration_tokens (newer storage)
+    if (!accessToken) {
+      const { data: integrationToken } = await supabase
+        .from('integration_tokens')
+        .select('access_token')
+        .eq('user_email', email)
+        .eq('provider', 'spotify')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (integrationToken?.access_token) {
+        accessToken = integrationToken.access_token;
+      }
+    }
+
+    if (!accessToken) {
       return {
         source: 'spotify',
         available: false,
@@ -1600,8 +1636,6 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
         error: 'Spotify not connected',
       };
     }
-
-    const accessToken = tokenData.access_token;
 
     // Fetch recently played tracks
     const recentlyPlayedResponse = await fetch(

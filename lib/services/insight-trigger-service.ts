@@ -2029,62 +2029,65 @@ async function generateAIInsights(
       }
     }
 
-    // Add deep content analysis (pending tasks, response debt, key people)
+    // Add deep content analysis - framed as COGNITIVE LOAD and HEALTH IMPACT, not tasks
     if (ecosystemData.deepContent && tierConfig.includeDeepAnalysis) {
       const deepParts: string[] = [];
+      deepParts.push(`### Cognitive Load & Communication Health`);
+      deepParts.push(`(Use this data to assess MENTAL LOAD and its HEALTH IMPACT - NOT as a task list)`);
 
-      // Slack deep content
+      let totalPendingItems = 0;
+      let totalResponseDebt = 0;
+      const keyContacts: string[] = [];
+
+      // Slack cognitive load
       if (ecosystemData.deepContent.slack) {
         const slackDeep = ecosystemData.deepContent.slack;
-        if (slackDeep.pendingTasks?.length > 0) {
-          deepParts.push(`### Pending Tasks from Slack`);
-          slackDeep.pendingTasks.slice(0, 5).forEach((task) => {
-            deepParts.push(`- **${task.requester}** [${task.urgency}]: ${task.description}${task.deadline ? ` (due: ${task.deadline})` : ''}`);
-          });
-        }
-        if (slackDeep.responseDebt?.count > 0) {
-          deepParts.push(`### Response Debt (Slack): ${slackDeep.responseDebt.count} messages`);
-          slackDeep.responseDebt.messages.slice(0, 3).forEach((m) => {
-            deepParts.push(`- From **${m.from}** (${m.daysOld}d ago): ${m.summary}`);
-          });
-        }
-        if (slackDeep.urgentMessages?.length > 0) {
-          deepParts.push(`### Urgent Slack Messages`);
-          slackDeep.urgentMessages.slice(0, 3).forEach((m) => {
-            deepParts.push(`- From **${m.from}**${m.channel ? ` in #${m.channel}` : ''}: ${m.summary}`);
-          });
-        }
+        totalPendingItems += slackDeep.pendingTasks?.length || 0;
+        totalResponseDebt += slackDeep.responseDebt?.count || 0;
+
         if (slackDeep.keyPeople?.length > 0) {
-          const keyNames = slackDeep.keyPeople.slice(0, 3).map((p) => `${p.name} (${p.mentionCount} mentions)`).join(', ');
-          deepParts.push(`- Key People: ${keyNames}`);
+          slackDeep.keyPeople.slice(0, 3).forEach((p) => keyContacts.push(p.name));
+        }
+
+        // Quantify cognitive burden
+        const highUrgency = slackDeep.pendingTasks?.filter((t) => t.urgency === 'high').length || 0;
+        if (highUrgency > 0) {
+          deepParts.push(`- High-priority Slack items creating cognitive pressure: ${highUrgency}`);
         }
       }
 
-      // Gmail deep content
+      // Gmail cognitive load
       if (ecosystemData.deepContent.gmail) {
         const gmailDeep = ecosystemData.deepContent.gmail;
-        if (gmailDeep.pendingTasks?.length > 0) {
-          deepParts.push(`### Pending Tasks from Email`);
-          gmailDeep.pendingTasks.slice(0, 5).forEach((task) => {
-            deepParts.push(`- **${task.requester}** [${task.urgency}]: ${task.description}${task.deadline ? ` (due: ${task.deadline})` : ''}`);
-          });
-        }
-        if (gmailDeep.responseDebt?.count > 0) {
-          deepParts.push(`### Response Debt (Email): ${gmailDeep.responseDebt.count} emails`);
-          gmailDeep.responseDebt.messages.slice(0, 3).forEach((m) => {
-            deepParts.push(`- From **${m.from}** (${m.daysOld}d ago): ${m.subject}`);
-          });
-        }
-        if (gmailDeep.urgentMessages?.length > 0) {
-          deepParts.push(`### Urgent Emails`);
-          gmailDeep.urgentMessages.slice(0, 3).forEach((m) => {
-            deepParts.push(`- From **${m.from}**: ${m.subject}${m.snippet ? ` - "${m.snippet.substring(0, 50)}..."` : ''}`);
+        totalPendingItems += gmailDeep.pendingTasks?.length || 0;
+        totalResponseDebt += gmailDeep.responseDebt?.count || 0;
+
+        if (gmailDeep.keyPeople?.length > 0) {
+          gmailDeep.keyPeople.slice(0, 3).forEach((p) => {
+            if (!keyContacts.includes(p.name)) keyContacts.push(p.name);
           });
         }
       }
 
-      if (deepParts.length > 0) {
-        ecosystemParts.push(`\n### Work Communication Analysis (Deep Content)`);
+      // Aggregate cognitive load metrics (for health correlation)
+      if (totalPendingItems > 0 || totalResponseDebt > 0) {
+        deepParts.push(`- **Total Open Loops**: ${totalPendingItems + totalResponseDebt} items (pending: ${totalPendingItems}, awaiting response: ${totalResponseDebt})`);
+        deepParts.push(`- Research shows each open loop consumes ~3-5% working memory capacity`);
+        deepParts.push(`- High open loop counts correlate with elevated cortisol and reduced HRV`);
+      }
+
+      if (keyContacts.length > 0) {
+        deepParts.push(`- Key relationship load: ${keyContacts.slice(0, 5).join(', ')}`);
+      }
+
+      // Health impact framing
+      if (totalPendingItems + totalResponseDebt > 5) {
+        deepParts.push(`- ⚠️ Cognitive load is elevated - may impact sleep quality and recovery`);
+      } else if (totalPendingItems + totalResponseDebt <= 2) {
+        deepParts.push(`- ✓ Low cognitive load - favorable conditions for recovery`);
+      }
+
+      if (deepParts.length > 2) {
         ecosystemParts.push(...deepParts);
       }
     }
@@ -2202,88 +2205,100 @@ async function generateAIInsights(
  */
 function buildTierSpecificPrompt(config: InsightTierConfig, tier: string): string {
   if (tier === 'free') {
-    return `You are a health insights analyst for Moccet Health. Generate ${config.insightCount} personalized health insights.
+    return `You are a supportive health coach for Moccet Health. Generate ${config.insightCount} personalized health insights.
 
-Your insights should be:
-- Actionable and specific
-- Personalized based on their data
-- Easy to understand
+## Tone & Language
+- POSITIVE and empowering - focus on opportunities, not problems
+- Celebrate progress and strengths before suggesting improvements
+- Frame challenges as growth opportunities
+- Never guilt-trip or create anxiety
 
-Output as JSON:
+## Output as JSON:
 {
   "insights": [
     {
-      "title": "Short title",
-      "message": "2-3 sentence insight",
-      "severity": "info|low|medium|high|critical",
-      "recommendation": "Simple actionable tip",
+      "title": "Short positive title",
+      "message": "2-3 sentence insight with encouraging tone",
+      "severity": "info|low|medium|high",
+      "recommendation": "Simple actionable tip framed positively",
       "insight_type": "general_health"
     }
   ]
 }`;
   }
 
-  // Pro and Max get comprehensive prompts
-  return `You are an expert health analyst for Moccet Health, providing deep, comprehensive insights for premium users.
+  // Pro and Max get comprehensive prompts with DIVERSITY requirements
+  return `You are an expert wellness advisor for Moccet Health, providing diverse, comprehensive health insights.
 
-Generate ${config.insightCount} highly sophisticated, personalized health insights that demonstrate the value of premium analysis.
+Generate ${config.insightCount} DIVERSE insights across DIFFERENT categories. Each insight must be from a DIFFERENT domain.
 
-## Analysis Requirements (Pro/Max Tier)
+## CRITICAL: Insight Diversity Requirements
 
-### 1. Multi-Source Correlations
-- Connect data across ALL available sources (sleep + glucose + work stress + HRV + labs)
-- Identify patterns the user wouldn't notice themselves
-- Example: "Your glucose spikes correlate with days when you have >5 meetings AND slept <7 hours"
+You MUST generate insights across these different categories (pick ${config.insightCount} different ones):
 
-### 2. Root Cause Analysis
-- Don't just report symptoms, identify underlying causes
-- Connect lifestyle factors to physiological markers
-- Reference their lab results when explaining patterns
+1. **Biometric & Physiological** - HRV trends, resting heart rate patterns, recovery scores, cardiovascular efficiency
+2. **Sleep & Recovery** - Sleep architecture, circadian rhythm, sleep debt, recovery optimization
+3. **Activity & Movement** - Movement patterns, exercise timing, sedentary behavior, active recovery
+4. **Stress & Resilience** - Stress accumulation, recovery capacity, autonomic balance, resilience building
+5. **Mental Health & Cognitive** - Cognitive load, emotional resilience, mood patterns, focus capacity
+6. **Work-Life Integration** - Boundary health, recovery time, sustainable pace, recharge activities
+7. **Social & Relationship** - Social support impact on health, connection quality, isolation markers
+8. **Nutrition & Metabolic** - Meal timing effects, hydration, energy patterns, metabolic flexibility
 
-### 3. Predictive Insights
-- Based on current trends, predict what might happen
-- Warn about concerning trajectories before they become problems
-- Example: "If your HRV continues declining at this rate, you may hit burnout indicators within 2 weeks"
+## CRITICAL: Health-Focused Framing
 
-### 4. Scientific Depth
-- Include brief scientific explanations (accessible but substantive)
-- Reference the biological mechanisms at play
-- Connect their data to research-backed findings
+When using work/communication data (Slack, Gmail, pending tasks, response debt):
+- NEVER create task reminders or to-do lists
+- ALWAYS frame as HEALTH IMPACT
+- Connect to physiological outcomes (HRV, sleep, cortisol, recovery)
 
-### 5. Personalized Action Plans
-- Don't give generic advice - make it specific to THEIR data
-- Reference their goals, conditions, and current plans
-- Provide timing recommendations based on their schedule patterns
+BAD (task reminder): "Omar has 3 requests waiting for your response"
+GOOD (health insight): "Your communication queue is building cognitive load. Historically, when pending responses exceed 3, your overnight HRV drops 12%. A focused 15-minute clearing session now could protect your evening recovery."
 
-### 6. Goal Alignment
-- Explicitly connect insights to their stated goals
-- Show progress or obstacles toward their objectives
-- Suggest optimizations specific to what they're trying to achieve
+## CRITICAL: Positive Language
+
+- Lead with strengths and opportunities
+- Frame recommendations as "unlocking potential" not "fixing problems"
+- Celebrate what's working before addressing areas for growth
+- Use empowering language: "you can", "opportunity to", "your body is showing"
+- Avoid anxiety-inducing language: "you need to", "warning", "concerning"
+
+## Multi-Source Correlations
+- Connect data across sources (sleep + work stress + HRV + labs + activity)
+- Identify patterns they wouldn't notice themselves
+- Show how their lifestyle CREATES their health outcomes
+
+## Scientific Depth (but accessible)
+- Brief scientific explanations
+- Reference biological mechanisms
+- Connect to research findings
 
 ## Output Format (JSON)
-Return your response as valid JSON with this structure:
+Return valid JSON:
 {
   "insights": [
     {
-      "title": "Attention-grabbing title that hints at the insight",
-      "message": "3-5 sentence comprehensive insight that connects multiple data sources, explains the 'why', and shows you understand their unique situation. Reference specific numbers from their data.",
-      "severity": "info|low|medium|high|critical",
-      "recommendation": "Detailed, personalized action plan with specific steps",
-      "insight_type": "cross_source_correlation|lifestyle_health_connection|biomarker_trend|predictive_analysis|goal_alignment",
-      "correlations": ["source1 + source2", "metric1 ↔ metric2"],
-      "scientific_basis": "Brief explanation of the biological mechanism",
-      "prediction": "What this trend suggests for the coming weeks (if applicable)"
+      "title": "Positive, intriguing title",
+      "message": "3-5 sentences connecting multiple data sources. Reference specific numbers. Explain the 'why' with scientific context. Frame positively.",
+      "severity": "info|low|medium|high",
+      "recommendation": "Specific action framed as opportunity. Include timing based on their patterns.",
+      "insight_type": "sleep_recovery|activity_movement|stress_resilience|cognitive_wellbeing|work_life_balance|social_health|metabolic_health|biometric_trend",
+      "correlations": ["source1 + source2"],
+      "scientific_basis": "Brief mechanism explanation",
+      "prediction": "Positive trajectory if they take action"
     }
   ]
 }
 
-## Quality Standards
-- Each insight should feel like it came from a personal health advisor who knows them deeply
-- Avoid generic advice that could apply to anyone
-- Make them feel the value of having all their data connected
-- Be warm but authoritative - they're trusting you with their health data
+## Quality Checklist
+- [ ] Each insight is from a DIFFERENT category
+- [ ] NO task reminders - only health insights
+- [ ] Positive, empowering language throughout
+- [ ] Specific numbers from their data
+- [ ] Clear health mechanism explained
+- [ ] Actionable with specific timing
 
-Generate insights that make premium users feel like they're getting genuine value from their subscription.`;
+Generate insights that make users feel empowered, understood, and excited about their health journey.`;
 }
 
 // ============================================================================

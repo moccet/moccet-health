@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { revokeToken, Provider } from '@/lib/services/token-manager';
+import { revokeToken, getAccessToken, Provider } from '@/lib/services/token-manager';
 
 // Map connector names to OAuth provider names
 const connectorToProvider: Record<string, Provider> = {
@@ -140,10 +140,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Also check integration_tokens for OAuth providers (Whoop, Oura, etc.)
+    // AND validate that tokens are actually working
     if (userEmail) {
       const { data: tokenData } = await supabase
         .from('integration_tokens')
-        .select('provider, is_active')
+        .select('provider, is_active, expires_at')
         .eq('user_email', userEmail)
         .eq('is_active', true);
 
@@ -160,10 +161,35 @@ export async function GET(request: NextRequest) {
         'dexcom': 'Dexcom',
       };
 
-      for (const token of tokenData || []) {
+      // Validate tokens in parallel for speed
+      const validationPromises = (tokenData || []).map(async (token) => {
         const connectorName = providerToConnector[token.provider];
-        if (connectorName && token.is_active) {
-          connectors[connectorName] = true;
+        if (!connectorName) return { connectorName: null, valid: false };
+
+        // Try to get a valid access token (this will attempt refresh if expired)
+        const { token: accessToken, error } = await getAccessToken(userEmail, token.provider as Provider);
+
+        if (accessToken && !error) {
+          return { connectorName, valid: true };
+        } else {
+          // Token is invalid - mark as disconnected in user_connectors
+          console.log(`[Connector Check] ${token.provider} token invalid for ${userEmail}: ${error}`);
+
+          // Update user_connectors to reflect the broken connection
+          await supabase.from('user_connectors')
+            .update({ is_connected: false, updated_at: new Date().toISOString() })
+            .eq('user_id', user_id)
+            .eq('connector_name', connectorName);
+
+          return { connectorName, valid: false };
+        }
+      });
+
+      const validationResults = await Promise.all(validationPromises);
+
+      for (const result of validationResults) {
+        if (result.connectorName) {
+          connectors[result.connectorName] = result.valid;
         }
       }
     }

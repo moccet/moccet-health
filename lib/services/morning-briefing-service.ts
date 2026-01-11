@@ -485,14 +485,50 @@ class MorningBriefingServiceClass {
         body = body.substring(0, 247) + '...';
       }
 
-      // Send notification with random header image
+      // Send notification with random header image and full task details
       const headerImage = getRandomStudioImage();
+
+      // Build action items list for display
+      const actionItems: string[] = [];
+
+      // Add Slack tasks by person
+      if (briefing.slack && briefing.slack.byPerson.length > 0) {
+        for (const person of briefing.slack.byPerson.slice(0, 3)) {
+          actionItems.push(`${person.name} (Slack): ${person.count} ${person.count === 1 ? 'request' : 'requests'}`);
+        }
+      }
+
+      // Add Linear issues
+      if (briefing.linear && briefing.linear.issues.length > 0) {
+        for (const issue of briefing.linear.issues.slice(0, 3)) {
+          const priority = issue.priority === 1 ? '🔴 Urgent' : issue.priority === 2 ? '🟠 High' : '';
+          actionItems.push(`Linear: ${issue.title}${priority ? ` (${priority})` : ''}`);
+        }
+      }
+
+      // Add Notion tasks
+      if (briefing.notion && briefing.notion.tasks.length > 0) {
+        for (const task of briefing.notion.tasks.slice(0, 3)) {
+          const dueText = task.dueDate ? ` - due ${new Date(task.dueDate).toLocaleDateString()}` : '';
+          actionItems.push(`Notion: ${task.title}${dueText}`);
+        }
+      }
+
+      // Add Gmail emails
+      if (briefing.gmail && briefing.gmail.emails.length > 0) {
+        for (const email of briefing.gmail.emails.slice(0, 3)) {
+          actionItems.push(`Gmail from ${email.from}: ${email.summary}`);
+        }
+      }
+
       const sent = await sendPushNotification(email, {
         title,
         body,
         data: {
           type: 'morning_briefing',
           header_image: headerImage,
+          recommendation: briefing.wellness.recommendation,
+          action_steps: JSON.stringify(actionItems),
           slack_count: String(briefing.slack?.totalPending || 0),
           linear_count: String((briefing.linear?.urgentCount || 0) + (briefing.linear?.highPriorityCount || 0)),
           notion_count: String((briefing.notion?.dueToday || 0) + (briefing.notion?.overdue || 0)),
@@ -502,7 +538,6 @@ class MorningBriefingServiceClass {
           wellness_available: String(briefing.wellness.available),
           hrv: String(briefing.wellness.hrv || ''),
           recovery: String(briefing.wellness.recovery || ''),
-          recommendation: briefing.wellness.recommendation,
           action_url: '/home',
         },
       });

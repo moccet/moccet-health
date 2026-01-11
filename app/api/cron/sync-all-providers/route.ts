@@ -12,12 +12,12 @@ const BASE_URL = process.env.VERCEL_URL
 const CRON_SECRET = process.env.CRON_SECRET || '';
 
 /**
- * Fetch fresh data from Slack/Gmail APIs for a user
+ * Fetch fresh data from all provider APIs for a user
  * This actually calls the external APIs, not just reads cached data
  */
-async function refreshUserData(email: string): Promise<{ slack: boolean; gmail: boolean }> {
+async function refreshUserData(email: string): Promise<Record<string, boolean>> {
   const supabase = createAdminClient();
-  const results = { slack: false, gmail: false };
+  const results: Record<string, boolean> = {};
 
   // Check which providers the user has connected
   const { data: tokens } = await supabase
@@ -28,40 +28,38 @@ async function refreshUserData(email: string): Promise<{ slack: boolean; gmail: 
 
   const providers = new Set((tokens || []).map(t => t.provider));
 
-  // Fetch Slack data if connected
-  if (providers.has('slack')) {
-    try {
-      const response = await fetch(`${BASE_URL}/api/slack/fetch-data`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      results.slack = response.ok;
-      if (!response.ok) {
-        console.log(`[Cron Sync] Slack fetch failed for ${email}: ${response.status}`);
-      }
-    } catch (e) {
-      console.log(`[Cron Sync] Slack fetch error for ${email}:`, e);
-    }
-  }
+  // Define all providers with fetch-data endpoints
+  // Note: whoop/strava/oura/dexcom are handled by sync-wearables cron
+  const providerEndpoints: Record<string, string> = {
+    slack: '/api/slack/fetch-data',
+    gmail: '/api/gmail/fetch-data',
+    outlook: '/api/outlook/fetch-data',
+    teams: '/api/teams/fetch-data',
+    notion: '/api/notion/fetch-data',
+    linear: '/api/linear/fetch-data',
+  };
 
-  // Fetch Gmail data if connected
-  if (providers.has('gmail')) {
-    try {
-      const response = await fetch(`${BASE_URL}/api/gmail/fetch-data`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      results.gmail = response.ok;
-      if (!response.ok) {
-        console.log(`[Cron Sync] Gmail fetch failed for ${email}: ${response.status}`);
+  // Fetch data for each connected provider in parallel
+  const fetchPromises = Object.entries(providerEndpoints)
+    .filter(([provider]) => providers.has(provider))
+    .map(async ([provider, endpoint]) => {
+      try {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        results[provider] = response.ok;
+        if (!response.ok) {
+          console.log(`[Cron Sync] ${provider} fetch failed for ${email}: ${response.status}`);
+        }
+      } catch (e) {
+        console.log(`[Cron Sync] ${provider} fetch error for ${email}:`, e);
+        results[provider] = false;
       }
-    } catch (e) {
-      console.log(`[Cron Sync] Gmail fetch error for ${email}:`, e);
-    }
-  }
+    });
 
+  await Promise.all(fetchPromises);
   return results;
 }
 
@@ -117,9 +115,13 @@ export async function GET(request: NextRequest) {
       const results = await Promise.all(
         batch.map(async (email) => {
           try {
-            // FIRST: Fetch fresh data from Slack/Gmail APIs
+            // FIRST: Fetch fresh data from all connected provider APIs
             const refreshResults = await refreshUserData(email);
-            console.log(`[Cron Sync] Refreshed data for ${email}: Slack=${refreshResults.slack}, Gmail=${refreshResults.gmail}`);
+            const refreshedProviders = Object.entries(refreshResults)
+              .filter(([_, ok]) => ok)
+              .map(([p]) => p)
+              .join(', ') || 'none';
+            console.log(`[Cron Sync] Refreshed data for ${email}: ${refreshedProviders}`);
 
             // THEN: Process the fresh data to generate insights
             const result = await processAllProviders(email);

@@ -1833,37 +1833,9 @@ export async function fetchDeepContentData(email: string): Promise<DeepContentDa
  */
 export async function fetchSpotifyData(email: string): Promise<EcosystemDataSource> {
   try {
-    const supabase = createAdminClient();
-
-    // Get Spotify access token - try user_oauth_connections first, then integration_tokens
-    let accessToken: string | null = null;
-
-    // Try user_oauth_connections first (legacy)
-    const { data: tokenData } = await supabase
-      .from('user_oauth_connections')
-      .select('access_token')
-      .eq('user_email', email)
-      .eq('provider', 'spotify')
-      .maybeSingle();
-
-    if (tokenData?.access_token) {
-      accessToken = tokenData.access_token;
-    }
-
-    // Fallback to integration_tokens (newer storage)
-    if (!accessToken) {
-      const { data: integrationToken } = await supabase
-        .from('integration_tokens')
-        .select('access_token')
-        .eq('user_email', email)
-        .eq('provider', 'spotify')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (integrationToken?.access_token) {
-        accessToken = integrationToken.access_token;
-      }
-    }
+    // Use token manager to get valid access token (handles refresh automatically)
+    const { getAccessToken } = await import('./token-manager');
+    const { token: accessToken, error: tokenError } = await getAccessToken(email, 'spotify');
 
     if (!accessToken) {
       return {
@@ -1872,7 +1844,7 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
         data: null,
         insights: [],
         fetchedAt: new Date().toISOString(),
-        error: 'Spotify not connected',
+        error: tokenError || 'Spotify not connected or token expired - please reconnect',
       };
     }
 

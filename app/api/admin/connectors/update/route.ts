@@ -171,9 +171,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Build a map of connector status from user_connectors
+    // Also track recently updated connectors to skip validation (race condition with OAuth)
     const connectors: Record<string, boolean> = {};
+    const recentlyUpdated: Set<string> = new Set();
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+
     for (const row of connectorData || []) {
       connectors[row.connector_name] = row.is_connected;
+
+      // Skip validation for connectors updated in the last 2 minutes
+      // This prevents race conditions when returning from OAuth flow
+      const updatedAt = row.updated_at ? new Date(row.updated_at) : null;
+      const connectedAt = row.connected_at ? new Date(row.connected_at) : null;
+      const mostRecent = updatedAt && connectedAt
+        ? (updatedAt > connectedAt ? updatedAt : connectedAt)
+        : (updatedAt || connectedAt);
+
+      if (mostRecent && mostRecent > twoMinutesAgo) {
+        recentlyUpdated.add(row.connector_name);
+        console.log(`[Connector Check] Skipping validation for ${row.connector_name} - recently updated`);
+      }
     }
 
     // Map provider names to connector names (for OAuth connectors)
@@ -205,12 +222,13 @@ export async function GET(request: NextRequest) {
       'Linear': 'linear' as Provider,
     };
 
-    // Validate ALL OAuth connectors that are marked as connected in user_connectors
+    // Validate OAuth connectors that are marked as connected in user_connectors
+    // Skip recently updated ones (within 2 min) to avoid race conditions with OAuth flow
     // This catches cases where token was deleted/revoked but user_connectors wasn't updated
     if (userEmail) {
-      // Find all OAuth connectors marked as connected
+      // Find all OAuth connectors marked as connected, excluding recently updated ones
       const oauthConnectorsToValidate = Object.entries(connectors)
-        .filter(([name, isConnected]) => isConnected && connectorToProvider[name])
+        .filter(([name, isConnected]) => isConnected && connectorToProvider[name] && !recentlyUpdated.has(name))
         .map(([name]) => ({ connectorName: name, provider: connectorToProvider[name] }));
 
       console.log(`[Connector Check] Validating ${oauthConnectorsToValidate.length} OAuth connectors for ${userEmail}`);

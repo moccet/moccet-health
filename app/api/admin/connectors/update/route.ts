@@ -139,48 +139,68 @@ export async function GET(request: NextRequest) {
       connectors[row.connector_name] = row.is_connected;
     }
 
-    // Also check integration_tokens for OAuth providers (Whoop, Oura, etc.)
-    // AND validate that tokens are actually working
-    if (userEmail) {
-      const { data: tokenData } = await supabase
-        .from('integration_tokens')
-        .select('provider, is_active, expires_at')
-        .eq('user_email', userEmail)
-        .eq('is_active', true);
+    // Map provider names to connector names (for OAuth connectors)
+    const providerToConnector: Record<string, string> = {
+      'whoop': 'Whoop',
+      'oura': 'Oura Ring',
+      'gmail': 'Gmail',
+      'outlook': 'Outlook',
+      'spotify': 'Spotify',
+      'strava': 'Strava',
+      'fitbit': 'Fitbit',
+      'slack': 'Slack',
+      'dexcom': 'Dexcom',
+      'notion': 'Notion',
+      'linear': 'Linear',
+    };
 
-      // Map provider names to connector names
-      const providerToConnector: Record<string, string> = {
-        'whoop': 'Whoop',
-        'oura': 'Oura Ring',
-        'gmail': 'Gmail',
-        'outlook': 'Outlook',
-        'spotify': 'Spotify',
-        'strava': 'Strava',
-        'fitbit': 'Fitbit',
-        'slack': 'Slack',
-        'dexcom': 'Dexcom',
-      };
+    const connectorToProvider: Record<string, Provider> = {
+      'Whoop': 'whoop',
+      'Oura Ring': 'oura',
+      'Gmail': 'gmail',
+      'Outlook': 'outlook',
+      'Spotify': 'spotify',
+      'Strava': 'strava',
+      'Fitbit': 'fitbit',
+      'Slack': 'slack',
+      'Dexcom': 'dexcom',
+      'Notion': 'notion' as Provider,
+      'Linear': 'linear' as Provider,
+    };
+
+    // Validate ALL OAuth connectors that are marked as connected in user_connectors
+    // This catches cases where token was deleted/revoked but user_connectors wasn't updated
+    if (userEmail) {
+      // Find all OAuth connectors marked as connected
+      const oauthConnectorsToValidate = Object.entries(connectors)
+        .filter(([name, isConnected]) => isConnected && connectorToProvider[name])
+        .map(([name]) => ({ connectorName: name, provider: connectorToProvider[name] }));
+
+      console.log(`[Connector Check] Validating ${oauthConnectorsToValidate.length} OAuth connectors for ${userEmail}`);
 
       // Validate tokens in parallel for speed
-      const validationPromises = (tokenData || []).map(async (token) => {
-        const connectorName = providerToConnector[token.provider];
-        if (!connectorName) return { connectorName: null, valid: false };
+      const validationPromises = oauthConnectorsToValidate.map(async ({ connectorName, provider }) => {
+        try {
+          // Try to get a valid access token (this will attempt refresh if expired)
+          const { token: accessToken, error } = await getAccessToken(userEmail, provider);
 
-        // Try to get a valid access token (this will attempt refresh if expired)
-        const { token: accessToken, error } = await getAccessToken(userEmail, token.provider as Provider);
+          if (accessToken && !error) {
+            console.log(`[Connector Check] ${provider} token valid for ${userEmail}`);
+            return { connectorName, valid: true };
+          } else {
+            // Token is invalid - mark as disconnected in user_connectors
+            console.log(`[Connector Check] ${provider} token invalid for ${userEmail}: ${error}`);
 
-        if (accessToken && !error) {
-          return { connectorName, valid: true };
-        } else {
-          // Token is invalid - mark as disconnected in user_connectors
-          console.log(`[Connector Check] ${token.provider} token invalid for ${userEmail}: ${error}`);
+            // Update user_connectors to reflect the broken connection
+            await supabase.from('user_connectors')
+              .update({ is_connected: false, updated_at: new Date().toISOString() })
+              .eq('user_id', user_id)
+              .eq('connector_name', connectorName);
 
-          // Update user_connectors to reflect the broken connection
-          await supabase.from('user_connectors')
-            .update({ is_connected: false, updated_at: new Date().toISOString() })
-            .eq('user_id', user_id)
-            .eq('connector_name', connectorName);
-
+            return { connectorName, valid: false };
+          }
+        } catch (e) {
+          console.error(`[Connector Check] Error validating ${provider}: ${e}`);
           return { connectorName, valid: false };
         }
       });

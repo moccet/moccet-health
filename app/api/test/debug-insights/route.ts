@@ -42,6 +42,22 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .maybeSingle();
 
+    // Check sage_onboarding_data for subscription_status
+    const { data: sageData } = await supabase
+      .from('sage_onboarding_data')
+      .select('subscription_status, form_data')
+      .eq('email', email)
+      .maybeSingle();
+
+    // Check purchases table if exists
+    const { data: purchaseData } = await supabase
+      .from('purchases')
+      .select('*')
+      .eq('user_email', email)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     // Check integration_tokens
     const { data: tokens } = await supabase
       .from('integration_tokens')
@@ -109,7 +125,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       email,
       subscriptionTier,
-      subscription: subData,
+      subscriptionSources: {
+        user_subscriptions: subData,
+        sage_onboarding_subscription_status: sageData?.subscription_status,
+        purchases: purchaseData,
+      },
       integrationTokens: tokens,
       oauthConnections,
       behavioralPatterns: behavioralPatterns || [],

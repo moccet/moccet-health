@@ -414,6 +414,40 @@ export interface LinearData {
   rawData: unknown;
 }
 
+/** Deep content analysis data from Slack/Gmail messages */
+export interface DeepContentData {
+  slack: {
+    pendingTasks: Array<{
+      description: string;
+      requester: string;
+      urgency: 'high' | 'medium' | 'low';
+      deadline?: string;
+    }>;
+    responseDebt: {
+      count: number;
+      messages: Array<{ from: string; summary: string; daysOld: number }>;
+    };
+    keyPeople: Array<{ name: string; mentionCount: number; context: string }>;
+    urgentMessages: Array<{ from: string; summary: string; channel?: string }>;
+  } | null;
+  gmail: {
+    pendingTasks: Array<{
+      description: string;
+      requester: string;
+      urgency: 'high' | 'medium' | 'low';
+      deadline?: string;
+    }>;
+    responseDebt: {
+      count: number;
+      messages: Array<{ from: string; subject: string; daysOld: number }>;
+    };
+    keyPeople: Array<{ name: string; emailCount: number; context: string }>;
+    urgentMessages: Array<{ from: string; subject: string; snippet?: string }>;
+  } | null;
+  available: boolean;
+  lastAnalyzed?: string;
+}
+
 export interface EcosystemFetchResult {
   bloodBiomarkers: EcosystemDataSource;
   oura: EcosystemDataSource;
@@ -428,6 +462,8 @@ export interface EcosystemFetchResult {
   notion: EcosystemDataSource;
   linear: EcosystemDataSource;
   appleHealth: EcosystemDataSource;
+  /** Deep content analysis from Slack/Gmail (tasks, response debt, key people) */
+  deepContent?: DeepContentData;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -1699,6 +1735,100 @@ export async function fetchAppleHealthData(email: string): Promise<EcosystemData
 }
 
 /**
+ * Fetch deep content analysis data from Slack and Gmail
+ * This includes pending tasks, response debt, key people, and urgent messages
+ */
+export async function fetchDeepContentData(email: string): Promise<DeepContentData> {
+  try {
+    const supabase = createAdminClient();
+
+    // Fetch both Slack and Gmail deep content analysis in parallel
+    const { data: analyses, error } = await supabase
+      .from('deep_content_analysis')
+      .select('*')
+      .eq('user_email', email)
+      .in('source', ['slack', 'gmail'])
+      .order('analyzed_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching deep content analysis', error, { email });
+      return { slack: null, gmail: null, available: false };
+    }
+
+    if (!analyses || analyses.length === 0) {
+      logger.debug('No deep content analysis found', { email });
+      return { slack: null, gmail: null, available: false };
+    }
+
+    let slackData = null;
+    let gmailData = null;
+    let lastAnalyzed: string | undefined;
+
+    for (const analysis of analyses) {
+      const data = {
+        pendingTasks: (analysis.pending_tasks || []).map((t: any) => ({
+          description: t.description,
+          requester: t.requester || t.requesterName || 'Unknown',
+          urgency: t.urgency || 'medium',
+          deadline: t.deadline,
+        })),
+        responseDebt: {
+          count: analysis.response_debt?.count || 0,
+          messages: (analysis.response_debt?.messages || []).slice(0, 5).map((m: any) => ({
+            from: m.from || m.sender || 'Unknown',
+            summary: m.summary || m.subject || '',
+            subject: m.subject,
+            daysOld: m.daysOld || 0,
+          })),
+        },
+        keyPeople: (analysis.key_people || []).slice(0, 5).map((p: any) => ({
+          name: p.name || 'Unknown',
+          mentionCount: p.mentionCount || p.count || 0,
+          emailCount: p.emailCount || p.count || 0,
+          context: p.context || p.role || '',
+        })),
+        urgentMessages: (analysis.urgent_messages || []).slice(0, 5).map((m: any) => ({
+          from: m.from || m.sender || 'Unknown',
+          summary: m.summary || m.text || '',
+          subject: m.subject,
+          channel: m.channel || m.channelName,
+          snippet: m.snippet,
+        })),
+      };
+
+      if (analysis.source === 'slack') {
+        slackData = data;
+      } else if (analysis.source === 'gmail') {
+        gmailData = data;
+      }
+
+      if (!lastAnalyzed || analysis.analyzed_at > lastAnalyzed) {
+        lastAnalyzed = analysis.analyzed_at;
+      }
+    }
+
+    const available = !!(slackData || gmailData);
+    logger.debug('Deep content analysis fetched', {
+      email,
+      hasSlack: !!slackData,
+      hasGmail: !!gmailData,
+      slackTasks: slackData?.pendingTasks?.length || 0,
+      gmailTasks: gmailData?.pendingTasks?.length || 0,
+    });
+
+    return {
+      slack: slackData,
+      gmail: gmailData,
+      available,
+      lastAnalyzed,
+    };
+  } catch (error) {
+    logger.error('Error in fetchDeepContentData', error, { email });
+    return { slack: null, gmail: null, available: false };
+  }
+}
+
+/**
  * Fetch Spotify listening data and analyze mood from audio features
  */
 export async function fetchSpotifyData(email: string): Promise<EcosystemDataSource> {
@@ -2221,20 +2351,27 @@ export async function fetchAllEcosystemData(
   const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify', 'notion', 'linear', 'appleHealth'];
 
   // Fetch all data sources in parallel using Promise.allSettled for graceful degradation
-  const results = await Promise.allSettled([
-    fetchBloodBiomarkers(email, planType),
-    fetchOuraData(email, options?.startDate, options?.endDate),
-    fetchDexcomData(email, options?.startDate, options?.endDate),
-    fetchVitalData(email, options?.startDate, options?.endDate),
-    fetchGmailPatterns(email),
-    fetchSlackPatterns(email),
-    fetchOutlookPatterns(email),
-    fetchTeamsPatterns(email),
-    fetchWhoopData(email),
-    fetchSpotifyData(email),
-    fetchNotionData(email),
-    fetchLinearData(email),
-    fetchAppleHealthData(email),
+  // Also fetch deep content analysis separately (different return type)
+  const [results, deepContentResult] = await Promise.all([
+    Promise.allSettled([
+      fetchBloodBiomarkers(email, planType),
+      fetchOuraData(email, options?.startDate, options?.endDate),
+      fetchDexcomData(email, options?.startDate, options?.endDate),
+      fetchVitalData(email, options?.startDate, options?.endDate),
+      fetchGmailPatterns(email),
+      fetchSlackPatterns(email),
+      fetchOutlookPatterns(email),
+      fetchTeamsPatterns(email),
+      fetchWhoopData(email),
+      fetchSpotifyData(email),
+      fetchNotionData(email),
+      fetchLinearData(email),
+      fetchAppleHealthData(email),
+    ]),
+    fetchDeepContentData(email).catch((e) => {
+      logger.warn('Failed to fetch deep content', { email, error: e });
+      return { slack: null, gmail: null, available: false } as DeepContentData;
+    }),
   ]);
 
   // Extract values from settled results, creating failed sources for rejected promises
@@ -2268,6 +2405,7 @@ export async function fetchAllEcosystemData(
     notion,
     linear,
     appleHealth,
+    deepContent: deepContentResult.available ? deepContentResult : undefined,
     fetchTimestamp: new Date().toISOString(),
     successCount: allSources.filter(s => s.available).length,
     totalSources: 13,

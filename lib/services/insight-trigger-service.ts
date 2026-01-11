@@ -17,12 +17,14 @@ import {
   fetchSlackPatterns,
   fetchSpotifyData,
   fetchAppleHealthData,
+  fetchDeepContentData,
   OuraData,
   DexcomData,
   WhoopData,
   GmailPatterns,
   SlackPatterns,
   SpotifyData,
+  DeepContentData,
 } from './ecosystem-fetcher';
 import { sendInsightNotification } from './onesignal-service';
 import { getUserContext, UserContext, getUserSubscriptionTier } from './user-context-service';
@@ -214,6 +216,20 @@ interface AllConnectorData {
   slack: SlackPatterns | null;
   spotify: SpotifyData | null;
   appleHealth: AppleHealthData | null;
+  deepContent?: {
+    slack: {
+      pendingTasks: Array<{ description: string; requester: string; urgency: string; deadline?: string }>;
+      responseDebt: { count: number; messages: Array<{ from: string; summary: string; daysOld: number }> };
+      keyPeople: Array<{ name: string; mentionCount: number; context: string }>;
+      urgentMessages: Array<{ from: string; summary: string; channel?: string }>;
+    } | null;
+    gmail: {
+      pendingTasks: Array<{ description: string; requester: string; urgency: string; deadline?: string }>;
+      responseDebt: { count: number; messages: Array<{ from: string; subject: string; daysOld: number }> };
+      keyPeople: Array<{ name: string; emailCount: number; context: string }>;
+      urgentMessages: Array<{ from: string; subject: string; snippet?: string }>;
+    } | null;
+  };
 }
 
 /**
@@ -2013,6 +2029,66 @@ async function generateAIInsights(
       }
     }
 
+    // Add deep content analysis (pending tasks, response debt, key people)
+    if (ecosystemData.deepContent && tierConfig.includeDeepAnalysis) {
+      const deepParts: string[] = [];
+
+      // Slack deep content
+      if (ecosystemData.deepContent.slack) {
+        const slackDeep = ecosystemData.deepContent.slack;
+        if (slackDeep.pendingTasks?.length > 0) {
+          deepParts.push(`### Pending Tasks from Slack`);
+          slackDeep.pendingTasks.slice(0, 5).forEach((task) => {
+            deepParts.push(`- **${task.requester}** [${task.urgency}]: ${task.description}${task.deadline ? ` (due: ${task.deadline})` : ''}`);
+          });
+        }
+        if (slackDeep.responseDebt?.count > 0) {
+          deepParts.push(`### Response Debt (Slack): ${slackDeep.responseDebt.count} messages`);
+          slackDeep.responseDebt.messages.slice(0, 3).forEach((m) => {
+            deepParts.push(`- From **${m.from}** (${m.daysOld}d ago): ${m.summary}`);
+          });
+        }
+        if (slackDeep.urgentMessages?.length > 0) {
+          deepParts.push(`### Urgent Slack Messages`);
+          slackDeep.urgentMessages.slice(0, 3).forEach((m) => {
+            deepParts.push(`- From **${m.from}**${m.channel ? ` in #${m.channel}` : ''}: ${m.summary}`);
+          });
+        }
+        if (slackDeep.keyPeople?.length > 0) {
+          const keyNames = slackDeep.keyPeople.slice(0, 3).map((p) => `${p.name} (${p.mentionCount} mentions)`).join(', ');
+          deepParts.push(`- Key People: ${keyNames}`);
+        }
+      }
+
+      // Gmail deep content
+      if (ecosystemData.deepContent.gmail) {
+        const gmailDeep = ecosystemData.deepContent.gmail;
+        if (gmailDeep.pendingTasks?.length > 0) {
+          deepParts.push(`### Pending Tasks from Email`);
+          gmailDeep.pendingTasks.slice(0, 5).forEach((task) => {
+            deepParts.push(`- **${task.requester}** [${task.urgency}]: ${task.description}${task.deadline ? ` (due: ${task.deadline})` : ''}`);
+          });
+        }
+        if (gmailDeep.responseDebt?.count > 0) {
+          deepParts.push(`### Response Debt (Email): ${gmailDeep.responseDebt.count} emails`);
+          gmailDeep.responseDebt.messages.slice(0, 3).forEach((m) => {
+            deepParts.push(`- From **${m.from}** (${m.daysOld}d ago): ${m.subject}`);
+          });
+        }
+        if (gmailDeep.urgentMessages?.length > 0) {
+          deepParts.push(`### Urgent Emails`);
+          gmailDeep.urgentMessages.slice(0, 3).forEach((m) => {
+            deepParts.push(`- From **${m.from}**: ${m.subject}${m.snippet ? ` - "${m.snippet.substring(0, 50)}..."` : ''}`);
+          });
+        }
+      }
+
+      if (deepParts.length > 0) {
+        ecosystemParts.push(`\n### Work Communication Analysis (Deep Content)`);
+        ecosystemParts.push(...deepParts);
+      }
+    }
+
     if (ecosystemData.spotify) {
       const spotify = ecosystemData.spotify;
       ecosystemParts.push(`### Music & Mood (Spotify)`);
@@ -2080,6 +2156,9 @@ async function generateAIInsights(
         has_conversation_history: !!userContext?.conversationHistory?.totalMessageCount,
         has_lab_results: (userContext?.labResults?.length || 0) > 0,
         has_sentiment_analysis: !!userContext?.sentimentAnalysis,
+        has_deep_content: !!(ecosystemData.deepContent?.slack || ecosystemData.deepContent?.gmail),
+        slack_pending_tasks: ecosystemData.deepContent?.slack?.pendingTasks?.length || 0,
+        gmail_pending_tasks: ecosystemData.deepContent?.gmail?.pendingTasks?.length || 0,
         sentiment_stress_score: userContext?.sentimentAnalysis?.avgStressScore,
         sentiment_success_score: userContext?.sentimentAnalysis?.avgSuccessScore,
         correlations: ai.correlations || [],
@@ -2504,7 +2583,7 @@ export async function processAllProviders(email: string): Promise<{
   logger.info('User subscription tier determined', { email, tier: subscriptionTier });
 
   // Fetch data from all providers AND user context in parallel
-  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, appleHealthResult, userContext] = await Promise.all([
+  const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, appleHealthResult, deepContentResult, userContext] = await Promise.all([
     fetchOuraData(email).catch((e) => {
       errors.push(`Oura: ${e.message}`);
       return null;
@@ -2532,6 +2611,11 @@ export async function processAllProviders(email: string): Promise<{
     fetchAppleHealthData(email).catch((e) => {
       errors.push(`Apple Health: ${e.message}`);
       return null;
+    }),
+    // Fetch deep content analysis (pending tasks, response debt, key people from Slack/Gmail)
+    fetchDeepContentData(email).catch((e) => {
+      logger.warn('Failed to fetch deep content', { email, error: e.message });
+      return { slack: null, gmail: null, available: false };
     }),
     // NEW: Fetch comprehensive user context (profile, labs, conversation history, plans)
     getUserContext(email, 'generate health insights', {
@@ -2606,7 +2690,22 @@ export async function processAllProviders(email: string): Promise<{
     slack: (slackResult?.available && slackResult.data) ? slackResult.data as SlackPatterns : null,
     spotify: (spotifyResult?.available && spotifyResult.data) ? spotifyResult.data as SpotifyData : null,
     appleHealth: (appleHealthResult?.available && appleHealthResult.data) ? appleHealthResult.data as AppleHealthData : null,
+    deepContent: deepContentResult?.available ? {
+      slack: deepContentResult.slack,
+      gmail: deepContentResult.gmail,
+    } : undefined,
   };
+
+  // Log deep content for debugging
+  if (deepContentResult?.available) {
+    logger.info('Deep content analysis included', {
+      email,
+      slackTasks: deepContentResult.slack?.pendingTasks?.length || 0,
+      gmailTasks: deepContentResult.gmail?.pendingTasks?.length || 0,
+      slackResponseDebt: deepContentResult.slack?.responseDebt?.count || 0,
+      gmailResponseDebt: deepContentResult.gmail?.responseDebt?.count || 0,
+    });
+  }
 
   const crossSourceInsights = await generateCrossSourceInsights(email, ecosystemData);
   allInsights.push(...crossSourceInsights);

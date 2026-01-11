@@ -22,6 +22,13 @@ import {
 
 const logger = createLogger('MorningBriefingService');
 
+// Base URL for internal API calls
+const BASE_URL = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -108,10 +115,81 @@ class MorningBriefingServiceClass {
   private supabase = createAdminClient();
 
   /**
+   * Refresh platform data by triggering fresh fetches for Slack and Gmail
+   * This ensures we have the latest messages/tasks before aggregating
+   */
+  private async refreshPlatformData(email: string): Promise<void> {
+    logger.info('Refreshing platform data before briefing', { email });
+
+    // Check which platforms are connected
+    const { data: tokens } = await this.supabase
+      .from('integration_tokens')
+      .select('provider')
+      .eq('user_email', email)
+      .eq('is_active', true);
+
+    const connectedProviders = new Set((tokens || []).map(t => t.provider));
+
+    // Trigger fetches in parallel for connected platforms
+    const fetchPromises: Promise<void>[] = [];
+
+    if (connectedProviders.has('slack')) {
+      fetchPromises.push(this.triggerFetch('slack', email));
+    }
+
+    if (connectedProviders.has('gmail')) {
+      fetchPromises.push(this.triggerFetch('gmail', email));
+    }
+
+    // Wait for all fetches with a timeout
+    try {
+      await Promise.race([
+        Promise.allSettled(fetchPromises),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch timeout')), 30000)),
+      ]);
+      logger.info('Platform data refresh completed', { email });
+    } catch (error) {
+      logger.warn('Platform data refresh timed out or failed', { error, email });
+      // Continue anyway - we'll use whatever data we have
+    }
+  }
+
+  /**
+   * Trigger a fetch for a specific platform
+   */
+  private async triggerFetch(platform: 'slack' | 'gmail', email: string): Promise<void> {
+    try {
+      const url = `${BASE_URL}/api/${platform}/fetch-data`;
+      logger.info(`Triggering ${platform} fetch`, { email, url });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cron-secret': CRON_SECRET,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        logger.warn(`${platform} fetch failed`, { status: response.status, text, email });
+      } else {
+        logger.info(`${platform} fetch completed`, { email });
+      }
+    } catch (error) {
+      logger.warn(`${platform} fetch error`, { error, email });
+    }
+  }
+
+  /**
    * Generate a morning briefing for a user
    */
   async generateBriefing(email: string): Promise<MorningBriefing> {
     logger.info('Generating morning briefing', { email });
+
+    // First, refresh platform data to get latest messages/tasks
+    await this.refreshPlatformData(email);
 
     // Fetch health context and platform data in parallel
     const [healthContext, platformData] = await Promise.all([

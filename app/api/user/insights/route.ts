@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import { insightRequestSchema, validateQuery, formatZodError } from '@/lib/validation/schemas';
 import { getCachedInsights, cacheInsights } from '@/lib/services/cache-service';
@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS - we filter by email explicitly
+    const supabase = createAdminClient();
 
     // Calculate offset for pagination
     const offset = (page - 1) * pageSize;

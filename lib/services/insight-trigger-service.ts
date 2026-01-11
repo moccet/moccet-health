@@ -2308,12 +2308,12 @@ Generate insights that make users feel empowered, understood, and excited about 
 /**
  * Check if a similar insight was already generated recently to prevent repetitive insights
  *
- * Uses different time windows based on insight type:
- * - Lab/biomarker insights: 30 days (lab values change slowly)
- * - General health insights: 14 days
- * - Real-time alerts: 7 days
+ * DIVERSITY-FIRST APPROACH:
+ * 1. If we haven't had this CATEGORY of insight recently, ALLOW IT (promotes diversity)
+ * 2. Only then check for duplicate titles/recommendations within the same category
  *
- * Focus: Prevent the same ACTIONABLE ADVICE or BIOMARKER CONCERN from being repeated.
+ * Categories: sleep_recovery, activity_movement, stress_resilience, cognitive_wellbeing,
+ *             work_life_balance, social_health, metabolic_health, biometric_trend
  */
 async function isDuplicateInsight(
   supabase: any,
@@ -2325,14 +2325,80 @@ async function isDuplicateInsight(
 ): Promise<boolean> {
   const combinedText = `${title} ${message || ''} ${recommendation || ''}`.toLowerCase();
 
-  // Check if this is a lab/biomarker-related insight (use longer window)
-  const labBiomarkers = extractLabBiomarkers(combinedText);
-  const isLabInsight = labBiomarkers.length > 0 || insightType.includes('biomarker') || insightType.includes('lab');
+  // Map insight types to broader categories for diversity checking
+  const categoryMap: Record<string, string> = {
+    // Sleep & Recovery
+    'sleep_alert': 'sleep_recovery',
+    'sleep_improvement': 'sleep_recovery',
+    'sleep_recovery': 'sleep_recovery',
+    'weekly_sleep_trend': 'sleep_recovery',
+    // Activity & Movement
+    'activity_anomaly': 'activity_movement',
+    'activity_movement': 'activity_movement',
+    'workout_completed': 'activity_movement',
+    'weekly_activity_trend': 'activity_movement',
+    'exercise_sleep_benefit': 'activity_movement',
+    // Stress & Resilience
+    'stress_indicator': 'stress_resilience',
+    'stress_resilience': 'stress_resilience',
+    'stress_recovery_pattern': 'stress_resilience',
+    'recovery_low': 'stress_resilience',
+    'recovery_high': 'stress_resilience',
+    'weekly_recovery_trend': 'stress_resilience',
+    // Cognitive & Mental
+    'cognitive_wellbeing': 'cognitive_wellbeing',
+    'mood_indicator': 'cognitive_wellbeing',
+    'deep_focus_window': 'cognitive_wellbeing',
+    // Work-Life Balance
+    'work_life_balance': 'work_life_balance',
+    'work_sleep_impact': 'work_life_balance',
+    'email_overload': 'work_life_balance',
+    'calendar_conflict': 'work_life_balance',
+    'weekly_work_life_balance': 'work_life_balance',
+    // Social Health
+    'social_health': 'social_health',
+    // Metabolic & Nutrition
+    'metabolic_health': 'metabolic_health',
+    'glucose_spike': 'metabolic_health',
+    'weekly_glucose_trend': 'metabolic_health',
+    // Biometric Trends
+    'biometric_trend': 'biometric_trend',
+    'biomarker_trend': 'biometric_trend',
+    'cross_source_correlation': 'biometric_trend',
+    'lifestyle_health_connection': 'biometric_trend',
+    'predictive_analysis': 'biometric_trend',
+  };
 
-  // Use longer window for lab insights (30 days) vs regular insights (14 days) vs alerts (7 days)
+  const insightCategory = categoryMap[insightType] || insightType;
+
+  // Determine time windows
+  const isLabInsight = extractLabBiomarkers(combinedText).length > 0 || insightType.includes('biomarker');
   const isAlert = insightType.includes('alert') || insightType.includes('spike');
   const windowDays = isLabInsight ? 30 : (isAlert ? 7 : 14);
   const cutoffDate = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+
+  // DIVERSITY CHECK: Have we had ANY insight in this CATEGORY recently?
+  // Use shorter window for diversity (3 days) to allow more varied content
+  const diversityWindow = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: categoryMatch } = await supabase
+    .from('real_time_insights')
+    .select('id, insight_type')
+    .eq('email', email)
+    .gte('created_at', diversityWindow)
+    .is('dismissed_at', null);
+
+  // Check if we have this category in recent insights
+  const recentCategories = new Set(
+    (categoryMatch || []).map((i: any) => categoryMap[i.insight_type] || i.insight_type)
+  );
+
+  // If this category hasn't been seen in 3 days, ALLOW IT for diversity
+  if (!recentCategories.has(insightCategory)) {
+    logger.info('Allowing new category for diversity', { email, category: insightCategory, type: insightType });
+    return false; // Not a duplicate - new category!
+  }
+
+  // Category exists recently - now check for actual duplicates within same category
 
   // Check 1: Exact same title in window
   const { data: titleMatch } = await supabase
@@ -2350,6 +2416,7 @@ async function isDuplicateInsight(
   }
 
   // Check 2: For lab insights, check for same biomarker mentioned
+  const labBiomarkers = extractLabBiomarkers(combinedText);
   if (labBiomarkers.length > 0) {
     for (const biomarker of labBiomarkers) {
       const { data: biomarkerMatch } = await supabase

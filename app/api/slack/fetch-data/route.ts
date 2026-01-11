@@ -723,27 +723,30 @@ export async function POST(request: NextRequest) {
     // ========================================================================
     let sentimentAnalyzed = false;
     try {
-      // Check user's subscription tier and preferences in parallel
+      // Check user preferences (opt-out check) and subscription tier
       const [prefsResult, subResult] = await Promise.all([
         supabase
           .from('sentiment_analysis_preferences')
           .select('slack_content_analysis')
           .eq('user_email', email)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('user_subscriptions')
           .select('tier, status')
           .eq('user_email', email)
-          .single()
+          .maybeSingle()
       ]);
 
-      // Check subscription is active and has a premium tier
+      // Determine subscription tier for analysis depth
       const subscriptionTier = (subResult.data?.status === 'active' && subResult.data?.tier) || 'free';
       const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
-      // Auto-enable for pro/max users OR if explicitly enabled in preferences
-      const sentimentEnabled = isPremium || (prefsResult.data?.slack_content_analysis ?? false);
 
-      console.log(`[Slack Fetch] Subscription check: tier=${subscriptionTier}, isPremium=${isPremium}, sentimentEnabled=${sentimentEnabled}, subResult=${JSON.stringify(subResult.data)}`);
+      // DEFAULT: Enabled for everyone (opt-in by default)
+      // Only disabled if user EXPLICITLY set slack_content_analysis = false
+      const userOptedOut = prefsResult.data?.slack_content_analysis === false;
+      const sentimentEnabled = !userOptedOut;
+
+      console.log(`[Slack Fetch] Content analysis: enabled=${sentimentEnabled}, userOptedOut=${userOptedOut}, tier=${subscriptionTier}, isPremium=${isPremium}`);
 
       if (sentimentEnabled && messageData.length >= 10) {
         console.log(`[Slack Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis (${subscriptionTier} tier)`);
@@ -950,8 +953,8 @@ export async function POST(request: NextRequest) {
       sentimentAnalysis: {
         enabled: sentimentAnalyzed,
         message: sentimentAnalyzed
-          ? 'Content sentiment analysis completed'
-          : 'Sentiment analysis not enabled - opt in via settings'
+          ? 'Deep content analysis completed'
+          : 'Content analysis skipped - insufficient messages (need 10+)'
       }
     });
 

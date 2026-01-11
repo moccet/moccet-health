@@ -843,26 +843,33 @@ export async function POST(request: NextRequest) {
     try {
       const adminClient = createAdminClient();
 
-      // Check user's subscription tier and preferences in parallel
+      // Check user preferences (opt-out check) and subscription tier
       const [prefsResult, subResult] = await Promise.all([
         adminClient
           .from('sentiment_analysis_preferences')
           .select('gmail_subject_analysis, gmail_snippet_analysis')
           .eq('user_email', email)
-          .single(),
+          .maybeSingle(),
         adminClient
           .from('user_subscriptions')
           .select('tier, status')
           .eq('user_email', email)
-          .single()
+          .maybeSingle()
       ]);
 
       const sentimentPrefs = prefsResult.data;
-      // Check subscription is active and has a premium tier
+      // Determine subscription tier for analysis depth
       const subscriptionTier = (subResult.data?.status === 'active' && subResult.data?.tier) || 'free';
       const isPremium = subscriptionTier === 'pro' || subscriptionTier === 'max';
-      // Auto-enable for pro/max users OR if explicitly enabled in preferences
-      const sentimentEnabled = isPremium || sentimentPrefs?.gmail_subject_analysis || sentimentPrefs?.gmail_snippet_analysis;
+
+      // DEFAULT: Enabled for everyone (opt-in by default)
+      // Only disabled if user EXPLICITLY set BOTH gmail_subject_analysis AND gmail_snippet_analysis = false
+      const subjectOptedOut = sentimentPrefs?.gmail_subject_analysis === false;
+      const snippetOptedOut = sentimentPrefs?.gmail_snippet_analysis === false;
+      const userOptedOut = subjectOptedOut && snippetOptedOut;
+      const sentimentEnabled = !userOptedOut;
+
+      console.log(`[Gmail Fetch] Content analysis: enabled=${sentimentEnabled}, userOptedOut=${userOptedOut}, tier=${subscriptionTier}`);
 
       // Only analyze if we have enough data
       if (sentimentEnabled && emailData.length >= 10) {

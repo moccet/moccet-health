@@ -743,6 +743,8 @@ export async function POST(request: NextRequest) {
       // Auto-enable for pro/max users OR if explicitly enabled in preferences
       const sentimentEnabled = isPremium || (prefsResult.data?.slack_content_analysis ?? false);
 
+      console.log(`[Slack Fetch] Subscription check: tier=${subscriptionTier}, isPremium=${isPremium}, sentimentEnabled=${sentimentEnabled}, subResult=${JSON.stringify(subResult.data)}`);
+
       if (sentimentEnabled && messageData.length >= 10) {
         console.log(`[Slack Fetch] Running ${isPremium ? 'life context' : 'sentiment'} analysis (${subscriptionTier} tier)`);
 

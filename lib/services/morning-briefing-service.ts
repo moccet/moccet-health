@@ -605,26 +605,26 @@ class MorningBriefingServiceClass {
         .select('user_email, preferred_time, timezone, morning_briefing_enabled')
         .in('user_email', uniqueEmails);
 
-      // Get timezone from user_travel_data (set by location service)
+      // Get timezone from user_travel_context (set by location API)
       const { data: travelData } = await this.supabase
-        .from('user_travel_data')
-        .select('user_email, current_timezone, timezone_offset')
-        .in('user_email', uniqueEmails);
+        .from('user_travel_context')
+        .select('email, current_timezone, timezone_offset_change')
+        .in('email', uniqueEmails);
 
-      // Get timezone from device_metadata as fallback
+      // Get timezone from user_device_context as fallback (set by location API)
       const { data: deviceData } = await this.supabase
-        .from('device_metadata')
-        .select('user_email, timezone')
-        .in('user_email', uniqueEmails);
+        .from('user_device_context')
+        .select('email, timezone')
+        .in('email', uniqueEmails);
 
       const prefMap = new Map(
         (prefs || []).map(p => [p.user_email, p])
       );
       const travelMap = new Map(
-        (travelData || []).map(t => [t.user_email, t])
+        (travelData || []).map(t => [t.email, t])
       );
       const deviceMap = new Map(
-        (deviceData || []).map(d => [d.user_email, d])
+        (deviceData || []).map(d => [d.email, d])
       );
 
       // Filter users by their local time
@@ -653,7 +653,7 @@ class MorningBriefingServiceClass {
         }
 
         // Convert short timezone names to IANA format for reliable parsing
-        timezone = this.normalizeTimezone(timezone, userTravel?.timezone_offset);
+        timezone = this.normalizeTimezone(timezone, userTravel?.timezone_offset_change);
 
         const preferredTime = userPref?.preferred_time || '08:00';
 

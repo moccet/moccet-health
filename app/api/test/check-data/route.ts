@@ -60,16 +60,20 @@ export async function POST(request: NextRequest) {
       .eq('user_email', email)
       .single();
 
+    // user_travel_context - set by location API
     const { data: travelData } = await supabase
-      .from('user_travel_data')
-      .select('estimated_location, current_timezone, timezone_offset')
-      .eq('user_email', email)
+      .from('user_travel_context')
+      .select('estimated_location, current_timezone, timezone_offset_change')
+      .eq('email', email)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
+    // user_device_context - set by location API
     const { data: deviceData } = await supabase
-      .from('device_metadata')
+      .from('user_device_context')
       .select('timezone, locale')
-      .eq('user_email', email)
+      .eq('email', email)
       .single();
 
     return NextResponse.json({

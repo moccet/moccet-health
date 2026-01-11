@@ -29,6 +29,57 @@ const BASE_URL = process.env.VERCEL_URL
 
 const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
 
+// Studio images for notification headers
+const STUDIO_IMAGES = [
+  'studiosiraj_2d_drawing_of_crescent_moon_no_other_elements_--c_dc4e3ed1-248f-4b6e-8208-124075ff0830_0.png',
+  'studiosiraj_circles_--chaos_20_--ar_32_--raw_--sref_httpss.mj_6475d1c3-9cfb-4602-bdbd-64909e311260_1.png',
+  'studiosiraj_circles_--chaos_20_--ar_32_--raw_--sref_httpss.mj_6475d1c3-9cfb-4602-bdbd-64909e311260_3.png',
+  'studiosiraj_clouds_on_white_background_--chaos_20_--ar_32_--r_2308fe4f-b0fb-4aa8-8f91-5e8e527a152d_2.png',
+  'studiosiraj_minimalist_surreal_symbol_icon_of_an_eye_made_fro_4d70155e-1eb9-4024-9130-3117db073881_0.png',
+  'studiosiraj_minimalist_surreal_symbol_of_a_single_human_silho_5c454b7f-39eb-442f-8008-296fd434cd12_0.png',
+  'studiosiraj_one_cloud_--chaos_20_--ar_32_--raw_--sref_httpss._ecfaa726-f282-4220-b672-f3006b518e14_3.png',
+  'studiosiraj_star_--chaos_20_--ar_32_--raw_--sref_httpss.mj.ru_fb276b5b-7fcc-4f1a-9a0a-d24725a2c906_2.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_0efb7b95-037c-479f-92f6-3c531a60401a.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_152d3fef-f7eb-4e26-95fd-3f5fa33faad6.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_2a4300f3-c0d5-4815-99eb-99fd1f4c64d3.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_9f43b3a7-3d13-4dc5-bc34-5490768a6438.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_a0e65295-5b03-4bd9-9d60-7b5d428cca9f.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_huma_fa8d1d6c-0e6f-451a-a591-3a0034638eba.png',
+  'studiosiraj_surreal_atmospheric_illustration_of_a_solitary_seat_41c09641-3b48-44f5-999f-cb4195b247c6.png',
+];
+
+// Varied wellness recommendations for when no health data is available
+const DEFAULT_RECOMMENDATIONS = [
+  "Start your day with intention. A few deep breaths can center your focus before diving in.",
+  "Morning light exposure helps regulate your energy. Step outside briefly before opening your inbox.",
+  "Hydration first - a glass of water kickstarts your metabolism and mental clarity.",
+  "Consider a 5-minute stretch to wake up your body before tackling today's tasks.",
+  "Music can shape your mood. Put on something uplifting as you begin your morning routine.",
+  "Write down your top 3 priorities before getting pulled into reactive work.",
+  "A mindful breakfast fuels better decisions. Don't skip it if you can.",
+  "The first hour sets the tone. Protect it for your most important work.",
+  "Step outside for fresh air - even 2 minutes can boost your alertness.",
+  "Your morning routine is your foundation. Build it with care.",
+  "A clear workspace often means a clearer mind. Quick tidy before you start?",
+  "Connect with your breath. Three slow inhales before you open Slack.",
+];
+
+/**
+ * Get a random studio image path
+ */
+function getRandomStudioImage(): string {
+  const index = Math.floor(Math.random() * STUDIO_IMAGES.length);
+  return `assets/studios/${STUDIO_IMAGES[index]}`;
+}
+
+/**
+ * Get a random default recommendation
+ */
+function getRandomDefaultRecommendation(): string {
+  const index = Math.floor(Math.random() * DEFAULT_RECOMMENDATIONS.length);
+  return DEFAULT_RECOMMENDATIONS[index];
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -71,7 +122,7 @@ export interface BriefingDeliveryResult {
  */
 function generateWellnessRecommendation(health: HealthContext | null): string {
   if (!health) {
-    return "Start your day with intention. A short walk or stretch can set a positive tone.";
+    return getRandomDefaultRecommendation();
   }
 
   const { recovery, hrv, sleepHours, energyLevel } = health;
@@ -434,12 +485,14 @@ class MorningBriefingServiceClass {
         body = body.substring(0, 247) + '...';
       }
 
-      // Send notification
+      // Send notification with random header image
+      const headerImage = getRandomStudioImage();
       const sent = await sendPushNotification(email, {
         title,
         body,
         data: {
           type: 'morning_briefing',
+          header_image: headerImage,
           slack_count: String(briefing.slack?.totalPending || 0),
           linear_count: String((briefing.linear?.urgentCount || 0) + (briefing.linear?.highPriorityCount || 0)),
           notion_count: String((briefing.notion?.dueToday || 0) + (briefing.notion?.overdue || 0)),

@@ -78,8 +78,26 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .single();
 
+    // Check recent insights
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentInsights, count: insightCount } = await supabase
+      .from('real_time_insights')
+      .select('id, insight_type, title, created_at', { count: 'exact' })
+      .eq('email', email)
+      .gte('created_at', threeDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
     return NextResponse.json({
       email,
+      insights: {
+        recentCount: insightCount || 0,
+        recent: (recentInsights || []).map((i: any) => ({
+          type: i.insight_type,
+          title: i.title?.substring(0, 50),
+          created: i.created_at,
+        })),
+      },
       slack: slackData?.[0] ? {
         exists: true,
         analyzedAt: slackData[0].analyzed_at,

@@ -53,6 +53,25 @@ export async function POST(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_email', email);
 
+    // Check timezone data from various sources
+    const { data: prefData } = await supabase
+      .from('user_content_preferences')
+      .select('preferred_time, timezone, morning_briefing_enabled')
+      .eq('user_email', email)
+      .single();
+
+    const { data: travelData } = await supabase
+      .from('user_travel_data')
+      .select('estimated_location, current_timezone, timezone_offset')
+      .eq('user_email', email)
+      .single();
+
+    const { data: deviceData } = await supabase
+      .from('device_metadata')
+      .select('timezone, locale')
+      .eq('user_email', email)
+      .single();
+
     return NextResponse.json({
       email,
       slack: slackData?.[0] ? {
@@ -69,6 +88,22 @@ export async function POST(request: NextRequest) {
       } : { exists: false },
       linear: { count: linearCount || 0 },
       notion: { count: notionCount || 0 },
+      timezone: {
+        preferences: prefData ? {
+          preferred_time: prefData.preferred_time,
+          timezone: prefData.timezone,
+          morning_briefing_enabled: prefData.morning_briefing_enabled,
+        } : null,
+        travel: travelData ? {
+          location: travelData.estimated_location,
+          timezone: travelData.current_timezone,
+          offset: travelData.timezone_offset,
+        } : null,
+        device: deviceData ? {
+          timezone: deviceData.timezone,
+          locale: deviceData.locale,
+        } : null,
+      },
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });

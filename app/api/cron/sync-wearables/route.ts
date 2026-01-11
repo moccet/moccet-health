@@ -681,7 +681,44 @@ async function fetchLinearDataForUser(email: string): Promise<{
 }
 
 /**
- * GET - Run Whoop + Oura + Dexcom + Strava + Apple Health + Notion + Linear sync for all users
+ * Fetch Fitbit data for a single user
+ */
+async function fetchFitbitDataForUser(email: string): Promise<{
+  success: boolean;
+  stepsToday?: number;
+  sleepHours?: number;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://moccet.ai'}/api/fitbit/fetch-data`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      stepsToday: data.metrics?.steps_today || 0,
+      sleepHours: data.metrics?.sleep_duration_hours || 0,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * GET - Run Whoop + Oura + Dexcom + Strava + Apple Health + Fitbit + Notion + Linear sync for all users
  */
 export async function GET(request: NextRequest) {
   if (!isValidCronRequest(request)) {
@@ -722,6 +759,13 @@ export async function GET(request: NextRequest) {
       .eq('provider', 'strava')
       .eq('is_active', true);
 
+    // Get all users with active Fitbit integrations
+    const { data: fitbitUsers } = await supabase
+      .from('integration_tokens')
+      .select('user_email')
+      .eq('provider', 'fitbit')
+      .eq('is_active', true);
+
     // Get users with Apple Health data (push-based, stored in sage_onboarding_data)
     const { data: appleHealthUsers } = await supabase
       .from('sage_onboarding_data')
@@ -746,17 +790,19 @@ export async function GET(request: NextRequest) {
     const ouraEmails = [...new Set(ouraUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const dexcomEmails = [...new Set(dexcomUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const stravaEmails = [...new Set(stravaUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
+    const fitbitEmails = [...new Set(fitbitUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const appleHealthEmails = [...new Set(appleHealthUsers?.map((u) => u.email).filter(Boolean))] as string[];
     const notionEmails = [...new Set(notionUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
     const linearEmails = [...new Set(linearUsers?.map((u) => u.user_email).filter(Boolean))] as string[];
 
-    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava, ${appleHealthEmails.length} Apple Health, ${notionEmails.length} Notion, ${linearEmails.length} Linear users`);
+    console.log(`[Wearables Sync Cron] Found ${whoopEmails.length} Whoop, ${ouraEmails.length} Oura, ${dexcomEmails.length} Dexcom, ${stravaEmails.length} Strava, ${fitbitEmails.length} Fitbit, ${appleHealthEmails.length} Apple Health, ${notionEmails.length} Notion, ${linearEmails.length} Linear users`);
 
     const results = {
       whoop: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       oura: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       dexcom: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       strava: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
+      fitbit: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       appleHealth: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       notion: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
       linear: { processed: 0, success: 0, failed: 0, errors: [] as string[] },
@@ -872,6 +918,33 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Process Fitbit users in batches
+    for (let i = 0; i < fitbitEmails.length; i += BATCH_SIZE) {
+      const batch = fitbitEmails.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          const result = await fetchFitbitDataForUser(email);
+          return { email, ...result };
+        })
+      );
+
+      for (const result of batchResults) {
+        results.fitbit.processed++;
+        if (result.success) {
+          results.fitbit.success++;
+          console.log(`[Fitbit Sync] Synced ${result.email}: ${result.stepsToday} steps, ${result.sleepHours}h sleep`);
+        } else {
+          results.fitbit.failed++;
+          results.fitbit.errors.push(`${result.email}: ${result.error}`);
+        }
+      }
+
+      if (i + BATCH_SIZE < fitbitEmails.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
     // Process Apple Health users in batches
     for (let i = 0; i < appleHealthEmails.length; i += BATCH_SIZE) {
       const batch = appleHealthEmails.slice(i, i + BATCH_SIZE);
@@ -955,7 +1028,7 @@ export async function GET(request: NextRequest) {
 
     const duration = Date.now() - startTime;
     console.log(
-      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}, Apple Health: ${results.appleHealth.success}/${results.appleHealth.processed}, Notion: ${results.notion.success}/${results.notion.processed}, Linear: ${results.linear.success}/${results.linear.processed}`
+      `[Wearables Sync Cron] Completed in ${duration}ms. Whoop: ${results.whoop.success}/${results.whoop.processed}, Oura: ${results.oura.success}/${results.oura.processed}, Dexcom: ${results.dexcom.success}/${results.dexcom.processed}, Strava: ${results.strava.success}/${results.strava.processed}, Fitbit: ${results.fitbit.success}/${results.fitbit.processed}, Apple Health: ${results.appleHealth.success}/${results.appleHealth.processed}, Notion: ${results.notion.success}/${results.notion.processed}, Linear: ${results.linear.success}/${results.linear.processed}`
     );
 
     return NextResponse.json({
@@ -983,6 +1056,12 @@ export async function GET(request: NextRequest) {
         successful: results.strava.success,
         failed: results.strava.failed,
         errors: results.strava.errors.length > 0 ? results.strava.errors.slice(0, 5) : undefined,
+      },
+      fitbit: {
+        users_processed: results.fitbit.processed,
+        successful: results.fitbit.success,
+        failed: results.fitbit.failed,
+        errors: results.fitbit.errors.length > 0 ? results.fitbit.errors.slice(0, 5) : undefined,
       },
       appleHealth: {
         users_processed: results.appleHealth.processed,

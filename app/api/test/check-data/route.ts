@@ -6,11 +6,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
+const ADMIN_KEY = process.env.ADMIN_API_KEY || 'moccet-admin-seed-key';
 
 export async function POST(request: NextRequest) {
   try {
     const cronSecret = request.headers.get('x-cron-secret');
-    if (cronSecret !== CRON_SECRET) {
+    const authHeader = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (cronSecret !== CRON_SECRET && authHeader !== ADMIN_KEY) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

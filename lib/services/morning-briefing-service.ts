@@ -405,10 +405,10 @@ class MorningBriefingServiceClass {
   /**
    * Send morning briefing to a user
    */
-  async sendBriefing(email: string): Promise<BriefingDeliveryResult> {
+  async sendBriefing(email: string, options?: { force?: boolean }): Promise<BriefingDeliveryResult> {
     try {
-      // Check if already sent today
-      if (await this.alreadySentToday(email)) {
+      // Check if already sent today (skip if force=true)
+      if (!options?.force && await this.alreadySentToday(email)) {
         logger.info('Briefing already sent today', { email });
         return {
           email,
@@ -632,9 +632,9 @@ class MorningBriefingServiceClass {
   /**
    * Send briefing to a specific user (manual trigger)
    */
-  async sendBriefingNow(email: string): Promise<BriefingDeliveryResult> {
-    logger.info('Manual briefing trigger', { email });
-    return this.sendBriefing(email);
+  async sendBriefingNow(email: string, options?: { force?: boolean }): Promise<BriefingDeliveryResult> {
+    logger.info('Manual briefing trigger', { email, force: options?.force });
+    return this.sendBriefing(email, options);
   }
 }
 

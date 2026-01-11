@@ -20,15 +20,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email } = body;
+    const { email, force } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    console.log(`[Test] Triggering morning briefing for ${email}`);
+    console.log(`[Test] Triggering morning briefing for ${email}, force=${force}`);
 
-    const result = await MorningBriefingService.sendBriefingNow(email);
+    const result = await MorningBriefingService.sendBriefingNow(email, { force: !!force });
 
     return NextResponse.json({
       success: result.success,

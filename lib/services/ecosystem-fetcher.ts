@@ -10,12 +10,18 @@
  * - Vital (unified health data from multiple providers)
  * - Gmail (work patterns, meeting density, email volume)
  * - Slack (message timing, after-hours activity, stress indicators)
+ * - Outlook (email + calendar patterns)
+ * - Teams (chat message patterns)
+ * - Whoop (recovery, strain, HRV)
+ * - Spotify (music mood, listening patterns)
+ * - Notion (tasks, databases, project tracking)
+ * - Linear (issues, projects, priorities)
  * - Blood biomarkers (from lab file analysis)
  *
  * @module lib/services/ecosystem-fetcher
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import { cacheService, CACHE_KEYS } from './cache-service';
 
@@ -363,6 +369,51 @@ export interface SpotifyData {
   rawData: unknown;
 }
 
+export interface NotionData {
+  workspaceName: string;
+  totalDatabases: number;
+  totalTasks: number;
+  openTasks: number;
+  overdueTasks: number;
+  tasksDueSoon: number; // Due in next 3 days
+  tasksByStatus: Record<string, number>;
+  tasksByPriority: Record<string, number>;
+  recentActivity: Array<{
+    title: string;
+    status?: string;
+    dueDate?: string;
+    lastEdited: string;
+  }>;
+  insights: string[];
+  rawData: unknown;
+}
+
+export interface LinearData {
+  organizationName: string;
+  totalIssues: number;
+  openIssues: number;
+  urgentIssues: number;
+  highPriorityIssues: number;
+  overdueIssues: number;
+  issuesDueSoon: number;
+  issuesByState: Record<string, number>;
+  issuesByPriority: Record<string, number>;
+  projectSummary: Array<{
+    name: string;
+    issueCount: number;
+    progress?: number;
+  }>;
+  recentActivity: Array<{
+    identifier: string;
+    title: string;
+    state: string;
+    priority: string;
+    updatedAt: string;
+  }>;
+  insights: string[];
+  rawData: unknown;
+}
+
 export interface EcosystemFetchResult {
   bloodBiomarkers: EcosystemDataSource;
   oura: EcosystemDataSource;
@@ -374,6 +425,8 @@ export interface EcosystemFetchResult {
   teams: EcosystemDataSource;
   whoop: EcosystemDataSource;
   spotify: EcosystemDataSource;
+  notion: EcosystemDataSource;
+  linear: EcosystemDataSource;
   fetchTimestamp: string;
   successCount: number;
   totalSources: number;
@@ -1721,6 +1774,248 @@ export async function fetchSpotifyData(email: string): Promise<EcosystemDataSour
   }
 }
 
+/**
+ * Fetch Notion data from behavioral_patterns table
+ */
+export async function fetchNotionData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    // Check if user has Notion connected
+    const adminClient = createAdminClient();
+    const { data: token } = await adminClient
+      .from('integration_tokens')
+      .select('id')
+      .eq('user_email', email)
+      .eq('provider', 'notion')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!token) {
+      return {
+        source: 'notion',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+
+    // Fetch from behavioral_patterns
+    const { data: patterns } = await adminClient
+      .from('behavioral_patterns')
+      .select('data, updated_at')
+      .eq('user_email', email)
+      .eq('source', 'notion')
+      .maybeSingle();
+
+    if (!patterns?.data) {
+      return {
+        source: 'notion',
+        available: true,
+        data: null,
+        insights: ['Notion connected but no data synced yet'],
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+
+    const notionOverview = patterns.data.notion_overview || {};
+    const notionTasks = patterns.data.notion_tasks || [];
+
+    // Generate insights
+    const insights: string[] = [];
+
+    if (notionOverview.overdue_tasks > 0) {
+      insights.push(`You have ${notionOverview.overdue_tasks} overdue task${notionOverview.overdue_tasks > 1 ? 's' : ''} in Notion`);
+    }
+
+    if (notionOverview.tasks_due_soon > 0) {
+      insights.push(`${notionOverview.tasks_due_soon} task${notionOverview.tasks_due_soon > 1 ? 's' : ''} due in the next 3 days`);
+    }
+
+    if (notionOverview.open_tasks > 20) {
+      insights.push(`High task load: ${notionOverview.open_tasks} open tasks — consider prioritizing or delegating`);
+    }
+
+    // Group by status
+    const tasksByStatus: Record<string, number> = {};
+    const tasksByPriority: Record<string, number> = {};
+    for (const task of notionTasks) {
+      const status = task.status || 'Unknown';
+      const priority = task.priority || 'None';
+      tasksByStatus[status] = (tasksByStatus[status] || 0) + 1;
+      tasksByPriority[priority] = (tasksByPriority[priority] || 0) + 1;
+    }
+
+    const notionData: NotionData = {
+      workspaceName: notionOverview.workspace || 'Notion',
+      totalDatabases: notionOverview.total_databases || 0,
+      totalTasks: notionOverview.total_tasks || 0,
+      openTasks: notionOverview.open_tasks || 0,
+      overdueTasks: notionOverview.overdue_tasks || 0,
+      tasksDueSoon: notionOverview.tasks_due_soon || 0,
+      tasksByStatus,
+      tasksByPriority,
+      recentActivity: notionTasks.slice(0, 10).map((t: any) => ({
+        title: t.title,
+        status: t.status,
+        dueDate: t.dueDate,
+        lastEdited: t.lastEdited,
+      })),
+      insights,
+      rawData: patterns.data,
+    };
+
+    return {
+      source: 'notion',
+      available: true,
+      data: notionData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: notionOverview.total_tasks || 0,
+    };
+  } catch (error) {
+    logger.error('Error fetching Notion data', error, { email });
+    return {
+      source: 'notion',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Fetch Linear data from behavioral_patterns table
+ */
+export async function fetchLinearData(email: string): Promise<EcosystemDataSource> {
+  try {
+    const supabase = await createClient();
+
+    // Check if user has Linear connected
+    const adminClient = createAdminClient();
+    const { data: token } = await adminClient
+      .from('integration_tokens')
+      .select('id')
+      .eq('user_email', email)
+      .eq('provider', 'linear')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!token) {
+      return {
+        source: 'linear',
+        available: false,
+        data: null,
+        insights: [],
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+
+    // Fetch from behavioral_patterns
+    const { data: patterns } = await adminClient
+      .from('behavioral_patterns')
+      .select('data, updated_at')
+      .eq('user_email', email)
+      .eq('source', 'linear')
+      .maybeSingle();
+
+    if (!patterns?.data) {
+      return {
+        source: 'linear',
+        available: true,
+        data: null,
+        insights: ['Linear connected but no data synced yet'],
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+
+    const linearOverview = patterns.data.linear_overview || {};
+    const linearIssues = patterns.data.linear_issues || [];
+    const linearProjects = patterns.data.linear_projects || [];
+    const urgencyBreakdown = patterns.data.linear_urgency_breakdown || {};
+
+    // Generate insights
+    const insights: string[] = [];
+
+    if (linearOverview.urgent_issues > 0) {
+      insights.push(`${linearOverview.urgent_issues} urgent issue${linearOverview.urgent_issues > 1 ? 's' : ''} need immediate attention`);
+    }
+
+    if (linearOverview.overdue_issues > 0) {
+      insights.push(`${linearOverview.overdue_issues} overdue issue${linearOverview.overdue_issues > 1 ? 's' : ''} in Linear`);
+    }
+
+    if (linearOverview.open_issues > 30) {
+      insights.push(`High issue backlog: ${linearOverview.open_issues} open issues — review and prioritize`);
+    }
+
+    if (linearOverview.due_soon_issues > 5) {
+      insights.push(`${linearOverview.due_soon_issues} issues due in the next 3 days`);
+    }
+
+    // Group by state
+    const issuesByState: Record<string, number> = {};
+    for (const issue of linearIssues) {
+      const state = issue.state || 'Unknown';
+      issuesByState[state] = (issuesByState[state] || 0) + 1;
+    }
+
+    const linearData: LinearData = {
+      organizationName: linearOverview.organization || 'Linear',
+      totalIssues: linearOverview.total_issues || 0,
+      openIssues: linearOverview.open_issues || 0,
+      urgentIssues: linearOverview.urgent_issues || 0,
+      highPriorityIssues: linearOverview.high_priority_issues || 0,
+      overdueIssues: linearOverview.overdue_issues || 0,
+      issuesDueSoon: linearOverview.due_soon_issues || 0,
+      issuesByState,
+      issuesByPriority: {
+        urgent: urgencyBreakdown.urgent || 0,
+        high: urgencyBreakdown.high || 0,
+        medium: urgencyBreakdown.medium || 0,
+        low: urgencyBreakdown.low || 0,
+        none: urgencyBreakdown.none || 0,
+      },
+      projectSummary: linearProjects.slice(0, 10).map((p: any) => ({
+        name: p.name,
+        issueCount: 0, // Would need to count from issues
+        progress: p.progress,
+      })),
+      recentActivity: linearIssues.slice(0, 10).map((i: any) => ({
+        identifier: i.identifier,
+        title: i.title,
+        state: i.state,
+        priority: i.priority,
+        updatedAt: i.updatedAt,
+      })),
+      insights,
+      rawData: patterns.data,
+    };
+
+    return {
+      source: 'linear',
+      available: true,
+      data: linearData,
+      insights,
+      fetchedAt: new Date().toISOString(),
+      recordCount: linearOverview.total_issues || 0,
+    };
+  } catch (error) {
+    logger.error('Error fetching Linear data', error, { email });
+    return {
+      source: 'linear',
+      available: false,
+      data: null,
+      insights: [],
+      fetchedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 // ============================================================================
 // MAIN FETCH FUNCTION
 // ============================================================================
@@ -1780,7 +2075,7 @@ export async function fetchAllEcosystemData(
   });
 
   // Source names for tracking failures
-  const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify'];
+  const sourceNames = ['bloodBiomarkers', 'oura', 'dexcom', 'vital', 'gmail', 'slack', 'outlook', 'teams', 'whoop', 'spotify', 'notion', 'linear'];
 
   // Fetch all data sources in parallel using Promise.allSettled for graceful degradation
   const results = await Promise.allSettled([
@@ -1794,6 +2089,8 @@ export async function fetchAllEcosystemData(
     fetchTeamsPatterns(email),
     fetchWhoopData(email),
     fetchSpotifyData(email),
+    fetchNotionData(email),
+    fetchLinearData(email),
   ]);
 
   // Extract values from settled results, creating failed sources for rejected promises
@@ -1809,9 +2106,9 @@ export async function fetchAllEcosystemData(
     return createFailedSource(sourceName, result.reason);
   };
 
-  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify] = results.map(extractResult);
+  const [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear] = results.map(extractResult);
 
-  const allSources = [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify];
+  const allSources = [bloodBiomarkers, oura, dexcom, vital, gmail, slack, outlook, teams, whoop, spotify, notion, linear];
 
   const result: EcosystemFetchResult = {
     bloodBiomarkers,
@@ -1824,11 +2121,13 @@ export async function fetchAllEcosystemData(
     teams,
     whoop,
     spotify,
+    notion,
+    linear,
     fetchTimestamp: new Date().toISOString(),
     successCount: allSources.filter(s => s.available).length,
-    totalSources: 10,
+    totalSources: 12,
     failedSources: failedSources.length > 0 ? failedSources : undefined,
-    partial: failedSources.length > 0 && failedSources.length < 10,
+    partial: failedSources.length > 0 && failedSources.length < 12,
   };
 
   const duration = Date.now() - startTime;

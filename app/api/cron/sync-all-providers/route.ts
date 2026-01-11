@@ -1,9 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processAllProviders, getUsersWithIntegrations } from '@/lib/services/insight-trigger-service';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Vercel Cron job - runs every 2 hours
 // Configure in vercel.json: { "path": "/api/cron/sync-all-providers", "schedule": "0 */2 * * *" }
 export const maxDuration = 300; // 5 minutes max for cron job
+
+const BASE_URL = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const CRON_SECRET = process.env.CRON_SECRET || '';
+
+/**
+ * Fetch fresh data from Slack/Gmail APIs for a user
+ * This actually calls the external APIs, not just reads cached data
+ */
+async function refreshUserData(email: string): Promise<{ slack: boolean; gmail: boolean }> {
+  const supabase = createAdminClient();
+  const results = { slack: false, gmail: false };
+
+  // Check which providers the user has connected
+  const { data: tokens } = await supabase
+    .from('integration_tokens')
+    .select('provider')
+    .eq('user_email', email)
+    .eq('is_active', true);
+
+  const providers = new Set((tokens || []).map(t => t.provider));
+
+  // Fetch Slack data if connected
+  if (providers.has('slack')) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/slack/fetch-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      results.slack = response.ok;
+      if (!response.ok) {
+        console.log(`[Cron Sync] Slack fetch failed for ${email}: ${response.status}`);
+      }
+    } catch (e) {
+      console.log(`[Cron Sync] Slack fetch error for ${email}:`, e);
+    }
+  }
+
+  // Fetch Gmail data if connected
+  if (providers.has('gmail')) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/gmail/fetch-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      results.gmail = response.ok;
+      if (!response.ok) {
+        console.log(`[Cron Sync] Gmail fetch failed for ${email}: ${response.status}`);
+      }
+    } catch (e) {
+      console.log(`[Cron Sync] Gmail fetch error for ${email}:`, e);
+    }
+  }
+
+  return results;
+}
 
 // Cron jobs are triggered by Vercel, verify the request is from Vercel
 function isVercelCronRequest(request: NextRequest): boolean {
@@ -57,8 +117,13 @@ export async function GET(request: NextRequest) {
       const results = await Promise.all(
         batch.map(async (email) => {
           try {
+            // FIRST: Fetch fresh data from Slack/Gmail APIs
+            const refreshResults = await refreshUserData(email);
+            console.log(`[Cron Sync] Refreshed data for ${email}: Slack=${refreshResults.slack}, Gmail=${refreshResults.gmail}`);
+
+            // THEN: Process the fresh data to generate insights
             const result = await processAllProviders(email);
-            return { email, ...result };
+            return { email, refreshed: refreshResults, ...result };
           } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
             console.error(`[Cron Sync] Error processing ${email}:`, errorMsg);

@@ -17,7 +17,7 @@
  * - Conversation: Compacted conversation history
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   DataSource,
   selectRelevantContext,
@@ -894,13 +894,22 @@ function estimateTokens(text: string): number {
  * Get user's subscription tier from database
  */
 export async function getUserSubscriptionTier(email: string): Promise<string> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
+  // Check user_subscriptions table (uses user_email column, not email)
   const { data, error } = await supabase
     .from('user_subscriptions')
-    .select('tier')
-    .eq('email', email)
+    .select('tier, status, current_period_end')
+    .eq('user_email', email)
     .maybeSingle();
+
+  // If found and active with valid period, use it
+  if (data?.tier && data?.status === 'active') {
+    const periodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
+    if (!periodEnd || periodEnd > new Date()) {
+      return data.tier;
+    }
+  }
 
   if (error || !data) {
     // Check sage_onboarding_data as fallback

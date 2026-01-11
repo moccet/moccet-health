@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { revokeToken, getAccessToken, Provider } from '@/lib/services/token-manager';
 
+/**
+ * Validate a token by making an actual API call to the provider
+ * This catches cases where our database thinks the token is valid but it's been revoked
+ */
+async function validateTokenWithProvider(provider: Provider, accessToken: string): Promise<boolean> {
+  try {
+    const endpoints: Record<string, string> = {
+      'spotify': 'https://api.spotify.com/v1/me',
+      'whoop': 'https://api.prod.whoop.com/developer/v1/user/profile/basic',
+      'oura': 'https://api.ouraring.com/v2/usercollection/personal_info',
+      'strava': 'https://www.strava.com/api/v3/athlete',
+      'fitbit': 'https://api.fitbit.com/1/user/-/profile.json',
+      'gmail': 'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+      'slack': 'https://slack.com/api/auth.test',
+      'dexcom': 'https://api.dexcom.com/v3/users/self',
+    };
+
+    const endpoint = endpoints[provider];
+    if (!endpoint) {
+      console.log(`[Token Validation] No validation endpoint for ${provider}, assuming valid`);
+      return true; // No endpoint to validate, assume valid
+    }
+
+    const response = await fetch(endpoint, {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+
+    const isValid = response.ok;
+    console.log(`[Token Validation] ${provider} token validation: ${isValid ? 'VALID' : 'INVALID'} (status: ${response.status})`);
+
+    return isValid;
+  } catch (error) {
+    console.error(`[Token Validation] Error validating ${provider} token:`, error);
+    return false; // Assume invalid on error
+  }
+}
+
 // Map connector names to OAuth provider names
 const connectorToProvider: Record<string, Provider> = {
   'Whoop': 'whoop',
@@ -184,18 +221,40 @@ export async function GET(request: NextRequest) {
           // Try to get a valid access token (this will attempt refresh if expired)
           const { token: accessToken, error } = await getAccessToken(userEmail, provider);
 
-          if (accessToken && !error) {
-            console.log(`[Connector Check] ${provider} token valid for ${userEmail}`);
-            return { connectorName, valid: true };
-          } else {
-            // Token is invalid - mark as disconnected in user_connectors
-            console.log(`[Connector Check] ${provider} token invalid for ${userEmail}: ${error}`);
+          if (!accessToken || error) {
+            // No token in database or error getting it
+            console.log(`[Connector Check] ${provider} token not found for ${userEmail}: ${error}`);
 
             // Update user_connectors to reflect the broken connection
             await supabase.from('user_connectors')
               .update({ is_connected: false, updated_at: new Date().toISOString() })
               .eq('user_id', user_id)
               .eq('connector_name', connectorName);
+
+            return { connectorName, valid: false };
+          }
+
+          // Token exists in database - now verify it actually works with the provider's API
+          const isReallyValid = await validateTokenWithProvider(provider, accessToken);
+
+          if (isReallyValid) {
+            console.log(`[Connector Check] ${provider} token verified valid for ${userEmail}`);
+            return { connectorName, valid: true };
+          } else {
+            // Token exists but doesn't work - mark as disconnected
+            console.log(`[Connector Check] ${provider} token exists but API validation failed for ${userEmail}`);
+
+            // Update user_connectors to reflect the broken connection
+            await supabase.from('user_connectors')
+              .update({ is_connected: false, updated_at: new Date().toISOString() })
+              .eq('user_id', user_id)
+              .eq('connector_name', connectorName);
+
+            // Also mark the token as inactive in integration_tokens
+            await supabase.from('integration_tokens')
+              .update({ is_active: false, updated_at: new Date().toISOString() })
+              .eq('user_email', userEmail)
+              .eq('provider', provider);
 
             return { connectorName, valid: false };
           }

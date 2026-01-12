@@ -608,8 +608,12 @@ export async function POST(request: NextRequest) {
 
     for (const channel of channelsToCheck) {
       try {
+        // Note: Slack API returns messages in reverse chronological order (newest first)
+        // when NOT using 'oldest'. Using 'oldest' returns chronologically from that date.
+        // We want the most recent messages, so we don't use 'oldest' - just limit.
+        // This gets the 200 most recent messages in the channel.
         const historyResponse = await fetch(
-          `https://slack.com/api/conversations.history?channel=${channel.id}&oldest=${ninetyDaysAgo}&limit=200`,
+          `https://slack.com/api/conversations.history?channel=${channel.id}&limit=200`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,

@@ -828,11 +828,35 @@ export async function POST(request: NextRequest) {
     // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
     // =====================================================
     try {
-      // Prepare messages for deep analysis - prioritize messages FROM others (potential tasks)
+      // Health-related keywords to prioritize in user's own messages
+      const healthKeywords = ['sick', 'ill', 'flu', 'cold', 'fever', 'headache', 'tired', 'exhausted',
+        'stressed', 'anxious', 'overwhelmed', 'burnout', 'unwell', 'doctor', 'hospital', 'medication',
+        'not feeling well', 'taking a day off', 'working from home', 'need rest'];
+
+      // Check if message contains health-related content
+      const hasHealthContent = (text: string) => {
+        const lower = text.toLowerCase();
+        return healthKeywords.some(kw => lower.includes(kw));
+      };
+
+      // Prepare messages for deep analysis
+      // Priority: 1) User's health disclosures, 2) Messages from others, 3) Recent messages
       const messagesForDeepAnalysis = messageData
         .filter(m => m.text && m.text.trim().length > 0)
-        // Prioritize messages from others that might need response
-        .sort((a, b) => (b.isFromOther ? 1 : 0) - (a.isFromOther ? 1 : 0))
+        .sort((a, b) => {
+          // Prioritize user's own health disclosures (Gold tier deep insights)
+          const aHealthScore = !a.isFromOther && hasHealthContent(a.text!) ? 2 : 0;
+          const bHealthScore = !b.isFromOther && hasHealthContent(b.text!) ? 2 : 0;
+          if (aHealthScore !== bHealthScore) return bHealthScore - aHealthScore;
+
+          // Then prioritize messages from others (potential tasks)
+          const aFromOther = a.isFromOther ? 1 : 0;
+          const bFromOther = b.isFromOther ? 1 : 0;
+          if (aFromOther !== bFromOther) return bFromOther - aFromOther;
+
+          // Finally sort by recency
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        })
         .slice(0, 50)
         .map((m, i) => ({
           id: `slack_${i}_${m.timestamp}`,
@@ -845,7 +869,17 @@ export async function POST(request: NextRequest) {
           isAfterHours: m.isAfterHours,
           threadTs: undefined,
           mentions: m.mentions,
+          isUserHealthDisclosure: !m.isFromOther && hasHealthContent(m.text!),
         }));
+
+      // Log health disclosures found
+      const healthDisclosures = messagesForDeepAnalysis.filter(m => m.isUserHealthDisclosure);
+      if (healthDisclosures.length > 0) {
+        console.log(`[Slack Fetch] Found ${healthDisclosures.length} health-related messages from user`);
+        healthDisclosures.slice(0, 3).forEach(m => {
+          console.log(`[Slack Fetch] Health disclosure: "${m.text?.substring(0, 80)}..."`);
+        });
+      }
 
       // Log sample to verify we have real data
       const messagesFromOthers = messagesForDeepAnalysis.filter(m => m.userName && m.userName !== currentUserId);

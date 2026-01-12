@@ -949,18 +949,50 @@ export async function POST(request: NextRequest) {
     // DEEP CONTENT ANALYSIS (tasks, urgency, interruptions)
     // =====================================================
     try {
-      // Prepare emails for deep analysis with full context (snippet + sender)
+      // Health-related keywords to prioritize
+      const healthKeywords = ['sick', 'ill', 'flu', 'cold', 'fever', 'headache', 'tired', 'exhausted',
+        'stressed', 'anxious', 'overwhelmed', 'burnout', 'unwell', 'doctor', 'hospital', 'medication',
+        'not feeling well', 'taking a day off', 'working from home', 'need rest', 'appointment',
+        'health', 'medical', 'prescription'];
+
+      // Check if email contains health-related content
+      const hasHealthContent = (subject: string, snippet: string) => {
+        const combined = `${subject} ${snippet}`.toLowerCase();
+        return healthKeywords.some(kw => combined.includes(kw));
+      };
+
+      // Prepare emails for deep analysis with full context
+      // Priority: 1) Health-related emails, 2) Recent emails
       const emailsForDeepAnalysis = emailData
         .filter(e => e.subject && e.subject.trim().length > 0)
+        .sort((a, b) => {
+          // Prioritize health-related content
+          const aHealth = hasHealthContent(a.subject || '', a.snippet || '') ? 1 : 0;
+          const bHealth = hasHealthContent(b.subject || '', b.snippet || '') ? 1 : 0;
+          if (aHealth !== bHealth) return bHealth - aHealth;
+
+          // Then sort by recency
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        })
         .slice(0, 50)
         .map((e, i) => ({
           id: e.messageId || `gmail_${i}`,
           subject: e.subject!,
-          snippet: e.snippet || '', // Now includes actual email preview
-          from: e.from || '', // Now includes sender name
+          snippet: e.snippet || '',
+          from: e.from || '',
           timestamp: e.timestamp,
           isAfterHours: e.isAfterHours,
+          isHealthRelated: hasHealthContent(e.subject || '', e.snippet || ''),
         }));
+
+      // Log health-related emails found
+      const healthEmails = emailsForDeepAnalysis.filter(e => e.isHealthRelated);
+      if (healthEmails.length > 0) {
+        console.log(`[Gmail Fetch] Found ${healthEmails.length} health-related emails`);
+        healthEmails.slice(0, 3).forEach(e => {
+          console.log(`[Gmail Fetch] Health email: "${e.subject?.substring(0, 60)}..."`);
+        });
+      }
 
       // Log sample to verify we have real data
       if (emailsForDeepAnalysis.length > 0) {

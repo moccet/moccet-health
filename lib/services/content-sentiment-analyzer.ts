@@ -10,7 +10,7 @@
  */
 
 import OpenAI from 'openai';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const openai = new OpenAI();
 
@@ -353,7 +353,7 @@ export async function storeSentimentAnalysis(
   date: string,
   sentiment: SentimentAnalysis
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase.from('content_sentiment_analysis').upsert(
     {
@@ -390,7 +390,7 @@ export async function getSentimentAnalysis(
   } = {}
 ): Promise<AggregatedSentiment | null> {
   const { days = 7, source } = options;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -734,7 +734,7 @@ export async function storeLifeContext(
   email: string,
   context: LifeContextAnalysis
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Upsert main context record
   const { error: contextError } = await supabase
@@ -782,7 +782,7 @@ export async function storeLifeContext(
  * Get life context for a user
  */
 export async function getLifeContext(email: string): Promise<LifeContextAnalysis | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('user_life_context')
@@ -993,7 +993,7 @@ export async function mergeAndStoreLifeContext(
   newContext: LifeContextAnalysis,
   source: 'gmail' | 'slack' | 'outlook' | 'teams'
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get existing context
   const { data: existing } = await supabase

@@ -11,7 +11,7 @@
  */
 
 import OpenAI from 'openai';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const openai = new OpenAI();
 
@@ -55,7 +55,7 @@ export async function getCompactedHistory(
   threadId?: string,
   subscriptionTier: string = 'free'
 ): Promise<CompactedHistory> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const limits = COMPACTION_LIMITS[subscriptionTier] || COMPACTION_LIMITS.free;
 
   // Get recent non-compacted messages
@@ -118,7 +118,7 @@ export async function saveMessage(
     contextUsed?: Record<string, unknown>;
   } = {}
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { error } = await supabase.from('conversation_history').insert({
     user_email: email,
@@ -143,7 +143,7 @@ export async function compactOldMessages(
   email: string,
   subscriptionTier: string = 'free'
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const limits = COMPACTION_LIMITS[subscriptionTier] || COMPACTION_LIMITS.free;
 
   // Get messages that should be compacted (older than keepFullCount)
@@ -306,7 +306,7 @@ export async function getConversationStats(email: string): Promise<{
   summaryCount: number;
   estimatedTokens: number;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [totalResult, uncompactedResult, summaryResult, tokenResult] = await Promise.all([
     supabase

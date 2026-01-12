@@ -8,7 +8,7 @@
  * Pro/Max tier feature.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import type { LifeContextAnalysis } from './content-sentiment-analyzer';
 import { getLifeContext } from './content-sentiment-analyzer';
 
@@ -552,7 +552,7 @@ export async function storeHealthAnalysis(
   email: string,
   analysis: HealthAnalysis
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Upsert main analysis record
   const { error } = await supabase
@@ -600,7 +600,7 @@ export async function storeHealthAnalysis(
  * Get health analysis for a user
  */
 export async function getHealthAnalysis(email: string): Promise<HealthAnalysis | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('health_pattern_analysis')

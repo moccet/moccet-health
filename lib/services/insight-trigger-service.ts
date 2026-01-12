@@ -7,7 +7,7 @@
  * @module lib/services/insight-trigger-service
  */
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 import {
   fetchOuraData,
@@ -111,7 +111,7 @@ interface UserLocationContext {
  * Used to generate location-aware, personalized insights
  */
 async function getUserLocationContext(email: string): Promise<UserLocationContext> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // First, check for explicit travel context with estimated location
   const { data: travelData } = await supabase
@@ -301,7 +301,7 @@ async function getBaseline(
   email: string,
   metric_type: string
 ): Promise<{ baseline_value: number; sample_count: number } | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('user_health_baselines')
@@ -326,7 +326,7 @@ async function updateBaseline(
   new_value: number,
   window_days: number = 14
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const existing = await getBaseline(email, metric_type);
 
@@ -1158,7 +1158,7 @@ async function fetchWeeklyData(
   weekStart: Date,
   weekEnd: Date
 ): Promise<WeeklyMetrics> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const startStr = weekStart.toISOString();
   const endStr = weekEnd.toISOString();
 
@@ -2905,7 +2905,7 @@ export async function processVitalEvent(
  * Get users with active integrations for batch processing
  */
 export async function getUsersWithIntegrations(): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('integration_tokens')

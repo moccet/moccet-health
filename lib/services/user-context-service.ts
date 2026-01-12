@@ -17,7 +17,7 @@
  * - Conversation: Compacted conversation history
  */
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import {
   DataSource,
   selectRelevantContext,
@@ -461,7 +461,7 @@ export function formatContextForPrompt(
 // ============================================================================
 
 async function fetchUserProfile(email: string): Promise<UserProfile | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch from sage_onboarding_data (contains profile info)
   const { data, error } = await supabase
@@ -504,7 +504,7 @@ async function fetchUserInsights(
   email: string,
   subscriptionTier: string
 ): Promise<HealthInsight[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Limit based on tier
   const limit = subscriptionTier === 'max' ? 20 : subscriptionTier === 'pro' ? 10 : 5;
@@ -533,7 +533,7 @@ async function fetchUserInsights(
 }
 
 async function fetchLabResults(email: string): Promise<LabResult[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('sage_onboarding_data')
@@ -559,7 +559,7 @@ async function fetchLabResults(email: string): Promise<LabResult[]> {
 }
 
 async function fetchTrainingData(email: string): Promise<any | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('forge_onboarding_data')
@@ -578,7 +578,7 @@ async function fetchTrainingData(email: string): Promise<any | null> {
 }
 
 async function fetchNutritionData(email: string): Promise<any | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('sage_onboarding_data')
@@ -597,7 +597,7 @@ async function fetchNutritionData(email: string): Promise<any | null> {
 }
 
 async function fetchAppleHealthData(email: string): Promise<any | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('apple_health_data')
@@ -619,7 +619,7 @@ async function fetchAppleHealthData(email: string): Promise<any | null> {
  * These are facts the user has explicitly told us about themselves
  */
 async function fetchLearnedFacts(email: string): Promise<LearnedFact[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('user_learned_facts')

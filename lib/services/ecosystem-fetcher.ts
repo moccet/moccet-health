@@ -498,8 +498,12 @@ export async function fetchOuraData(
       .eq('email', email)
       .maybeSingle();
 
-    // Check if user has Oura connected - try by user_id first, then by user_email fallback
-    let connector = null;
+    // Check if user has Oura connected via multiple methods:
+    // 1. user_connectors (Vital integration)
+    // 2. integration_tokens (Direct OAuth)
+    let isConnected = false;
+
+    // Method 1: Check user_connectors (Vital) by user_id
     if (users?.id) {
       const { data } = await adminClient
         .from('user_connectors')
@@ -508,11 +512,11 @@ export async function fetchOuraData(
         .eq('connector_name', 'Oura Ring')
         .eq('is_connected', true)
         .maybeSingle();
-      connector = data;
+      if (data) isConnected = true;
     }
 
-    // Fallback: check by user_email (some callbacks store this)
-    if (!connector) {
+    // Method 2: Check user_connectors by user_email (fallback)
+    if (!isConnected) {
       const { data } = await adminClient
         .from('user_connectors')
         .select('is_connected')
@@ -520,10 +524,22 @@ export async function fetchOuraData(
         .eq('connector_name', 'Oura Ring')
         .eq('is_connected', true)
         .maybeSingle();
-      connector = data;
+      if (data) isConnected = true;
     }
 
-    if (!connector) {
+    // Method 3: Check integration_tokens for direct OAuth connection
+    if (!isConnected) {
+      const { data } = await adminClient
+        .from('integration_tokens')
+        .select('is_active')
+        .eq('user_email', email)
+        .eq('provider', 'oura')
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data) isConnected = true;
+    }
+
+    if (!isConnected) {
       return {
         source: 'oura',
         available: false,
@@ -537,12 +553,14 @@ export async function fetchOuraData(
     const end = endDate || new Date();
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
+    // Query for data that OVERLAPS with our date range (not contained within)
+    // Overlap condition: data.end_date >= query.start AND data.start_date <= query.end
     const { data, error } = await supabase
       .from('oura_data')
       .select('*')
       .eq('email', email)
-      .gte('start_date', start.toISOString().split('T')[0])
-      .lte('end_date', end.toISOString().split('T')[0])
+      .gte('end_date', start.toISOString().split('T')[0])    // data ends after our start
+      .lte('start_date', end.toISOString().split('T')[0])    // data starts before our end
       .order('sync_date', { ascending: false })
       .limit(1);
 

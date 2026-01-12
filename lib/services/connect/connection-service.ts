@@ -444,25 +444,55 @@ export class ConnectionService {
 
   /**
    * Get profile info for multiple emails
+   * First checks user_profiles table, then falls back to sage_onboarding_data
    */
   private async getProfilesForEmails(
     emails: string[]
   ): Promise<Record<string, { display_name?: string; avatar_url?: string }>> {
     if (emails.length === 0) return {};
 
-    const { data } = await this.supabase
-      .from('sage_onboarding_data')
-      .select('email, form_data')
-      .in('email', emails);
-
     const profiles: Record<string, { display_name?: string; avatar_url?: string }> = {};
 
-    for (const user of data || []) {
-      const formData = user.form_data as any;
-      profiles[user.email] = {
-        display_name: formData?.name || formData?.full_name || user.email.split('@')[0],
-        avatar_url: formData?.avatar_url,
-      };
+    // First, check user_profiles table (preferred source for display names)
+    const { data: userProfiles } = await this.supabase
+      .from('user_profiles')
+      .select('user_email, display_name, avatar_url')
+      .in('user_email', emails);
+
+    for (const profile of userProfiles || []) {
+      if (profile.display_name) {
+        profiles[profile.user_email] = {
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+        };
+      }
+    }
+
+    // For emails not found in user_profiles, check sage_onboarding_data
+    const missingEmails = emails.filter(e => !profiles[e]?.display_name);
+
+    if (missingEmails.length > 0) {
+      const { data } = await this.supabase
+        .from('sage_onboarding_data')
+        .select('email, form_data')
+        .in('email', missingEmails);
+
+      for (const user of data || []) {
+        const formData = user.form_data as any;
+        profiles[user.email] = {
+          display_name: formData?.name || formData?.full_name || user.email.split('@')[0],
+          avatar_url: profiles[user.email]?.avatar_url || formData?.avatar_url,
+        };
+      }
+    }
+
+    // Fill in any remaining missing profiles with email prefix
+    for (const email of emails) {
+      if (!profiles[email]) {
+        profiles[email] = {
+          display_name: email.split('@')[0],
+        };
+      }
     }
 
     return profiles;

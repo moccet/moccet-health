@@ -273,6 +273,49 @@ export async function POST(request: NextRequest) {
 
     console.log('[FoodAnalysis] Analysis complete');
 
+    // Save to sage_food_logs if user email is provided
+    if (email && enrichedFoods.length > 0) {
+      console.log(`[FoodAnalysis] Saving ${enrichedFoods.length} food items to database for ${email}`);
+
+      const foodLogs = enrichedFoods.map((food, index) => ({
+        id: `${email}_${Date.now()}_${index}`,
+        user_email: email,
+        name: food.name,
+        calories: food.macros.calories || 0,
+        protein: food.macros.protein || 0,
+        carbs: food.macros.carbs || 0,
+        fat: food.macros.fat || 0,
+        fiber: food.macros.fiber || 0,
+        serving_size: food.portionGrams || 100,
+        serving_unit: 'g',
+        servings_consumed: 1,
+        source: 'image_analysis',
+        image_url: imageUrl,
+        database_id: food.fdcId || food.offCode || null,
+        database_source: food.source || 'ai_estimated',
+        logged_at: new Date().toISOString(),
+        meal_type: 'snack', // Default, can be updated by user
+        sugar: food.micros?.sugar || null,
+        sodium: food.micros?.sodium || null,
+        potassium: food.micros?.potassium || null,
+        vitamin_a: food.micros?.vitaminA || null,
+        vitamin_c: food.micros?.vitaminC || null,
+        calcium: food.micros?.calcium || null,
+        iron: food.micros?.iron || null,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('sage_food_logs')
+        .insert(foodLogs);
+
+      if (insertError) {
+        console.error('[FoodAnalysis] Failed to save food logs:', insertError);
+        // Don't fail the request, just log the error
+      } else {
+        console.log(`[FoodAnalysis] Successfully saved ${foodLogs.length} food items`);
+      }
+    }
+
     // Return enriched results
     const response: FoodAnalysisResponse = {
       success: true,

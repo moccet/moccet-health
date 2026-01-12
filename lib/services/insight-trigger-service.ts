@@ -2234,16 +2234,57 @@ Generate ${config.insightCount} DIVERSE insights across DIFFERENT categories. Ea
 
 ## CRITICAL: Insight Diversity Requirements
 
-You MUST generate insights across these different categories (pick ${config.insightCount} different ones):
+You MUST generate insights across these different categories (pick ${config.insightCount} different ones from 30 available):
 
-1. **Biometric & Physiological** - HRV trends, resting heart rate patterns, recovery scores, cardiovascular efficiency
-2. **Sleep & Recovery** - Sleep architecture, circadian rhythm, sleep debt, recovery optimization
-3. **Activity & Movement** - Movement patterns, exercise timing, sedentary behavior, active recovery
-4. **Stress & Resilience** - Stress accumulation, recovery capacity, autonomic balance, resilience building
-5. **Mental Health & Cognitive** - Cognitive load, emotional resilience, mood patterns, focus capacity
-6. **Work-Life Integration** - Boundary health, recovery time, sustainable pace, recharge activities
-7. **Social & Relationship** - Social support impact on health, connection quality, isolation markers
-8. **Nutrition & Metabolic** - Meal timing effects, hydration, energy patterns, metabolic flexibility
+**CORE HEALTH DOMAINS:**
+1. **sleep_recovery** - Sleep architecture, sleep debt, recovery optimization
+2. **activity_movement** - Movement patterns, exercise timing, active recovery
+3. **stress_resilience** - Stress accumulation, recovery capacity, resilience
+4. **cognitive_wellbeing** - Cognitive load, mood patterns, focus capacity
+5. **work_life_balance** - Boundary health, sustainable pace, recharge
+6. **social_health** - Social support, connection quality, isolation markers
+7. **metabolic_health** - Meal timing, glucose, energy patterns
+8. **biometric_trend** - HRV trends, heart rate patterns, biomarkers
+
+**TIMING & RHYTHM:**
+9. **circadian_rhythm** - Chronotype alignment, social jetlag, biological clock
+10. **energy_architecture** - Daily energy peaks/troughs, task-energy matching
+
+**FITNESS & PHYSIOLOGY:**
+11. **cardio_fitness** - VO2max trends, heart rate efficiency, training load
+12. **hydration_nutrition** - Hydration, caffeine/alcohol impact, nutrients
+
+**MENTAL & EMOTIONAL:**
+13. **emotional_health** - Emotional tone trends, burnout risk, positive affect
+14. **cognitive_performance** - Decision fatigue, context switching, mental energy
+15. **perfectionism_stress** - Perfectionism patterns, overwork, unrealistic standards
+
+**BEHAVIOR & HABITS:**
+16. **habit_building** - Habit adherence, streaks, tiny habit opportunities
+17. **behaviour_change_readiness** - Change readiness, self-efficacy, relapse risk
+18. **recovery_rituals** - Recovery practice adherence and effectiveness
+
+**ENVIRONMENT & CONTEXT:**
+19. **environment_context** - Commute impact, home vs. office, location recovery
+20. **environmental_wellness** - Air quality, light exposure, noise impact
+21. **travel_health** - Jet lag, travel recovery, location sleep mismatch
+
+**WORK & DIGITAL:**
+22. **digital_hygiene** - Notification overload, screen time, focus modes
+23. **communication_boundaries** - After-hours work, weekend penetration, vacation respect
+24. **meeting_wellbeing** - Meeting load stress, post-meeting recovery needs
+25. **task_psychology** - Cognitive overload, procrastination, overwhelm
+
+**SOCIAL & CONNECTION:**
+26. **social_rhythm** - Social rhythm stability, isolation risk, collaboration energy
+27. **social_connection_depth** - Meaningful interactions, support network activation
+
+**LEARNING & GROWTH:**
+28. **learning_cognitive_load** - Skill acquisition stress, training overload
+
+**RISK & PREVENTION:**
+29. **preventive_risk_screening** - Early warning patterns, guideline gaps
+30. **audio_wellness** - Music-mood correlation, focus playlist effectiveness
 
 ## CRITICAL: Health-Focused Framing
 
@@ -2282,7 +2323,7 @@ Return valid JSON:
       "message": "3-5 sentences connecting multiple data sources. Reference specific numbers. Explain the 'why' with scientific context. Frame positively.",
       "severity": "info|low|medium|high",
       "recommendation": "Specific action framed as opportunity. Include timing based on their patterns.",
-      "insight_type": "sleep_recovery|activity_movement|stress_resilience|cognitive_wellbeing|work_life_balance|social_health|metabolic_health|biometric_trend",
+      "insight_type": "One of 30 categories: sleep_recovery, activity_movement, stress_resilience, cognitive_wellbeing, work_life_balance, social_health, metabolic_health, biometric_trend, circadian_rhythm, energy_architecture, cardio_fitness, hydration_nutrition, emotional_health, cognitive_performance, perfectionism_stress, habit_building, behaviour_change_readiness, recovery_rituals, environment_context, environmental_wellness, travel_health, digital_hygiene, communication_boundaries, meeting_wellbeing, task_psychology, social_rhythm, social_connection_depth, learning_cognitive_load, preventive_risk_screening, audio_wellness",
       "correlations": ["source1 + source2"],
       "scientific_basis": "Brief mechanism explanation",
       "prediction": "Positive trajectory if they take action"
@@ -2326,18 +2367,25 @@ async function isDuplicateInsight(
   const combinedText = `${title} ${message || ''} ${recommendation || ''}`.toLowerCase();
 
   // Map insight types to broader categories for diversity checking
+  // 30 categories total for maximum diversity
   const categoryMap: Record<string, string> = {
+    // ═══════════════════════════════════════════════════════════════════
+    // ORIGINAL 8 CATEGORIES
+    // ═══════════════════════════════════════════════════════════════════
+
     // Sleep & Recovery
     'sleep_alert': 'sleep_recovery',
     'sleep_improvement': 'sleep_recovery',
     'sleep_recovery': 'sleep_recovery',
     'weekly_sleep_trend': 'sleep_recovery',
+
     // Activity & Movement
     'activity_anomaly': 'activity_movement',
     'activity_movement': 'activity_movement',
     'workout_completed': 'activity_movement',
     'weekly_activity_trend': 'activity_movement',
     'exercise_sleep_benefit': 'activity_movement',
+
     // Stress & Resilience
     'stress_indicator': 'stress_resilience',
     'stress_resilience': 'stress_resilience',
@@ -2345,28 +2393,213 @@ async function isDuplicateInsight(
     'recovery_low': 'stress_resilience',
     'recovery_high': 'stress_resilience',
     'weekly_recovery_trend': 'stress_resilience',
+
     // Cognitive & Mental
     'cognitive_wellbeing': 'cognitive_wellbeing',
     'mood_indicator': 'cognitive_wellbeing',
     'deep_focus_window': 'cognitive_wellbeing',
+
     // Work-Life Balance
     'work_life_balance': 'work_life_balance',
     'work_sleep_impact': 'work_life_balance',
     'email_overload': 'work_life_balance',
     'calendar_conflict': 'work_life_balance',
     'weekly_work_life_balance': 'work_life_balance',
+
     // Social Health
     'social_health': 'social_health',
+
     // Metabolic & Nutrition
     'metabolic_health': 'metabolic_health',
     'glucose_spike': 'metabolic_health',
     'weekly_glucose_trend': 'metabolic_health',
+
     // Biometric Trends
     'biometric_trend': 'biometric_trend',
     'biomarker_trend': 'biometric_trend',
     'cross_source_correlation': 'biometric_trend',
     'lifestyle_health_connection': 'biometric_trend',
     'predictive_analysis': 'biometric_trend',
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NEW CATEGORIES (22 additional for expanded diversity)
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Circadian Rhythm - Daily timing patterns and biological clock alignment
+    'circadian_stability': 'circadian_rhythm',
+    'chronotype_alignment': 'circadian_rhythm',
+    'social_jetlag': 'circadian_rhythm',
+    'night_owl_pattern': 'circadian_rhythm',
+    'shift_work_risk': 'circadian_rhythm',
+    'circadian_rhythm': 'circadian_rhythm',
+
+    // Cardio Fitness - Cardiovascular health and fitness trends
+    'vo2max_trend': 'cardio_fitness',
+    'cardio_fitness_level': 'cardio_fitness',
+    'heart_rate_efficiency': 'cardio_fitness',
+    'training_load_balance': 'cardio_fitness',
+    'deconditioning_risk': 'cardio_fitness',
+    'cardio_fitness': 'cardio_fitness',
+
+    // Emotional Health - Mood and emotional state patterns
+    'emotional_tone_trend': 'emotional_health',
+    'mood_language_shift': 'emotional_health',
+    'emotional_resilience': 'emotional_health',
+    'burnout_risk_indicator': 'emotional_health',
+    'positive_affect_boost': 'emotional_health',
+    'emotional_health': 'emotional_health',
+
+    // Cognitive Performance - Mental sharpness and focus capacity
+    'focus_window_quality': 'cognitive_performance',
+    'decision_fatigue_risk': 'cognitive_performance',
+    'mental_energy_trend': 'cognitive_performance',
+    'context_switching_load': 'cognitive_performance',
+    'error_risk_indicator': 'cognitive_performance',
+    'cognitive_performance': 'cognitive_performance',
+
+    // Habit Building - Formation and maintenance of health habits
+    'habit_adherence': 'habit_building',
+    'streak_break_risk': 'habit_building',
+    'tiny_habit_opportunity': 'habit_building',
+    'implementation_intention': 'habit_building',
+    'habit_stack_suggestion': 'habit_building',
+    'habit_building': 'habit_building',
+
+    // Environment Context - Physical and situational context impact
+    'environment_mismatch': 'environment_context',
+    'commute_impact': 'environment_context',
+    'travel_disruption': 'environment_context',
+    'home_office_load': 'environment_context',
+    'location_recovery_spot': 'environment_context',
+    'environment_context': 'environment_context',
+
+    // Social Rhythm - Regularity of social interactions
+    'social_rhythm_stability': 'social_rhythm',
+    'isolation_risk': 'social_rhythm',
+    'collaboration_energy': 'social_rhythm',
+    'support_network_strength': 'social_rhythm',
+    'social_jetlag_social': 'social_rhythm',
+    'social_rhythm': 'social_rhythm',
+
+    // Behaviour Change Readiness - Psychological readiness for change
+    'change_readiness_signal': 'behaviour_change_readiness',
+    'self_efficacy_indicator': 'behaviour_change_readiness',
+    'ambivalence_pattern': 'behaviour_change_readiness',
+    'relapse_risk': 'behaviour_change_readiness',
+    'tailored_prompt_timing': 'behaviour_change_readiness',
+    'behaviour_change_readiness': 'behaviour_change_readiness',
+
+    // Digital Hygiene - Quality of digital environment
+    'notification_overload': 'digital_hygiene',
+    'context_switch_overload': 'digital_hygiene',
+    'screen_time_sleep_impact': 'digital_hygiene',
+    'focus_mode_effectiveness': 'digital_hygiene',
+    'digital_boundary_strength': 'digital_hygiene',
+    'digital_hygiene': 'digital_hygiene',
+
+    // Preventive Risk Screening - Early risk signals
+    'risk_flag_cardiometabolic': 'preventive_risk_screening',
+    'risk_flag_mental_health': 'preventive_risk_screening',
+    'risk_flag_overtraining': 'preventive_risk_screening',
+    'early_warning_pattern': 'preventive_risk_screening',
+    'guideline_gap_opportunity': 'preventive_risk_screening',
+    'preventive_risk_screening': 'preventive_risk_screening',
+
+    // Environmental Wellness - External environment health impact
+    'air_quality_impact': 'environmental_wellness',
+    'light_exposure_pattern': 'environmental_wellness',
+    'noise_pollution_effect': 'environmental_wellness',
+    'urban_rural_recovery_diff': 'environmental_wellness',
+    'environmental_stressor': 'environmental_wellness',
+    'environmental_wellness': 'environmental_wellness',
+
+    // Hydration & Nutrition - Nutrition and hydration patterns
+    'hydration_deficit_risk': 'hydration_nutrition',
+    'meal_timing_optimization': 'hydration_nutrition',
+    'caffeine_impact': 'hydration_nutrition',
+    'alcohol_effect': 'hydration_nutrition',
+    'nutrient_gap_inference': 'hydration_nutrition',
+    'hydration_nutrition': 'hydration_nutrition',
+
+    // Audio Wellness - Impact of audio consumption on health
+    'music_mood_correlation': 'audio_wellness',
+    'focus_playlist_effectiveness': 'audio_wellness',
+    'audio_stress_buffer': 'audio_wellness',
+    'sleep_sound_quality': 'audio_wellness',
+    'listening_habit_shift': 'audio_wellness',
+    'audio_wellness': 'audio_wellness',
+
+    // Task Psychology - Psychological state from task patterns
+    'cognitive_overload_warning': 'task_psychology',
+    'task_completion_anxiety': 'task_psychology',
+    'perfectionism_marker': 'task_psychology',
+    'procrastination_root': 'task_psychology',
+    'overwhelm_threshold': 'task_psychology',
+    'task_psychology': 'task_psychology',
+
+    // Communication Boundaries - Work-life communication boundaries
+    'after_hours_bleed': 'communication_boundaries',
+    'weekend_work_penetration': 'communication_boundaries',
+    'vacation_boundary_respect': 'communication_boundaries',
+    'notification_sensitivity': 'communication_boundaries',
+    'boundary_setting_effectiveness': 'communication_boundaries',
+    'communication_boundaries': 'communication_boundaries',
+
+    // Travel Health - Health impact of travel
+    'jet_lag_severity': 'travel_health',
+    'travel_recovery_timeline': 'travel_health',
+    'trip_stress_load': 'travel_health',
+    'location_sleep_mismatch': 'travel_health',
+    'travel_immune_risk': 'travel_health',
+    'travel_health': 'travel_health',
+
+    // Meeting Wellbeing - Impact of meetings on health
+    'meeting_load_stress': 'meeting_wellbeing',
+    'meeting_quality_impact': 'meeting_wellbeing',
+    'post_meeting_recovery': 'meeting_wellbeing',
+    'meeting_free_day_benefit': 'meeting_wellbeing',
+    'synchronous_vs_async_cost': 'meeting_wellbeing',
+    'meeting_wellbeing': 'meeting_wellbeing',
+
+    // Energy Architecture - Daily energy distribution
+    'energy_peak_identification': 'energy_architecture',
+    'trough_recovery_opportunity': 'energy_architecture',
+    'energy_task_mismatch': 'energy_architecture',
+    'chronotype_energy_alignment': 'energy_architecture',
+    'energy_leak_detection': 'energy_architecture',
+    'energy_architecture': 'energy_architecture',
+
+    // Recovery Rituals - Specific recovery practices
+    'ritual_adherence': 'recovery_rituals',
+    'ritual_effectiveness': 'recovery_rituals',
+    'ritual_timing_optimization': 'recovery_rituals',
+    'ritual_personalization': 'recovery_rituals',
+    'ritual_disruption_impact': 'recovery_rituals',
+    'recovery_rituals': 'recovery_rituals',
+
+    // Social Connection Depth - Depth of social interactions
+    'meaningful_interaction_frequency': 'social_connection_depth',
+    'superficial_vs_deep_ratio': 'social_connection_depth',
+    'support_network_activation': 'social_connection_depth',
+    'loneliness_despite_connectedness': 'social_connection_depth',
+    'quality_over_quantity': 'social_connection_depth',
+    'social_connection_depth': 'social_connection_depth',
+
+    // Learning & Cognitive Load - Health impact of learning
+    'skill_acquisition_stress': 'learning_cognitive_load',
+    'learning_curve_health_cost': 'learning_cognitive_load',
+    'training_overload': 'learning_cognitive_load',
+    'knowledge_application_gap': 'learning_cognitive_load',
+    'learning_recovery_need': 'learning_cognitive_load',
+    'learning_cognitive_load': 'learning_cognitive_load',
+
+    // Perfectionism & Stress - Perfectionism health cost
+    'perfectionism_language_marker': 'perfectionism_stress',
+    'overwork_compensation': 'perfectionism_stress',
+    'unrealistic_standard_stress': 'perfectionism_stress',
+    'perfectionism_burnout_link': 'perfectionism_stress',
+    'good_enough_reframing_opportunity': 'perfectionism_stress',
+    'perfectionism_stress': 'perfectionism_stress',
   };
 
   const insightCategory = categoryMap[insightType] || insightType;

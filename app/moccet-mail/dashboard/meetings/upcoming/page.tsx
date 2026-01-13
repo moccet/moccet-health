@@ -72,9 +72,9 @@ export default function UpcomingMeetingsPage() {
 
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
-          setIsConnected(statusData.connected);
+          setIsConnected(statusData.isConnected);
 
-          if (!statusData.connected) {
+          if (!statusData.isConnected) {
             setIsLoading(false);
             return;
           }

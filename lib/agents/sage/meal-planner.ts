@@ -2,12 +2,12 @@
  * Meal Planner Agent
  *
  * Purpose: Generate a 7-day meal plan structure based on the client's profile
- * Model: GPT-4o-mini (structured output generation)
- * Cost: ~$0.015 per call
+ *
+ * PRIMARY: Uses curated meals database with intelligent matching
+ * FALLBACK: GPT-4o-mini for edge cases (minimal database matches)
  *
  * Creates meal plans that hit macro targets, respect dietary constraints,
- * and address biomarker concerns. Generates skeleton meals that will be
- * enriched by the Recipe Enricher agent.
+ * and address biomarker concerns using a pre-built meal database.
  */
 
 import OpenAI from 'openai';
@@ -20,6 +20,12 @@ import {
   DayMealPlan,
   MealRecipe,
 } from '../../types/sage-plan-output';
+import {
+  matchMealsForUser,
+  selectMealsFor7Days,
+  ScoredMeal,
+  MealMatcherInput,
+} from './meal-matcher';
 
 // ============================================================================
 // TYPES
@@ -267,6 +273,52 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
   console.log('[Meal Planner] Starting 7-day meal plan generation...');
   console.log(`[Meal Planner] Target — ${input.clientProfile.computedMetrics.targetCalories} cal, ${input.clientProfile.computedMetrics.proteinTargetGrams}g protein`);
 
+  const mealsPerDay = input.clientProfile.profile.mealsPerDay || 3;
+
+  // ========================================================================
+  // PRIMARY: Use curated meals database
+  // ========================================================================
+  try {
+    console.log('[Meal Planner] Attempting database-driven meal matching...');
+
+    const matcherInput: MealMatcherInput = {
+      clientProfile: input.clientProfile,
+      biomarkerAnalysis: input.biomarkerAnalysis,
+    };
+
+    // Match meals from database
+    const matchedMeals = matchMealsForUser(matcherInput);
+
+    // Check if we have enough meals for variety
+    const minRequired = 7; // Need at least 7 unique meals per type for a week
+    const hasEnoughMeals =
+      matchedMeals.breakfast.length >= minRequired &&
+      matchedMeals.lunch.length >= minRequired &&
+      matchedMeals.dinner.length >= minRequired;
+
+    if (hasEnoughMeals) {
+      console.log('[Meal Planner] Sufficient database matches found — using curated meals');
+
+      // Select meals for 7 days
+      const selectedPlan = selectMealsFor7Days(matchedMeals, mealsPerDay);
+
+      // Convert to expected output format
+      const mealPlan = convertToSampleMealPlan(selectedPlan, input);
+
+      console.log('[Meal Planner] Database-driven meal plan complete');
+      return { sampleMealPlan: mealPlan };
+    } else {
+      console.log(`[Meal Planner] Insufficient matches — Breakfast: ${matchedMeals.breakfast.length}, Lunch: ${matchedMeals.lunch.length}, Dinner: ${matchedMeals.dinner.length}`);
+      console.log('[Meal Planner] Falling back to AI generation...');
+    }
+  } catch (dbError) {
+    console.error('[Meal Planner] Database matching failed:', dbError);
+    console.log('[Meal Planner] Falling back to AI generation...');
+  }
+
+  // ========================================================================
+  // FALLBACK: Use AI generation (original approach)
+  // ========================================================================
   const openai = getOpenAIClient();
   const userPrompt = buildUserPrompt(input);
 
@@ -278,8 +330,8 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.8, // Higher for variety
-      max_tokens: 12000, // Reduced from 16000 for faster generation
+      temperature: 0.8,
+      max_tokens: 12000,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -289,14 +341,14 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
 
     const result = JSON.parse(content);
 
-    console.log('[Meal Planner] Meal plan generation complete');
+    console.log('[Meal Planner] AI meal plan generation complete');
     console.log(`[Meal Planner] Tokens used — ${response.usage?.total_tokens || 'unknown'}`);
 
     // Validate and normalize
     const normalizedPlan = normalizeMealPlan(result.sampleMealPlan, input);
 
     // Validate that each day has the expected number of meals
-    const expectedMeals = input.clientProfile.profile.mealsPerDay || 3;
+    const expectedMeals = mealsPerDay;
     const dayKeys = ['day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'] as const;
     let hasMealCountIssue = false;
 
@@ -309,17 +361,17 @@ export async function runMealPlanner(input: MealPlannerInput): Promise<MealPlann
       }
     }
 
-    // If meal count is wrong, use the reliable fallback
+    // If meal count is wrong, use the reliable database fallback
     if (hasMealCountIssue) {
-      console.log('[Meal Planner] Meal count validation failed — using fallback meal plan');
-      return { sampleMealPlan: createFallbackMealPlan(input) };
+      console.log('[Meal Planner] Meal count validation failed — using database fallback');
+      return { sampleMealPlan: createDatabaseFallbackMealPlan(input) };
     }
 
     return { sampleMealPlan: normalizedPlan };
   } catch (error) {
-    console.error('[Meal Planner] Error:', error);
-    console.log('[Meal Planner] Using fallback meal plan');
-    return { sampleMealPlan: createFallbackMealPlan(input) };
+    console.error('[Meal Planner] AI generation error:', error);
+    console.log('[Meal Planner] Using database fallback meal plan');
+    return { sampleMealPlan: createDatabaseFallbackMealPlan(input) };
   }
 }
 
@@ -449,10 +501,177 @@ function createDefaultDayPlan(
 }
 
 // ============================================================================
-// FALLBACK MEAL PLAN
+// CONVERT DATABASE MEALS TO OUTPUT FORMAT
 // ============================================================================
 
-function createFallbackMealPlan(input: MealPlannerInput): SampleMealPlan {
+function convertToSampleMealPlan(
+  selectedPlan: { day: number; meals: ScoredMeal[] }[],
+  input: MealPlannerInput
+): SampleMealPlan {
+  const { clientProfile, biomarkerAnalysis } = input;
+  const { profile, computedMetrics } = clientProfile;
+
+  const days: Record<string, DayMealPlan> = {};
+  const mealTimes = getMealTimes(profile.mealsPerDay || 3, profile.firstMealTiming);
+
+  for (const dayPlan of selectedPlan) {
+    const dayKey = `day${dayPlan.day}`;
+    const meals: MealRecipe[] = [];
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let totalFiber = 0;
+
+    dayPlan.meals.forEach((meal, index) => {
+      const mealRecipe = convertScoredMealToRecipe(meal, mealTimes[index] || '12:00 PM');
+      meals.push(mealRecipe);
+
+      totalCalories += meal.macros.calories;
+      totalProtein += meal.macros.protein;
+      totalCarbs += meal.macros.carbs;
+      totalFat += meal.macros.fat;
+      totalFiber += meal.macros.fiber;
+    });
+
+    days[dayKey] = {
+      meals,
+      dailyTotals: {
+        calories: totalCalories,
+        protein: totalProtein,
+        carbs: totalCarbs,
+        fiber: totalFiber,
+        fat: totalFat,
+      },
+    };
+  }
+
+  return {
+    profileSummary: {
+      goals: profile.drivingGoal,
+      dietaryPreferences: profile.eatingStyle,
+      keyBiomarkers: biomarkerAnalysis?.nutritionalPriorities.map(p => p.concern).slice(0, 3) || [],
+    },
+    importantNotes: [
+      'Meals selected from curated database based on your dietary needs',
+      'Each meal includes detailed ingredients and cooking instructions',
+      'Swap similar meals while maintaining your macro balance',
+    ],
+    ...days,
+  } as SampleMealPlan;
+}
+
+function convertScoredMealToRecipe(meal: ScoredMeal, time: string): MealRecipe {
+  // Build biomarker notes from relevances
+  let biomarkerNotes: string | undefined;
+  if (meal.biomarker_relevances && meal.biomarker_relevances.length > 0) {
+    const topRelevance = meal.biomarker_relevances[0];
+    biomarkerNotes = topRelevance.explanation;
+  }
+
+  // Map difficulty
+  const difficultyMap: Record<string, 'simple' | 'moderate' | 'complex'> = {
+    'easy': 'simple',
+    'medium': 'moderate',
+    'hard': 'complex',
+  };
+
+  // Map prep style
+  const prepTypeMap: Record<string, 'quick' | 'batch-cook' | 'slow-cooker' | 'meal-prep' | 'standard'> = {
+    'quick': 'quick',
+    'batch-cook': 'batch-cook',
+    'slow-cooker': 'slow-cooker',
+    'meal-prep': 'meal-prep',
+    'make-ahead': 'meal-prep',
+    'no-cook': 'quick',
+    'one-pan': 'standard',
+    'sheet-pan': 'standard',
+    'grill': 'standard',
+  };
+
+  const prepStyle = meal.meal_prep_styles?.[0] || 'standard';
+
+  return {
+    time,
+    name: meal.name,
+    description: meal.description,
+    macros: `${meal.macros.calories} cal | ${meal.macros.protein}g protein | ${meal.macros.carbs}g carbs | ${meal.macros.fat}g fat | ${meal.macros.fiber}g fiber`,
+    ingredients: meal.ingredients,
+    cookingInstructions: meal.instructions,
+    prepTime: `${meal.prep_time_minutes} minutes`,
+    cookTime: `${meal.cook_time_minutes} minutes`,
+    difficulty: difficultyMap[meal.difficulty] || 'moderate',
+    prepType: prepTypeMap[prepStyle] || 'standard',
+    biomarkerNotes,
+    mealPrepTip: meal.matchReasons.length > 0 ? `Why this meal — ${meal.matchReasons.join(', ')}` : undefined,
+  };
+}
+
+function getMealTimes(mealsPerDay: number, firstMealTiming?: string): string[] {
+  // Determine first meal time
+  let startHour = 8;
+  if (firstMealTiming) {
+    const timingLower = firstMealTiming.toLowerCase();
+    if (timingLower.includes('early') || timingLower.includes('6') || timingLower.includes('7')) {
+      startHour = 7;
+    } else if (timingLower.includes('late') || timingLower.includes('10') || timingLower.includes('11')) {
+      startHour = 10;
+    }
+  }
+
+  if (mealsPerDay === 3) {
+    return [`${startHour}:00 AM`, '12:30 PM', '7:00 PM'];
+  } else if (mealsPerDay === 4) {
+    return [`${startHour}:00 AM`, '12:00 PM', '3:30 PM', '7:00 PM'];
+  } else if (mealsPerDay === 5) {
+    return [`${startHour}:00 AM`, '10:30 AM', '1:00 PM', '4:00 PM', '7:30 PM'];
+  } else {
+    return [`${startHour}:00 AM`, '12:30 PM', '7:00 PM'];
+  }
+}
+
+// ============================================================================
+// DATABASE FALLBACK MEAL PLAN
+// ============================================================================
+
+function createDatabaseFallbackMealPlan(input: MealPlannerInput): SampleMealPlan {
+  const { clientProfile, biomarkerAnalysis } = input;
+  const { profile, computedMetrics } = clientProfile;
+
+  console.log('[Meal Planner] Creating database fallback meal plan...');
+
+  try {
+    // Try to get meals from database with relaxed matching
+    const matcherInput: MealMatcherInput = {
+      clientProfile: input.clientProfile,
+      biomarkerAnalysis: input.biomarkerAnalysis,
+    };
+
+    const matchedMeals = matchMealsForUser(matcherInput);
+
+    // Use whatever meals are available, even if not enough for full variety
+    const selectedPlan = selectMealsFor7Days(matchedMeals, profile.mealsPerDay || 3);
+
+    // Check if we got any meals
+    const totalMeals = selectedPlan.reduce((sum, day) => sum + day.meals.length, 0);
+    if (totalMeals > 0) {
+      console.log(`[Meal Planner] Database fallback found ${totalMeals} meals`);
+      return convertToSampleMealPlan(selectedPlan, input);
+    }
+  } catch (error) {
+    console.error('[Meal Planner] Database fallback failed:', error);
+  }
+
+  // Ultimate fallback: simple template (original approach)
+  console.log('[Meal Planner] Using template fallback...');
+  return createTemplateFallbackMealPlan(input);
+}
+
+// ============================================================================
+// TEMPLATE FALLBACK MEAL PLAN (Original approach - last resort)
+// ============================================================================
+
+function createTemplateFallbackMealPlan(input: MealPlannerInput): SampleMealPlan {
   const { clientProfile, biomarkerAnalysis } = input;
   const { profile, computedMetrics, constraints } = clientProfile;
 
@@ -485,7 +704,7 @@ function createFallbackMealPlan(input: MealPlannerInput): SampleMealPlan {
 
   for (let d = 0; d < 7; d++) {
     const meals: MealRecipe[] = [];
-    const proteinRotation = safeProteins[d % safeProteins.length];
+    const proteinRotation = safeProteins[d % safeProteins.length] || 'protein';
 
     for (let m = 0; m < mealsPerDay; m++) {
       const mealType = m === 0 ? 'Breakfast' : m === mealsPerDay - 1 ? 'Dinner' : 'Lunch';

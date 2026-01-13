@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createHealthAgent, AgentState } from '@/lib/agents/health-agent';
 import { runChefAgent } from '@/lib/agents/moccet-chef';
+import { runTrainerAgent } from '@/lib/agents/moccet-trainer';
 import { UserMemoryService } from '@/lib/services/memory/user-memory';
 import { buildMemoryAwarePrompt } from '@/lib/agents/prompts';
 import { generateSpeech, isElevenLabsConfigured, VoiceId } from '@/lib/services/tts-service';
@@ -17,7 +18,7 @@ import { getUserContext, formatContextForPrompt, getUserSubscriptionTier } from 
 import { saveMessage } from '@/lib/services/conversation-compactor';
 
 // Agent types
-type AgentType = 'moccet-chef' | 'moccet-health' | 'moccet-orchestrator';
+type AgentType = 'moccet-chef' | 'moccet-trainer' | 'moccet-health' | 'moccet-orchestrator';
 
 interface AgentInfo {
   type: AgentType;
@@ -30,6 +31,11 @@ const AGENT_INFO: Record<AgentType, AgentInfo> = {
     type: 'moccet-chef',
     displayName: 'Chef',
     icon: 'chef_hat',
+  },
+  'moccet-trainer': {
+    type: 'moccet-trainer',
+    displayName: 'Trainer',
+    icon: 'fitness_center',
   },
   'moccet-health': {
     type: 'moccet-health',
@@ -48,6 +54,23 @@ const AGENT_INFO: Record<AgentType, AgentInfo> = {
  */
 function classifyAgentType(message: string): AgentType {
   const lowerMessage = message.toLowerCase();
+
+  // Fitness/workout related - route to moccet-trainer
+  const trainerKeywords = [
+    'workout', 'workouts', 'exercise', 'exercises', 'gym', 'training', 'train',
+    'lift', 'lifting', 'weights', 'strength', 'cardio', 'hiit', 'run', 'running',
+    'push up', 'pushup', 'pull up', 'pullup', 'squat', 'deadlift', 'bench press',
+    'muscle', 'muscles', 'fitness', 'fit', 'reps', 'sets', 'personal trainer',
+    'leg day', 'arm day', 'chest day', 'back day', 'shoulder', 'bicep', 'tricep',
+    'abs', 'core', 'glutes', 'quads', 'hamstring', 'stretch', 'stretching',
+    'warm up', 'cool down', 'rest day', 'split', 'routine', 'program',
+    'how many sets', 'how many reps', 'what exercises', 'build muscle',
+    'lose fat', 'get stronger', 'bulk', 'cut', 'tone', 'toning',
+  ];
+
+  if (trainerKeywords.some(kw => lowerMessage.includes(kw))) {
+    return 'moccet-trainer';
+  }
 
   // Food/nutrition related - route to moccet-chef
   const chefKeywords = [
@@ -426,6 +449,128 @@ export async function POST(request: NextRequest) {
               console.error('[CHAT] Chef agent error:', chefError);
               sendEvent('error', {
                 error: chefError instanceof Error ? chefError.message : 'Chef agent failed',
+              });
+              sendEvent('end', {});
+              controller.close();
+              return;
+            }
+          }
+
+          // ================================================================
+          // MOCCET TRAINER AGENT - Handles fitness/workout queries
+          // ================================================================
+
+          if (agentType === 'moccet-trainer') {
+            console.log('[CHAT] Routing to Moccet Trainer agent...');
+
+            try {
+              const trainerResult = await runTrainerAgent(userEmail, message);
+              console.log('[CHAT] Trainer agent completed');
+
+              const finalResponse = trainerResult.response;
+
+              // Stream the response in sentence chunks
+              const sentences = splitIntoSentences(finalResponse);
+
+              // Start audio generation in parallel (if TTS is enabled)
+              const audioPromises: Promise<{ audio: string; index: number } | null>[] = [];
+              if (ttsEnabled) {
+                console.log('[CHAT] TTS enabled, generating audio for', sentences.length, 'sentences');
+                for (let i = 0; i < sentences.length; i++) {
+                  audioPromises.push(
+                    generateSpeech(sentences[i], { voiceId: (voiceId as VoiceId) || 'rachel' })
+                      .then(audio => ({ audio, index: i }))
+                      .catch(err => {
+                        console.error(`[CHAT] TTS error for sentence ${i}:`, err);
+                        return null;
+                      })
+                  );
+                }
+              }
+
+              // Send text chunks immediately
+              for (let i = 0; i < sentences.length; i++) {
+                const isLast = i === sentences.length - 1;
+                sendEvent('text_chunk', {
+                  text: sentences[i],
+                  index: i,
+                  isFinal: isLast,
+                });
+                if (!isLast) {
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                }
+              }
+              console.log('[CHAT] Sent', sentences.length, 'text chunks from trainer');
+
+              // Send audio chunks
+              if (ttsEnabled && audioPromises.length > 0) {
+                const audioResults = await Promise.all(audioPromises);
+                const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
+                validResults.sort((a, b) => a.index - b.index);
+
+                for (const result of validResults) {
+                  const isLast = result.index === sentences.length - 1;
+                  sendEvent('audio_chunk', {
+                    audio: result.audio,
+                    index: result.index,
+                    isFinal: isLast,
+                  });
+                }
+                console.log('[CHAT] Sent', validResults.length, 'audio chunks from trainer');
+              }
+
+              // Send complete event
+              sendEvent('complete', {
+                response: finalResponse,
+                threadId,
+                workout: trainerResult.workout,
+              });
+
+              // Save conversation to both memory and history
+              const conversationMessages = existingConversation?.messages || [];
+              conversationMessages.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString(),
+              });
+              conversationMessages.push({
+                role: 'assistant',
+                content: finalResponse,
+                timestamp: new Date().toISOString(),
+              });
+
+              try {
+                // Save to existing memory system
+                await memoryService.saveConversation(
+                  userEmail,
+                  threadId,
+                  conversationMessages,
+                  extractTopic(message)
+                );
+
+                // Also save to new conversation_history table for compaction
+                await Promise.all([
+                  saveMessage(userEmail, 'user', message, {
+                    threadId,
+                    agent: 'moccet-trainer',
+                  }),
+                  saveMessage(userEmail, 'assistant', finalResponse, {
+                    threadId,
+                    agent: 'moccet-trainer',
+                  }),
+                ]);
+              } catch (saveError) {
+                console.error('[CHAT] Error saving conversation:', saveError);
+              }
+
+              sendEvent('end', {});
+              controller.close();
+              return;
+
+            } catch (trainerError) {
+              console.error('[CHAT] Trainer agent error:', trainerError);
+              sendEvent('error', {
+                error: trainerError instanceof Error ? trainerError.message : 'Trainer agent failed',
               });
               sendEvent('end', {});
               controller.close();

@@ -36,6 +36,14 @@
     {
       "path": "/api/cron/decay-preferences",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/sage-reminders",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/health-achievements",
+      "schedule": "0 8 * * *"
     }
   ]
 }

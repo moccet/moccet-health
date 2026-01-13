@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createLogger } from '@/lib/utils/logger';
+import { sendPushNotification } from '@/lib/services/onesignal-service';
 
 const logger = createLogger('HealthSyncAPI');
 
@@ -109,6 +110,9 @@ export async function POST(request: NextRequest) {
     // Update goals that track these metrics
     await updateGoalProgress(body.email, body.metrics);
 
+    // Check for real-time health achievements
+    const achievementsEarned = await checkHealthAchievements(body.email, body.metrics);
+
     // Store workouts if provided
     let workoutsStored = 0;
     if (body.workouts && body.workouts.length > 0) {
@@ -170,6 +174,7 @@ export async function POST(request: NextRequest) {
       metricsUpdated: updates.length,
       workoutsStored,
       travelDetected,
+      achievementsEarned: achievementsEarned.length,
     });
 
     return NextResponse.json({
@@ -178,6 +183,7 @@ export async function POST(request: NextRequest) {
       metrics: updates.map(u => u.metric),
       workoutsStored,
       travelDetected,
+      achievementsEarned,
     });
   } catch (error) {
     logger.error('Health sync failed', { error });
@@ -258,6 +264,138 @@ async function updateGoalProgress(
  * GET /api/health/sync
  * Get current synced health data for a user
  */
+// Health achievement definitions (real-time checks)
+const REAL_TIME_ACHIEVEMENTS = {
+  steps_5k: { title: 'First 5K Steps', emoji: '👟', description: 'Walked 5,000 steps in a day', threshold: 5000 },
+  steps_10k: { title: '10K Steps Day', emoji: '🚶', description: 'Hit 10,000 steps in a day', threshold: 10000 },
+  steps_15k: { title: 'Step Master', emoji: '🏃', description: 'Crushed 15,000 steps in a day', threshold: 15000 },
+  steps_20k: { title: 'Marathon Walker', emoji: '🏅', description: 'Epic 20,000 steps in a day', threshold: 20000 },
+  sleep_7hrs: { title: 'Good Night', emoji: '😴', description: 'Got 7+ hours of sleep', threshold: 7 },
+  recovery_80: { title: 'Well Recovered', emoji: '💚', description: 'Achieved 80+ recovery score', threshold: 80 },
+  recovery_90: { title: 'Peak Recovery', emoji: '🎯', description: 'Achieved 90+ recovery score', threshold: 90 },
+};
+
+/**
+ * Check and grant real-time health achievements based on synced metrics
+ */
+async function checkHealthAchievements(
+  email: string,
+  metrics: HealthSyncPayload['metrics']
+): Promise<Array<{ type: string; title: string; emoji: string }>> {
+  const earned: Array<{ type: string; title: string; emoji: string }> = [];
+
+  try {
+    // Get user's existing achievements
+    const { data: existing } = await supabase
+      .from('health_achievements')
+      .select('achievement_type')
+      .eq('user_email', email);
+
+    const alreadyEarned = new Set(existing?.map(a => a.achievement_type) || []);
+
+    // Check step achievements
+    const steps = metrics.daily_steps || metrics.avg_steps || 0;
+    for (const [type, def] of Object.entries(REAL_TIME_ACHIEVEMENTS)) {
+      if (type.startsWith('steps_') && steps >= def.threshold && !alreadyEarned.has(type)) {
+        const result = await grantAchievement(email, type, def);
+        if (result.success) {
+          earned.push({ type, title: def.title, emoji: def.emoji });
+        }
+      }
+    }
+
+    // Check sleep achievement
+    const sleepHours = metrics.sleep_duration_hours || 0;
+    if (sleepHours >= 7 && !alreadyEarned.has('sleep_7hrs')) {
+      const def = REAL_TIME_ACHIEVEMENTS.sleep_7hrs;
+      const result = await grantAchievement(email, 'sleep_7hrs', def);
+      if (result.success) {
+        earned.push({ type: 'sleep_7hrs', title: def.title, emoji: def.emoji });
+      }
+    }
+
+    // Check recovery achievements (if we have HRV data, estimate recovery)
+    // This is a simplified check - real recovery scores come from wearables
+    const hrv = metrics.hrv || 0;
+    const restingHr = metrics.resting_hr || 0;
+
+    // Simple recovery score estimation based on HRV (higher = better)
+    // Real recovery would come from Oura/Whoop directly
+    if (hrv > 0) {
+      // Higher HRV generally indicates better recovery
+      // Average adult HRV is 20-100ms, optimal often 50-100ms
+      const estimatedRecovery = Math.min(100, Math.round((hrv / 80) * 100));
+
+      if (estimatedRecovery >= 80 && !alreadyEarned.has('recovery_80')) {
+        const def = REAL_TIME_ACHIEVEMENTS.recovery_80;
+        const result = await grantAchievement(email, 'recovery_80', def);
+        if (result.success) {
+          earned.push({ type: 'recovery_80', title: def.title, emoji: def.emoji });
+        }
+      }
+      if (estimatedRecovery >= 90 && !alreadyEarned.has('recovery_90')) {
+        const def = REAL_TIME_ACHIEVEMENTS.recovery_90;
+        const result = await grantAchievement(email, 'recovery_90', def);
+        if (result.success) {
+          earned.push({ type: 'recovery_90', title: def.title, emoji: def.emoji });
+        }
+      }
+    }
+
+    if (earned.length > 0) {
+      logger.info('Real-time achievements earned', { email, achievements: earned.map(e => e.type) });
+    }
+  } catch (e) {
+    logger.error('Error checking health achievements', { error: e });
+  }
+
+  return earned;
+}
+
+/**
+ * Grant achievement and notify user
+ */
+async function grantAchievement(
+  email: string,
+  type: string,
+  def: { title: string; emoji: string; description: string }
+): Promise<{ success: boolean }> {
+  try {
+    // Insert achievement (trigger will auto-generate feed items for friends)
+    const { error } = await supabase.from('health_achievements').insert({
+      user_email: email,
+      achievement_type: type,
+      title: def.title,
+      description: def.description,
+      emoji: def.emoji,
+      earned_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      // Likely duplicate, that's fine
+      if (error.code !== '23505') {
+        logger.warn('Error granting achievement', { type, error: error.message });
+      }
+      return { success: false };
+    }
+
+    // Send push notification
+    await sendPushNotification(email, {
+      title: `Achievement Unlocked! ${def.emoji}`,
+      body: def.title,
+      data: {
+        type: 'achievement',
+        achievement_type: type,
+      },
+    });
+
+    return { success: true };
+  } catch (e) {
+    logger.error('Error granting achievement', { error: e });
+    return { success: false };
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

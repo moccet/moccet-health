@@ -190,15 +190,24 @@ Generate questions that:
 4. Have 4-5 answer options that reveal different aspects of the user
 5. Each answer should teach us something useful about the user
 
+CRITICAL - POSITIVE FRAMING REQUIREMENT:
+- ALL answer options MUST be positively or neutrally framed
+- NEVER use negative words like "tired", "exhausted", "overwhelmed", "anxious", "stressed", "poor", "bad", "struggling"
+- Instead of "Feeling tired" → use "Ready to recharge" or "In rest mode"
+- Instead of "Stressed out" → use "Seeking some calm" or "Ready to unwind"
+- Instead of "Poor sleep" → use "Sleep is a work in progress" or "Building better sleep habits"
+- Frame every option as a valid, acceptable state - no option should make the user feel bad for choosing it
+- Use empowering language that acknowledges where they are without judgment
+
 Categories to explore:
 - Energy & motivation patterns
 - Sleep habits and quality
-- Stress and mental state
+- Mental state and mindset
 - Exercise preferences
 - Nutrition choices
 - Social connections
 - Work-life balance
-- Health goals and challenges
+- Health goals and progress
 - Daily routines
 - Recovery and rest needs
 
@@ -208,11 +217,11 @@ Return ONLY valid JSON in this exact format:
   "question": "Your personalized question?",
   "category": "category_name",
   "options": [
-    {"id": "opt1", "text": "Option text", "learnedFact": "What we learn if they choose this"},
-    {"id": "opt2", "text": "Option text", "learnedFact": "What we learn if they choose this"},
-    {"id": "opt3", "text": "Option text", "learnedFact": "What we learn if they choose this"},
-    {"id": "opt4", "text": "Option text", "learnedFact": "What we learn if they choose this"},
-    {"id": "opt5", "text": "Option text", "learnedFact": "What we learn if they choose this"}
+    {"id": "opt1", "text": "Positively framed option", "learnedFact": "What we learn if they choose this"},
+    {"id": "opt2", "text": "Positively framed option", "learnedFact": "What we learn if they choose this"},
+    {"id": "opt3", "text": "Positively framed option", "learnedFact": "What we learn if they choose this"},
+    {"id": "opt4", "text": "Positively framed option", "learnedFact": "What we learn if they choose this"},
+    {"id": "opt5", "text": "Positively framed option", "learnedFact": "What we learn if they choose this"}
   ]
 }`
         },
@@ -287,10 +296,10 @@ function getFallbackQuestion(): CheckInQuestion {
       category: 'energy',
       options: [
         { id: 'high', text: 'Energized and ready to go', learnedFact: 'Tends to have high energy days' },
-        { id: 'moderate', text: 'Pretty good, steady energy', learnedFact: 'Usually has balanced energy' },
-        { id: 'low', text: 'A bit tired today', learnedFact: 'Experiences low energy days' },
-        { id: 'variable', text: 'Up and down', learnedFact: 'Has variable energy patterns' },
-        { id: 'building', text: 'Still waking up', learnedFact: 'Takes time to build energy' },
+        { id: 'moderate', text: 'Steady and balanced', learnedFact: 'Usually has balanced energy' },
+        { id: 'building', text: 'Energy is building up', learnedFact: 'Energy builds throughout the day' },
+        { id: 'chill', text: 'Taking it easy today', learnedFact: 'Knows when to pace themselves' },
+        { id: 'recharge', text: 'In recharge mode', learnedFact: 'Prioritizes recovery when needed' },
       ],
     },
     {
@@ -298,35 +307,59 @@ function getFallbackQuestion(): CheckInQuestion {
       question: 'How did you sleep last night?',
       category: 'sleep',
       options: [
-        { id: 'great', text: 'Really well, feel rested', learnedFact: 'Can achieve quality sleep' },
-        { id: 'okay', text: 'Okay, could be better', learnedFact: 'Sleep quality varies' },
-        { id: 'poor', text: 'Not great, feel tired', learnedFact: 'Sometimes struggles with sleep' },
-        { id: 'interrupted', text: 'Woke up several times', learnedFact: 'Experiences interrupted sleep' },
-        { id: 'late', text: 'Stayed up too late', learnedFact: 'Tends to stay up late' },
+        { id: 'great', text: 'Deeply rested and refreshed', learnedFact: 'Can achieve quality sleep' },
+        { id: 'good', text: 'Solid sleep, feeling good', learnedFact: 'Maintains good sleep habits' },
+        { id: 'moderate', text: 'Got some rest', learnedFact: 'Sleep quality varies' },
+        { id: 'light', text: 'Light sleep, still functional', learnedFact: 'Functions well on lighter sleep' },
+        { id: 'improving', text: 'Ready to catch up tonight', learnedFact: 'Focuses on sleep recovery' },
       ],
     },
     {
       id: 'today_focus',
-      question: 'What would help you most today?',
+      question: 'What are you excited to focus on today?',
       category: 'needs',
       options: [
-        { id: 'movement', text: 'Getting some movement in', learnedFact: 'Values physical activity' },
-        { id: 'rest', text: 'Some rest and recovery', learnedFact: 'Recognizes need for rest' },
-        { id: 'focus', text: 'Better focus and clarity', learnedFact: 'Prioritizes mental clarity' },
+        { id: 'movement', text: 'Moving my body', learnedFact: 'Values physical activity' },
+        { id: 'rest', text: 'Rest and recovery', learnedFact: 'Prioritizes recovery' },
+        { id: 'focus', text: 'Deep focus time', learnedFact: 'Prioritizes mental clarity' },
         { id: 'connection', text: 'Connecting with others', learnedFact: 'Values social connection' },
-        { id: 'nutrition', text: 'Eating well today', learnedFact: 'Mindful about nutrition' },
+        { id: 'nutrition', text: 'Nourishing myself well', learnedFact: 'Mindful about nutrition' },
       ],
     },
     {
-      id: 'stress_level',
-      question: 'How are you feeling mentally?',
+      id: 'mindset',
+      question: 'What\'s your mindset like today?',
       category: 'mental_health',
       options: [
         { id: 'calm', text: 'Calm and centered', learnedFact: 'Can achieve mental calm' },
-        { id: 'busy', text: 'Busy but managing', learnedFact: 'Handles busy periods well' },
-        { id: 'stressed', text: 'A bit overwhelmed', learnedFact: 'Experiences stress regularly' },
-        { id: 'anxious', text: 'Feeling anxious', learnedFact: 'Deals with anxiety' },
+        { id: 'focused', text: 'Focused and productive', learnedFact: 'Has a focused mindset' },
         { id: 'motivated', text: 'Motivated and driven', learnedFact: 'Has motivated mindset' },
+        { id: 'reflective', text: 'Thoughtful and reflective', learnedFact: 'Values self-reflection' },
+        { id: 'seeking_calm', text: 'Seeking some calm', learnedFact: 'Prioritizes mental wellness' },
+      ],
+    },
+    {
+      id: 'morning_intention',
+      question: 'What\'s one thing you\'re looking forward to today?',
+      category: 'intention',
+      options: [
+        { id: 'accomplishment', text: 'Accomplishing something meaningful', learnedFact: 'Goal-oriented mindset' },
+        { id: 'connection', text: 'Spending time with people I care about', learnedFact: 'Values relationships' },
+        { id: 'selfcare', text: 'Some quality me-time', learnedFact: 'Prioritizes self-care' },
+        { id: 'activity', text: 'Being active and moving', learnedFact: 'Enjoys physical activity' },
+        { id: 'learning', text: 'Learning something new', learnedFact: 'Has a growth mindset' },
+      ],
+    },
+    {
+      id: 'wellness_priority',
+      question: 'What\'s your wellness priority right now?',
+      category: 'wellness',
+      options: [
+        { id: 'energy', text: 'Boosting my energy', learnedFact: 'Focused on energy optimization' },
+        { id: 'sleep', text: 'Improving my sleep', learnedFact: 'Working on sleep quality' },
+        { id: 'fitness', text: 'Building strength', learnedFact: 'Focused on fitness goals' },
+        { id: 'nutrition', text: 'Eating better', learnedFact: 'Improving nutrition habits' },
+        { id: 'balance', text: 'Finding more balance', learnedFact: 'Seeking work-life balance' },
       ],
     },
   ];

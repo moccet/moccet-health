@@ -2,6 +2,7 @@
  * Food Logs API Endpoint
  *
  * GET /api/food/logs?email=xxx&date=YYYY-MM-DD
+ * POST /api/food/logs - Create a new food log with achievement checking
  *
  * Retrieves food log entries for a user.
  * - If date is provided, returns logs for that specific day
@@ -10,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendPushNotification } from '@/lib/services/onesignal-service';
 
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -93,6 +95,178 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Meal logging achievement definitions
+const MEAL_LOGGING_ACHIEVEMENTS = {
+  meal_streak_3: { title: '3-Day Tracker', emoji: '🥗', description: 'Logged meals 3 days in a row', threshold: 3 },
+  meal_streak_7: { title: 'Nutrition Week', emoji: '📊', description: 'Logged meals for a full week', threshold: 7 },
+  meal_streak_14: { title: 'Logging Pro', emoji: '🏅', description: 'Logged meals for 2 weeks straight', threshold: 14 },
+  meal_streak_30: { title: 'Meal Master', emoji: '👑', description: 'Logged meals for a full month', threshold: 30 },
+};
+
+// Handle POST for creating a new food log entry
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, food_name, meal_type, calories, protein, carbs, fat, fiber, logged_at, image_url, notes } = body;
+
+    if (!email || !food_name) {
+      return NextResponse.json(
+        { success: false, error: 'Email and food_name are required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = getSupabaseClient();
+
+    // Insert the food log
+    const { data: foodLog, error } = await supabase
+      .from('sage_food_logs')
+      .insert({
+        user_email: email,
+        food_name,
+        meal_type: meal_type || 'other',
+        calories: calories || 0,
+        protein: protein || 0,
+        carbs: carbs || 0,
+        fat: fat || 0,
+        fiber: fiber || 0,
+        logged_at: logged_at || new Date().toISOString(),
+        image_url,
+        notes,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[FoodLogs] Insert error:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to create food log' },
+        { status: 500 }
+      );
+    }
+
+    // Check for meal logging streak achievements
+    const achievementsEarned = await checkMealLoggingAchievements(supabase, email);
+
+    return NextResponse.json({
+      success: true,
+      log: foodLog,
+      achievementsEarned,
+    });
+  } catch (error) {
+    console.error('[FoodLogs] POST error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to create food log' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Check and grant meal logging streak achievements
+ */
+async function checkMealLoggingAchievements(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  email: string
+): Promise<Array<{ type: string; title: string; emoji: string }>> {
+  const earned: Array<{ type: string; title: string; emoji: string }> = [];
+
+  try {
+    // Get existing achievements
+    const { data: existing } = await supabase
+      .from('health_achievements')
+      .select('achievement_type')
+      .eq('user_email', email);
+
+    const alreadyEarned = new Set(existing?.map(a => a.achievement_type) || []);
+
+    // Calculate meal logging streak
+    const streak = await calculateMealStreak(supabase, email);
+
+    // Check each achievement threshold
+    for (const [type, def] of Object.entries(MEAL_LOGGING_ACHIEVEMENTS)) {
+      if (streak >= def.threshold && !alreadyEarned.has(type)) {
+        // Grant achievement
+        const { error } = await supabase.from('health_achievements').insert({
+          user_email: email,
+          achievement_type: type,
+          title: def.title,
+          description: def.description,
+          emoji: def.emoji,
+          streak_days: streak,
+          earned_at: new Date().toISOString(),
+        });
+
+        if (!error) {
+          earned.push({ type, title: def.title, emoji: def.emoji });
+
+          // Send notification
+          await sendPushNotification(email, {
+            title: `Achievement Unlocked! ${def.emoji}`,
+            body: def.title,
+            data: {
+              type: 'achievement',
+              achievement_type: type,
+              deep_link: 'sage',
+            },
+          });
+        }
+      }
+    }
+
+    if (earned.length > 0) {
+      console.log(`[FoodLogs] Achievements earned by ${email}:`, earned.map(e => e.type));
+    }
+  } catch (e) {
+    console.error('[FoodLogs] Error checking achievements:', e);
+  }
+
+  return earned;
+}
+
+/**
+ * Calculate consecutive days with meal logs
+ */
+async function calculateMealStreak(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  email: string
+): Promise<number> {
+  // Get distinct dates with food logs, ordered by date descending
+  const { data: logs } = await supabase
+    .from('sage_food_logs')
+    .select('logged_at')
+    .eq('user_email', email)
+    .order('logged_at', { ascending: false });
+
+  if (!logs || logs.length === 0) return 0;
+
+  // Get unique dates
+  const dates = [...new Set(logs.map(l => new Date(l.logged_at).toISOString().split('T')[0]))];
+  dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+  // Count consecutive days (including today)
+  let streak = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 0; i < dates.length; i++) {
+    const logDate = new Date(dates[i]);
+    logDate.setHours(0, 0, 0, 0);
+
+    const expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - i);
+
+    if (logDate.getTime() === expectedDate.getTime()) {
+      streak++;
+    } else if (logDate.getTime() < expectedDate.getTime()) {
+      // Missed a day, stop counting
+      break;
+    }
+  }
+
+  return streak;
+}
+
 // Handle DELETE for removing a food log entry
 export async function DELETE(request: NextRequest) {
   try {
@@ -139,7 +313,7 @@ export async function OPTIONS() {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });

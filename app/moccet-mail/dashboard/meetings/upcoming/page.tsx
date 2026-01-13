@@ -90,7 +90,7 @@ export default function UpcomingMeetingsPage() {
         }
 
         const calendarData = await calendarResponse.json();
-        const calendarMeetings: CalendarMeeting[] = calendarData.meetings || [];
+        const calendarMeetings: CalendarMeeting[] = calendarData.events || [];
 
         // Fetch existing notetaker recordings to check status
         const recordingsResponse = await fetch(

@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         title,
+        calendar_event_id,
         scheduled_start,
         scheduled_end,
         actual_start,
@@ -89,6 +90,7 @@ export async function GET(request: NextRequest) {
     const meetings = (data || []).map((meeting) => ({
       id: meeting.id,
       title: meeting.title,
+      calendarEventId: meeting.calendar_event_id,
       scheduledStart: meeting.scheduled_start,
       scheduledEnd: meeting.scheduled_end,
       actualStart: meeting.actual_start,

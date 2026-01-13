@@ -114,8 +114,10 @@ export default function UpcomingMeetingsPage() {
         }
 
         // Merge calendar meetings with notetaker status
+        // Include meetings that haven't ended yet (in-progress + future)
+        const now = new Date();
         const mergedMeetings: MeetingWithNotetaker[] = calendarMeetings
-          .filter((m) => new Date(m.start.dateTime) > new Date()) // Only future meetings
+          .filter((m) => new Date(m.end.dateTime) > now)
           .map((meeting) => {
             const notetaker = notetakerMeetings[meeting.id];
             return {

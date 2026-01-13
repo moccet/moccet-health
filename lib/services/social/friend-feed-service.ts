@@ -23,6 +23,7 @@ export interface FeedItem {
   id: string;
   userEmail: string;
   friendEmail: string;
+  friendDisplayName: string;  // Friend's display name from user_profiles
   activityType: FeedActivityType;
   title: string;
   subtitle: string | null;
@@ -74,7 +75,21 @@ class FriendFeedServiceClass {
         return { items: [], hasMore: false };
       }
 
-      const items = (data || []).map(this.mapFeedItem);
+      // Get friend display names from user_profiles
+      const friendEmails = [...new Set((data || []).map((row: any) => row.friend_email))];
+      const { data: profiles } = await this.supabase
+        .from('user_profiles')
+        .select('email, display_name, full_name, first_name')
+        .in('email', friendEmails);
+
+      // Create a map of email -> display name
+      const nameMap = new Map<string, string>();
+      (profiles || []).forEach((p: any) => {
+        const displayName = p.display_name || p.first_name || p.full_name?.split(' ')[0] || p.email.split('@')[0];
+        nameMap.set(p.email, displayName);
+      });
+
+      const items = (data || []).map((row: any) => this.mapFeedItem(row, nameMap));
       const hasMore = items.length > limit;
 
       return { items: items.slice(0, limit), hasMore };
@@ -285,11 +300,15 @@ class FriendFeedServiceClass {
   // HELPERS
   // ============================================
 
-  private mapFeedItem(row: any): FeedItem {
+  private mapFeedItem(row: any, nameMap?: Map<string, string>): FeedItem {
+    const friendEmail = row.friend_email;
+    const friendDisplayName = nameMap?.get(friendEmail) || friendEmail.split('@')[0];
+
     return {
       id: row.id,
       userEmail: row.user_email,
-      friendEmail: row.friend_email,
+      friendEmail,
+      friendDisplayName,
       activityType: row.activity_type,
       title: row.title,
       subtitle: row.subtitle,

@@ -153,6 +153,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        logger.info('Attempting to insert comment', { feedItemId, email, toEmail: feedItem.friend_email });
+
         const { data: comment, error: commentError } = await supabase
           .from('feed_comments')
           .insert({
@@ -165,12 +167,14 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (commentError) {
-          logger.error('Error adding comment', { error: commentError });
+          logger.error('Error adding comment', { error: commentError, code: commentError.code, details: commentError.details });
           return NextResponse.json(
-            { error: 'Failed to add comment' },
+            { error: 'Failed to add comment', details: commentError.message },
             { status: 500 }
           );
         }
+
+        logger.info('Comment inserted successfully', { commentId: comment?.id });
 
         // Send push notification to the achievement owner (don't notify yourself)
         if (feedItem.friend_email !== email) {
@@ -289,8 +293,9 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     logger.error('Error processing feed action', { error });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to process action' },
+      { error: 'Failed to process action', details: errorMessage },
       { status: 500 }
     );
   }

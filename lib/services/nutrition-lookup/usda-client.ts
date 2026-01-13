@@ -121,6 +121,11 @@ export async function searchUSDA(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[USDA] API error: ${response.status} - ${errorText}`);
+      // Return empty results for 400 errors (often means no matches found)
+      if (response.status === 400) {
+        console.log(`[USDA] No results for "${query}" (400 response)`);
+        return [];
+      }
       throw new Error(`USDA API error: ${response.status}`);
     }
 

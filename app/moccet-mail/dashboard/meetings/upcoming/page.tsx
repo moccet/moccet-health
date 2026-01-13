@@ -49,6 +49,7 @@ export default function UpcomingMeetingsPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [togglingMeetings, setTogglingMeetings] = useState<Set<string>>(new Set());
+  const [joiningMeetings, setJoiningMeetings] = useState<Set<string>>(new Set());
 
   // ============================================================================
   // Data Loading
@@ -244,6 +245,54 @@ export default function UpcomingMeetingsPage() {
     }
   };
 
+  const handleJoinNow = async (meeting: MeetingWithNotetaker) => {
+    if (!userEmail || !meeting.hangoutLink || joiningMeetings.has(meeting.id)) return;
+
+    setJoiningMeetings((prev) => new Set(prev).add(meeting.id));
+
+    try {
+      const response = await fetch('/api/meetings/join-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          meetingUrl: meeting.hangoutLink,
+          title: meeting.summary,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update the meeting status in local state
+        setMeetings((prev) =>
+          prev.map((m) =>
+            m.id === meeting.id
+              ? {
+                  ...m,
+                  notetakerEnabled: true,
+                  notetakerMeetingId: data.meeting?.id,
+                  notetakerStatus: 'joining',
+                }
+              : m
+          )
+        );
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to join meeting:', errorData);
+        setError(errorData.error || 'Failed to send notetaker');
+      }
+    } catch (err) {
+      console.error('Error joining meeting:', err);
+      setError('Failed to send notetaker to meeting');
+    } finally {
+      setJoiningMeetings((prev) => {
+        const next = new Set(prev);
+        next.delete(meeting.id);
+        return next;
+      });
+    }
+  };
+
   // ============================================================================
   // Helpers
   // ============================================================================
@@ -298,6 +347,17 @@ export default function UpcomingMeetingsPage() {
     if (diffMins < 60) return `in ${diffMins}m`;
     if (diffMins < 1440) return `in ${Math.round(diffMins / 60)}h`;
     return `in ${Math.round(diffMins / 1440)}d`;
+  };
+
+  const isMeetingJoinable = (meeting: MeetingWithNotetaker) => {
+    // Meeting is joinable if it starts within 15 minutes or has already started (but not ended)
+    const now = new Date();
+    const start = new Date(meeting.start.dateTime);
+    const end = new Date(meeting.end.dateTime);
+    const minsUntilStart = (start.getTime() - now.getTime()) / 60000;
+
+    // Joinable: starts within 15 mins OR already started but not ended
+    return minsUntilStart <= 15 && now < end;
   };
 
   const groupMeetingsByDate = (meetings: MeetingWithNotetaker[]) => {
@@ -541,22 +601,56 @@ export default function UpcomingMeetingsPage() {
                     <div className="meeting-notetaker">
                       {meeting.hangoutLink ? (
                         <>
-                          <label className="notetaker-toggle">
-                            <input
-                              type="checkbox"
-                              checked={meeting.notetakerEnabled}
-                              onChange={() => handleToggleNotetaker(meeting)}
-                              disabled={togglingMeetings.has(meeting.id)}
-                            />
-                            <span className="toggle-slider"></span>
-                          </label>
-                          <span className="notetaker-label">
-                            {togglingMeetings.has(meeting.id)
-                              ? 'Updating...'
-                              : meeting.notetakerEnabled
-                                ? 'Notetaker enabled'
-                                : 'Enable notetaker'}
-                          </span>
+                          {isMeetingJoinable(meeting) && meeting.notetakerStatus !== 'joining' && meeting.notetakerStatus !== 'recording' ? (
+                            <button
+                              className="join-now-button"
+                              onClick={() => handleJoinNow(meeting)}
+                              disabled={joiningMeetings.has(meeting.id)}
+                            >
+                              {joiningMeetings.has(meeting.id) ? (
+                                <>
+                                  <span className="join-now-spinner"></span>
+                                  Joining...
+                                </>
+                              ) : (
+                                <>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                  Join Now
+                                </>
+                              )}
+                            </button>
+                          ) : meeting.notetakerStatus === 'joining' ? (
+                            <span className="notetaker-status joining">
+                              <span className="status-dot"></span>
+                              Bot joining...
+                            </span>
+                          ) : meeting.notetakerStatus === 'recording' ? (
+                            <span className="notetaker-status recording">
+                              <span className="status-dot"></span>
+                              Recording
+                            </span>
+                          ) : (
+                            <>
+                              <label className="notetaker-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={meeting.notetakerEnabled}
+                                  onChange={() => handleToggleNotetaker(meeting)}
+                                  disabled={togglingMeetings.has(meeting.id)}
+                                />
+                                <span className="toggle-slider"></span>
+                              </label>
+                              <span className="notetaker-label">
+                                {togglingMeetings.has(meeting.id)
+                                  ? 'Updating...'
+                                  : meeting.notetakerEnabled
+                                    ? 'Notetaker enabled'
+                                    : 'Enable notetaker'}
+                              </span>
+                            </>
+                          )}
                         </>
                       ) : (
                         <span className="notetaker-unavailable">
@@ -894,6 +988,80 @@ export default function UpcomingMeetingsPage() {
           padding: 4px 8px;
           background: #f5f5f5;
           border-radius: 4px;
+        }
+
+        .join-now-button {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          background: #10b981;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-family: "Inter", Helvetica;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .join-now-button:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .join-now-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .join-now-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        .notetaker-status {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: "Inter", Helvetica;
+          font-size: 12px;
+          padding: 6px 12px;
+          border-radius: 6px;
+        }
+
+        .notetaker-status.joining {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .notetaker-status.recording {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .notetaker-status.joining .status-dot {
+          background: #f59e0b;
+        }
+
+        .notetaker-status.recording .status-dot {
+          background: #ef4444;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
         }
       `}</style>
     </div>

@@ -16,23 +16,23 @@ const supabase = createClient(
 // Positive affirmation style notification messages
 const FORGE_ENGAGEMENT_MESSAGES = [
   {
-    title: "You've got what it takes! 💪",
+    title: "You've got what it takes",
     body: "Your personalized workout plan is just a tap away. Let's build the strongest version of you together.",
   },
   {
-    title: "Your strength journey begins now ✨",
+    title: "Your strength journey begins now",
     body: "We've crafted a training program just for you. Ready to unlock your potential? Your future self is cheering you on!",
   },
   {
-    title: "Every champion started somewhere 🏆",
+    title: "Every champion started somewhere",
     body: "Your custom workout plan is waiting. Take the first step today and watch yourself transform.",
   },
   {
-    title: "You're stronger than you think 🔥",
+    title: "You're stronger than you think",
     body: "Generate your personalized training program and start building the body you deserve. We believe in you!",
   },
   {
-    title: "Today is your day to begin 🌟",
+    title: "Today is your day to begin",
     body: "Your AI-powered workout plan is ready to be created. One tap to start your transformation journey!",
   },
 ];

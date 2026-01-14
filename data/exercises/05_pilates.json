@@ -1,0 +1,1049 @@
+{
+  "category": "pilates",
+  "exercises": [
+    {
+      "name": "The Hundred",
+      "description": "The quintessential Pilates exercise that builds core endurance, increases breath control, and warms up the entire body.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "shoulders", "respiratory muscles"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back, curl head and shoulders up, lift legs to tabletop position (knees bent 90 degrees) or extend to 45 degrees",
+        "Extend arms long by sides hovering just above mat, palms facing down",
+        "Pump arms vigorously up and down: inhale for 5 pumps, exhale for 5 pumps (one set)",
+        "Maintain deep core engagement with navel to spine, keep lower back imprinted into mat",
+        "Complete 10 sets for total of 100 arm pumps, then lower with control"
+      ],
+      "tips": [
+        "Scoop abs deeply to protect lower back throughout",
+        "Gaze toward navel to keep neck aligned with spine",
+        "Keep shoulder blades just grazing mat, not lifting too high"
+      ],
+      "common_mistakes": [
+        "Letting lower back arch off mat",
+        "Lifting from neck instead of chest",
+        "Holding breath or breathing shallowly"
+      ],
+      "alternatives": ["Bent knees in tabletop", "Feet on mat", "Head down variation"]
+    },
+    {
+      "name": "Roll Up",
+      "description": "A fundamental spinal articulation exercise that strengthens abdominals while promoting flexibility through the spine.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "spine"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie flat with arms overhead, legs extended together, feet flexed",
+        "Inhale: Float arms to ceiling, begin curling head and shoulders off mat",
+        "Exhale: Peel spine off mat one vertebra at a time, rolling forward reaching toward toes in C-curve",
+        "Inhale at top: Maintain C-curve with abs scooped, shoulders over hips",
+        "Exhale: Roll back down articulating through each vertebra, arms return overhead"
+      ],
+      "tips": [
+        "Maintain C-curve throughout entire movement, don't flatten spine",
+        "Use breath to assist abdominals, not momentum",
+        "Keep legs anchored and feet flexed strongly"
+      ],
+      "common_mistakes": [
+        "Using momentum to swing up instead of articulating",
+        "Letting legs lift off mat",
+        "Straightening spine instead of maintaining C-curve"
+      ],
+      "alternatives": ["Roll up with bent knees", "Hands behind thighs for assistance", "Roll up to seated only"]
+    },
+    {
+      "name": "Roll Over",
+      "description": "An advanced exercise that builds abdominal strength and spinal flexibility through controlled inversion.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "spine", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back with legs extended to ceiling, arms pressing into mat by sides",
+        "Inhale: Engage abs and begin lifting hips, rolling spine off mat",
+        "Exhale: Continue rolling over until legs are parallel to floor overhead",
+        "Inhale: Open legs hip-width and flex feet",
+        "Exhale: Roll down one vertebra at a time, bring legs together at 45 degrees, repeat"
+      ],
+      "tips": [
+        "Press shoulders and arms firmly into mat for support",
+        "Control descent by articulating through each vertebra",
+        "Never roll onto neck - weight stays on shoulders"
+      ],
+      "common_mistakes": [
+        "Rolling too far onto neck causing strain",
+        "Using momentum instead of control",
+        "Not engaging abs sufficiently"
+      ],
+      "alternatives": ["Legs in tabletop", "Smaller range of motion", "Reverse Roll Over"]
+    },
+    {
+      "name": "Single Leg Circles",
+      "description": "An exercise that strengthens hip stabilizers while improving hip mobility and pelvic stability.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["hip flexors", "core", "inner thighs", "glutes"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Lie on back, extend right leg to ceiling, left leg extended on mat or bent with foot flat",
+        "Inhale: Circle extended leg across body, down, and around (5 circles one direction)",
+        "Exhale: Complete circle back to starting position",
+        "Keep pelvis absolutely stable - no rocking or tilting",
+        "Switch directions for 5 circles, then switch legs"
+      ],
+      "tips": [
+        "Keep circles within range where pelvis stays completely still",
+        "Engage deep core to stabilize pelvis",
+        "Opposite hip stays grounded on mat"
+      ],
+      "common_mistakes": [
+        "Letting pelvis rock or tilt during circles",
+        "Making circles too large and losing stability",
+        "Not maintaining neutral pelvis"
+      ],
+      "alternatives": ["Bent knee circles", "Smaller circles", "Both knees bent for more support"]
+    },
+    {
+      "name": "Rolling Like a Ball",
+      "description": "A playful exercise that massages the spine while building balance and abdominal control.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "spine", "hip flexors"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit balanced on tailbone, knees pulled into chest, hands holding shins or ankles",
+        "Lift feet off mat, find balance point in tight ball shape",
+        "Inhale: Roll back to shoulder blades keeping tight ball shape",
+        "Exhale: Use abs to roll back up to balanced starting position without feet touching",
+        "Repeat 6-10 times maintaining consistent ball shape"
+      ],
+      "tips": [
+        "Keep head tucked and gaze at navel throughout",
+        "Don't roll onto neck - stop at shoulder blades",
+        "Use momentum but control with abs"
+      ],
+      "common_mistakes": [
+        "Rolling onto neck instead of stopping at shoulders",
+        "Uncurling from ball shape during roll",
+        "Using momentum without abdominal control"
+      ],
+      "alternatives": ["Smaller rocking motion", "Hold balance without rolling", "Hands behind knees"]
+    },
+    {
+      "name": "Single Leg Stretch",
+      "description": "A dynamic core exercise that builds abdominal endurance while coordinating breath and movement.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "obliques"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back in Pilates curl (head and shoulders lifted), pull right knee to chest, extend left leg to 45 degrees",
+        "Place right hand on right ankle, left hand on right knee",
+        "Exhale: Switch legs - pull left knee in as right extends",
+        "Switch hand positions with each leg change (outside hand to ankle, inside hand to knee)",
+        "Continue switching legs for 8-10 repetitions each side, maintaining lifted upper body"
+      ],
+      "tips": [
+        "Keep lower back pressed into mat - don't let it arch",
+        "Extend legs only as low as you can while maintaining imprinted spine",
+        "Pull knee straight toward shoulder, not to the side"
+      ],
+      "common_mistakes": [
+        "Lower back arching off mat",
+        "Dropping head and shoulders",
+        "Extending leg too low causing back to arch"
+      ],
+      "alternatives": ["Head down", "Legs higher", "Hands behind head"]
+    },
+    {
+      "name": "Double Leg Stretch",
+      "description": "An advanced abdominal exercise that challenges core stability through full extension of arms and legs.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Start in Pilates curl with both knees pulled into chest, hands on ankles",
+        "Inhale: Extend arms overhead and legs forward to 45 degrees simultaneously",
+        "Exhale: Circle arms wide and sweep them around to return to ankles as knees pull back in",
+        "Maintain deep core engagement throughout - lower back stays imprinted",
+        "Repeat 8-10 times with fluid, coordinated movement"
+      ],
+      "tips": [
+        "Scoop abs deeply especially as limbs extend",
+        "Only extend legs as low as you can while keeping back flat",
+        "Keep head and shoulders lifted throughout"
+      ],
+      "common_mistakes": [
+        "Arching lower back as legs extend",
+        "Dropping upper body curl",
+        "Extending legs too low"
+      ],
+      "alternatives": ["Legs to tabletop instead of extended", "Arms only", "Smaller range"]
+    },
+    {
+      "name": "Spine Stretch Forward",
+      "description": "A seated forward bend that lengthens the spine and stretches the back while maintaining core engagement.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["spine", "hamstrings", "back", "core"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Sit tall with legs extended hip-width apart, feet flexed, arms reaching forward at shoulder height",
+        "Inhale: Grow taller through crown of head",
+        "Exhale: Tuck chin and roll forward sequentially through spine creating C-curve",
+        "Reach arms forward past feet, scooping abs in deeply",
+        "Inhale: Stack spine back up one vertebra at a time to tall seated position"
+      ],
+      "tips": [
+        "Focus on lengthening spine rather than just reaching forward",
+        "Keep abs scooped in throughout",
+        "Flex feet strongly to engage legs"
+      ],
+      "common_mistakes": [
+        "Collapsing forward instead of articulating",
+        "Letting abs pooch out",
+        "Rounding from lower back only"
+      ],
+      "alternatives": ["Bend knees slightly", "Sit on block for tight hamstrings", "Hands on floor"]
+    },
+    {
+      "name": "Open Leg Rocker",
+      "description": "A challenging balance exercise that builds core control while articulating through the spine.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "spine", "inner thighs"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Sit balancing on tailbone with legs extended in V-shape, holding outside of ankles",
+        "Inhale: Maintain C-curve and roll back to shoulder blades",
+        "Exhale: Use deep abs to roll back up to balanced starting position",
+        "Keep legs in V-position throughout, maintain strong core connection",
+        "Repeat 6-8 times without feet touching mat between reps"
+      ],
+      "tips": [
+        "Keep C-curve constant - don't let spine flatten",
+        "Use momentum but control with abdominals",
+        "Stop roll at shoulder blades, never onto neck"
+      ],
+      "common_mistakes": [
+        "Legs closing or flopping apart",
+        "Rolling onto neck",
+        "Losing C-curve and straightening spine"
+      ],
+      "alternatives": ["Bent knees", "Hands behind knees", "Rolling Like a Ball"]
+    },
+    {
+      "name": "Saw",
+      "description": "A seated twisting exercise that wrings out the lungs while stretching the back and hamstrings.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "spine", "hamstrings", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit tall with legs extended wider than mat, feet flexed, arms extended out to sides",
+        "Inhale: Twist torso to right from waist, keeping hips square",
+        "Exhale: Reach left hand past right little toe as if sawing it off, right arm reaches back",
+        "Pulse 3 times exhaling completely to wring out lungs",
+        "Inhale: Stack spine back up through twist, untwist to center, repeat other side"
+      ],
+      "tips": [
+        "Keep both sit bones grounded - don't let opposite hip lift",
+        "Twist from waist, not just reaching arm",
+        "Exhale completely with each pulse"
+      ],
+      "common_mistakes": [
+        "Lifting opposite hip off mat",
+        "Rotating from shoulders instead of spine",
+        "Not sitting tall initially"
+      ],
+      "alternatives": ["Bend knees", "Smaller twist", "No pulsing"]
+    },
+    {
+      "name": "Dead Bug",
+      "description": "A core stabilization exercise that teaches pelvic control while moving opposite limbs.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on back with arms extended to ceiling, knees in tabletop position",
+        "Press lower back into mat maintaining imprint throughout",
+        "Exhale: Extend right arm overhead and left leg forward simultaneously",
+        "Inhale: Return to starting position with control",
+        "Exhale: Switch sides - left arm and right leg extend. Repeat 8-10 each side"
+      ],
+      "tips": [
+        "Keep lower back glued to mat - this is the priority",
+        "Move slowly with precision and control",
+        "Only extend limbs as far as you can while keeping back flat"
+      ],
+      "common_mistakes": [
+        "Lower back arching off mat",
+        "Moving too quickly",
+        "Extending limbs too far"
+      ],
+      "alternatives": ["Arms only", "Legs only", "Smaller range of motion"]
+    },
+    {
+      "name": "Bird Dog",
+      "description": "A quadruped exercise that builds core stability, balance, and strengthens the back and glutes.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "glutes", "back", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Start on hands and knees in neutral spine, shoulders over wrists, hips over knees",
+        "Engage core by drawing navel to spine",
+        "Exhale: Extend right arm forward and left leg back creating one line from fingertips to toes",
+        "Inhale: Hold position maintaining level hips and shoulders",
+        "Exhale: Return to start. Repeat 8-10 times each side"
+      ],
+      "tips": [
+        "Keep hips and shoulders square - no rotation",
+        "Maintain neutral spine - don't let lower back sag",
+        "Reach through crown of head to maintain neck alignment"
+      ],
+      "common_mistakes": [
+        "Hips or shoulders rotating",
+        "Lower back sagging",
+        "Lifting head to look forward"
+      ],
+      "alternatives": ["Arm only", "Leg only", "Knees on cushion"]
+    },
+    {
+      "name": "Plank (Pilates Style)",
+      "description": "A fundamental core strengthening hold emphasizing breath, alignment, and full-body integration.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "shoulders", "back", "legs"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Start on forearms and toes with body in straight line from head to heels",
+        "Draw navel to spine, engage glutes and legs",
+        "Inhale through nose for 5 counts, exhale through mouth for 5 counts",
+        "Maintain neutral spine - don't let hips sag or pike up",
+        "Hold for 30-60 seconds with continuous breath"
+      ],
+      "tips": [
+        "Think of creating opposition - reach heels back while crown extends forward",
+        "Keep shoulder blades flat on back, not winging out",
+        "Breathe continuously - never hold breath"
+      ],
+      "common_mistakes": [
+        "Hips sagging creating lower back arch",
+        "Hips piking up too high",
+        "Holding breath"
+      ],
+      "alternatives": ["Knees down", "High plank on hands", "Against wall"]
+    },
+    {
+      "name": "Side Plank",
+      "description": "A lateral core strengthener that targets obliques and builds shoulder stability.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "core", "shoulders", "glutes"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on side with forearm under shoulder, legs extended and stacked",
+        "Inhale: Prepare by engaging core",
+        "Exhale: Lift hips creating straight line from head to heels",
+        "Top arm can extend to ceiling or rest on hip",
+        "Hold for 20-45 seconds breathing steadily, repeat other side"
+      ],
+      "tips": [
+        "Stack shoulders, hips, and ankles in one line",
+        "Lift through obliques, not just pushing through bottom arm",
+        "Engage entire bottom side of body"
+      ],
+      "common_mistakes": [
+        "Hips sagging toward floor",
+        "Rolling forward or back instead of staying stacked",
+        "Holding breath"
+      ],
+      "alternatives": ["Bottom knee bent", "Top leg in front for support", "Against wall"]
+    },
+    {
+      "name": "Criss Cross (Bicycle)",
+      "description": "A dynamic oblique exercise that combines rotation with leg extension.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "core", "hip flexors"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Lie in Pilates curl with hands behind head, elbows wide, both knees in tabletop",
+        "Exhale: Twist right, bringing right shoulder toward left knee as right leg extends",
+        "Hold twist and pulse for 2 counts",
+        "Inhale: Return to center",
+        "Exhale: Twist left bringing left shoulder to right knee, right leg extends. Repeat 8-10 each side"
+      ],
+      "tips": [
+        "Rotate from ribcage, not just moving elbow",
+        "Keep lower back imprinted throughout",
+        "Reach extended leg long at 45 degrees or higher"
+      ],
+      "common_mistakes": [
+        "Pulling on neck with hands",
+        "Just moving elbow instead of rotating torso",
+        "Lower back arching off mat"
+      ],
+      "alternatives": ["Both knees stay bent", "Head down", "No pulsing"]
+    },
+    {
+      "name": "Double Leg Lower Lift",
+      "description": "An intense lower abdominal exercise that challenges core strength through leg lowering and lifting.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["lower abs", "hip flexors", "core"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back with legs extended to ceiling at 90 degrees, hands behind head or by sides",
+        "Press lower back firmly into mat",
+        "Inhale: Lower both legs toward floor as far as you can while keeping back flat",
+        "Exhale: Use lower abs to lift legs back to 90 degrees",
+        "Repeat 8-10 times, never letting back arch off mat"
+      ],
+      "tips": [
+        "Only lower legs as far as you can maintain flat back",
+        "Scoop abs deeply especially as legs lower",
+        "Think of lengthening legs away rather than just lowering"
+      ],
+      "common_mistakes": [
+        "Lowering legs too far causing back to arch",
+        "Using momentum to swing legs",
+        "Not engaging abs before lowering"
+      ],
+      "alternatives": ["Bent knees", "Smaller range", "Single leg"]
+    },
+    {
+      "name": "Teaser I",
+      "description": "The signature Pilates exercise building core strength, balance, and full-body control.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "spine"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Lie on back with one knee bent (foot flat), other leg extended to 45 degrees",
+        "Inhale: Prepare with arms overhead",
+        "Exhale: Roll up articulating through spine, reaching arms forward parallel to extended leg",
+        "Balance on sit bones in V-position, shoulders over hips",
+        "Inhale: Roll back down with control. Repeat 5 times, switch legs"
+      ],
+      "tips": [
+        "Maintain C-curve in spine throughout",
+        "Keep extended leg reaching long and stable",
+        "Find balance point on sit bones"
+      ],
+      "common_mistakes": [
+        "Using momentum instead of control",
+        "Letting extended leg drop",
+        "Straightening spine instead of C-curve"
+      ],
+      "alternatives": ["Hold balance without rolling", "Hands behind thighs", "Both knees bent"]
+    },
+    {
+      "name": "Scissors",
+      "description": "A dynamic exercise that builds core endurance while stretching hamstrings and hip flexors.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "hamstrings"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back, lift both legs to ceiling, curl head and shoulders up",
+        "Gently pulse right leg toward face while left leg reaches away (double pulse)",
+        "Hands can lightly hold right calf or shin",
+        "Scissor legs to switch - left leg pulses toward face, right reaches away",
+        "Continue alternating for 8-10 each side, keeping hips stable"
+      ],
+      "tips": [
+        "Keep pelvis stable - don't let it rock side to side",
+        "Reach legs from hip, keeping them long",
+        "Maintain lifted upper body throughout"
+      ],
+      "common_mistakes": [
+        "Pelvis rocking with leg movement",
+        "Bending knees",
+        "Dropping upper body"
+      ],
+      "alternatives": ["Smaller range", "Head down", "No pulsing"]
+    },
+    {
+      "name": "Cat-Cow (Pilates Breath)",
+      "description": "A spinal mobility warm-up that articulates through the spine with coordinated breath.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["spine", "core", "back"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Start on hands and knees in neutral spine, hands under shoulders, knees under hips",
+        "Inhale: Arch spine lifting chest and tailbone (cow), maintain core engagement",
+        "Exhale: Round spine tucking tailbone under, draw navel to spine deeply (cat)",
+        "Move segmentally through spine, initiating from tailbone",
+        "Repeat 8-10 times flowing with breath"
+      ],
+      "tips": [
+        "Move one vertebra at a time, not all at once",
+        "Maintain core engagement even in cow position",
+        "Coordinate breath with movement precisely"
+      ],
+      "common_mistakes": [
+        "Just moving head and hips without articulating spine",
+        "Collapsing in shoulders",
+        "Moving too quickly"
+      ],
+      "alternatives": ["Seated on chair", "Smaller movements", "Against wall"]
+    },
+    {
+      "name": "Spine Twist",
+      "description": "A seated rotation exercise that mobilizes the spine while strengthening obliques.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "spine", "back"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Sit tall with legs extended together, arms out to sides at shoulder height",
+        "Inhale: Grow taller through spine",
+        "Exhale: Twist to right from waist in 2 pulses, keeping hips square",
+        "Inhale: Return to center",
+        "Exhale: Twist to left in 2 pulses. Repeat 5-6 times each side"
+      ],
+      "tips": [
+        "Sit on block if hamstrings tight",
+        "Keep both sit bones grounded",
+        "Lengthen spine as you twist"
+      ],
+      "common_mistakes": [
+        "Collapsing in spine",
+        "Letting hips rotate",
+        "Using arms to pull twist rather than rotating from core"
+      ],
+      "alternatives": ["Bent knees", "Single pulse", "Hands behind head"]
+    },
+    {
+      "name": "Mermaid Stretch",
+      "description": "A lateral spine stretch that opens the side body and promotes spinal mobility.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "spine", "shoulders", "lats"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Sit with knees bent to side (mermaid position), right hand on mat by hip",
+        "Inhale: Reach left arm up and over to right, creating side bend",
+        "Exhale: Deepen stretch reaching further, feeling left ribs expand",
+        "Inhale: Return to upright",
+        "Add rotation: thread left arm under right side exhaling, return and repeat. Switch sides"
+      ],
+      "tips": [
+        "Keep both sit bones grounded",
+        "Reach up and over, not just to side",
+        "Breathe into stretched side"
+      ],
+      "common_mistakes": [
+        "Leaning forward or back instead of pure side bend",
+        "Lifting opposite hip",
+        "Collapsing into bottom side"
+      ],
+      "alternatives": ["Seated cross-legged", "On block", "Without rotation"]
+    },
+    {
+      "name": "Swan Dive",
+      "description": "An advanced rocking backbend that builds spinal extension strength and coordination.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["back extensors", "glutes", "hamstrings", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on stomach with hands by shoulders, legs together",
+        "Inhale: Press up into back extension (swan) keeping abs engaged",
+        "Exhale: Release arms to sides, rock forward lifting legs as chest lowers",
+        "Inhale: Rock back lifting chest as legs lower",
+        "Continue rocking 5-6 times maintaining arc shape, then lower with control"
+      ],
+      "tips": [
+        "Maintain core engagement to protect spine",
+        "Rock from center, not just throwing body",
+        "Keep movement controlled and rhythmic"
+      ],
+      "common_mistakes": [
+        "Hyperextending lower back without core support",
+        "Throwing body without control",
+        "Tensing neck and shoulders"
+      ],
+      "alternatives": ["Swan prep (no rocking)", "Smaller range", "Cobra pose"]
+    },
+    {
+      "name": "Swimming",
+      "description": "A back extension exercise that builds endurance in back muscles while improving coordination.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["back extensors", "glutes", "shoulders", "core"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on stomach with arms extended overhead, legs together",
+        "Hover arms, chest, and legs off mat maintaining neutral spine",
+        "Flutter opposite arm and leg (right arm/left leg, then left arm/right leg)",
+        "Inhale for 5 counts, exhale for 5 counts while continuing flutter",
+        "Complete 5-10 breath cycles, then lower with control"
+      ],
+      "tips": [
+        "Keep movement small and controlled",
+        "Lengthen through crown of head",
+        "Engage abs to protect lower back"
+      ],
+      "common_mistakes": [
+        "Hyperextending lower back",
+        "Moving too quickly losing control",
+        "Holding breath"
+      ],
+      "alternatives": ["Smaller lifts", "Arms only or legs only", "Slower tempo"]
+    },
+    {
+      "name": "Breast Stroke",
+      "description": "A flowing back extension that mobilizes the spine while strengthening the posterior chain.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["back", "shoulders", "glutes", "arms"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on stomach with forehead on mat, arms extended forward",
+        "Inhale: Lift chest and arms, circle arms wide to sides like swimming breaststroke",
+        "Exhale: Reach arms back toward feet as chest lifts higher",
+        "Inhale: Return arms forward lowering chest back down",
+        "Repeat 6-8 times with flowing, continuous movement"
+      ],
+      "tips": [
+        "Keep abs engaged throughout to support spine",
+        "Move with fluid grace, not jerky motions",
+        "Coordinate breath with movement"
+      ],
+      "common_mistakes": [
+        "Cranking head back straining neck",
+        "Not engaging core",
+        "Moving arms without spinal extension"
+      ],
+      "alternatives": ["Smaller lifts", "Cobra pose", "Hands under forehead"]
+    },
+    {
+      "name": "Clamshells",
+      "description": "A side-lying hip opener that strengthens gluteus medius and external hip rotators.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glute medius", "hip abductors", "core"],
+      "equipment_required": ["mat", "resistance band"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": true,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Lie on side with hips and knees bent to 90 degrees, heels together",
+        "Place optional resistance band around thighs just above knees",
+        "Exhale: Lift top knee keeping heels together, opening like clamshell",
+        "Inhale: Lower knee with control",
+        "Repeat 15-20 times, maintaining stable pelvis and core engagement"
+      ],
+      "tips": [
+        "Keep hips stacked - don't let pelvis roll back",
+        "Focus on hip rotation, not just lifting knee",
+        "Engage core to prevent movement in spine"
+      ],
+      "common_mistakes": [
+        "Letting hips rotate backward",
+        "Using momentum",
+        "Tilting pelvis instead of pure hip rotation"
+      ],
+      "alternatives": ["No band", "Smaller range", "Side-lying hip abduction"]
+    },
+    {
+      "name": "Side-Lying Leg Series (Front/Back)",
+      "description": "A series of leg movements that strengthen hips and glutes while challenging core stability.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glutes", "hip flexors", "core", "outer thigh"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on side with bottom leg bent, top leg extended at hip height",
+        "Support head with bottom arm, top hand on mat in front for balance",
+        "Inhale: Sweep top leg forward flexing foot, keeping leg at hip height",
+        "Exhale: Point toe and sweep leg back past hip using glutes",
+        "Repeat 10 times, then reverse breathing pattern for 10 more, switch sides"
+      ],
+      "tips": [
+        "Keep hips and shoulders stacked - no rocking",
+        "Engage core deeply to keep torso stable",
+        "Movement comes from hip, not from tilting pelvis"
+      ],
+      "common_mistakes": [
+        "Rocking torso forward and back with leg",
+        "Letting leg drop below hip height",
+        "Not engaging core for stability"
+      ],
+      "alternatives": ["Smaller range", "Bent knee", "Top leg supported"]
+    },
+    {
+      "name": "Bridge (Pilates Style)",
+      "description": "A fundamental exercise that strengthens glutes and hamstrings while articulating the spine.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glutes", "hamstrings", "core", "spine"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on back with knees bent, feet hip-width apart near glutes, arms by sides",
+        "Inhale: Prepare, engage core",
+        "Exhale: Tilt pelvis and peel spine off mat one vertebra at a time",
+        "Create diagonal line from shoulders to knees at top",
+        "Inhale at top, exhale to roll spine back down articulating through each vertebra"
+      ],
+      "tips": [
+        "Articulate through spine - don't just lift all at once",
+        "Keep knees aligned over ankles, not splaying",
+        "Engage inner thighs and glutes at top"
+      ],
+      "common_mistakes": [
+        "Lifting too high into lower back arch",
+        "Knees falling apart",
+        "Rolling up/down without articulation"
+      ],
+      "alternatives": ["Smaller lift", "Hold at top", "Marching at top"]
+    },
+    {
+      "name": "Single Leg Bridge",
+      "description": "An advanced bridge variation that challenges balance and unilateral glute strength.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glutes", "hamstrings", "core"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Start in bridge position with hips lifted",
+        "Extend right leg to ceiling keeping hips level",
+        "Inhale: Lower hips halfway down",
+        "Exhale: Press back up to bridge using left leg and glute",
+        "Repeat 8-10 times, switch legs"
+      ],
+      "tips": [
+        "Keep hips absolutely level - don't let them tilt",
+        "Press through standing foot heel",
+        "Maintain core engagement throughout"
+      ],
+      "common_mistakes": [
+        "Hips tilting to one side",
+        "Not lowering far enough",
+        "Losing alignment"
+      ],
+      "alternatives": ["Hold single leg bridge", "Smaller range", "Regular bridge"]
+    },
+    {
+      "name": "Kneeling Side Kicks",
+      "description": "An advanced side-lying kick series performed in high kneeling position.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glutes", "hip abductors", "core", "obliques"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Kneel on mat, place right hand down and extend left leg to side at hip height",
+        "Left arm reaches overhead creating curve in spine",
+        "Exhale: Kick left leg forward with flexed foot",
+        "Inhale: Point toe and sweep leg back",
+        "Repeat 8-10 times maintaining balance, switch sides"
+      ],
+      "tips": [
+        "Keep hips stacked over knees",
+        "Engage core deeply for balance",
+        "Create length through extended leg"
+      ],
+      "common_mistakes": [
+        "Leaning into bottom arm",
+        "Letting hips shift",
+        "Leg dropping below hip height"
+      ],
+      "alternatives": ["Side-lying version", "Smaller kicks", "Hold leg position"]
+    },
+    {
+      "name": "Quadruped Hip Circles",
+      "description": "A mobility exercise that opens hips while maintaining core stability.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["hip flexors", "glutes", "core", "hip abductors"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Start on hands and knees in neutral spine",
+        "Lift right knee off mat and circle it forward, out to side, back, and return",
+        "Complete 5 circles one direction, reverse for 5 circles",
+        "Keep pelvis and spine completely stable throughout",
+        "Switch legs and repeat"
+      ],
+      "tips": [
+        "Move only from hip joint",
+        "Keep supporting leg and pelvis absolutely still",
+        "Maintain neutral spine throughout"
+      ],
+      "common_mistakes": [
+        "Pelvis rocking or tilting",
+        "Spine moving",
+        "Making circles too large"
+      ],
+      "alternatives": ["Smaller circles", "Bent knee lifts only", "Fire hydrants"]
+    },
+    {
+      "name": "Push-up (Pilates Style)",
+      "description": "A full-body exercise incorporating spinal articulation and core control.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["chest", "arms", "shoulders", "core"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Stand tall, inhale to prepare",
+        "Exhale: Roll down through spine to place hands on mat",
+        "Walk hands out to plank position",
+        "Perform 3-5 push-ups with elbows close to ribs, body in straight line",
+        "Walk hands back, roll spine up to standing one vertebra at a time"
+      ],
+      "tips": [
+        "Articulate through spine on way down and up",
+        "Keep body in one line during push-ups",
+        "Engage abs throughout entire sequence"
+      ],
+      "common_mistakes": [
+        "Sagging hips during push-ups",
+        "Elbows splaying wide",
+        "Not articulating through spine"
+      ],
+      "alternatives": ["Knees down for push-ups", "Against wall", "Fewer reps"]
+    },
+    {
+      "name": "Leg Pull Front",
+      "description": "An advanced plank variation with leg lift that challenges total body integration.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "shoulders", "glutes", "hamstrings"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Start in high plank position on hands, body in straight line",
+        "Inhale: Lift right leg up behind you keeping hips level",
+        "Exhale: Lower right leg and repeat with left",
+        "Continue alternating legs for 8-10 total lifts",
+        "Maintain strong core and stable shoulders throughout"
+      ],
+      "tips": [
+        "Keep hips and shoulders square and level",
+        "Press away from mat through shoulders",
+        "Engage glutes to lift leg, not just hip flexors"
+      ],
+      "common_mistakes": [
+        "Hips rotating or sagging",
+        "Shoulders collapsing",
+        "Not maintaining plank alignment"
+      ],
+      "alternatives": ["Hold plank only", "Smaller leg lifts", "Forearm plank variation"]
+    },
+    {
+      "name": "Leg Pull Back",
+      "description": "A reverse plank with leg lifts that strengthens the posterior chain.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["glutes", "hamstrings", "core", "triceps"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Sit with legs extended, hands behind hips fingers pointing toward feet",
+        "Lift hips creating reverse plank position",
+        "Inhale: Point right foot and lift leg toward ceiling",
+        "Exhale: Flex foot and lower leg. Repeat other side",
+        "Continue alternating for 8-10 lifts maintaining lifted hips"
+      ],
+      "tips": [
+        "Keep hips lifted high throughout",
+        "Press through heels and hands",
+        "Engage glutes and hamstrings"
+      ],
+      "common_mistakes": [
+        "Hips dropping low",
+        "Not lifting leg high enough",
+        "Shoulders hunching"
+      ],
+      "alternatives": ["Hold reverse plank", "Bent knees", "No leg lifts"]
+    },
+    {
+      "name": "Side Bend",
+      "description": "An advanced lateral balance exercise that strengthens obliques and shoulders.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "shoulders", "core", "glutes"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Sit on right hip with legs together bent to side, right hand on mat",
+        "Inhale: Press up to side plank lifting hips, left arm sweeps overhead",
+        "Create arc from feet through fingertips",
+        "Exhale: Thread left arm under body rotating torso",
+        "Inhale: Return to side bend, repeat 3-5 times, switch sides"
+      ],
+      "tips": [
+        "Stack shoulders, hips, and feet",
+        "Lift from obliques",
+        "Maintain strong base arm"
+      ],
+      "common_mistakes": [
+        "Collapsing into bottom shoulder",
+        "Not lifting hips high enough",
+        "Losing balance"
+      ],
+      "alternatives": ["Side plank without movement", "Bottom knee bent", "Against wall"]
+    },
+    {
+      "name": "Twist",
+      "description": "A dynamic seated rotation that mobilizes spine and strengthens obliques.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["obliques", "core", "spine"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit tall with legs crossed, arms extended out to sides",
+        "Inhale: Lengthen through spine",
+        "Exhale: Twist to right from waist, right arm reaches back, left forward",
+        "Pulse twist 3 times exhaling completely",
+        "Inhale: Return center. Exhale: Twist left. Repeat 5-6 each side"
+      ],
+      "tips": [
+        "Keep both sit bones grounded",
+        "Initiate twist from deep core",
+        "Lengthen spine as you rotate"
+      ],
+      "common_mistakes": [
+        "Collapsing through spine",
+        "Lifting opposite hip",
+        "Using arms to pull twist"
+      ],
+      "alternatives": ["Spine Twist", "Seated on block", "No pulsing"]
+    },
+    {
+      "name": "Control Balance",
+      "description": "An advanced exercise combining flexibility, balance, and core control.",
+      "exercise_type": "pilates",
+      "muscle_groups": ["core", "hip flexors", "hamstrings", "shoulders"],
+      "equipment_required": ["mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back, roll over bringing legs overhead (shoulder stand position)",
+        "Hold one ankle with both hands, extend other leg toward ceiling",
+        "Switch legs in air - release held leg as you catch the other",
+        "Continue switching legs 6-8 times with control",
+        "Roll down slowly to complete"
+      ],
+      "tips": [
+        "Balance on shoulders, not neck",
+        "Keep movement controlled and precise",
+        "Requires advanced flexibility and strength"
+      ],
+      "common_mistakes": [
+        "Rolling onto neck",
+        "Losing balance",
+        "Switching legs without control"
+      ],
+      "alternatives": ["Scissors", "Shoulder stand hold", "Roll Over"]
+    }
+  ]
+}

@@ -1,0 +1,1153 @@
+{
+  "category": "crossfit",
+  "exercises": [
+    {
+      "name": "Power Clean",
+      "description": "An explosive Olympic lift pulling the barbell from floor to shoulders in one motion, catching in partial squat.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "back", "shoulders", "traps", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Start with barbell over mid-foot, shins vertical, shoulders over bar with clean grip",
+        "First pull: Push through legs keeping back angle constant until bar reaches knees",
+        "Second pull: Explosively extend hips, knees, ankles (triple extension) while shrugging bar upward",
+        "Catch bar on shoulders in quarter squat, elbows high, stand to full extension"
+      ],
+      "tips": [
+        "Bar should brush thighs at hip crease during second pull",
+        "Focus on speed under bar, not height of pull",
+        "Front rack position requires wrist and shoulder mobility"
+      ],
+      "common_mistakes": [
+        "Pulling with arms too early",
+        "Not achieving full hip extension",
+        "Catching on toes instead of full foot"
+      ],
+      "alternatives": ["Hang power clean", "Squat clean", "Dumbbell power clean (scaled)"]
+    },
+    {
+      "name": "Squat Clean",
+      "description": "Full Olympic clean catching the bar in a full front squat position.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "back", "shoulders", "traps", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Perform same setup and pull as power clean",
+        "After triple extension, pull yourself under bar aggressively",
+        "Catch bar in full depth front squat with elbows high",
+        "Stand up from bottom of squat to complete lift"
+      ],
+      "tips": [
+        "Allows lifting heavier loads than power clean",
+        "Requires excellent ankle and hip mobility",
+        "Gateway to clean and jerk"
+      ],
+      "common_mistakes": [
+        "Not getting deep enough in catch",
+        "Forward torso lean in squat",
+        "Elbows dropping causing bar to roll off shoulders"
+      ],
+      "alternatives": ["Power clean", "Hang squat clean", "Muscle clean (scaled)"]
+    },
+    {
+      "name": "Hang Clean",
+      "description": "Clean variation starting with bar at mid-thigh or knee height rather than floor.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "back", "shoulders", "traps"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Start standing with bar at mid-thigh, slight knee bend, shoulders over bar",
+        "Dip by bending knees slightly while maintaining back angle",
+        "Explosively extend hips and knees while shrugging bar upward",
+        "Pull under bar and catch in front rack position"
+      ],
+      "tips": [
+        "Easier to learn than full clean from floor",
+        "Emphasizes hip extension and speed under bar",
+        "Great for high-rep MetCons"
+      ],
+      "common_mistakes": [
+        "Dipping too deep before extension",
+        "Losing bar contact at hip",
+        "Rushing the movement pattern"
+      ],
+      "alternatives": ["Full clean from floor", "Hang power clean", "Kettlebell clean"]
+    },
+    {
+      "name": "Power Snatch",
+      "description": "Explosive Olympic lift moving bar from floor to overhead in one motion, catching in partial squat.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "shoulders", "back", "legs", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Start with wide snatch grip (bar in hip crease when standing), shoulders over bar",
+        "First pull maintaining back angle until bar reaches knees",
+        "Explosive triple extension with aggressive shoulder shrug",
+        "Pull under bar catching overhead with arms locked in partial squat"
+      ],
+      "tips": [
+        "Requires significant mobility and coordination",
+        "Wider grip means longer bar path than clean",
+        "Queen of Olympic lifts for total body power"
+      ],
+      "common_mistakes": [
+        "Grip too narrow reducing power transfer",
+        "Pressing bar overhead instead of pulling under",
+        "Catching with soft elbows"
+      ],
+      "alternatives": ["Hang power snatch", "Squat snatch", "Dumbbell snatch (scaled)"]
+    },
+    {
+      "name": "Squat Snatch",
+      "description": "Full Olympic snatch catching bar overhead in full depth squat.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "shoulders", "back", "legs", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Perform same setup and pull as power snatch with wide grip",
+        "After triple extension, aggressively pull yourself under bar",
+        "Catch in full overhead squat with arms locked, bar overhead",
+        "Stand up from bottom maintaining overhead position"
+      ],
+      "tips": [
+        "Most technical of all barbell lifts",
+        "Requires exceptional mobility in ankles, hips, and shoulders",
+        "Can take years to master"
+      ],
+      "common_mistakes": [
+        "Not achieving full depth in catch",
+        "Bar drifting forward",
+        "Insufficient shoulder mobility causing forward lean"
+      ],
+      "alternatives": ["Power snatch", "Overhead squat", "Hang squat snatch"]
+    },
+    {
+      "name": "Hang Snatch",
+      "description": "Snatch variation starting from mid-thigh or knee rather than floor.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "shoulders", "back", "legs"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Start standing with wide snatch grip, bar at mid-thigh",
+        "Slight dip maintaining shoulder-over-bar position",
+        "Explosive hip and knee extension with shrug",
+        "Pull under bar catching overhead with locked arms"
+      ],
+      "tips": [
+        "Reduces complexity by removing first pull from floor",
+        "Better for high-rep conditioning work",
+        "Emphasizes hip power and speed"
+      ],
+      "common_mistakes": [
+        "Overextending backward (looping bar)",
+        "Not maintaining bar contact",
+        "Pressing out at top"
+      ],
+      "alternatives": ["Full snatch", "Hang power snatch", "Muscle snatch"]
+    },
+    {
+      "name": "Clean and Jerk",
+      "description": "The king of barbell lifts - clean to shoulders then jerk overhead for maximum weight capacity.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "legs", "shoulders", "back", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Perform squat clean bringing bar to shoulders in front rack",
+        "Stand fully then reset feet to shoulder-width for jerk",
+        "Dip by bending knees 4-6 inches keeping torso vertical",
+        "Drive explosively through legs then split or press jerk overhead to lockout"
+      ],
+      "tips": [
+        "Most efficient method for maximal overhead weight",
+        "Combination of two complex movements",
+        "Competition standard: Clean + split jerk"
+      ],
+      "common_mistakes": [
+        "Not standing fully after clean before jerk",
+        "Dipping forward in jerk instead of straight down",
+        "Poor receiving position in split"
+      ],
+      "alternatives": ["Power clean + push press", "Clean + push jerk", "Dumbbell clean and jerk"]
+    },
+    {
+      "name": "Push Press",
+      "description": "Overhead press using leg drive to assist moving heavier loads.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["shoulders", "triceps", "legs", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Start with barbell in front rack position, hands just outside shoulders",
+        "Dip by bending knees 4-6 inches keeping torso vertical and elbows high",
+        "Drive explosively through legs transferring power to bar",
+        "Press bar overhead to full lockout with arms and legs fully extended"
+      ],
+      "tips": [
+        "Gateway movement to push jerk and split jerk",
+        "Allows 30% more weight than strict press",
+        "Keep bar path vertical - straight up and down"
+      ],
+      "common_mistakes": [
+        "Dipping forward instead of straight down",
+        "Not achieving full hip extension in drive",
+        "Re-bending knees after drive"
+      ],
+      "alternatives": ["Strict press (scaled)", "Push jerk", "Dumbbell push press"]
+    },
+    {
+      "name": "Push Jerk",
+      "description": "Dynamic overhead movement using leg drive and receiving bar with bent knees.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["shoulders", "legs", "core", "triceps"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start with bar in front rack, perform dip as in push press",
+        "Explosive drive through legs",
+        "Instead of pressing bar up, press yourself under the bar",
+        "Receive bar overhead with slight knee bend, then stand to full extension"
+      ],
+      "tips": [
+        "Allows heavier loads than push press",
+        "Faster for MetCons than split jerk",
+        "Foot position stays same throughout"
+      ],
+      "common_mistakes": [
+        "Pressing bar instead of pressing under",
+        "Receiving with locked knees",
+        "Bar drifting forward"
+      ],
+      "alternatives": ["Push press", "Split jerk", "Dumbbell push jerk"]
+    },
+    {
+      "name": "Split Jerk",
+      "description": "The most stable overhead receiving position using a split stance.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["shoulders", "legs", "core", "triceps"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "From front rack, perform dip and drive as in push jerk",
+        "Split legs front and back while pressing under bar",
+        "Receive bar overhead in split stance: front shin vertical, back knee slightly bent",
+        "Step front foot back halfway, then back foot forward to finish standing"
+      ],
+      "tips": [
+        "Most stable position for maximal loads",
+        "Requires practice to find optimal split distance",
+        "Olympic standard for clean and jerk"
+      ],
+      "common_mistakes": [
+        "Split too narrow or too wide",
+        "Front knee tracking past toes",
+        "Not achieving full lockout before recovery"
+      ],
+      "alternatives": ["Push jerk", "Power jerk", "Dumbbell split jerk"]
+    },
+    {
+      "name": "Overhead Squat",
+      "description": "Full depth squat with barbell held in overhead locked position throughout.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "shoulders", "core", "back"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Start with barbell overhead in snatch grip, arms fully locked",
+        "Initiate squat by pushing hips back and bending knees",
+        "Descend to full depth keeping arms locked and bar over mid-foot",
+        "Drive through heels to stand maintaining overhead position"
+      ],
+      "tips": [
+        "Tests and builds mobility in ankles, hips, thoracic spine, shoulders",
+        "Essential for snatch receiving position",
+        "Bar should be slightly behind head when viewed from side"
+      ],
+      "common_mistakes": [
+        "Bar drifting forward",
+        "Heels lifting off ground",
+        "Insufficient depth"
+      ],
+      "alternatives": ["Overhead squat with PVC (scaled)", "Snatch balance", "Front squat"]
+    },
+    {
+      "name": "Snatch Balance",
+      "description": "Dynamic movement building speed and confidence in overhead squat receiving position.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "shoulders", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start with bar on back in snatch grip",
+        "Small dip then drive bar upward off shoulders",
+        "Press yourself under bar into full overhead squat",
+        "Receive bar overhead with locked arms in bottom of squat, stand up"
+      ],
+      "tips": [
+        "Builds confidence and speed for snatch receiving",
+        "Bar should barely travel upward - you travel down",
+        "Fast feet and aggressive drop crucial"
+      ],
+      "common_mistakes": [
+        "Pressing bar too high instead of pressing under",
+        "Slow transition to bottom position",
+        "Not achieving full depth"
+      ],
+      "alternatives": ["Overhead squat", "Drop snatch", "Heaving snatch balance"]
+    },
+    {
+      "name": "Back Squat",
+      "description": "The fundamental leg strengthening movement with bar on back of shoulders.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core", "back"],
+      "equipment_required": ["barbell", "squat rack"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Set bar on upper back/traps, hands outside shoulders, feet shoulder-width",
+        "Unrack bar and step back, establish stance",
+        "Initiate squat by pushing hips back, then bending knees",
+        "Descend below parallel (hip crease below knee), drive through heels to stand"
+      ],
+      "tips": [
+        "King of leg exercises for strength building",
+        "Chest up and core braced throughout",
+        "Full range of motion critical for CrossFit"
+      ],
+      "common_mistakes": [
+        "Not achieving full depth below parallel",
+        "Knees caving inward",
+        "Heels lifting off ground"
+      ],
+      "alternatives": ["Front squat", "Box squat", "Goblet squat (scaled)"]
+    },
+    {
+      "name": "Front Squat",
+      "description": "Squat with barbell in front rack position emphasizing core and upper back.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["quadriceps", "core", "upper back", "glutes"],
+      "equipment_required": ["barbell", "squat rack"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Set bar in front rack on shoulders, elbows high, hands just outside shoulders",
+        "Feet shoulder-width, toes slightly out",
+        "Squat down keeping torso as vertical as possible, elbows high",
+        "Descend below parallel, drive through heels maintaining upright torso"
+      ],
+      "tips": [
+        "More quad and core emphasis than back squat",
+        "Essential for clean receiving position",
+        "Requires wrist and shoulder mobility for proper rack"
+      ],
+      "common_mistakes": [
+        "Elbows dropping causing bar to roll forward",
+        "Forward torso lean",
+        "Not achieving full depth"
+      ],
+      "alternatives": ["Back squat", "Goblet squat", "Zercher squat"]
+    },
+    {
+      "name": "Deadlift",
+      "description": "The fundamental hip hinge movement lifting barbell from floor to standing.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["hamstrings", "glutes", "back", "traps", "grip"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Approach bar with mid-foot under bar, feet hip-width apart",
+        "Grip bar just outside legs, drop hips, chest up, shoulders over bar",
+        "Engage lats pulling slack out of bar, take deep breath and brace core",
+        "Drive through floor extending hips and knees simultaneously to stand fully"
+      ],
+      "tips": [
+        "Foundation of all pulling movements",
+        "Bar should travel in straight vertical line",
+        "Most weight can be lifted with this movement"
+      ],
+      "common_mistakes": [
+        "Rounding lower back under load",
+        "Bar drifting away from body",
+        "Hips rising faster than shoulders"
+      ],
+      "alternatives": ["Romanian deadlift", "Sumo deadlift", "Trap bar deadlift"]
+    },
+    {
+      "name": "Bench Press",
+      "description": "Fundamental horizontal pressing movement lying on bench.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["chest", "triceps", "shoulders"],
+      "equipment_required": ["barbell", "bench"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Lie on bench with eyes under bar, feet flat on floor",
+        "Grip bar slightly wider than shoulder-width, unrack with straight arms",
+        "Lower bar to chest with controlled descent",
+        "Press bar back up to full lockout"
+      ],
+      "tips": [
+        "Retract shoulder blades and maintain throughout",
+        "Bar should touch chest at nipple line",
+        "Less emphasized in CrossFit than overhead pressing"
+      ],
+      "common_mistakes": [
+        "Bouncing bar off chest",
+        "Flaring elbows excessively",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Dumbbell bench press", "Floor press", "Push-ups"]
+    },
+    {
+      "name": "Kettlebell Swing (Russian)",
+      "description": "Hip-driven kettlebell swing to chest height emphasizing posterior chain power.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["glutes", "hamstrings", "core", "shoulders", "back"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand with feet shoulder-width, kettlebell on ground between feet",
+        "Hinge at hips, grip kettlebell with both hands",
+        "Hike bell back between legs, then explosively extend hips driving bell forward",
+        "Bell swings to chest height at peak of hip extension, arms remain straight throughout"
+      ],
+      "tips": [
+        "This is a HIP movement, not a squat or arm raise",
+        "Powerful hip snap generates all momentum",
+        "Better for heavy loading and strength than American swing"
+      ],
+      "common_mistakes": [
+        "Squatting instead of hinging",
+        "Pulling with arms instead of hip drive",
+        "Overextending back at top"
+      ],
+      "alternatives": ["American swing", "Single-arm swing", "Two-hand deadlift (scaled)"]
+    },
+    {
+      "name": "Kettlebell Swing (American)",
+      "description": "Hip-driven swing taking kettlebell fully overhead requiring shoulder mobility.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["glutes", "hamstrings", "shoulders", "core", "back"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Start same as Russian swing with hip hinge and kettlebell grip",
+        "Explosive hip extension driving bell forward and upward",
+        "Continue momentum bringing bell fully overhead to lockout",
+        "Control descent back through arc to hip hinge position"
+      ],
+      "tips": [
+        "Standard in CrossFit workouts for increased range of motion",
+        "Requires good shoulder mobility and overhead control",
+        "More work per rep but lighter loading than Russian"
+      ],
+      "common_mistakes": [
+        "Pressing bell overhead with arms instead of hip drive",
+        "Insufficient shoulder mobility causing arched back",
+        "Dropping bell too quickly on descent"
+      ],
+      "alternatives": ["Russian swing", "Kettlebell snatch", "Dumbbell swing"]
+    },
+    {
+      "name": "Kettlebell Snatch",
+      "description": "Explosive single-arm movement taking kettlebell from ground to overhead in one motion.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["shoulders", "glutes", "hamstrings", "core", "grip"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Start with kettlebell between feet, hinge and grip with one hand",
+        "Explosively extend hips driving bell upward",
+        "As bell rises, punch hand through rotating bell around forearm",
+        "Catch bell overhead with locked arm, then lower with control and switch arms"
+      ],
+      "tips": [
+        "Rotation around forearm prevents banging wrist",
+        "Builds unilateral power and shoulder stability",
+        "Can be done in high-rep conditioning sets"
+      ],
+      "common_mistakes": [
+        "Curling bell instead of punching through",
+        "Bell flipping over and banging forearm",
+        "Not achieving full overhead lockout"
+      ],
+      "alternatives": ["Kettlebell swing", "Dumbbell snatch", "Barbell snatch"]
+    },
+    {
+      "name": "Kettlebell Clean",
+      "description": "Explosive movement bringing kettlebell from ground to rack position at shoulder.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "back", "shoulders", "core"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start with kettlebell between feet, hinge and grip with one hand",
+        "Drive hips forward explosively as in swing",
+        "As bell rises, pull elbow back and rotate hand inserting it into handle",
+        "Receive bell in rack position at shoulder, bell resting on forearm"
+      ],
+      "tips": [
+        "Bell should land softly in rack position, not bang",
+        "Gateway to kettlebell clean and jerk or thruster",
+        "Keep elbow tight to ribs in rack position"
+      ],
+      "common_mistakes": [
+        "Banging bell onto forearm in rack",
+        "Curling bell with bicep",
+        "Not achieving full hip extension"
+      ],
+      "alternatives": ["Kettlebell swing", "Barbell clean", "Dumbbell clean"]
+    },
+    {
+      "name": "Turkish Get-up",
+      "description": "Complex full-body movement transitioning from lying to standing with kettlebell overhead.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "shoulders", "core", "stability"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Lie on back, press kettlebell overhead with right arm, bend right knee",
+        "Roll to left elbow then post to left hand, maintaining overhead lockout",
+        "Bridge hips up, sweep left leg through to half-kneeling position",
+        "Stand up keeping bell overhead, reverse entire sequence to return to lying"
+      ],
+      "tips": [
+        "Keep eyes on kettlebell throughout entire movement",
+        "Builds shoulder stability and total body control",
+        "Master with no weight before loading"
+      ],
+      "common_mistakes": [
+        "Losing overhead lockout during transitions",
+        "Not watching bell throughout",
+        "Rushing through positions"
+      ],
+      "alternatives": ["Half get-up", "Windmill", "Overhead squat"]
+    },
+    {
+      "name": "Goblet Squat",
+      "description": "Front-loaded squat holding kettlebell at chest promoting upright torso.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["quadriceps", "glutes", "core"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Hold kettlebell by horns at chest height, elbows tucked",
+        "Feet shoulder-width apart, toes slightly out",
+        "Squat down keeping torso vertical and elbows inside knees",
+        "Descend below parallel, drive through heels to stand"
+      ],
+      "tips": [
+        "Excellent for teaching squat mechanics",
+        "Front loading encourages upright torso",
+        "Great warm-up or scaled alternative to barbell squats"
+      ],
+      "common_mistakes": [
+        "Leaning forward excessively",
+        "Not achieving full depth",
+        "Knees caving inward"
+      ],
+      "alternatives": ["Front squat", "Back squat", "Air squat"]
+    },
+    {
+      "name": "Kettlebell Thruster",
+      "description": "Combination of goblet squat and overhead press in one fluid movement.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "shoulders", "core"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Hold kettlebell in goblet position at chest",
+        "Squat to full depth maintaining upright torso",
+        "Drive powerfully out of squat using leg drive to press bell overhead",
+        "Lower bell to chest and immediately descend into next rep"
+      ],
+      "tips": [
+        "One continuous movement with no pause between squat and press",
+        "Leg drive does most of work pressing bell overhead",
+        "Brutal for conditioning workouts"
+      ],
+      "common_mistakes": [
+        "Pausing at top of squat before press",
+        "Not using leg drive for press",
+        "Incomplete lockout overhead"
+      ],
+      "alternatives": ["Barbell thruster", "Dumbbell thruster", "Wall ball"]
+    },
+    {
+      "name": "Kipping Pull-up",
+      "description": "Dynamic pull-up using hip drive and kip swing to generate momentum.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "lats", "biceps", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Hang from bar, initiate kip by swinging from hollow to arch position",
+        "From arch, drive hips forward and push down on bar",
+        "This hip pop generates upward momentum to pull chin over bar",
+        "Push away from bar descending back to arch, return to hollow"
+      ],
+      "tips": [
+        "Requires strict pull-up strength foundation first",
+        "Much more efficient for high-rep workouts than strict",
+        "Kip rhythm is key - timing of hip drive critical"
+      ],
+      "common_mistakes": [
+        "All arms, no hip drive",
+        "Breaking rhythm between reps",
+        "Not achieving full range: chin over bar, full extension at bottom"
+      ],
+      "alternatives": ["Strict pull-up", "Jumping pull-up (scaled)", "Butterfly pull-up"]
+    },
+    {
+      "name": "Butterfly Pull-up",
+      "description": "The fastest pull-up variation using circular shoulder-initiated movement.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "lats", "shoulders", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "From hang, initiate shoulder-driven kip creating circular momentum",
+        "Pull to bar while pushing legs backward",
+        "Immediately push away from bar as chin clears",
+        "Swing legs forward maintaining continuous circular motion"
+      ],
+      "tips": [
+        "Fastest pull-up method for competition",
+        "Requires 15-20 kipping pull-ups before attempting",
+        "Shoulder-intensive - requires proper strength and mobility"
+      ],
+      "common_mistakes": [
+        "Attempting without kipping pull-up mastery",
+        "Breaking rhythm causing stall",
+        "Insufficient shoulder conditioning"
+      ],
+      "alternatives": ["Kipping pull-up", "Strict pull-up", "Ring rows (scaled)"]
+    },
+    {
+      "name": "Chest-to-Bar Pull-up",
+      "description": "Pull-up requiring chest to touch bar at top for greater range of motion.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "lats", "biceps", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Using kipping technique, generate hip drive",
+        "Pull aggressively bringing chest to bar (not just chin over)",
+        "Contact point typically at collarbone or upper chest",
+        "Push away and descend with control maintaining rhythm"
+      ],
+      "tips": [
+        "Requires more pulling strength than regular kipping pull-up",
+        "Essential prerequisite for bar muscle-ups",
+        "Can be done strict or kipping"
+      ],
+      "common_mistakes": [
+        "Only getting chin over bar, not chest contact",
+        "Excessive arch causing only lower chest to touch",
+        "Incomplete range at bottom"
+      ],
+      "alternatives": ["Regular pull-up", "Jumping chest-to-bar", "Ring rows"]
+    },
+    {
+      "name": "Bar Muscle-up",
+      "description": "Dynamic movement transitioning from pull-up to dip above the bar.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "chest", "triceps", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Generate aggressive kip and pull explosively to bar",
+        "At peak of pull, lean forward aggressively bringing hips to bar",
+        "Transition by rotating around bar bringing chest up and over",
+        "Press out to full support position with arms locked above bar"
+      ],
+      "tips": [
+        "Requires chest-to-bar pull-up and strong dip strength",
+        "Hip-to-bar contact helps with transition",
+        "False grip can assist but isn't required"
+      ],
+      "common_mistakes": [
+        "Not pulling high enough before transition",
+        "Chicken-winging (one arm at a time)",
+        "Insufficient forward lean"
+      ],
+      "alternatives": ["Jumping muscle-up", "Band-assisted", "Ring muscle-up"]
+    },
+    {
+      "name": "Ring Muscle-up",
+      "description": "Muscle-up performed on gymnastic rings requiring greater control than bar.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "chest", "triceps", "shoulders", "core"],
+      "equipment_required": ["rings"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "From false grip hang, generate kip and pull explosively",
+        "At top of pull, lean back slightly and pull rings to chest",
+        "Transition by rotating wrists over and pressing through dip",
+        "Finish in full support position with rings at hips, arms locked"
+      ],
+      "tips": [
+        "False grip (wrist over ring) makes transition easier",
+        "Turn rings out at top to stabilize",
+        "Often easier to learn than bar muscle-up"
+      ],
+      "common_mistakes": [
+        "Not getting high enough in pull phase",
+        "Losing false grip during transition",
+        "Chicken-winging one arm at a time"
+      ],
+      "alternatives": ["Bar muscle-up", "Jumping muscle-up", "Ring dips + pull-ups"]
+    },
+    {
+      "name": "Toes-to-Bar",
+      "description": "Hanging ab movement bringing toes to touch pull-up bar.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["core", "hip flexors", "lats", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Hang from bar with shoulder-width grip",
+        "Generate small kip from arch to hollow position",
+        "From arch, press down on bar while bringing legs up",
+        "Touch toes to bar between hands, lower with control maintaining rhythm"
+      ],
+      "tips": [
+        "Kipping rhythm allows higher reps than strict",
+        "Keep arms relatively straight throughout",
+        "Timing of lat press and leg lift is crucial"
+      ],
+      "common_mistakes": [
+        "Bending arms too much",
+        "Not achieving toe contact with bar",
+        "Swinging wildly without control"
+      ],
+      "alternatives": ["Knees-to-elbows", "Hanging knee raises", "V-ups (scaled)"]
+    },
+    {
+      "name": "Knees-to-Elbows",
+      "description": "Hanging ab movement bringing knees up to touch elbows.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["core", "hip flexors", "lats"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Hang from bar establishing slight kip",
+        "From arch position, press bar down while bringing knees up",
+        "Touch knees to elbows at top",
+        "Lower with control returning to arch"
+      ],
+      "tips": [
+        "Scaled version of toes-to-bar",
+        "Still requires core strength and coordination",
+        "Can be done strict or with kip"
+      ],
+      "common_mistakes": [
+        "Not achieving knee-to-elbow contact",
+        "Excessive swing",
+        "Arms bending too much"
+      ],
+      "alternatives": ["Toes-to-bar", "Hanging knee raises", "GHD sit-ups"]
+    },
+    {
+      "name": "Handstand Walk",
+      "description": "Walking in handstand position requiring balance, strength, and coordination.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["shoulders", "core", "arms"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Kick up into freestanding handstand",
+        "Shift weight to one hand while stepping other hand forward",
+        "Continuously shift weight and step hands forward",
+        "Maintain tight core and stacked shoulders throughout"
+      ],
+      "tips": [
+        "Master freestanding handstand hold first (30+ seconds)",
+        "Look at hands, not forward",
+        "Small frequent steps better than large steps"
+      ],
+      "common_mistakes": [
+        "Banana back (excessive arch)",
+        "Looking forward instead of at hands",
+        "Taking steps too large causing instability"
+      ],
+      "alternatives": ["Wall walk", "Handstand hold", "Pike push-ups (scaled)"]
+    },
+    {
+      "name": "Wall Balls",
+      "description": "Squat to overhead throw using medicine ball against wall target.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "shoulders", "core"],
+      "equipment_required": ["medicine ball", "wall"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Hold medicine ball at chest, stand facing wall 12 inches away",
+        "Squat to full depth with ball at chest",
+        "Drive explosively out of squat throwing ball to 10-foot target",
+        "Catch ball on descent and immediately drop into next squat"
+      ],
+      "tips": [
+        "One fluid movement - squat and throw are connected",
+        "Standard: 20lb/14lb ball to 10ft/9ft target",
+        "Use leg drive, not just arms to throw ball"
+      ],
+      "common_mistakes": [
+        "Pausing between squat and throw",
+        "Not achieving full depth squat",
+        "Missing target height"
+      ],
+      "alternatives": ["Thruster", "Lighter ball", "Lower target (scaled)"]
+    },
+    {
+      "name": "Box Jumps",
+      "description": "Explosive jump onto elevated box emphasizing hip extension and power.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "glutes", "calves"],
+      "equipment_required": ["box"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand facing box at arm's distance",
+        "Swing arms back while loading hips",
+        "Jump explosively driving through full hip extension",
+        "Land on box with full foot contact, stand to full hip extension, step down"
+      ],
+      "tips": [
+        "Standard heights: 24 inches men, 20 inches women",
+        "Full hip extension at top is standard",
+        "Step-down option safer for high reps"
+      ],
+      "common_mistakes": [
+        "Not standing fully on box (incomplete rep)",
+        "Jumping down instead of stepping (injury risk)",
+        "Landing with heels off box"
+      ],
+      "alternatives": ["Box step-ups", "Jump to target", "Lower box (scaled)"]
+    },
+    {
+      "name": "Double Unders",
+      "description": "Jump rope variation with two rope passes per jump.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["calves", "shoulders", "core", "cardiovascular"],
+      "equipment_required": ["jump rope"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Hold rope handles with relaxed grip, rope behind heels",
+        "Jump slightly higher than single under",
+        "Spin rope fast using wrists (not big arm circles)",
+        "Rope passes under feet twice before landing"
+      ],
+      "tips": [
+        "Stay on balls of feet, soft knees",
+        "Fast wrists, slow feet - not opposite",
+        "Speed rope essential for learning"
+      ],
+      "common_mistakes": [
+        "Jumping too high wasting energy",
+        "Using arms instead of wrists",
+        "Looking down at feet"
+      ],
+      "alternatives": ["Single unders", "Double under attempts", "Penguin taps (scaled)"]
+    },
+    {
+      "name": "Rope Climbs",
+      "description": "Climbing rope from ground to specified height using legs and arms.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["back", "biceps", "grip", "legs", "core"],
+      "equipment_required": ["climbing rope"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Jump and grab rope high, wrap rope around one leg and step on it with other foot",
+        "Stand up on rope using legs while reaching higher with arms",
+        "Rewrap rope with legs and repeat reach-stand sequence",
+        "Touch target height (typically 15 feet), descend with control"
+      ],
+      "tips": [
+        "Legs do most of work - arms just reach and hold",
+        "Multiple foot wrap techniques - find what works for you",
+        "Descend controlled to protect hands and shoulders"
+      ],
+      "common_mistakes": [
+        "All arms, not using legs",
+        "Sliding down too fast causing rope burn",
+        "Not touching target at top"
+      ],
+      "alternatives": ["Rope pull-ups lying", "Towel pull-ups", "Jumping rope touches (scaled)"]
+    },
+    {
+      "name": "Assault Bike",
+      "description": "Fan bike providing full-body cardiovascular conditioning.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["cardiovascular", "legs", "arms", "core"],
+      "equipment_required": ["assault bike"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Sit on bike with feet on pedals, hands on handles",
+        "Push and pull handles while pedaling simultaneously",
+        "Maintain steady breathing and sustainable pace for longer efforts",
+        "For sprints, go all-out effort coordinating arms and legs"
+      ],
+      "tips": [
+        "Measured in calories or distance",
+        "Harder you work, more resistance it provides",
+        "Notorious for being brutal in workouts"
+      ],
+      "common_mistakes": [
+        "Starting too fast on longer intervals",
+        "Not using arms effectively",
+        "Poor breathing rhythm"
+      ],
+      "alternatives": ["Rowing machine", "Running", "Ski erg"]
+    },
+    {
+      "name": "Rowing (Erg)",
+      "description": "Full-body cardiovascular exercise on rowing machine.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["cardiovascular", "legs", "back", "core", "arms"],
+      "equipment_required": ["rowing machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Sit on rower with feet strapped in, grab handle with overhand grip",
+        "Start with knees bent, arms straight, shoulders forward of hips",
+        "Drive with legs first, then lean back, finally pull handle to chest",
+        "Reverse order: extend arms, lean forward, bend knees to return"
+      ],
+      "tips": [
+        "Legs-back-arms on drive, arms-back-legs on recovery",
+        "Power comes from legs (60%), not arms",
+        "Measured in meters, calories, or time"
+      ],
+      "common_mistakes": [
+        "Pulling with arms first instead of driving legs",
+        "Rushing the recovery phase",
+        "Overreaching at catch causing back rounding"
+      ],
+      "alternatives": ["Assault bike", "Ski erg", "Running"]
+    },
+    {
+      "name": "Sled Push/Pull",
+      "description": "Pushing or pulling weighted sled for strength and conditioning.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["legs", "core", "shoulders", "back", "cardiovascular"],
+      "equipment_required": ["sled", "weights"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "For push: hands on sled posts, lean forward, drive through legs with powerful strides",
+        "For pull: attach rope/strap, lean back and pull hand-over-hand walking backward",
+        "Maintain strong core and continuous movement",
+        "Complete specified distance"
+      ],
+      "tips": [
+        "Low sled position = more leg emphasis",
+        "Keep head up and core braced",
+        "Great for building work capacity without eccentric damage"
+      ],
+      "common_mistakes": [
+        "Not loading sled appropriately for workout intent",
+        "Rounding back on push",
+        "Taking too long between pulls losing intensity"
+      ],
+      "alternatives": ["Prowler push", "Plate pushes", "Loaded carries"]
+    },
+    {
+      "name": "Farmers Carry",
+      "description": "Walking while carrying heavy weight in each hand.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["grip", "traps", "core", "legs", "shoulders"],
+      "equipment_required": ["dumbbells", "kettlebells"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Pick up heavy dumbbell or kettlebell in each hand",
+        "Stand tall with shoulders back, core braced",
+        "Walk with controlled strides for specified distance or time",
+        "Maintain upright posture throughout, don't let shoulders shrug up"
+      ],
+      "tips": [
+        "Builds tremendous grip strength and core stability",
+        "Go heavy - should be challenging to maintain posture",
+        "Great finisher for workouts"
+      ],
+      "common_mistakes": [
+        "Using too light weight",
+        "Leaning to one side",
+        "Shrugging shoulders toward ears"
+      ],
+      "alternatives": ["Single-arm carry", "Overhead carry", "Sandbag carry"]
+    },
+    {
+      "name": "Sandbag Carry",
+      "description": "Carrying heavy sandbag in bear hug position for distance or time.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["core", "legs", "back", "arms", "grip"],
+      "equipment_required": ["sandbag"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Pick up sandbag from ground using deadlift mechanics",
+        "Bring to chest/shoulder position in bear hug",
+        "Walk for specified distance maintaining upright posture",
+        "Set down with control"
+      ],
+      "tips": [
+        "Sandbag shifts making it unstable - great for core",
+        "Can carry in various positions: bear hug, shoulder, overhead",
+        "Functional real-world strength builder"
+      ],
+      "common_mistakes": [
+        "Rounding back when picking up",
+        "Not bracing core causing excessive lean",
+        "Dropping sandbag unsafely"
+      ],
+      "alternatives": ["Farmers carry", "D-ball carry", "Plate carry"]
+    },
+    {
+      "name": "Burpees",
+      "description": "Full-body conditioning movement: chest to ground, jump, and clap overhead.",
+      "exercise_type": "crossfit",
+      "muscle_groups": ["full body", "cardiovascular", "chest", "legs"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "From standing, drop hands to ground and jump or step feet back to plank",
+        "Lower chest and thighs to ground completely",
+        "Push up to plank, jump or step feet to hands",
+        "Jump up and clap hands overhead with full hip extension"
+      ],
+      "tips": [
+        "CrossFit standard: chest to ground, full hip extension with clap",
+        "Find rhythm that's sustainable for high reps",
+        "Variations: bar-facing burpees, burpee box jump-overs"
+      ],
+      "common_mistakes": [
+        "Not touching chest to ground",
+        "Not achieving full hip extension at top",
+        "Going too fast too early causing burnout"
+      ],
+      "alternatives": ["Step-back burpees", "Elevated burpees", "Burpee to target"]
+    }
+  ]
+}

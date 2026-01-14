@@ -1,0 +1,1020 @@
+{
+  "category": "hiit_cardio",
+  "exercises": [
+    {
+      "name": "Burpees (Standard)",
+      "description": "A full-body explosive exercise combining a squat, plank, push-up, and jump in one continuous movement.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["full body", "chest", "core", "legs", "shoulders"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand with feet shoulder-width apart",
+        "Lower into squat and place hands on floor in front of you",
+        "Jump feet back into plank position and perform a push-up (optional for beginners)",
+        "Jump feet back toward hands and explosively jump up reaching arms overhead",
+        "Land softly and immediately go into next rep"
+      ],
+      "tips": [
+        "Land softly with knees bent to reduce joint impact",
+        "Keep core engaged throughout entire movement",
+        "Focus on quality over speed when learning"
+      ],
+      "common_mistakes": [
+        "Not maintaining straight body during plank phase",
+        "Landing with locked knees",
+        "Rushing through movement sacrificing form"
+      ],
+      "alternatives": ["Modified Burpees", "Squat Thrusts", "Mountain Climbers"]
+    },
+    {
+      "name": "Burpees (Modified)",
+      "description": "A lower-impact burpee variation that steps back instead of jumping, making it more accessible for beginners.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["full body", "core", "legs", "chest"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Stand with feet hip-width apart",
+        "Squat down and place hands on floor",
+        "Step one foot back at a time into plank position",
+        "Step feet forward one at a time back to squat",
+        "Stand up or add small jump if comfortable"
+      ],
+      "tips": [
+        "Perfect for those new to HIIT or with joint concerns",
+        "Focus on maintaining plank position",
+        "Gradually progress to full burpees as strength improves"
+      ],
+      "common_mistakes": [
+        "Sagging hips in plank position",
+        "Moving too quickly without control",
+        "Not engaging core throughout"
+      ],
+      "alternatives": ["Squat Thrusts", "Step-ups", "Mountain Climbers"]
+    },
+    {
+      "name": "Mountain Climbers",
+      "description": "A dynamic core and cardio exercise alternating knees toward chest from plank position.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["core", "shoulders", "hip flexors", "legs"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Start in high plank position with hands under shoulders",
+        "Keep body in straight line from head to heels",
+        "Quickly drive right knee toward chest while keeping core tight",
+        "Immediately switch legs bringing left knee forward as right extends back",
+        "Continue alternating legs rapidly as if running in place"
+      ],
+      "tips": [
+        "Keep hips level and in line with body, not piking up",
+        "Maintain stable upper body throughout",
+        "Start slower to master form then increase speed"
+      ],
+      "common_mistakes": [
+        "Lifting hips too high",
+        "Letting shoulders drift forward past wrists",
+        "Not driving knees far enough forward"
+      ],
+      "alternatives": ["Burpees", "High Knees", "Plank Jacks"]
+    },
+    {
+      "name": "Jump Squats",
+      "description": "An explosive lower body plyometric exercise adding a jump to the traditional squat.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Stand with feet shoulder-width apart",
+        "Lower into squat with thighs parallel to ground",
+        "Explosively jump up driving through heels and extending hips",
+        "Reach arms overhead during jump",
+        "Land softly with knees bent absorbing impact and immediately lower into next squat"
+      ],
+      "tips": [
+        "Land with soft knees to protect joints",
+        "Focus on explosive upward movement",
+        "Keep chest up throughout movement"
+      ],
+      "common_mistakes": [
+        "Landing with locked or straight knees",
+        "Not descending deep enough in squat",
+        "Allowing knees to cave inward on landing"
+      ],
+      "alternatives": ["Regular Squats", "Squat Thrusts", "Box Jumps"]
+    },
+    {
+      "name": "Jumping Lunges",
+      "description": "A plyometric lunge variation that explosively switches legs mid-air.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Start in lunge position with both knees at 90 degrees",
+        "Explosively jump up switching legs mid-air",
+        "Land softly in lunge position with opposite leg forward",
+        "Immediately jump again to continue alternating",
+        "Keep torso upright and core engaged throughout"
+      ],
+      "tips": [
+        "Focus on controlled landings before increasing speed",
+        "Keep front knee aligned with ankle",
+        "Use arm swing to help with momentum and balance"
+      ],
+      "common_mistakes": [
+        "Landing with poor knee alignment",
+        "Not achieving 90-degree angles in lunge",
+        "Leaning too far forward"
+      ],
+      "alternatives": ["Reverse Lunges", "Jump Squats", "High Knees"]
+    },
+    {
+      "name": "High Knees",
+      "description": "A high-intensity running-in-place exercise driving knees up toward chest.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["hip flexors", "quadriceps", "calves", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Stand with feet hip-width apart",
+        "Drive right knee up toward chest to hip level",
+        "Quickly switch bringing left knee up as right foot lands",
+        "Pump arms in running motion",
+        "Continue alternating at rapid pace maintaining upright posture"
+      ],
+      "tips": [
+        "Land on balls of feet for quick transitions",
+        "Keep core engaged and chest up",
+        "Aim to bring knees to hip height or higher"
+      ],
+      "common_mistakes": [
+        "Leaning back instead of staying upright",
+        "Not lifting knees high enough",
+        "Landing heavily on heels"
+      ],
+      "alternatives": ["Butt Kicks", "Mountain Climbers", "Jumping Jacks"]
+    },
+    {
+      "name": "Tuck Jumps",
+      "description": "An advanced plyometric jump bringing knees toward chest at the peak.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["quadriceps", "glutes", "core", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Stand with feet shoulder-width apart",
+        "Bend knees slightly and swing arms back",
+        "Explosively jump up pulling knees toward chest",
+        "Quickly extend legs before landing",
+        "Land softly with bent knees and immediately repeat"
+      ],
+      "tips": [
+        "Focus on maximal height in jump",
+        "Pull knees up rather than bending forward",
+        "Land with soft knees to absorb impact"
+      ],
+      "common_mistakes": [
+        "Landing with straight legs",
+        "Bending at waist instead of tucking knees",
+        "Not allowing adequate recovery between jumps"
+      ],
+      "alternatives": ["Jump Squats", "Box Jumps", "Star Jumps"]
+    },
+    {
+      "name": "Plyo Push-ups",
+      "description": "An explosive push-up variation where hands leave the ground during the upward phase.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["chest", "triceps", "shoulders", "core"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start in push-up position with hands slightly wider than shoulders",
+        "Lower chest toward ground rapidly with control",
+        "Explosively push up with enough force that hands leave ground",
+        "Land softly with hands in push-up position and immediately lower into next rep",
+        "Maintain tight core throughout movement"
+      ],
+      "tips": [
+        "Master regular push-ups before attempting plyometric version",
+        "Focus on explosive upward force",
+        "Advanced variation includes clapping hands while airborne"
+      ],
+      "common_mistakes": [
+        "Sagging hips during movement",
+        "Not achieving enough height to clear hands",
+        "Landing with locked elbows"
+      ],
+      "alternatives": ["Regular Push-ups", "Explosive Push-ups", "Medicine Ball Push-ups"]
+    },
+    {
+      "name": "Star Jumps",
+      "description": "An explosive full-body jump forming a star shape at the peak with arms and legs extended.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["full body", "legs", "core", "shoulders"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start in slight squat position with feet together",
+        "Explosively jump up extending arms and legs out to form star shape",
+        "Reach maximum extension at peak of jump",
+        "Bring arms and legs back together before landing",
+        "Land softly with bent knees and repeat"
+      ],
+      "tips": [
+        "Focus on full body extension at peak",
+        "Land with control absorbing impact through legs",
+        "Maintain rhythm for continuous reps"
+      ],
+      "common_mistakes": [
+        "Not fully extending limbs",
+        "Landing with locked knees",
+        "Poor timing of limb extension"
+      ],
+      "alternatives": ["Jumping Jacks", "Tuck Jumps", "Jump Squats"]
+    },
+    {
+      "name": "Squat Thrusts",
+      "description": "A burpee without the push-up or jump, focusing on the plank transition.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["core", "legs", "shoulders", "hip flexors"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Stand with feet hip-width apart",
+        "Squat down and place hands on floor",
+        "Jump or step feet back to plank position",
+        "Immediately jump or step feet back to hands",
+        "Return to standing and repeat"
+      ],
+      "tips": [
+        "Keep core tight during plank position",
+        "Can be performed at high speed for cardio",
+        "Great progression toward full burpees"
+      ],
+      "common_mistakes": [
+        "Letting hips sag in plank",
+        "Not fully extending to plank",
+        "Moving without control"
+      ],
+      "alternatives": ["Burpees", "Mountain Climbers", "Plank Jacks"]
+    },
+    {
+      "name": "Speed Skaters",
+      "description": "A lateral plyometric exercise mimicking a speed skating motion.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["glutes", "quadriceps", "hamstrings", "core"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Start standing on right leg with left leg behind you",
+        "Jump laterally to left landing on left foot",
+        "Bring right leg behind left in skating motion",
+        "Immediately jump back to right side",
+        "Continue alternating sides with fluid skating motion"
+      ],
+      "tips": [
+        "Focus on lateral power and distance",
+        "Keep chest up and core engaged",
+        "Land with soft knee on each jump"
+      ],
+      "common_mistakes": [
+        "Not jumping far enough laterally",
+        "Landing with locked knee",
+        "Not bringing back leg behind for balance"
+      ],
+      "alternatives": ["Lateral Lunges", "Jumping Lunges", "High Knees"]
+    },
+    {
+      "name": "Kettlebell Swings",
+      "description": "A powerful hip-hinge movement swinging kettlebell from between legs to shoulder height.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["glutes", "hamstrings", "core", "shoulders", "back"],
+      "equipment_required": ["kettlebell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand with feet shoulder-width apart, kettlebell on ground in front",
+        "Hinge at hips and grip kettlebell with both hands",
+        "Hike kettlebell back between legs with straight arms",
+        "Explosively drive hips forward squeezing glutes to swing kettlebell to shoulder height",
+        "Let kettlebell swing back down between legs and repeat"
+      ],
+      "tips": [
+        "Power comes from hip drive, not arms",
+        "Keep spine neutral throughout movement",
+        "Arms should be like ropes connecting you to kettlebell"
+      ],
+      "common_mistakes": [
+        "Using arms to lift instead of hip drive",
+        "Rounding the back",
+        "Squatting instead of hip hinging"
+      ],
+      "alternatives": ["Deadlifts", "Hip Thrusts", "Medicine Ball Slams"]
+    },
+    {
+      "name": "Box Jumps",
+      "description": "A plyometric exercise jumping onto an elevated platform.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": ["plyo box or platform"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand facing box with feet shoulder-width apart",
+        "Bend knees and swing arms back",
+        "Explosively jump onto box landing with soft knees and full feet on platform",
+        "Stand fully upright on box",
+        "Step down carefully one foot at a time and repeat"
+      ],
+      "tips": [
+        "Start with lower box height and progress gradually",
+        "Land softly with knees bent to reduce impact",
+        "Step down rather than jumping down to protect joints"
+      ],
+      "common_mistakes": [
+        "Jumping down from box (increases injury risk)",
+        "Landing on edge of box with heels hanging off",
+        "Not achieving full hip extension at top"
+      ],
+      "alternatives": ["Jump Squats", "Step-ups", "Tuck Jumps"]
+    },
+    {
+      "name": "Battle Rope Slams",
+      "description": "An explosive full-body exercise slamming both ropes to the ground simultaneously.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["shoulders", "core", "back", "legs", "arms"],
+      "equipment_required": ["battle ropes"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Stand with feet shoulder-width apart holding rope ends",
+        "Get into quarter squat position with core braced",
+        "Raise both ropes overhead",
+        "Forcefully slam ropes down to ground using entire body",
+        "Immediately lift ropes and repeat with explosive power"
+      ],
+      "tips": [
+        "Use legs and core, not just arms",
+        "Focus on explosive power with each slam",
+        "Maintain athletic stance throughout"
+      ],
+      "common_mistakes": [
+        "Using only arms instead of full body",
+        "Standing too upright",
+        "Not slamming with full force"
+      ],
+      "alternatives": ["Battle Rope Waves", "Medicine Ball Slams", "Kettlebell Swings"]
+    },
+    {
+      "name": "Battle Rope Waves",
+      "description": "An alternating arm movement creating continuous waves through the ropes.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["shoulders", "arms", "core", "back"],
+      "equipment_required": ["battle ropes"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Hold rope ends with overhand grip, thumbs on rope",
+        "Stand in quarter squat with feet shoulder-width apart",
+        "Rapidly alternate raising and lowering each arm creating waves",
+        "Keep elbows tucked in close to body",
+        "Maintain consistent rhythm and wave height"
+      ],
+      "tips": [
+        "Focus on endurance and consistency over power",
+        "Keep core engaged and back neutral",
+        "Start with 30-second intervals"
+      ],
+      "common_mistakes": [
+        "Letting elbows flare out to sides",
+        "Standing too upright",
+        "Creating uneven wave patterns"
+      ],
+      "alternatives": ["Battle Rope Slams", "Shadow Boxing", "Jumping Jacks"]
+    },
+    {
+      "name": "Medicine Ball Slams",
+      "description": "An explosive overhead throw slamming medicine ball into ground.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["core", "shoulders", "back", "legs"],
+      "equipment_required": ["medicine ball"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Stand with feet shoulder-width apart holding medicine ball",
+        "Raise ball overhead extending body upward",
+        "Forcefully slam ball to ground in front of feet using entire body",
+        "Catch ball on bounce or pick up and immediately repeat",
+        "Engage core throughout movement"
+      ],
+      "tips": [
+        "Use non-bounce ball for maximum force absorption",
+        "Drive through legs and core for power",
+        "Keep back straight when picking up ball"
+      ],
+      "common_mistakes": [
+        "Using only arms instead of full body",
+        "Rounding back when picking up ball",
+        "Not slamming with full force"
+      ],
+      "alternatives": ["Battle Rope Slams", "Kettlebell Swings", "Burpees"]
+    },
+    {
+      "name": "Thrusters",
+      "description": "A combination of front squat and overhead press performed as one fluid movement.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["quadriceps", "glutes", "shoulders", "core"],
+      "equipment_required": ["dumbbells or barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Hold dumbbells at shoulder height or barbell in front rack position",
+        "Perform full squat keeping chest up and elbows high",
+        "Drive explosively through heels to stand",
+        "Use momentum from legs to press weight overhead to full extension",
+        "Lower weight to shoulders and immediately descend into next squat"
+      ],
+      "tips": [
+        "Use leg drive to help with overhead press",
+        "Keep core braced throughout",
+        "Move fluidly from squat to press without pausing"
+      ],
+      "common_mistakes": [
+        "Pausing between squat and press",
+        "Not squatting to full depth",
+        "Pressing with arms only instead of using leg momentum"
+      ],
+      "alternatives": ["Squat to Press", "Burpees", "Kettlebell Swings"]
+    },
+    {
+      "name": "Man Makers",
+      "description": "A complex movement combining burpee, push-up, and dumbbell row.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["full body", "chest", "back", "core", "legs"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Stand holding dumbbells at sides",
+        "Place dumbbells on ground and jump feet back to plank on dumbbells",
+        "Perform push-up then row one dumbbell to hip",
+        "Row other dumbbell to hip",
+        "Jump feet to hands, stand and perform dumbbell clean to shoulders, then press overhead"
+      ],
+      "tips": [
+        "Keep core tight throughout entire movement",
+        "Use hexagonal dumbbells for stability",
+        "Master each component before combining"
+      ],
+      "common_mistakes": [
+        "Rushing through movement losing form",
+        "Not stabilizing during rows",
+        "Letting hips rotate during rows"
+      ],
+      "alternatives": ["Burpees", "Renegade Rows", "Thrusters"]
+    },
+    {
+      "name": "Devil Press",
+      "description": "A brutal full-body movement combining burpee with double dumbbell snatch.",
+      "exercise_type": "hiit",
+      "muscle_groups": ["full body", "shoulders", "back", "core", "legs"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Start with dumbbells on ground, perform burpee with hands on dumbbells",
+        "At top of burpee, explosively deadlift dumbbells",
+        "Continue momentum swinging dumbbells between legs",
+        "Drive hips forward and pull dumbbells overhead in one motion",
+        "Lower dumbbells and repeat"
+      ],
+      "tips": [
+        "Extremely demanding - use appropriate weight",
+        "Focus on hip drive for overhead movement",
+        "Breathe rhythmically throughout"
+      ],
+      "common_mistakes": [
+        "Using too much weight",
+        "Not using hip power for overhead movement",
+        "Breaking at knees too early"
+      ],
+      "alternatives": ["Man Makers", "Thrusters", "Burpees"]
+    },
+    {
+      "name": "Marching in Place",
+      "description": "A gentle low-impact cardio exercise lifting knees alternately while stationary.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["hip flexors", "core", "legs"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand tall with feet hip-width apart",
+        "Lift right knee to comfortable height while swinging left arm forward",
+        "Lower right foot and immediately lift left knee with right arm forward",
+        "Continue alternating in steady marching rhythm",
+        "Keep chest up and core engaged"
+      ],
+      "tips": [
+        "Perfect for warm-ups or active recovery",
+        "Can increase intensity by lifting knees higher",
+        "Maintain upright posture throughout"
+      ],
+      "common_mistakes": [
+        "Leaning back while marching",
+        "Not engaging core",
+        "Moving too quickly without control"
+      ],
+      "alternatives": ["Step Touches", "Standing Knee Raises", "Walking"]
+    },
+    {
+      "name": "Step Touches",
+      "description": "A side-to-side stepping movement that's gentle on joints.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "glutes", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Start with feet together",
+        "Step right foot out to side",
+        "Tap left foot beside right foot",
+        "Step left foot out to side",
+        "Tap right foot beside left and repeat"
+      ],
+      "tips": [
+        "Add arm movements to increase intensity",
+        "Keep steps wide for more challenge",
+        "Maintain steady rhythm"
+      ],
+      "common_mistakes": [
+        "Taking too small steps",
+        "Not maintaining upright posture",
+        "Moving too fast losing control"
+      ],
+      "alternatives": ["Marching in Place", "Side Steps", "Grapevine"]
+    },
+    {
+      "name": "Low Impact Jacks",
+      "description": "A modified jumping jack stepping side to side instead of jumping.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "shoulders", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Start with feet together and arms at sides",
+        "Step right foot out to side while raising arms overhead",
+        "Step right foot back to center while lowering arms",
+        "Step left foot out to side while raising arms overhead",
+        "Continue alternating sides"
+      ],
+      "tips": [
+        "Great alternative to jumping jacks for joint protection",
+        "Can increase pace as cardiovascular fitness improves",
+        "Keep movements smooth and controlled"
+      ],
+      "common_mistakes": [
+        "Not fully extending arms overhead",
+        "Taking too small steps",
+        "Holding breath instead of breathing rhythmically"
+      ],
+      "alternatives": ["Jumping Jacks", "Step Touches", "Marching in Place"]
+    },
+    {
+      "name": "Standing Knee Raises",
+      "description": "A controlled single-leg movement raising knee toward chest while standing.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["hip flexors", "core", "quads"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand tall with feet hip-width apart",
+        "Raise right knee toward chest to hip height",
+        "Lower right foot with control",
+        "Raise left knee toward chest",
+        "Continue alternating at controlled pace"
+      ],
+      "tips": [
+        "Focus on balance and control",
+        "Can hold onto support if needed",
+        "Engage core to maintain stability"
+      ],
+      "common_mistakes": [
+        "Leaning back excessively",
+        "Not lifting knee to adequate height",
+        "Moving too quickly losing balance"
+      ],
+      "alternatives": ["Marching in Place", "High Knees", "Step-ups"]
+    },
+    {
+      "name": "Boxer Shuffle",
+      "description": "A quick-footed side-to-side shuffling movement maintaining athletic stance.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "calves", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Stand in athletic stance with knees slightly bent",
+        "Shift weight to right foot while left foot taps ground",
+        "Quickly shift weight to left foot while right foot taps",
+        "Continue quick shuffling motion staying light on feet",
+        "Keep hands up in boxing guard position"
+      ],
+      "tips": [
+        "Stay on balls of feet",
+        "Keep knees soft and springy",
+        "Maintain rhythm and flow"
+      ],
+      "common_mistakes": [
+        "Shuffling flat-footed",
+        "Not maintaining athletic stance",
+        "Moving too slowly"
+      ],
+      "alternatives": ["Shadow Boxing", "Speed Skaters", "High Knees"]
+    },
+    {
+      "name": "Arm Circles with March",
+      "description": "Combining marching in place with large arm circles for full-body warm-up.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["shoulders", "core", "legs", "hip flexors"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Begin marching in place with controlled knee lifts",
+        "Extend arms out to sides at shoulder height",
+        "Make large forward circles with arms while continuing to march",
+        "After 15-20 seconds, reverse direction making backward circles",
+        "Maintain steady marching pace throughout"
+      ],
+      "tips": [
+        "Perfect warm-up exercise",
+        "Keep circles large and controlled",
+        "Coordinate breathing with movement"
+      ],
+      "common_mistakes": [
+        "Making circles too small",
+        "Stopping marching motion",
+        "Tensing shoulders"
+      ],
+      "alternatives": ["Marching in Place", "Jumping Jacks", "Step Touches"]
+    },
+    {
+      "name": "Side Steps",
+      "description": "A lateral stepping movement traveling side to side.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "glutes", "hip abductors"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Start with feet together",
+        "Step right foot out to side",
+        "Bring left foot to meet right",
+        "Continue stepping to right for several steps",
+        "Reverse direction stepping to left"
+      ],
+      "tips": [
+        "Keep knees slightly bent throughout",
+        "Stay low in athletic stance for more challenge",
+        "Can add arm movements for intensity"
+      ],
+      "common_mistakes": [
+        "Standing too upright",
+        "Taking tiny steps",
+        "Not maintaining consistent pace"
+      ],
+      "alternatives": ["Step Touches", "Grapevine", "Speed Skaters"]
+    },
+    {
+      "name": "Grapevine",
+      "description": "A classic aerobic step pattern crossing feet while traveling laterally.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "glutes", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Step right foot to right side",
+        "Cross left foot behind right",
+        "Step right foot to right again",
+        "Tap left foot beside right",
+        "Reverse pattern traveling to left"
+      ],
+      "tips": [
+        "Start slowly to master pattern",
+        "Add arm movements once comfortable",
+        "Keep movements fluid and rhythmic"
+      ],
+      "common_mistakes": [
+        "Not crossing foot behind",
+        "Moving too quickly before mastering pattern",
+        "Looking down at feet"
+      ],
+      "alternatives": ["Side Steps", "Step Touches", "Jumping Jacks"]
+    },
+    {
+      "name": "Jumping Jacks",
+      "description": "A classic total-body cardio exercise jumping feet out while raising arms overhead.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "shoulders", "core", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Start standing with feet together and arms at sides",
+        "Jump feet out to shoulder-width while raising arms overhead",
+        "Jump feet back together while lowering arms to sides",
+        "Maintain steady rhythm",
+        "Land softly on balls of feet"
+      ],
+      "tips": [
+        "Keep movements controlled and rhythmic",
+        "Land softly to protect joints",
+        "Engage core throughout"
+      ],
+      "common_mistakes": [
+        "Landing heavily on heels",
+        "Not fully extending arms overhead",
+        "Moving too fast losing form"
+      ],
+      "alternatives": ["Low Impact Jacks", "Star Jumps", "High Knees"]
+    },
+    {
+      "name": "Shadow Boxing",
+      "description": "Throwing punches and defensive moves against imaginary opponent for cardio conditioning.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["shoulders", "arms", "core", "legs"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Stand in boxing stance with feet staggered and knees bent",
+        "Keep hands up protecting face",
+        "Throw various punches (jabs, crosses, hooks, uppercuts)",
+        "Move feet incorporating footwork and defensive moves",
+        "Maintain constant movement for duration"
+      ],
+      "tips": [
+        "Focus on form over speed initially",
+        "Engage core with every punch",
+        "Stay light on feet and keep moving"
+      ],
+      "common_mistakes": [
+        "Dropping hands down",
+        "Standing flat-footed",
+        "Overextending punches"
+      ],
+      "alternatives": ["Boxer Shuffle", "Battle Rope Waves", "High Knees"]
+    },
+    {
+      "name": "Jump Rope (Basic)",
+      "description": "A classic cardio exercise jumping over rotating rope.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["calves", "shoulders", "core", "forearms"],
+      "equipment_required": ["jump rope"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Hold rope handles with hands at hip level",
+        "Position rope behind feet",
+        "Swing rope overhead and jump as it approaches feet",
+        "Land softly on balls of feet with slight knee bend",
+        "Maintain steady rhythm rotating from wrists"
+      ],
+      "tips": [
+        "Jump only high enough to clear rope",
+        "Keep elbows close to body",
+        "Start with shorter intervals building endurance"
+      ],
+      "common_mistakes": [
+        "Jumping too high",
+        "Rotating from shoulders instead of wrists",
+        "Landing heavily on heels"
+      ],
+      "alternatives": ["High Knees", "Jumping Jacks", "Boxer Shuffle"]
+    },
+    {
+      "name": "Rowing Machine",
+      "description": "A full-body cardio machine mimicking rowing motion with sliding seat.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["back", "legs", "core", "arms", "shoulders"],
+      "equipment_required": ["rowing machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Sit on rower with feet strapped in and knees bent (catch position)",
+        "Lean forward slightly with arms extended gripping handle",
+        "Drive through legs first, then lean back, finally pull handle to lower ribs",
+        "Reverse the motion: extend arms, lean forward, bend knees",
+        "Maintain smooth rhythm in ratio legs-core-arms, arms-core-legs"
+      ],
+      "tips": [
+        "Power comes 60% from legs, 20% core, 20% arms",
+        "Keep wrists flat when pulling handle",
+        "Maintain steady breathing rhythm"
+      ],
+      "common_mistakes": [
+        "Pulling with arms first instead of driving with legs",
+        "Rounding back during movement",
+        "Bending knees before arms fully extend on recovery"
+      ],
+      "alternatives": ["Swimming", "Elliptical", "Stationary Bike"]
+    },
+    {
+      "name": "Stationary Bike",
+      "description": "A seated cardio machine providing low-impact cardiovascular exercise.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["quadriceps", "hamstrings", "glutes", "calves"],
+      "equipment_required": ["stationary bike"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Adjust seat height so knee has slight bend at bottom of pedal stroke",
+        "Place feet in pedals or toe cages",
+        "Start pedaling maintaining steady cadence",
+        "Adjust resistance to target desired intensity",
+        "Keep upper body relaxed with slight forward lean"
+      ],
+      "tips": [
+        "Maintain cadence between 80-100 RPM for moderate intensity",
+        "Keep core engaged for stability",
+        "Excellent low-impact cardio option"
+      ],
+      "common_mistakes": [
+        "Seat too high or too low",
+        "Pedaling with just toes instead of full foot",
+        "Hunching shoulders"
+      ],
+      "alternatives": ["Elliptical", "Rowing Machine", "Stair Climbing"]
+    },
+    {
+      "name": "Elliptical",
+      "description": "A low-impact cardio machine with gliding motion engaging upper and lower body.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["legs", "glutes", "arms", "core"],
+      "equipment_required": ["elliptical machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Step onto foot pedals and grip handles",
+        "Begin pushing and pulling handles while moving feet in elliptical motion",
+        "Maintain upright posture with core engaged",
+        "Adjust resistance and incline for desired intensity",
+        "Keep steady rhythm throughout workout"
+      ],
+      "tips": [
+        "Zero-impact on joints makes it excellent for recovery days",
+        "Push through heels to engage glutes more",
+        "Can reverse direction to target different muscles"
+      ],
+      "common_mistakes": [
+        "Leaning too heavily on handles",
+        "Moving only legs and not using arm motion",
+        "Going on toes instead of keeping feet flat"
+      ],
+      "alternatives": ["Stationary Bike", "Rowing Machine", "Stair Climbing"]
+    },
+    {
+      "name": "Stair Climbing",
+      "description": "Climbing stairs or using stair machine for lower body cardio workout.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": ["stairs or stair machine"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Step onto machine or approach stairs",
+        "Place full foot on each step",
+        "Drive through heel and midfoot to lift body",
+        "Maintain upright posture with light grip on rails for balance only",
+        "Keep steady climbing pace"
+      ],
+      "tips": [
+        "Don't lean heavily on rails - use for balance only",
+        "Take full steps placing entire foot on each stair",
+        "Excellent for building lower body strength and endurance"
+      ],
+      "common_mistakes": [
+        "Leaning forward excessively on rails",
+        "Only using toes on steps",
+        "Taking too small steps"
+      ],
+      "alternatives": ["Step-ups", "Walking Lunges", "Stationary Bike"]
+    },
+    {
+      "name": "Swimming Strokes (Air)",
+      "description": "Mimicking swimming motions on land for cardio and shoulder conditioning.",
+      "exercise_type": "cardio",
+      "muscle_groups": ["shoulders", "back", "core", "arms"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Stand with feet shoulder-width apart and slight forward lean",
+        "Perform freestyle arm rotations alternating arms in swimming motion",
+        "Can also perform breaststroke by extending arms forward then pulling back",
+        "Add marching or small jumps for lower body involvement",
+        "Maintain fluid continuous movement"
+      ],
+      "tips": [
+        "Focus on full range of motion in shoulders",
+        "Keep core engaged throughout",
+        "Great active recovery or warm-up exercise"
+      ],
+      "common_mistakes": [
+        "Not extending arms fully",
+        "Moving too slowly without cardio benefit",
+        "Tensing shoulders"
+      ],
+      "alternatives": ["Arm Circles with March", "Shadow Boxing", "Battle Rope Waves"]
+    }
+  ]
+}

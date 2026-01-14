@@ -1,0 +1,1137 @@
+{
+  "category": "yoga",
+  "exercises": [
+    {
+      "name": "Mountain Pose (Tadasana)",
+      "description": "The foundational standing pose that establishes proper alignment and creates a blueprint for all other yoga poses.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["core", "legs", "posture muscles"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Stand with feet hip-width apart or big toes touching, distributing weight evenly across both feet",
+        "Engage thighs, lift kneecaps, and rotate inner thighs slightly inward",
+        "Lengthen tailbone toward floor while lifting crown of head toward ceiling",
+        "Roll shoulders back and down, palms facing forward or at sides",
+        "Hold for 5-10 breaths, maintaining steady gaze and quiet breath"
+      ],
+      "tips": [
+        "Ground through all four corners of each foot",
+        "Imagine a string pulling the crown of your head upward",
+        "This pose teaches the foundation for proper alignment"
+      ],
+      "common_mistakes": [
+        "Locking knees or hyperextending them",
+        "Leaning weight into heels or toes instead of center",
+        "Tensing shoulders up toward ears"
+      ],
+      "alternatives": ["Wall-assisted Mountain", "Seated Mountain"]
+    },
+    {
+      "name": "Warrior I (Virabhadrasana I)",
+      "description": "A powerful standing pose that builds strength in the legs while opening the chest and hips.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["quadriceps", "glutes", "hip flexors", "shoulders", "core"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "From standing, step right foot forward 3-4 feet, turn left foot out 45 degrees",
+        "Square hips forward keeping both hip points facing front of mat",
+        "Bend right knee to 90 degrees, keeping knee over ankle",
+        "Raise arms overhead with palms facing each other or touching",
+        "Hold for 5-10 breaths, maintaining upright torso and lifted chest"
+      ],
+      "tips": [
+        "Press firmly through outer edge of back foot",
+        "Keep front knee tracking over ankle, not collapsing inward",
+        "Lift from the sternum to avoid arching lower back"
+      ],
+      "common_mistakes": [
+        "Letting front knee collapse inward past big toe",
+        "Arching lower back excessively",
+        "Allowing hips to open to side instead of squaring forward"
+      ],
+      "alternatives": ["Warrior I with hands on hips", "High Lunge", "Chair Pose"]
+    },
+    {
+      "name": "Warrior II (Virabhadrasana II)",
+      "description": "A foundational standing pose that builds stamina and concentration while strengthening legs and opening hips.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["quadriceps", "glutes", "inner thighs", "shoulders", "core"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Stand with feet wide apart (4-5 feet), turn right foot out 90 degrees, left foot slightly in",
+        "Align right heel with left arch, open hips and torso to face side of mat",
+        "Bend right knee to 90 degrees, keeping thigh parallel to floor",
+        "Extend arms out to sides at shoulder height, gaze over front fingertips",
+        "Hold for 5-10 breaths, keeping torso stacked evenly over hips"
+      ],
+      "tips": [
+        "Stack shoulders directly over hips, not leaning forward or back",
+        "Press outer edge of back foot firmly into mat",
+        "Keep front knee aligned with ankle and second toe"
+      ],
+      "common_mistakes": [
+        "Leaning torso over front thigh",
+        "Front knee drifting inward past big toe",
+        "Shoulders hunching or arm dropping below shoulder height"
+      ],
+      "alternatives": ["Warrior II with wall support", "Reverse Warrior", "Extended Side Angle"]
+    },
+    {
+      "name": "Warrior III (Virabhadrasana III)",
+      "description": "A challenging balancing pose that strengthens the entire body while enhancing focus and stability.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "core", "back", "glutes", "shoulders"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "From standing, shift weight onto right leg and hinge forward at hips",
+        "Lift left leg behind you as you lower torso forward creating one line",
+        "Extend arms forward by ears or alongside body, palms facing each other",
+        "Bring body parallel to floor with standing leg slightly bent",
+        "Hold for 5-8 breaths, maintaining straight line from fingertips to back heel"
+      ],
+      "tips": [
+        "Keep hips level and squared to floor, not opening to side",
+        "Engage core strongly to maintain balance",
+        "Gaze down at floor to keep neck in neutral alignment"
+      ],
+      "common_mistakes": [
+        "Opening lifted hip toward ceiling instead of keeping hips square",
+        "Lifting head to look forward straining neck",
+        "Hyperextending standing leg instead of keeping soft bend"
+      ],
+      "alternatives": ["Warrior III with hands on blocks", "Half Moon Pose", "Standing Hand to Big Toe"]
+    },
+    {
+      "name": "Triangle Pose (Trikonasana)",
+      "description": "A standing pose that stretches the sides of the body while strengthening legs and improving balance.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "hips", "obliques", "spine"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Stand with feet wide, turn right foot out 90 degrees, left foot slightly in",
+        "Extend arms out to sides at shoulder height",
+        "Reach right hand forward, then hinge at hip to lower hand to shin, ankle, or block",
+        "Extend left arm straight up creating one line from bottom to top hand",
+        "Hold for 5-10 breaths, rotating chest toward ceiling and gazing up at top hand"
+      ],
+      "tips": [
+        "Keep both legs straight with engaged quadriceps",
+        "Lengthen spine rather than collapsing into bottom side",
+        "Rotate chest and belly toward ceiling, not down toward floor"
+      ],
+      "common_mistakes": [
+        "Leaning forward instead of maintaining length through both sides of torso",
+        "Bending front knee",
+        "Straining neck by forcing gaze upward if uncomfortable"
+      ],
+      "alternatives": ["Triangle with block", "Extended Side Angle", "Half Moon"]
+    },
+    {
+      "name": "Extended Side Angle (Utthita Parsvakonasana)",
+      "description": "A lateral stretch that strengthens legs, opens hips, and lengthens the side body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "hips", "obliques", "shoulders"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "From Warrior II with right leg forward, lower right forearm to right thigh",
+        "Extend left arm overhead creating diagonal line from left foot to left fingertips",
+        "Option to bring right hand to floor inside or outside right foot",
+        "Rotate chest toward ceiling and gaze under top arm",
+        "Hold for 5-8 breaths, maintaining strength in both legs"
+      ],
+      "tips": [
+        "Keep front knee at 90 degrees aligned with ankle",
+        "Lengthen through entire side body from outer edge of back foot through top fingertips",
+        "Can use block under bottom hand for support"
+      ],
+      "common_mistakes": [
+        "Collapsing weight into bottom arm",
+        "Letting front knee drift inward",
+        "Dropping top shoulder forward instead of opening chest"
+      ],
+      "alternatives": ["Extended Side Angle with block", "Warrior II", "Triangle"]
+    },
+    {
+      "name": "Chair Pose (Utkatasana)",
+      "description": "A powerful standing pose that builds heat and strengthens the entire lower body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["quadriceps", "glutes", "core", "shoulders"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand with feet together or hip-width apart",
+        "Bend knees deeply as if sitting back into a chair",
+        "Raise arms overhead alongside ears with palms facing each other",
+        "Shift weight into heels keeping knees behind toes",
+        "Hold for 5-10 breaths, maintaining lifted chest and engaged core"
+      ],
+      "tips": [
+        "Sit hips back as if reaching for a chair behind you",
+        "Keep knees aligned with ankles, not extending past toes",
+        "Draw shoulder blades down back to avoid neck tension"
+      ],
+      "common_mistakes": [
+        "Leaning too far forward with weight in toes",
+        "Arching lower back excessively",
+        "Knees collapsing inward instead of tracking over feet"
+      ],
+      "alternatives": ["Chair with hands at heart", "Wall-supported Chair", "Goddess Squat"]
+    },
+    {
+      "name": "Standing Forward Fold (Uttanasana)",
+      "description": "A calming forward bend that stretches the entire back body and can relieve tension.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hamstrings", "calves", "spine", "hips"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Stand with feet hip-width apart, hands on hips",
+        "Inhale to lengthen spine, exhale to hinge forward from hips",
+        "Let arms hang down or hold opposite elbows",
+        "Bend knees generously if hamstrings are tight",
+        "Hold for 5-10 breaths, letting head and neck relax completely"
+      ],
+      "tips": [
+        "Bend knees as much as needed to release lower back",
+        "Engage quadriceps to help hamstrings release",
+        "Let head hang heavy to release neck and shoulders"
+      ],
+      "common_mistakes": [
+        "Locking knees and straining hamstrings",
+        "Rounding from upper back instead of hinging from hips",
+        "Tensing neck and shoulders"
+      ],
+      "alternatives": ["Forward Fold with bent knees", "Halfway Lift", "Ragdoll Pose"]
+    },
+    {
+      "name": "Tree Pose (Vrksasana)",
+      "description": "A foundational balancing pose that cultivates focus while strengthening legs and core.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "core", "hips", "ankles"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Stand on left leg, place right foot on inner left thigh, calf, or ankle (not knee)",
+        "Press foot into leg and leg into foot with equal pressure",
+        "Bring hands to heart center or extend arms overhead",
+        "Find a focal point to help maintain balance",
+        "Hold for 5-10 breaths, then switch sides"
+      ],
+      "tips": [
+        "Start with foot at ankle or calf before attempting thigh placement",
+        "Engage standing leg strongly to maintain stability",
+        "Use wall support when learning"
+      ],
+      "common_mistakes": [
+        "Placing foot directly on knee joint",
+        "Shifting hips to side instead of keeping level",
+        "Holding breath instead of breathing steadily"
+      ],
+      "alternatives": ["Tree with wall support", "Tree with foot at ankle", "Mountain Pose"]
+    },
+    {
+      "name": "Eagle Pose (Garudasana)",
+      "description": "A challenging balance pose that wraps arms and legs while opening shoulders and hips.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "shoulders", "upper back", "hips"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand on left leg, cross right thigh over left and hook right foot behind left calf if possible",
+        "Cross left arm over right at elbows, bend elbows and press palms together",
+        "Sink hips back as if sitting in chair while maintaining wrapped position",
+        "Lift elbows to shoulder height and draw shoulder blades down",
+        "Hold for 5-8 breaths, maintaining balance and deep hip sink"
+      ],
+      "tips": [
+        "Focus on sinking hips low rather than perfect wrap",
+        "If foot won't hook, simply cross thighs",
+        "Squeeze arms and legs together to create stability"
+      ],
+      "common_mistakes": [
+        "Staying too upright instead of sinking hips back",
+        "Tensing shoulders up toward ears",
+        "Losing balance by not engaging core"
+      ],
+      "alternatives": ["Eagle arms only", "Eagle legs only", "Chair Pose"]
+    },
+    {
+      "name": "Half Moon Pose (Ardha Chandrasana)",
+      "description": "An intermediate balancing pose that strengthens legs and core while opening hips and chest.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["legs", "core", "hips", "obliques"],
+      "equipment_required": ["yoga mat", "block"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "From Triangle Pose, bend front knee and place hand on floor or block",
+        "Shift weight onto front leg and lift back leg parallel to floor",
+        "Stack top hip over bottom hip, rotating chest toward ceiling",
+        "Extend top arm straight up creating line from bottom to top hand",
+        "Hold for 5-8 breaths, gazing up at top hand if comfortable"
+      ],
+      "tips": [
+        "Use block under bottom hand to maintain length in spine",
+        "Keep standing leg micro-bent, not locked",
+        "Actively flex lifted foot to engage leg muscles"
+      ],
+      "common_mistakes": [
+        "Hyperextending standing leg",
+        "Rolling top hip forward instead of stacking over bottom hip",
+        "Collapsing into bottom shoulder"
+      ],
+      "alternatives": ["Half Moon with wall support", "Triangle Pose", "Warrior III"]
+    },
+    {
+      "name": "Dancer's Pose (Natarajasana)",
+      "description": "An advanced balance pose combining backbend and hip opening with graceful extension.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["quadriceps", "hip flexors", "shoulders", "core", "back"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand on left leg, bend right knee bringing heel toward glute",
+        "Reach back with right hand to grasp outside of right foot or ankle",
+        "Extend left arm forward and up at shoulder height",
+        "Kick foot into hand while hinging slightly forward to create backbend",
+        "Hold for 5-8 breaths, maintaining balance and lifted chest"
+      ],
+      "tips": [
+        "Keep pelvis neutral, not tilting to side",
+        "Focus on kicking back leg into hand rather than forcing bend",
+        "Use strap around foot if you can't reach it"
+      ],
+      "common_mistakes": [
+        "Collapsing standing leg and not engaging it",
+        "Arching from lower back instead of upper back",
+        "Tilting hips to side"
+      ],
+      "alternatives": ["Dancer with strap", "Standing Quad Stretch", "Low Lunge with Quad Stretch"]
+    },
+    {
+      "name": "Standing Hand to Big Toe (Utthita Hasta Padangusthasana)",
+      "description": "A challenging balance pose that stretches hamstrings while building leg and core strength.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hamstrings", "legs", "core", "hips"],
+      "equipment_required": ["yoga mat", "strap"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand on left leg, bend right knee and hold big toe with first two fingers",
+        "Slowly straighten right leg forward while maintaining upright posture",
+        "Option to open leg out to side or use strap around foot",
+        "Keep standing leg strong with slight bend in knee",
+        "Hold for 5-8 breaths, maintaining steady gaze and breath"
+      ],
+      "tips": [
+        "Use strap if you can't reach foot comfortably",
+        "Keep both hips level and squared forward",
+        "Maintain length in spine rather than rounding forward"
+      ],
+      "common_mistakes": [
+        "Rounding spine to reach foot",
+        "Locking standing leg",
+        "Lifting shoulder to ear on extended leg side"
+      ],
+      "alternatives": ["With strap", "Bent knee variation", "Reclining Hand to Big Toe"]
+    },
+    {
+      "name": "Pigeon Pose (Eka Pada Rajakapotasana)",
+      "description": "A deep hip opener that stretches the hip flexors, glutes, and piriformis muscles.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hips", "glutes", "hip flexors", "groin"],
+      "equipment_required": ["yoga mat", "block"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 2,
+      "instructions": [
+        "From Downward Dog, bring right knee forward behind right wrist",
+        "Slide left leg back with top of foot on mat, square hips forward",
+        "Walk hands forward or stay upright depending on hip opening",
+        "Option to fold forward over front leg if hips allow",
+        "Hold for 10-15 breaths, breathing into any areas of tightness"
+      ],
+      "tips": [
+        "Place block or blanket under front hip if it doesn't touch ground",
+        "Keep back leg straight and extended, not turning out",
+        "Breathe deeply to help muscles release"
+      ],
+      "common_mistakes": [
+        "Forcing front hip down causing knee strain",
+        "Letting hips rotate to side instead of squaring forward",
+        "Tensing shoulders and neck"
+      ],
+      "alternatives": ["Pigeon with props", "Figure 4 Stretch", "Thread the Needle"]
+    },
+    {
+      "name": "Lizard Pose (Utthan Pristhasana)",
+      "description": "A powerful hip opener that deeply stretches hip flexors, hamstrings, and groin.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hip flexors", "hamstrings", "groin", "quadriceps"],
+      "equipment_required": ["yoga mat", "blocks"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 3,
+      "instructions": [
+        "From Downward Dog, step right foot forward outside of right hand",
+        "Lower back knee to mat or keep it lifted for more intensity",
+        "Walk right foot to outer edge of mat, turning toes slightly out",
+        "Lower onto forearms if hip flexibility allows, or stay on hands",
+        "Hold for 8-12 breaths, keeping front knee aligned with ankle"
+      ],
+      "tips": [
+        "Use blocks under hands or forearms to make pose more accessible",
+        "Keep front knee tracking over second toe, not collapsing inward",
+        "Option to tuck back toes and lift knee for active variation"
+      ],
+      "common_mistakes": [
+        "Letting front knee collapse inward",
+        "Sinking into shoulders instead of maintaining length",
+        "Not breathing into the intensity"
+      ],
+      "alternatives": ["Low Lunge", "Lizard with blocks", "Pigeon Pose"]
+    },
+    {
+      "name": "Frog Pose (Mandukasana)",
+      "description": "An intense hip opener that targets the inner thighs and groin.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["inner thighs", "groin", "hips"],
+      "equipment_required": ["yoga mat", "blanket"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Start on hands and knees, slowly widen knees out to sides",
+        "Keep ankles in line with knees, feet turned out",
+        "Lower onto forearms and gradually widen knees as far as comfortable",
+        "Keep hips aligned with knees, not drifting forward or back",
+        "Hold for 10-20 breaths, breathing into hips and inner thighs"
+      ],
+      "tips": [
+        "Place blanket under knees for cushioning",
+        "Move slowly and mindfully, never forcing the stretch",
+        "This pose can be very intense, listen to your body"
+      ],
+      "common_mistakes": [
+        "Widening knees too far too quickly",
+        "Letting hips drift forward past knees",
+        "Holding breath through discomfort"
+      ],
+      "alternatives": ["Wide-Legged Child's Pose", "Bound Angle", "Butterfly Stretch"]
+    },
+    {
+      "name": "Bound Angle Pose (Baddha Konasana)",
+      "description": "A seated hip opener that stretches the inner thighs and groin while promoting relaxation.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["inner thighs", "groin", "hips"],
+      "equipment_required": ["yoga mat", "blocks"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with legs extended, bend knees and bring soles of feet together",
+        "Draw heels toward pelvis and let knees fall open to sides",
+        "Hold feet or ankles with hands",
+        "Lengthen spine upward or fold forward from hips",
+        "Hold for 10-15 breaths, allowing knees to gradually release toward floor"
+      ],
+      "tips": [
+        "Place blocks or blankets under knees if they're far from floor",
+        "Sit on blanket or block to elevate hips if needed",
+        "Don't force knees down, let gravity do the work"
+      ],
+      "common_mistakes": [
+        "Rounding spine excessively",
+        "Pulling feet too close causing strain",
+        "Pushing down on knees with hands"
+      ],
+      "alternatives": ["Reclined Bound Angle", "Wide-Legged Forward Fold", "Butterfly Stretch"]
+    },
+    {
+      "name": "Happy Baby (Ananda Balasana)",
+      "description": "A gentle supine hip opener that stretches the inner thighs and lower back.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hips", "inner thighs", "lower back", "hamstrings"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Lie on back, bend knees and draw them toward chest",
+        "Hold outside edges of feet with hands (or use strap)",
+        "Open knees wider than torso and draw them toward armpits",
+        "Flex feet with soles facing ceiling, keep ankles over knees",
+        "Hold for 10-15 breaths, gently rocking side to side if desired"
+      ],
+      "tips": [
+        "Keep lower back pressing into mat",
+        "Use strap if you can't reach feet comfortably",
+        "Can do one leg at a time for modification"
+      ],
+      "common_mistakes": [
+        "Lifting head and shoulders off mat straining neck",
+        "Pulling too hard on feet",
+        "Lower back arching off floor"
+      ],
+      "alternatives": ["Half Happy Baby (one leg)", "Knees to Chest", "Reclined Bound Angle"]
+    },
+    {
+      "name": "Fire Log Pose (Agnistambhasana)",
+      "description": "An intense seated hip opener that stacks shins to deeply open hips and stretch glutes.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hips", "glutes", "outer hips"],
+      "equipment_required": ["yoga mat", "blocks"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with legs crossed, stack right shin directly over left shin",
+        "Align right ankle over left knee and right knee over left ankle",
+        "Flex both feet to protect knees",
+        "Sit upright or fold forward from hips",
+        "Hold for 10-15 breaths, then switch leg stacking"
+      ],
+      "tips": [
+        "Place block between shins if knees are stacked high",
+        "Flex feet strongly to protect knee joints",
+        "This pose can be very intense, move slowly"
+      ],
+      "common_mistakes": [
+        "Letting feet sickle instead of keeping them flexed",
+        "Forcing knees down instead of allowing gravity",
+        "Rounding lower back excessively"
+      ],
+      "alternatives": ["Bound Angle", "Seated Spinal Twist", "Pigeon Pose"]
+    },
+    {
+      "name": "Cobra Pose (Bhujangasana)",
+      "description": "A gentle backbend that strengthens the spine and opens the chest and shoulders.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["back", "spine", "chest", "shoulders", "core"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Lie face down with hands under shoulders, elbows bent and close to ribs",
+        "Press tops of feet and thighs into mat",
+        "Inhale to lift chest using back muscles, keeping elbows bent",
+        "Draw shoulder blades down back and lift through sternum",
+        "Hold for 5-8 breaths, keeping lower body grounded"
+      ],
+      "tips": [
+        "Use back muscles more than arm strength",
+        "Keep elbows bent unless doing Upward Dog variation",
+        "Engage legs to protect lower back"
+      ],
+      "common_mistakes": [
+        "Overarching lower back by lifting too high",
+        "Shoulders hunching up toward ears",
+        "Not engaging legs and glutes"
+      ],
+      "alternatives": ["Sphinx Pose", "Upward Dog", "Seal Pose"]
+    },
+    {
+      "name": "Upward Dog (Urdhva Mukha Svanasana)",
+      "description": "A dynamic backbend that strengthens arms and spine while opening chest and shoulders.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["back", "arms", "chest", "shoulders", "core"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "From Cobra, press tops of feet firmly into mat",
+        "Straighten arms to lift thighs and hips off mat",
+        "Only hands and tops of feet touch floor",
+        "Roll shoulders back, lift chest, and gaze slightly upward",
+        "Hold for 3-5 breaths before transitioning to next pose"
+      ],
+      "tips": [
+        "Keep legs and glutes engaged to support lower back",
+        "Arms should be straight unlike Cobra where elbows bend",
+        "Draw shoulder blades down back to create space"
+      ],
+      "common_mistakes": [
+        "Letting shoulders hunch toward ears",
+        "Sagging hips toward floor",
+        "Hyperextending neck by looking too far up"
+      ],
+      "alternatives": ["Cobra Pose", "Seal Pose", "Bridge Pose"]
+    },
+    {
+      "name": "Bridge Pose (Setu Bandhasana)",
+      "description": "A moderate backbend that strengthens legs and back while opening chest and shoulders.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["glutes", "hamstrings", "back", "chest", "shoulders"],
+      "equipment_required": ["yoga mat", "block"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Lie on back with knees bent, feet hip-width apart near glutes",
+        "Press feet firmly into mat and lift hips toward ceiling",
+        "Interlace fingers under back or keep arms alongside body",
+        "Roll shoulders under to lift chest toward chin",
+        "Hold for 5-10 breaths, keeping knees aligned over ankles"
+      ],
+      "tips": [
+        "Keep knees tracking over ankles, not splaying out",
+        "Engage glutes and hamstrings to lift hips",
+        "Can place block under sacrum for supported variation"
+      ],
+      "common_mistakes": [
+        "Letting knees splay out wider than hips",
+        "Overarching neck by tucking chin too much",
+        "Not engaging legs and letting hips sag"
+      ],
+      "alternatives": ["Supported Bridge with block", "Wheel Pose", "Reclined Bound Angle"]
+    },
+    {
+      "name": "Wheel Pose (Urdhva Dhanurasana)",
+      "description": "An advanced full backbend that builds strength and flexibility throughout the entire body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["back", "shoulders", "arms", "legs", "chest", "core"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back with knees bent, feet hip-width apart near glutes",
+        "Place hands by ears with fingers pointing toward shoulders",
+        "Press into hands and feet to lift hips and crown of head off mat",
+        "Straighten arms to fully lift into backbend",
+        "Hold for 5-10 breaths, keeping legs parallel and feet grounded"
+      ],
+      "tips": [
+        "Warm up thoroughly with gentler backbends first",
+        "Keep feet parallel and knees from splaying out",
+        "Push strongly through arms and legs equally"
+      ],
+      "common_mistakes": [
+        "Letting feet and knees turn out",
+        "Dumping into lower back instead of evenly distributed bend",
+        "Not engaging legs enough"
+      ],
+      "alternatives": ["Bridge Pose", "Supported Bridge", "Camel Pose"]
+    },
+    {
+      "name": "Camel Pose (Ustrasana)",
+      "description": "A deep kneeling backbend that opens the entire front body including chest, abdomen, and hip flexors.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["back", "chest", "hip flexors", "quadriceps", "shoulders"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Kneel with knees hip-width apart, thighs perpendicular to floor",
+        "Place hands on lower back with fingers pointing down",
+        "Lift chest and begin to arch back, keeping hips over knees",
+        "Option to reach for heels with hands if comfortable",
+        "Hold for 5-8 breaths, lifting from sternum and engaging glutes"
+      ],
+      "tips": [
+        "Keep hips directly over knees throughout",
+        "Engage glutes and thighs to protect lower back",
+        "Can keep hands on lower back instead of reaching for heels"
+      ],
+      "common_mistakes": [
+        "Letting hips move backward instead of staying over knees",
+        "Dropping head back too far straining neck",
+        "Not engaging legs causing compression in lower back"
+      ],
+      "alternatives": ["Half Camel (one arm)", "Bridge Pose", "Sphinx Pose"]
+    },
+    {
+      "name": "Bow Pose (Dhanurasana)",
+      "description": "A deep backbend that stretches the entire front body while strengthening the back.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["back", "chest", "shoulders", "hip flexors", "quadriceps"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on belly, bend knees and reach back to hold outside of ankles",
+        "Inhale to lift chest and thighs off mat simultaneously",
+        "Kick feet into hands to deepen backbend",
+        "Gaze forward and breathe into chest",
+        "Hold for 5-8 breaths before releasing with control"
+      ],
+      "tips": [
+        "Kick legs actively into hands to lift higher",
+        "Keep knees hip-width apart, not wider",
+        "Engage back muscles rather than just pulling with arms"
+      ],
+      "common_mistakes": [
+        "Splaying knees too wide apart",
+        "Holding breath through the pose",
+        "Straining neck by looking up too much"
+      ],
+      "alternatives": ["Half Bow (one leg)", "Cobra Pose", "Locust Pose"]
+    },
+    {
+      "name": "Seated Forward Fold (Paschimottanasana)",
+      "description": "A calming forward bend that deeply stretches the entire back body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hamstrings", "spine", "calves", "shoulders"],
+      "equipment_required": ["yoga mat", "strap"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with legs extended straight in front, feet flexed",
+        "Inhale to lengthen spine, exhale to hinge forward from hips",
+        "Reach for feet, shins, or use strap around feet",
+        "Keep spine long rather than rounding to reach farther",
+        "Hold for 10-15 breaths, relaxing deeper with each exhale"
+      ],
+      "tips": [
+        "Bend knees if needed to maintain length in spine",
+        "Focus on hinging from hips, not rounding from waist",
+        "Use strap if you can't reach feet comfortably"
+      ],
+      "common_mistakes": [
+        "Rounding spine to force hands to feet",
+        "Tensing shoulders and neck",
+        "Holding breath instead of breathing steadily"
+      ],
+      "alternatives": ["With bent knees", "With strap", "Head to Knee Pose"]
+    },
+    {
+      "name": "Head to Knee Pose (Janu Sirsasana)",
+      "description": "A one-legged forward fold that stretches hamstrings and opens hips.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hamstrings", "spine", "hips", "groin"],
+      "equipment_required": ["yoga mat", "strap"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with left leg extended, bend right knee bringing sole of foot to inner left thigh",
+        "Square shoulders toward extended leg",
+        "Inhale to lengthen, exhale to fold forward over straight leg",
+        "Hold foot, shin, or use strap, keeping spine long",
+        "Hold for 10-15 breaths, then switch sides"
+      ],
+      "tips": [
+        "Keep extended leg active with flexed foot",
+        "Square hips toward extended leg",
+        "Can bend extended knee slightly if hamstrings are tight"
+      ],
+      "common_mistakes": [
+        "Twisting toward bent knee instead of straight leg",
+        "Rounding spine excessively",
+        "Forcing bent knee toward floor"
+      ],
+      "alternatives": ["Seated Forward Fold", "With strap", "Reclined version"]
+    },
+    {
+      "name": "Seated Twist (Ardha Matsyendrasana)",
+      "description": "A seated spinal twist that improves spine mobility and aids digestion.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["spine", "obliques", "shoulders", "hips"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with legs extended, bend right knee and place foot outside left thigh",
+        "Bend left knee bringing foot near right hip (or keep extended for easier variation)",
+        "Inhale to lengthen spine, exhale to twist right",
+        "Hook left elbow outside right knee, right hand behind on floor",
+        "Hold for 8-10 breaths, then switch sides"
+      ],
+      "tips": [
+        "Lengthen spine on each inhale, twist deeper on exhale",
+        "Keep both sit bones grounded",
+        "Twist from entire spine, not just shoulders"
+      ],
+      "common_mistakes": [
+        "Rounding spine instead of staying tall",
+        "Lifting opposite hip off floor",
+        "Cranking twist with arm instead of rotating from core"
+      ],
+      "alternatives": ["Simple Seated Twist", "Supine Twist", "Standing Twist"]
+    },
+    {
+      "name": "Boat Pose (Navasana)",
+      "description": "A core-strengthening pose that builds abdominal strength and hip flexor endurance.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["core", "hip flexors", "spine", "quadriceps"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit with knees bent, feet on floor, hands behind thighs",
+        "Lean back slightly and lift feet off floor bringing shins parallel to mat",
+        "Extend arms forward alongside legs, palms facing each other",
+        "Option to straighten legs creating V-shape with body",
+        "Hold for 5-10 breaths, keeping chest lifted and spine long"
+      ],
+      "tips": [
+        "Keep chest lifted to avoid rounding lower back",
+        "Engage core deeply to maintain balance",
+        "Start with bent knees before attempting straight legs"
+      ],
+      "common_mistakes": [
+        "Rounding lower back excessively",
+        "Holding breath",
+        "Tensing shoulders and neck"
+      ],
+      "alternatives": ["Half Boat with bent knees", "Reclined Boat", "Plank Pose"]
+    },
+    {
+      "name": "Staff Pose (Dandasana)",
+      "description": "A foundational seated pose that builds postural awareness and core strength.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["core", "spine", "legs"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with legs extended straight in front, feet flexed",
+        "Place hands on floor beside hips, fingers pointing forward",
+        "Press through heels and engage thighs",
+        "Lift chest and crown of head toward ceiling",
+        "Hold for 5-10 breaths, maintaining active engagement"
+      ],
+      "tips": [
+        "Sit on folded blanket if you tend to round lower back",
+        "Engage legs strongly as if doing standing mountain pose",
+        "Draw shoulder blades down back"
+      ],
+      "common_mistakes": [
+        "Rounding lower back and shoulders",
+        "Locking knees",
+        "Leaning back instead of sitting upright"
+      ],
+      "alternatives": ["Staff on blanket", "Against wall", "Seated Mountain"]
+    },
+    {
+      "name": "Cow Face Pose (Gomukhasana)",
+      "description": "A seated pose that deeply stretches shoulders, arms, hips, and outer thighs.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["shoulders", "arms", "hips", "outer thighs"],
+      "equipment_required": ["yoga mat", "strap"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Sit with knees stacked, right knee on top, feet beside opposite hips",
+        "Raise right arm overhead, bend elbow bringing hand down back",
+        "Bring left arm behind back, bend elbow and reach up to clasp right hand",
+        "Sit tall and breathe into areas of tightness",
+        "Hold for 8-10 breaths, then switch sides"
+      ],
+      "tips": [
+        "Use strap between hands if they don't meet",
+        "Keep spine upright, don't lean forward or back",
+        "Can sit on blanket if hips are tight"
+      ],
+      "common_mistakes": [
+        "Leaning to one side instead of staying centered",
+        "Forcing hands together straining shoulders",
+        "Collapsing through torso"
+      ],
+      "alternatives": ["With strap", "Legs only", "Arms only"]
+    },
+    {
+      "name": "Downward Dog (Adho Mukha Svanasana)",
+      "description": "A foundational inversion that strengthens arms and legs while stretching the entire back body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["shoulders", "hamstrings", "calves", "back", "arms"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Start on hands and knees, hands shoulder-width apart",
+        "Curl toes under and lift hips up and back creating inverted V-shape",
+        "Press firmly through palms with fingers spread wide",
+        "Work to straighten legs and press heels toward floor",
+        "Hold for 5-10 breaths, keeping head relaxed between arms"
+      ],
+      "tips": [
+        "Bend knees if needed to maintain length in spine",
+        "Press shoulder blades toward back ribs",
+        "Distribute weight evenly between hands and feet"
+      ],
+      "common_mistakes": [
+        "Rounding upper back instead of lengthening spine",
+        "Shoulders creeping toward ears",
+        "Weight too far forward in hands"
+      ],
+      "alternatives": ["Puppy Pose", "Dolphin Pose", "Child's Pose"]
+    },
+    {
+      "name": "Dolphin Pose",
+      "description": "A shoulder-strengthening inversion on forearms that prepares for headstand and forearm stand.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["shoulders", "core", "hamstrings", "arms"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Start on hands and knees, lower to forearms with elbows under shoulders",
+        "Interlace fingers or keep forearms parallel",
+        "Curl toes and lift hips up creating inverted V on forearms",
+        "Walk feet toward elbows to bring shoulders over elbows",
+        "Hold for 5-8 breaths, keeping head off floor"
+      ],
+      "tips": [
+        "Keep elbows shoulder-width apart, not wider",
+        "Engage core to prevent sinking into shoulders",
+        "Excellent preparation for forearm balance"
+      ],
+      "common_mistakes": [
+        "Letting elbows splay wider than shoulders",
+        "Sinking weight into shoulders",
+        "Not engaging legs"
+      ],
+      "alternatives": ["Downward Dog", "Puppy Pose", "Forearm Plank"]
+    },
+    {
+      "name": "Headstand (Sirsasana)",
+      "description": "The king of yoga poses, an advanced inversion that builds strength, focus, and confidence.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["core", "shoulders", "back", "arms"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Kneel and interlace fingers, place forearms on mat forming triangle",
+        "Place crown of head on mat with back of head in hands",
+        "Straighten legs and walk feet toward elbows",
+        "Engage core and lift one or both legs toward ceiling",
+        "Hold for 10-30 breaths once balanced, keeping neck relaxed"
+      ],
+      "tips": [
+        "Should only be practiced once you have strong foundation",
+        "Most weight should be in forearms, not head",
+        "Practice against wall when learning"
+      ],
+      "common_mistakes": [
+        "Putting too much weight in head/neck",
+        "Kicking up forcefully instead of controlled lift",
+        "Not warming up shoulders sufficiently"
+      ],
+      "alternatives": ["Dolphin Pose", "Legs up wall", "Shoulder Stand"]
+    },
+    {
+      "name": "Shoulder Stand (Sarvangasana)",
+      "description": "The queen of yoga poses, an inversion that calms the nervous system while energizing the body.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["shoulders", "core", "back", "legs"],
+      "equipment_required": ["yoga mat", "blanket"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 3,
+      "instructions": [
+        "Lie on back with folded blanket under shoulders (not under neck)",
+        "Bend knees and lift legs overhead into Plow Pose",
+        "Bend elbows and support back with hands",
+        "Lift legs straight up toward ceiling, bringing torso perpendicular to floor",
+        "Hold for 10-20 breaths, keeping neck still and gaze at chest"
+      ],
+      "tips": [
+        "Use blanket under shoulders to protect neck",
+        "Keep head and neck completely still",
+        "Most weight should be on shoulders and upper arms"
+      ],
+      "common_mistakes": [
+        "Turning head side to side while in pose",
+        "Not using blanket for neck protection",
+        "Collapsing into lower back instead of lifting through legs"
+      ],
+      "alternatives": ["Legs up wall", "Bridge Pose", "Plow Pose"]
+    },
+    {
+      "name": "Child's Pose (Balasana)",
+      "description": "A restorative resting pose that gently stretches the back while calming the mind.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hips", "spine", "shoulders", "ankles"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 1,
+      "instructions": [
+        "Kneel with big toes touching and knees wide or together",
+        "Sit hips back toward heels",
+        "Extend arms forward or rest alongside body",
+        "Rest forehead on mat or on stacked hands/block",
+        "Hold for 1-3 minutes, breathing deeply into back body"
+      ],
+      "tips": [
+        "Place blanket between hips and heels if uncomfortable",
+        "Can keep knees together or wide apart",
+        "Perfect rest pose between more active poses"
+      ],
+      "common_mistakes": [
+        "Forcing hips toward heels causing knee strain",
+        "Tensing shoulders instead of relaxing",
+        "Holding breath"
+      ],
+      "alternatives": ["Supported Child's with bolster", "Puppy Pose", "Reclined Twist"]
+    },
+    {
+      "name": "Legs Up the Wall (Viparita Karani)",
+      "description": "A gentle restorative inversion that reduces swelling in legs and calms nervous system.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["hamstrings", "hips", "lower back"],
+      "equipment_required": ["yoga mat", "wall"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 1,
+      "instructions": [
+        "Sit sideways against wall with one hip touching it",
+        "Swing legs up wall while lowering back to floor",
+        "Scoot hips as close to wall as comfortable",
+        "Rest arms out to sides or on belly",
+        "Hold for 5-15 minutes, breathing slowly and deeply"
+      ],
+      "tips": [
+        "Place folded blanket under hips for gentle backbend",
+        "Can move hips further from wall if hamstrings are tight",
+        "Excellent for evening relaxation and recovery"
+      ],
+      "common_mistakes": [
+        "Tensing legs instead of letting them relax",
+        "Hips too far from wall reducing benefits",
+        "Not staying long enough to receive calming effects"
+      ],
+      "alternatives": ["Reclined Bound Angle", "Corpse Pose", "Supported Bridge"]
+    },
+    {
+      "name": "Corpse Pose (Savasana)",
+      "description": "The final relaxation pose that integrates the practice and promotes deep rest and integration.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["full body relaxation"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 1,
+      "instructions": [
+        "Lie on back with legs extended and feet falling naturally apart",
+        "Rest arms alongside body with palms facing up",
+        "Close eyes and release all effort from body",
+        "Let breath return to natural rhythm",
+        "Rest for 5-15 minutes, allowing complete relaxation"
+      ],
+      "tips": [
+        "Place blanket under knees if lower back is uncomfortable",
+        "Cover with blanket if room is cool",
+        "Most important pose - allows body to integrate practice"
+      ],
+      "common_mistakes": [
+        "Skipping this pose or cutting it short",
+        "Fidgeting instead of staying still",
+        "Tensing body instead of completely releasing"
+      ],
+      "alternatives": ["Supported Corpse with props", "Reclined Bound Angle", "Legs Up Wall"]
+    },
+    {
+      "name": "Supine Twist (Supta Matsyendrasana)",
+      "description": "A gentle restorative twist that releases tension in spine and hips.",
+      "exercise_type": "yoga",
+      "muscle_groups": ["spine", "hips", "shoulders", "obliques"],
+      "equipment_required": ["yoga mat"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 2,
+      "instructions": [
+        "Lie on back, draw right knee toward chest",
+        "Guide right knee across body to left side using left hand",
+        "Extend right arm out to side at shoulder height",
+        "Turn gaze toward right hand or keep looking up",
+        "Hold for 10-15 breaths, then switch sides"
+      ],
+      "tips": [
+        "Keep shoulders grounded, right shoulder may lift slightly",
+        "Place block or blanket under knee if it doesn't reach floor",
+        "Breathe into any areas of tightness"
+      ],
+      "common_mistakes": [
+        "Forcing knee to floor straining spine",
+        "Lifting opposite shoulder significantly off mat",
+        "Tensing instead of relaxing into twist"
+      ],
+      "alternatives": ["Both knees twist", "Seated Twist", "Thread the Needle"]
+    }
+  ]
+}
+

@@ -1,0 +1,929 @@
+{
+  "category": "running",
+  "exercises": [
+    {
+      "name": "Easy/Recovery Run",
+      "description": "Low-intensity run for active recovery and building aerobic base without stress.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Run at conversational pace where you can easily talk in full sentences",
+        "Keep heart rate in Zone 1-2 (60-70% max HR)",
+        "Focus on comfortable breathing rhythm, not pace or distance",
+        "Duration typically 20-60 minutes depending on fitness level"
+      ],
+      "tips": [
+        "Should feel 'too easy' - this is intentional for recovery",
+        "Day after hard workout or race is perfect timing",
+        "Builds aerobic base without adding fatigue"
+      ],
+      "common_mistakes": [
+        "Running too fast defeating recovery purpose",
+        "Skipping easy runs thinking they don't matter",
+        "Comparing pace to others - easy is individual"
+      ],
+      "alternatives": ["Walking", "Very slow jog", "Cross-training (swimming/cycling)"]
+    },
+    {
+      "name": "Tempo Run",
+      "description": "Sustained run at comfortably hard pace just below lactate threshold to build endurance.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 13,
+      "instructions": [
+        "Warm up 10-15 minutes with easy running",
+        "Run 20-30 minutes at 'comfortably hard' pace (can speak in short phrases only)",
+        "Pace should be slightly slower than 10K race pace or ~85% max HR",
+        "Cool down 10 minutes easy to complete workout"
+      ],
+      "tips": [
+        "Improves lactate threshold allowing faster sustained pace",
+        "Mental toughness builder - practice holding discomfort",
+        "Should finish feeling worked but not destroyed"
+      ],
+      "common_mistakes": [
+        "Starting tempo portion too fast and fading",
+        "Running at full race pace instead of controlled tempo",
+        "Skipping warm-up and cool-down"
+      ],
+      "alternatives": ["Fartlek run (easier)", "Interval training (harder)", "Progression run"]
+    },
+    {
+      "name": "Interval Training (Track)",
+      "description": "Short intense efforts with recovery periods to build speed and VO2 max.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": ["track"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Warm up thoroughly with 1-2 miles easy running plus drills",
+        "Example: 12 x 400m at 5K pace with 400m easy jog recovery between",
+        "Maintain consistent pace for each interval - don't start too fast",
+        "Cool down 10-15 minutes easy running"
+      ],
+      "tips": [
+        "Recovery is crucial - discipline during jog allows strong next rep",
+        "Can structure on time or distance based on goal",
+        "Builds speed endurance and running economy"
+      ],
+      "common_mistakes": [
+        "Running first interval too fast causing fade",
+        "Insufficient recovery between reps",
+        "Attempting without proper aerobic base"
+      ],
+      "alternatives": ["Tempo run", "Fartlek", "Hill repeats"]
+    },
+    {
+      "name": "Fartlek Run",
+      "description": "Swedish 'speed play' - unstructured run alternating between fast and slow segments.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Begin with 10-minute easy warm-up",
+        "Alternate between fast surges (1-3 minutes) and easy recovery jogs",
+        "Base speed changes on feel, terrain, or landmarks - no set structure",
+        "Total duration 30-60 minutes including easy portions"
+      ],
+      "tips": [
+        "More flexible and fun than structured intervals",
+        "Great for practicing finishing kick in races",
+        "Can adapt intensity based on how you feel that day"
+      ],
+      "common_mistakes": [
+        "Making surges too long or too hard",
+        "Not recovering enough between efforts",
+        "Losing the 'playful' aspect and making it too structured"
+      ],
+      "alternatives": ["Tempo run", "Interval training", "Progression run"]
+    },
+    {
+      "name": "Long Run",
+      "description": "Extended distance run building aerobic endurance and mental toughness.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Run at easy conversational pace for extended duration",
+        "Distance typically 90-180 minutes or 20-30% of weekly mileage",
+        "Stay aerobic - should be able to hold conversation throughout",
+        "Fuel and hydrate appropriately for runs over 90 minutes"
+      ],
+      "tips": [
+        "Cornerstone of marathon and half-marathon training",
+        "Builds aerobic engine and fat-burning efficiency",
+        "Don't worry about pace - time on feet matters most"
+      ],
+      "common_mistakes": [
+        "Running too fast depleting glycogen stores",
+        "Increasing distance too quickly (10% rule)",
+        "Neglecting fueling on runs over 90 minutes"
+      ],
+      "alternatives": ["Medium long run", "Progression long run", "Long run with tempo finish"]
+    },
+    {
+      "name": "Hill Repeats",
+      "description": "Repeated uphill sprints building power, strength, and running economy.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "glutes", "calves", "cardiovascular"],
+      "equipment_required": ["hill"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Warm up 10-15 minutes easy running on flat terrain",
+        "Run uphill at 90% effort for 60-90 seconds maintaining form",
+        "Jog down slowly for recovery (not walking) keeping heart rate elevated",
+        "Repeat 6-10 times, cool down 10 minutes easy"
+      ],
+      "tips": [
+        "Intervals in disguise - builds strength with less joint impact",
+        "Improves running form through exaggerated mechanics",
+        "Recovery jog down is key - keeps workout aerobic"
+      ],
+      "common_mistakes": [
+        "Going all-out instead of controlled 90% effort",
+        "Walking down hill instead of jogging",
+        "Letting form break down on later reps"
+      ],
+      "alternatives": ["Treadmill incline repeats", "Stadium stairs", "Long hill intervals"]
+    },
+    {
+      "name": "Sprint Intervals",
+      "description": "Very short maximum effort sprints developing top-end speed and power.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "core", "cardiovascular"],
+      "equipment_required": ["track"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Extensive warm-up: 15-20 minutes easy running, dynamic drills, 3-4 strides",
+        "Sprint 100-200m at 95-98% max effort with excellent form",
+        "Walk or jog 2-3 minutes for full recovery between reps",
+        "Perform 6-10 reps maintaining quality, cool down thoroughly"
+      ],
+      "tips": [
+        "Quality over quantity - stop if form deteriorates",
+        "Full recovery between reps is essential",
+        "Develops neuromuscular system and fast-twitch fibers"
+      ],
+      "common_mistakes": [
+        "Inadequate warm-up leading to injury risk",
+        "Insufficient recovery between sprints",
+        "Doing too many reps sacrificing quality"
+      ],
+      "alternatives": ["Hill sprints", "Flying 30s", "Strides (easier)"]
+    },
+    {
+      "name": "Progression Run",
+      "description": "Run starting easy and progressively getting faster, finishing at tempo or faster pace.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Start first portion (40-50%) at easy conversational pace",
+        "Middle portion (30-40%) gradually increase to moderate effort",
+        "Final portion (10-20%) push to tempo pace or slightly faster",
+        "Example: 6 miles total - 3 miles easy, 2 miles moderate, 1 mile tempo"
+      ],
+      "tips": [
+        "Teaches pacing discipline and finishing strong",
+        "Less taxing than tempo run but builds similar fitness",
+        "Great for race simulation and negative split practice"
+      ],
+      "common_mistakes": [
+        "Starting progression too early in run",
+        "Not making final portion hard enough",
+        "Increasing pace too dramatically causing burnout"
+      ],
+      "alternatives": ["Tempo run", "Fartlek", "Negative split run"]
+    },
+    {
+      "name": "A-Skips",
+      "description": "Dynamic running drill emphasizing proper knee drive, posture, and ground contact.",
+      "exercise_type": "running",
+      "muscle_groups": ["hip flexors", "calves", "core", "running mechanics"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Skip forward with exaggerated knee lift to hip height",
+        "Support leg performs quick skip (two contacts per cycle)",
+        "Opposite arm and leg move together (left knee up, right arm forward)",
+        "Land on ball of foot directly under center of mass, maintain upright posture"
+      ],
+      "tips": [
+        "Focus on rhythm and timing - should sound rhythmic",
+        "Knee goes straight up and straight down, no forward kick",
+        "Essential warm-up drill for speed workouts"
+      ],
+      "common_mistakes": [
+        "Both feet on ground simultaneously",
+        "Same arm and leg moving together",
+        "Leaning forward or backward instead of staying tall"
+      ],
+      "alternatives": ["High knees (simpler)", "B-skips (progression)", "A-march (easier)"]
+    },
+    {
+      "name": "B-Skips",
+      "description": "Advanced running drill adding leg extension to A-skip for hamstring engagement and pawing action.",
+      "exercise_type": "running",
+      "muscle_groups": ["hamstrings", "hip flexors", "core", "running mechanics"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Perform A-skip bringing knee to hip height",
+        "Extend leg forward kicking foot out and up",
+        "Pull foot down and back in pawing motion landing under hips",
+        "Drive ground contact backward while skipping on support leg"
+      ],
+      "tips": [
+        "Emphasizes hamstring activation and proper ground contact",
+        "Pawing motion mimics proper running mechanics",
+        "More complex than A-skip, takes practice to master"
+      ],
+      "common_mistakes": [
+        "Not extending leg fully before pawing down",
+        "Landing foot in front of body instead of under hips",
+        "Losing rhythm and timing"
+      ],
+      "alternatives": ["A-skips", "Straight leg runs", "B-march"]
+    },
+    {
+      "name": "High Knees",
+      "description": "Running drill emphasizing quick knee drive and rapid foot turnover.",
+      "exercise_type": "running",
+      "muscle_groups": ["hip flexors", "quadriceps", "calves", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Run in place or move forward with exaggerated knee lift",
+        "Drive knees up to hip height rapidly",
+        "Land on balls of feet with quick ground contact",
+        "Pump arms vigorously in running motion, maintain upright posture"
+      ],
+      "tips": [
+        "Focus on speed and frequency of knee drive",
+        "Great for activating hip flexors pre-run",
+        "Can be done in place or moving forward"
+      ],
+      "common_mistakes": [
+        "Leaning backward instead of staying upright",
+        "Slow cadence instead of rapid fire",
+        "Not lifting knees to hip height"
+      ],
+      "alternatives": ["A-skips", "Butt kicks", "Fast feet"]
+    },
+    {
+      "name": "Butt Kicks",
+      "description": "Running drill emphasizing quick heel recovery toward glutes.",
+      "exercise_type": "running",
+      "muscle_groups": ["hamstrings", "quadriceps", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Run in place or move forward bringing heels up toward glutes",
+        "Emphasize quick heel snap to butt with minimal forward movement",
+        "Maintain upright posture with engaged core",
+        "Perform for 20-30 meters or 20-30 seconds"
+      ],
+      "tips": [
+        "Activates hamstrings and teaches quick heel recovery",
+        "Should feel bounce in glutes",
+        "Common pre-run activation drill"
+      ],
+      "common_mistakes": [
+        "Leaning too far forward",
+        "Kicking heels out to side instead of straight back",
+        "Moving forward too much instead of emphasizing heel snap"
+      ],
+      "alternatives": ["High knees", "A-skips", "Straight leg runs"]
+    },
+    {
+      "name": "Carioca (Grapevine)",
+      "description": "Lateral running drill improving hip mobility, coordination, and agility.",
+      "exercise_type": "running",
+      "muscle_groups": ["hips", "glutes", "core", "adductors", "abductors"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Move laterally crossing one leg in front then behind the other",
+        "Keep hips and shoulders facing forward while moving sideways",
+        "Maintain athletic stance with slight knee bend",
+        "Perform 20-30 meters each direction"
+      ],
+      "tips": [
+        "Opens up hips and improves hip rotation",
+        "Coordination drill beneficial for injury prevention",
+        "Start slowly then increase speed as comfortable"
+      ],
+      "common_mistakes": [
+        "Rotating entire body instead of keeping shoulders square",
+        "Looking down at feet",
+        "Moving too slowly without rhythm"
+      ],
+      "alternatives": ["Side shuffles", "Lateral lunges", "Hip circles"]
+    },
+    {
+      "name": "Bounding",
+      "description": "Explosive plyometric drill emphasizing power, stride length, and air time.",
+      "exercise_type": "running",
+      "muscle_groups": ["glutes", "hamstrings", "quadriceps", "calves", "core"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 12,
+      "instructions": [
+        "Run forward with exaggerated stride length and hang time",
+        "Drive powerfully off each foot maximizing horizontal distance",
+        "Drive knee up and forward, extend fully through push-off leg",
+        "Focus on covering maximum ground per bound for 30-50 meters"
+      ],
+      "tips": [
+        "Builds explosive power and stride length",
+        "Should feel like slow-motion running with emphasis on power",
+        "Advanced drill - requires strength foundation"
+      ],
+      "common_mistakes": [
+        "Rushing cadence instead of emphasizing power per stride",
+        "Not achieving full extension on push-off",
+        "Leaning too far forward losing upright posture"
+      ],
+      "alternatives": ["Single-leg bounds", "Power skips", "Strides"]
+    },
+    {
+      "name": "Straight Leg Runs",
+      "description": "Running drill with minimal knee bend emphasizing hamstring and glute engagement.",
+      "exercise_type": "running",
+      "muscle_groups": ["hamstrings", "glutes", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Run forward keeping legs relatively straight with minimal knee bend",
+        "Emphasize dorsiflexed foot (toes up) throughout",
+        "Drive legs from hip with glutes, land on ball of foot",
+        "Perform for 20-30 meters focusing on hamstring and glute activation"
+      ],
+      "tips": [
+        "Teaches posterior chain engagement in running",
+        "Should feel significant hamstring and glute work",
+        "Also called 'straight leg bounds' or 'frankensteins'"
+      ],
+      "common_mistakes": [
+        "Bending knees too much",
+        "Not dorsiflexing foot (toes should point up)",
+        "Leaning backward instead of maintaining posture"
+      ],
+      "alternatives": ["B-skips", "Butt kicks", "Bounds"]
+    },
+    {
+      "name": "Fast Feet",
+      "description": "Rapid-fire drill emphasizing quick ground contact and foot turnover.",
+      "exercise_type": "running",
+      "muscle_groups": ["calves", "feet", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Run in place with extremely quick, short steps",
+        "Minimize ground contact time - stay on balls of feet",
+        "Keep knee lift minimal, focus on rapid cadence",
+        "Perform for 10-20 seconds at maximum frequency"
+      ],
+      "tips": [
+        "Develops quick foot turnover and reactive ground contact",
+        "Should sound like rapid patter on ground",
+        "Great neuromuscular activation drill"
+      ],
+      "common_mistakes": [
+        "Lifting knees too high slowing cadence",
+        "Landing on heels instead of balls of feet",
+        "Not maintaining maximum speed throughout"
+      ],
+      "alternatives": ["High knees", "Butt kicks", "Jump rope"]
+    },
+    {
+      "name": "Falling Starts",
+      "description": "Acceleration drill teaching proper forward lean and powerful drive phase.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "core", "acceleration mechanics"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Stand tall with feet together, body straight like a plank",
+        "Lean forward from ankles (not hips) until you start to fall",
+        "At last moment, drive one leg forward to catch yourself",
+        "Accelerate for 10-20 meters maintaining forward lean"
+      ],
+      "tips": [
+        "Teaches proper acceleration mechanics with forward lean",
+        "Helps develop powerful first steps",
+        "Great for sprinters and speed development"
+      ],
+      "common_mistakes": [
+        "Bending at hips instead of leaning from ankles",
+        "Standing up too soon losing forward lean",
+        "Not driving powerfully off back leg"
+      ],
+      "alternatives": ["Falling start into sprint", "Wall acceleration drills", "Sprint intervals"]
+    },
+    {
+      "name": "Strides",
+      "description": "Controlled accelerations building to near-max speed with focus on smooth form.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "running mechanics"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 11,
+      "instructions": [
+        "Accelerate gradually over 50-70 meters building to 85-90% max speed",
+        "Hold top speed for 10-15 seconds maintaining smooth relaxed form",
+        "Decelerate smoothly, walk or jog to full recovery (1-2 minutes)",
+        "Perform 4-8 repetitions focusing on form not exhaustion"
+      ],
+      "tips": [
+        "Not sprints - should be controlled and smooth",
+        "Excellent for neuromuscular activation and speed work introduction",
+        "Can add to easy runs or pre-race warm-ups"
+      ],
+      "common_mistakes": [
+        "Running too hard turning them into sprints",
+        "Insufficient recovery between reps",
+        "Poor form due to excessive effort"
+      ],
+      "alternatives": ["Accelerations", "Sprint intervals (harder)", "Fast finish to run"]
+    },
+    {
+      "name": "Leg Swings (Front/Back)",
+      "description": "Dynamic warm-up mobilizing hip flexors and hamstrings through sagittal plane.",
+      "exercise_type": "running",
+      "muscle_groups": ["hip flexors", "hamstrings", "glutes"],
+      "equipment_required": ["wall"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand on one leg using wall for light support",
+        "Swing opposite leg forward and backward in controlled motion",
+        "Gradually increase range of motion over 15-20 swings",
+        "Keep torso upright and stable, repeat other leg"
+      ],
+      "tips": [
+        "Start with small swings and progressively increase",
+        "Essential pre-run dynamic stretch",
+        "Warms up hips through full range of motion"
+      ],
+      "common_mistakes": [
+        "Swinging too aggressively initially",
+        "Rotating torso instead of keeping stable",
+        "Using momentum instead of controlled movement"
+      ],
+      "alternatives": ["Walking lunges", "Leg swings side to side", "Hip circles"]
+    },
+    {
+      "name": "Leg Swings (Side/Side)",
+      "description": "Dynamic warm-up mobilizing hip adductors and abductors through frontal plane.",
+      "exercise_type": "running",
+      "muscle_groups": ["adductors", "abductors", "hips"],
+      "equipment_required": ["wall"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand facing wall with both hands on wall for support",
+        "Swing one leg side to side across front of body",
+        "Gradually increase range from small to large swings",
+        "Perform 15-20 swings each leg keeping hips square forward"
+      ],
+      "tips": [
+        "Opens up hip joint laterally",
+        "Great for runners with tight hips or IT band issues",
+        "Keep supporting leg stable"
+      ],
+      "common_mistakes": [
+        "Rotating hips instead of keeping square",
+        "Swinging too fast without control",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Leg swings front/back", "Lateral lunges", "Carioca"]
+    },
+    {
+      "name": "Walking Lunges",
+      "description": "Dynamic warm-up activating glutes, quads, and hip flexors while improving mobility.",
+      "exercise_type": "running",
+      "muscle_groups": ["quadriceps", "glutes", "hip flexors", "hamstrings"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Step forward into deep lunge with front knee at 90 degrees",
+        "Back knee nearly touches ground, front shin vertical",
+        "Drive through front heel to step forward into next lunge",
+        "Perform 10-15 lunges per leg, can add overhead reach or twist"
+      ],
+      "tips": [
+        "Essential dynamic warm-up for runners",
+        "Activates glutes and stretches hip flexors simultaneously",
+        "Add variations like overhead reach or twist for more benefit"
+      ],
+      "common_mistakes": [
+        "Front knee extending past toes",
+        "Not achieving full depth in lunge",
+        "Rushing through reps without control"
+      ],
+      "alternatives": ["Reverse lunges", "World's greatest stretch", "High knees"]
+    },
+    {
+      "name": "Inch Worms",
+      "description": "Full-body dynamic stretch emphasizing hamstring flexibility and core activation.",
+      "exercise_type": "running",
+      "muscle_groups": ["hamstrings", "core", "shoulders", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "From standing, bend at hips keeping legs straight and walk hands out to plank",
+        "Perform optional push-up in plank position",
+        "Walk feet toward hands keeping legs as straight as possible",
+        "Stand up and repeat for 5-8 repetitions"
+      ],
+      "tips": [
+        "Stretches hamstrings and calves dynamically",
+        "Activates core and shoulders",
+        "Great full-body warm-up movement"
+      ],
+      "common_mistakes": [
+        "Bending knees too much losing hamstring stretch",
+        "Letting hips sag in plank position",
+        "Moving too quickly through movement"
+      ],
+      "alternatives": ["Forward fold", "Downward dog walk", "Pike push-ups"]
+    },
+    {
+      "name": "World's Greatest Stretch",
+      "description": "Comprehensive dynamic stretch combining lunge, rotation, and hip opening.",
+      "exercise_type": "running",
+      "muscle_groups": ["hip flexors", "hamstrings", "thoracic spine", "glutes"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Step into deep lunge position with hands on ground inside front foot",
+        "Drop back knee to ground, rotate torso and reach front-side arm toward ceiling",
+        "Return hand to ground, straighten front leg for hamstring stretch",
+        "Return to lunge, step forward and repeat other side for 5-8 reps each"
+      ],
+      "tips": [
+        "Lives up to name - hits hips, hamstrings, and thoracic rotation",
+        "Perfect pre-run dynamic warm-up",
+        "Move slowly through each position"
+      ],
+      "common_mistakes": [
+        "Rushing through positions",
+        "Not achieving full rotation in twist",
+        "Bouncing in hamstring stretch"
+      ],
+      "alternatives": ["Walking lunges with twist", "Spider-man lunges", "Hip flexor stretch"]
+    },
+    {
+      "name": "Hip Circles",
+      "description": "Dynamic mobility drill rotating hip joint through full range of motion.",
+      "exercise_type": "running",
+      "muscle_groups": ["hips", "glutes", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand on one leg, lift other knee to hip height",
+        "Rotate lifted leg in large circles from the hip joint",
+        "Perform 8-10 circles forward, then 8-10 circles backward",
+        "Switch legs and repeat"
+      ],
+      "tips": [
+        "Mobilizes hip joint in all directions",
+        "Helps prevent IT band and hip issues",
+        "Keep supporting leg stable with engaged core"
+      ],
+      "common_mistakes": [
+        "Circling from knee instead of hip",
+        "Not making full circles",
+        "Wobbling on support leg showing weak stability"
+      ],
+      "alternatives": ["Leg swings", "Fire hydrants", "Clamshells"]
+    },
+    {
+      "name": "Ankle Circles",
+      "description": "Mobility drill warming up ankle joint and improving range of motion.",
+      "exercise_type": "running",
+      "muscle_groups": ["ankles", "calves", "feet"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand on one leg or sit, lift other foot off ground",
+        "Rotate ankle making large circles with toes",
+        "Perform 10 circles clockwise, then 10 counterclockwise",
+        "Switch feet and repeat"
+      ],
+      "tips": [
+        "Important for runners to maintain ankle mobility",
+        "Helps prevent ankle injuries and Achilles issues",
+        "Can also spell alphabet with toes"
+      ],
+      "common_mistakes": [
+        "Making small circles not using full range",
+        "Moving entire leg instead of just ankle",
+        "Rushing through reps"
+      ],
+      "alternatives": ["Heel/toe walks", "Calf raises", "Ankle dorsiflexion stretch"]
+    },
+    {
+      "name": "Incline Walking",
+      "description": "Treadmill warm-up or recovery building aerobic base without impact stress.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "glutes", "cardiovascular"],
+      "equipment_required": ["treadmill"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Set treadmill to 3-5% incline at moderate walking pace (3-4 mph)",
+        "Walk with good posture, driving through heels",
+        "Maintain steady breathing for 15-30 minutes",
+        "Can progress to steeper inclines or faster pace"
+      ],
+      "tips": [
+        "Builds leg strength without running impact",
+        "Great for recovery days or injury prevention",
+        "Activates glutes more than flat walking"
+      ],
+      "common_mistakes": [
+        "Holding onto handrails reducing effectiveness",
+        "Leaning too far forward",
+        "Going too fast turning it into running"
+      ],
+      "alternatives": ["Outdoor hill walking", "Stairmaster", "Flat walking (easier)"]
+    },
+    {
+      "name": "Treadmill Intervals",
+      "description": "Structured high-intensity intervals on treadmill with controlled pace and recovery.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": ["treadmill"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "Warm up 10 minutes at easy pace on flat treadmill",
+        "Example: 8 x 2 minutes at 5K pace with 1 minute easy jog recovery",
+        "Adjust speed precisely for work and recovery intervals",
+        "Cool down 10 minutes easy to complete workout"
+      ],
+      "tips": [
+        "Treadmill provides perfect pace control for intervals",
+        "Can precisely replicate paces and recoveries",
+        "No external factors affecting consistency"
+      ],
+      "common_mistakes": [
+        "Not warming up sufficiently before intervals",
+        "Setting pace too fast for prescribed effort",
+        "Holding onto treadmill during intervals"
+      ],
+      "alternatives": ["Track intervals", "Fartlek", "Tempo run"]
+    },
+    {
+      "name": "Treadmill Sprints",
+      "description": "Short maximal effort sprints on treadmill developing speed and power.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "core", "cardiovascular"],
+      "equipment_required": ["treadmill"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Extensive warm-up then set treadmill to high speed (9-11 mph for most)",
+        "Straddle treadmill, start belt, jump on for 20-30 second sprint",
+        "Jump off to sides, recover 90 seconds to 2 minutes",
+        "Perform 6-10 reps maintaining form and speed"
+      ],
+      "tips": [
+        "Requires practice to safely mount/dismount moving treadmill",
+        "Builds pure speed and power",
+        "Full recovery essential between reps"
+      ],
+      "common_mistakes": [
+        "Not being comfortable with treadmill safety",
+        "Insufficient recovery between sprints",
+        "Attempting without proper sprint mechanics"
+      ],
+      "alternatives": ["Track sprints", "Hill sprints", "Incline sprints"]
+    },
+    {
+      "name": "Incline Sprints",
+      "description": "Maximum effort sprints on inclined treadmill building power with reduced impact.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "glutes", "calves", "cardiovascular"],
+      "equipment_required": ["treadmill"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "Set treadmill to 7-10% incline after thorough warm-up",
+        "Sprint at near-maximum effort for 20-30 seconds",
+        "Step off or reduce to walk for 2-3 minute recovery",
+        "Perform 6-10 reps, maintaining power output throughout"
+      ],
+      "tips": [
+        "Safer on joints than flat sprints due to incline",
+        "Exceptional for building leg power and strength",
+        "Mimics hill sprint benefits in controlled environment"
+      ],
+      "common_mistakes": [
+        "Holding onto handrails during sprints",
+        "Not achieving true sprint effort",
+        "Insufficient recovery between reps"
+      ],
+      "alternatives": ["Hill sprints outdoor", "Treadmill sprints flat", "Sled pushes"]
+    },
+    {
+      "name": "100m Sprints",
+      "description": "Classic short sprint distance developing pure speed and acceleration.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "core", "cardiovascular"],
+      "equipment_required": ["track"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "After extensive warm-up and drills, sprint 100m at 95-100% effort",
+        "Focus on explosive start, powerful acceleration, maintaining form",
+        "Walk or jog 3-4 minutes for full recovery",
+        "Perform 6-10 repetitions maintaining speed and form"
+      ],
+      "tips": [
+        "Pure speed development distance",
+        "Quality over quantity - stop if speed drops significantly",
+        "Perfect for developing fast-twitch muscle fibers"
+      ],
+      "common_mistakes": [
+        "Inadequate warm-up leading to injury risk",
+        "Not sprinting at true max effort",
+        "Insufficient recovery causing speed decline"
+      ],
+      "alternatives": ["200m repeats", "Flying 30s", "Hill sprints"]
+    },
+    {
+      "name": "200m Repeats",
+      "description": "Mid-distance sprint repeats building speed endurance and lactate tolerance.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": ["track"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "After warm-up, run 200m at 90-95% max effort",
+        "Target pace slightly slower than 100m sprint pace",
+        "Jog or walk 200m (2-3 minutes) for recovery",
+        "Perform 8-12 repetitions maintaining consistent times"
+      ],
+      "tips": [
+        "Bridges gap between pure sprints and longer intervals",
+        "Teaches speed endurance and lactate tolerance",
+        "Common middle-distance training staple"
+      ],
+      "common_mistakes": [
+        "Starting too fast and fading badly",
+        "Recovery too short for quality reps",
+        "Inconsistent pacing across reps"
+      ],
+      "alternatives": ["400m repeats", "300m repeats", "Sprint intervals"]
+    },
+    {
+      "name": "400m Repeats",
+      "description": "Quarter-mile repeats building VO2 max, speed endurance, and mental toughness.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "cardiovascular", "core"],
+      "equipment_required": ["track"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 14,
+      "instructions": [
+        "After warm-up, run 400m at mile race pace or 85-90% max effort",
+        "Maintain even pacing - don't go out too hard first 200m",
+        "Recover with 400m jog or 2-3 minute rest",
+        "Perform 6-12 repetitions depending on fitness and goal"
+      ],
+      "tips": [
+        "Classic VO2 max interval distance",
+        "First 200m should feel controlled, second 200m pushes threshold",
+        "Highly effective but very demanding workout"
+      ],
+      "common_mistakes": [
+        "Positive splitting (slowing down) each rep",
+        "Starting first rep too aggressively",
+        "Not maintaining form as fatigue sets in"
+      ],
+      "alternatives": ["800m repeats", "200m repeats", "Mile repeats"]
+    },
+    {
+      "name": "Flying 30s",
+      "description": "Acceleration into maximum velocity sprint emphasizing top-end speed development.",
+      "exercise_type": "running",
+      "muscle_groups": ["legs", "core", "cardiovascular"],
+      "equipment_required": ["track"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 15,
+      "instructions": [
+        "After warm-up, accelerate for 30-40m building to near-max speed",
+        "At full speed, sprint maximally for 30 meters ('flying' section)",
+        "Decelerate gradually over final 20-30 meters",
+        "Walk back for full recovery (3-4 minutes), repeat 4-6 times"
+      ],
+      "tips": [
+        "Develops true maximum velocity running mechanics",
+        "Acceleration phase gets you to top speed for flying portion",
+        "Advanced drill requiring excellent sprint mechanics"
+      ],
+      "common_mistakes": [
+        "Not reaching true max velocity before flying section",
+        "Insufficient recovery between reps",
+        "Poor deceleration technique causing injury risk"
+      ],
+      "alternatives": ["100m sprints", "Sprint intervals", "Strides"]
+    }
+  ]
+}

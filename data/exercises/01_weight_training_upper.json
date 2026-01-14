@@ -1,0 +1,1229 @@
+{
+  "category": "weight_training_upper",
+  "exercises": [
+    {
+      "name": "Barbell Bench Press (Flat)",
+      "description": "A fundamental upper body compound exercise that involves pressing a barbell from chest level while lying on a flat bench.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "triceps", "shoulders"],
+      "equipment_required": ["barbell", "bench"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Lie flat on the bench with feet planted firmly on the ground",
+        "Grip the barbell with hands slightly wider than shoulder-width apart, palms facing away",
+        "Lift the bar off the rack and position it directly above your chest with arms extended",
+        "Lower the bar to your chest in a controlled manner while keeping elbows at approximately 45 degrees",
+        "Press the bar back up explosively to the starting position, locking out at the top"
+      ],
+      "tips": [
+        "Retract your shoulder blades and keep them pinned to the bench throughout",
+        "Maintain a slight arch in your lower back with chest up",
+        "Keep your feet planted and drive through them for stability"
+      ],
+      "common_mistakes": [
+        "Flaring elbows out too wide (increases shoulder injury risk)",
+        "Bouncing the bar off the chest",
+        "Lifting hips off the bench during the press"
+      ],
+      "alternatives": ["Dumbbell Bench Press", "Machine Chest Press", "Push-ups"]
+    },
+    {
+      "name": "Barbell Bench Press (Incline)",
+      "description": "A bench press variation performed on an inclined bench that emphasizes the upper chest and front deltoids.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["upper chest", "shoulders", "triceps"],
+      "equipment_required": ["barbell", "incline bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Set the bench to a 30-45 degree incline angle",
+        "Lie back on the bench with feet flat on the floor",
+        "Grip the barbell slightly wider than shoulder-width with palms facing away",
+        "Lower the barbell to your upper chest area with control",
+        "Press the barbell up and slightly overhead until arms are fully extended"
+      ],
+      "tips": [
+        "A 30-45 degree angle is optimal for upper chest activation",
+        "Keep elbows tucked at approximately 45 degrees to protect shoulders",
+        "Activate your glutes to maintain a solid foundation"
+      ],
+      "common_mistakes": [
+        "Setting the incline too steep (over 45 degrees shifts emphasis to shoulders)",
+        "Allowing the bar to drift too far forward",
+        "Not maintaining full body tension"
+      ],
+      "alternatives": ["Incline Dumbbell Press", "Low to High Cable Crossover", "Incline Machine Press"]
+    },
+    {
+      "name": "Barbell Bench Press (Decline)",
+      "description": "A bench press variation performed on a declined bench that targets the lower portion of the chest.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lower chest", "triceps", "shoulders"],
+      "equipment_required": ["barbell", "decline bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Set the bench to a decline position with feet higher than head",
+        "Secure your feet under the foot pads for stability",
+        "Grip the barbell with hands wider than shoulder-width",
+        "Lower the bar to your lower chest area in a controlled motion",
+        "Press the weight back up to full arm extension"
+      ],
+      "tips": [
+        "Focus on keeping tension in the lower pecs throughout the movement",
+        "Maintain control as the decline position increases difficulty",
+        "Keep shoulder blades retracted"
+      ],
+      "common_mistakes": [
+        "Lowering the bar too high on the chest",
+        "Using momentum instead of controlled movement",
+        "Not securing feet properly leading to instability"
+      ],
+      "alternatives": ["Decline Dumbbell Press", "High to Low Cable Crossover", "Chest Dips"]
+    },
+    {
+      "name": "Dumbbell Bench Press (Flat)",
+      "description": "A chest-building exercise using dumbbells that allows for greater range of motion and works each side independently.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "triceps", "shoulders"],
+      "equipment_required": ["dumbbells", "bench"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Lie on a flat bench holding a dumbbell in each hand at chest level",
+        "Position dumbbells with palms facing forward, elbows bent at 90 degrees",
+        "Press both dumbbells upward until arms are fully extended above chest",
+        "Lower the dumbbells with control until they're level with your chest",
+        "Press back up to the starting position"
+      ],
+      "tips": [
+        "Keep dumbbells at equal height throughout the movement",
+        "Maintain stable shoulder blade position against the bench",
+        "Allow for a greater stretch at the bottom than barbell press"
+      ],
+      "common_mistakes": [
+        "Allowing dumbbells to drift too far apart or together",
+        "Losing control at the bottom of the movement",
+        "Not maintaining equal tempo on both sides"
+      ],
+      "alternatives": ["Barbell Bench Press", "Machine Chest Press", "Push-ups"]
+    },
+    {
+      "name": "Dumbbell Bench Press (Incline)",
+      "description": "An incline dumbbell press that targets the upper chest with independent arm movement for balanced development.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["upper chest", "shoulders", "triceps"],
+      "equipment_required": ["dumbbells", "incline bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Set bench to 30-45 degree incline and sit with back against the pad",
+        "Hold dumbbells at shoulder height with palms facing forward",
+        "Press dumbbells up and together in an arc motion until arms are extended",
+        "Lower dumbbells slowly to just below shoulder level",
+        "Maintain tension and press back to starting position"
+      ],
+      "tips": [
+        "Keep core engaged and feet planted firmly",
+        "Don't let dumbbells move further apart as you lower",
+        "Stop the dumbbells in line with each ear rather than bringing them together completely"
+      ],
+      "common_mistakes": [
+        "Setting incline too steep (reduces chest activation)",
+        "Lowering dumbbells too far causing shoulder strain",
+        "Using excessive momentum"
+      ],
+      "alternatives": ["Incline Barbell Press", "Cable Crossover (Low to High)", "Machine Incline Press"]
+    },
+    {
+      "name": "Dumbbell Chest Fly",
+      "description": "An isolation exercise that stretches and contracts the chest muscles through a wide arc motion.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "shoulders"],
+      "equipment_required": ["dumbbells", "bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on a flat bench holding dumbbells above chest with palms facing each other",
+        "Maintain a slight bend in elbows throughout the movement",
+        "Lower dumbbells out to sides in an arc motion until arms are parallel to ground",
+        "Squeeze chest to bring dumbbells back together above chest",
+        "Stop when dumbbells are in line with ears, not touching at the top"
+      ],
+      "tips": [
+        "Think about hugging a tree to maintain proper arc motion",
+        "Keep shoulder blades retracted against the bench",
+        "Use significantly lighter weight than pressing movements"
+      ],
+      "common_mistakes": [
+        "Lowering dumbbells below chest level (increases injury risk)",
+        "Bending elbows too much (turns into a press)",
+        "Bringing dumbbells all the way together at top (loses tension)"
+      ],
+      "alternatives": ["Cable Crossover", "Machine Fly", "Pec Deck"]
+    },
+    {
+      "name": "Cable Crossover",
+      "description": "A cable exercise that provides constant tension on the chest muscles throughout the movement.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "shoulders"],
+      "equipment_required": ["cable machine"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Set cable pulleys to appropriate height (high for lower chest, middle for middle chest, low for upper chest)",
+        "Grab handles with palms facing forward and step into the center",
+        "Lean slightly forward with one foot ahead for balance",
+        "Pull handles down and together in front of chest with slight elbow bend",
+        "Hold contraction briefly then return to starting position with control"
+      ],
+      "tips": [
+        "Imagine hugging a tree with your arms",
+        "Maintain stable torso position throughout",
+        "Focus on chest contraction rather than arm movement"
+      ],
+      "common_mistakes": [
+        "Using momentum or swinging the weight",
+        "Letting elbows bend too much during movement",
+        "Standing too upright (reduces chest activation)"
+      ],
+      "alternatives": ["Dumbbell Fly", "Machine Fly", "Cable Fly variations"]
+    },
+    {
+      "name": "Push-ups",
+      "description": "A classic bodyweight exercise that builds chest, shoulder, and tricep strength.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "triceps", "shoulders", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Start in plank position with hands slightly wider than shoulder-width",
+        "Keep body in a straight line from head to heels",
+        "Lower your body until chest nearly touches the ground",
+        "Keep elbows at 45-degree angle from body",
+        "Push back up to starting position maintaining rigid core"
+      ],
+      "tips": [
+        "Engage core and squeeze glutes to maintain straight body position",
+        "Don't let hips sag or pike up",
+        "Breathe in on the way down, out on the way up"
+      ],
+      "common_mistakes": [
+        "Letting hips sag creating lower back arch",
+        "Not lowering chest close enough to ground",
+        "Flaring elbows out too wide",
+        "Straining neck by looking forward instead of down"
+      ],
+      "alternatives": ["Knee Push-ups", "Incline Push-ups", "Bench Press", "Machine Chest Press"]
+    },
+    {
+      "name": "Machine Chest Press",
+      "description": "A fixed-path pressing movement that targets the chest with built-in stability.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["chest", "triceps", "shoulders"],
+      "equipment_required": ["chest press machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Adjust seat so handles are 2 inches below shoulders",
+        "Sit with back, glutes, and lower back firmly against the pad",
+        "Grip handles with feet planted firmly on the ground",
+        "Press handles forward while squeezing chest at the top",
+        "Return handles to starting position with control"
+      ],
+      "tips": [
+        "Keep shoulder blades squeezed against the back pad",
+        "Drive feet into floor for stability",
+        "Don't lock out elbows completely at the top"
+      ],
+      "common_mistakes": [
+        "Setting seat height incorrectly",
+        "Allowing shoulders to round forward",
+        "Using momentum instead of controlled movement"
+      ],
+      "alternatives": ["Barbell Bench Press", "Dumbbell Bench Press", "Push-ups"]
+    },
+    {
+      "name": "Chest Dips",
+      "description": "A bodyweight exercise that emphasizes the lower chest and triceps when performed with forward lean.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lower chest", "triceps", "shoulders"],
+      "equipment_required": ["dip bars"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Grip dip bars and lift yourself to starting position with arms extended",
+        "Lean torso forward and bring chin to chest",
+        "Bend legs backwards and allow elbows to flare slightly outward",
+        "Lower body until upper arms are parallel to floor (90-degree angle)",
+        "Press back up to starting position without fully locking out elbows"
+      ],
+      "tips": [
+        "Greater forward lean increases chest activation",
+        "Use a wider grip for more chest emphasis",
+        "Keep slight hollow in lower back"
+      ],
+      "common_mistakes": [
+        "Staying too upright (shifts focus to triceps)",
+        "Going below 90 degrees (increases shoulder strain)",
+        "Fully locking out elbows at top"
+      ],
+      "alternatives": ["Decline Bench Press", "Machine Chest Press", "Weighted Push-ups"]
+    },
+    {
+      "name": "Barbell Row (Bent Over)",
+      "description": "A fundamental back-building compound exercise that develops thickness in the lats and upper back.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rhomboids", "traps", "biceps"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with feet shoulder-width apart, holding barbell with overhand grip",
+        "Hinge at hips with slight knee bend until torso is at 45-degree angle",
+        "Keep back straight and core braced throughout",
+        "Pull barbell to lower chest/upper abdomen by driving elbows back",
+        "Squeeze shoulder blades together at the top, then lower with control"
+      ],
+      "tips": [
+        "Focus on pulling with elbows, not hands",
+        "Keep the bar close to your body throughout the movement",
+        "Maintain neutral spine—don't round the back"
+      ],
+      "common_mistakes": [
+        "Rounding the back (increases injury risk)",
+        "Standing too upright (reduces range of motion)",
+        "Using momentum instead of controlled pulling"
+      ],
+      "alternatives": ["Dumbbell Row", "T-Bar Row", "Seated Cable Row", "Pendlay Row"]
+    },
+    {
+      "name": "Pendlay Row",
+      "description": "An explosive barbell row variation where the bar returns to the floor between reps, emphasizing power and back strength.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "traps", "rhomboids", "lower back"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with barbell on floor and feet hip-width apart under the bar",
+        "Hinge at hips to 90 degrees with torso parallel to floor",
+        "Grip barbell with overhand grip slightly wider than shoulder-width",
+        "Explosively pull the bar to base of chest/lower ribcage",
+        "Lower bar back to floor completely before starting next rep"
+      ],
+      "tips": [
+        "Brace core hard and keep back flat throughout",
+        "Think about pulling the bar to your hips",
+        "Drive feet into floor as you pull"
+      ],
+      "common_mistakes": [
+        "Not returning bar fully to floor between reps",
+        "Allowing hips to rise during the pull",
+        "Elevating shoulders instead of pulling with lats"
+      ],
+      "alternatives": ["Bent Over Row", "T-Bar Row", "Seal Row"]
+    },
+    {
+      "name": "Dumbbell Row (Single Arm)",
+      "description": "A unilateral rowing exercise that builds lat strength and size while allowing focus on each side independently.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rhomboids", "traps", "biceps"],
+      "equipment_required": ["dumbbell", "bench"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Place right hand and right knee on flat bench with left leg stepped out to side",
+        "Keep back straight and parallel to ground",
+        "Grab dumbbell with left hand, arm fully extended",
+        "Row dumbbell up to side until upper arm is parallel with floor",
+        "Lower slowly back to starting position and repeat, then switch sides"
+      ],
+      "tips": [
+        "Pull the dumbbell toward your hip, not your chest",
+        "Keep torso stable—avoid rotating",
+        "Think about driving your elbow to the ceiling"
+      ],
+      "common_mistakes": [
+        "Rotating torso during the row",
+        "Pulling weight to chest instead of hip",
+        "Using momentum instead of controlled movement"
+      ],
+      "alternatives": ["Barbell Row", "Seated Cable Row", "T-Bar Row", "Chest Supported Row"]
+    },
+    {
+      "name": "Pull-ups",
+      "description": "A bodyweight exercise using an overhand grip that primarily targets the back muscles with emphasis on lats.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "upper back", "biceps", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Grip pull-up bar with hands wider than shoulder-width, palms facing away (pronated grip)",
+        "Hang with arms fully extended and engage core",
+        "Pull yourself up by driving elbows down toward hips",
+        "Continue until chin clears the bar",
+        "Lower yourself with control back to full arm extension"
+      ],
+      "tips": [
+        "Think about pulling your elbows down rather than pulling yourself up",
+        "Keep chest up and shoulder blades retracted",
+        "Avoid swinging or using momentum"
+      ],
+      "common_mistakes": [
+        "Not achieving full range of motion at bottom or top",
+        "Kipping or swinging to generate momentum",
+        "Shrugging shoulders up toward ears"
+      ],
+      "alternatives": ["Lat Pulldown", "Assisted Pull-ups", "Negative Pull-ups", "Chin-ups"]
+    },
+    {
+      "name": "Chin-ups",
+      "description": "A vertical pulling exercise using an underhand grip that emphasizes biceps and lats with a narrower grip.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "biceps", "upper back", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Grip bar with hands shoulder-width apart, palms facing toward you (supinated grip)",
+        "Hang with arms fully extended",
+        "Pull yourself up by contracting biceps and lats",
+        "Continue until chest reaches or clears the bar",
+        "Lower with control to starting position"
+      ],
+      "tips": [
+        "Narrower grip allows for more bicep and chest recruitment",
+        "Generally easier than pull-ups due to increased bicep involvement",
+        "Keep movement controlled without swinging"
+      ],
+      "common_mistakes": [
+        "Not lowering to full arm extension",
+        "Using momentum to complete reps",
+        "Not engaging lats properly"
+      ],
+      "alternatives": ["Pull-ups", "Lat Pulldown (Underhand)", "Assisted Chin-ups"]
+    },
+    {
+      "name": "Lat Pulldown (Wide Grip)",
+      "description": "A cable machine exercise using a wide grip that isolates the latissimus dorsi muscles.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "upper back", "biceps"],
+      "equipment_required": ["lat pulldown machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Sit on lat pulldown machine and adjust knee pad to secure thighs",
+        "Grip bar with overhand grip, hands wider than shoulder-width",
+        "Lean back slightly (about 30 degrees) with chest out",
+        "Pull bar down to upper chest by driving elbows down and back",
+        "Slowly return bar to starting position with arms fully extended"
+      ],
+      "tips": [
+        "Focus on pulling with your lats, not your arms",
+        "Keep chest up and maintain slight backward lean",
+        "Pull bar to upper chest, not behind neck"
+      ],
+      "common_mistakes": [
+        "Pulling bar behind neck (increases injury risk)",
+        "Using excessive body swing",
+        "Not achieving full range of motion at top"
+      ],
+      "alternatives": ["Pull-ups", "Close Grip Lat Pulldown", "Straight Arm Pulldown"]
+    },
+    {
+      "name": "Lat Pulldown (Close Grip)",
+      "description": "A lat pulldown variation using a V-handle attachment that provides greater range of motion and targets mid-back.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rhomboids", "traps", "biceps"],
+      "equipment_required": ["lat pulldown machine", "V-handle"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Attach V-handle to lat pulldown machine and adjust knee pad",
+        "Grip V-handle with neutral grip (palms facing each other)",
+        "Sit with core engaged and slight backward lean",
+        "Pull handle down toward upper chest until it passes chin height",
+        "Slowly extend arms to return handle to starting position"
+      ],
+      "tips": [
+        "Pull elbows down toward hips rather than straight down",
+        "Don't pull the grip down too low (stops at upper chest)",
+        "Focus on squeezing lats at the bottom"
+      ],
+      "common_mistakes": [
+        "Pulling attachment down to waist (shifts work to shoulders and forearms)",
+        "Using momentum instead of controlled movement",
+        "Not maintaining core tension"
+      ],
+      "alternatives": ["Chin-ups", "Wide Grip Lat Pulldown", "Cable Row"]
+    },
+    {
+      "name": "Seated Cable Row",
+      "description": "A horizontal pulling exercise that develops thickness in the middle back and lats.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rhomboids", "traps", "biceps"],
+      "equipment_required": ["cable machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Sit on cable row machine with feet on platform and knees slightly bent",
+        "Grip handle attachment with both hands and sit upright with neutral spine",
+        "Pull handle toward belly button while keeping torso stationary",
+        "Squeeze shoulder blades together at the end of the movement",
+        "Slowly extend arms to return to starting position"
+      ],
+      "tips": [
+        "Think about pulling your elbows toward your hips",
+        "Keep torso perpendicular to floor (beginners) or allow slight stretch forward (advanced)",
+        "Avoid excessive backward lean"
+      ],
+      "common_mistakes": [
+        "Swinging torso back and forth",
+        "Rounding the spine",
+        "Using arms instead of back muscles to pull"
+      ],
+      "alternatives": ["Barbell Row", "Dumbbell Row", "T-Bar Row", "Chest Supported Row"]
+    },
+    {
+      "name": "Face Pulls",
+      "description": "A cable exercise that targets the rear deltoids, upper back, and rotator cuff muscles.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["rear deltoids", "traps", "rhomboids", "rotator cuff"],
+      "equipment_required": ["cable machine", "rope attachment"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Set cable to chest height and attach rope handle",
+        "Grip rope with neutral grip (palms facing each other)",
+        "Step back with shoulder-width or staggered stance",
+        "Pull rope toward face while separating the rope ends",
+        "Keep elbows high and pointed upward as you pull"
+      ],
+      "tips": [
+        "Focus on external rotation of shoulders at end of movement",
+        "Use higher reps (12-15) as this targets slow-twitch muscle fibers",
+        "Squeeze rear delts at peak contraction"
+      ],
+      "common_mistakes": [
+        "Using too much weight and losing form",
+        "Letting elbows drop below shoulder level",
+        "Not externally rotating at the shoulders"
+      ],
+      "alternatives": ["Rear Delt Fly", "Reverse Pec Deck", "Band Pull-Aparts"]
+    },
+    {
+      "name": "T-Bar Row",
+      "description": "A compound rowing movement that builds back thickness and strength with a stable, angled bar position.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rhomboids", "traps", "lower back"],
+      "equipment_required": ["T-bar machine or landmine"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with feet shoulder-width apart straddling the bar",
+        "Hinge at hips with knees slightly bent and back neutral",
+        "Grip handles (wide for lats, narrow for mid-back)",
+        "Pull bar toward lower chest by driving elbows back",
+        "Squeeze shoulder blades together then lower with control"
+      ],
+      "tips": [
+        "Keep chest low and parallel to floor for full range of motion",
+        "Brace core throughout to protect lower back",
+        "Think about pulling elbows toward ceiling"
+      ],
+      "common_mistakes": [
+        "Standing too upright (reduces range of motion)",
+        "Allowing back to curve forward",
+        "Using momentum instead of controlled pulls"
+      ],
+      "alternatives": ["Barbell Row", "Dumbbell Row", "Chest Supported Row", "Pendlay Row"]
+    },
+    {
+      "name": "Deadlift (Conventional)",
+      "description": "A foundational compound lift that develops the entire posterior chain including back, glutes, and hamstrings.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lower back", "traps", "lats", "glutes", "hamstrings"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Stand with feet hip-width apart, barbell over midfoot",
+        "Hinge at hips and grip bar just outside legs with hands",
+        "Lower hips, chest up, back flat, shoulders over or slightly in front of bar",
+        "Brace core, engage lats, and push floor away with feet to lift bar",
+        "Stand fully upright with hips and knees locked, then lower bar with control"
+      ],
+      "tips": [
+        "Think 'leg press the earth away' rather than pulling the bar",
+        "Keep bar close to body throughout—it should drag up shins",
+        "Maintain neutral spine—don't round back"
+      ],
+      "common_mistakes": [
+        "Rounding the back at any point in the lift",
+        "Starting with hips too low or too high",
+        "Not maintaining full-foot contact with ground",
+        "Letting bar drift away from body"
+      ],
+      "alternatives": ["Romanian Deadlift", "Trap Bar Deadlift", "Rack Pulls"]
+    },
+    {
+      "name": "Straight Arm Pulldown",
+      "description": "An isolation exercise that targets the lats through a long range of motion with straight arms.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["lats", "rear deltoids", "core"],
+      "equipment_required": ["cable machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Attach rope or bar to high pulley on cable machine",
+        "Stand facing machine with feet shoulder-width apart and slight knee bend",
+        "Grip attachment with arms extended overhead, feeling lat stretch",
+        "Drive arms down in arc motion toward hips while keeping arms straight",
+        "Slowly return to starting position maintaining tension"
+      ],
+      "tips": [
+        "Bend hips back to 30-45 degree angle for proper positioning",
+        "Think about pulling with lats, not arms",
+        "Excellent for improving deadlift strength and lat engagement"
+      ],
+      "common_mistakes": [
+        "Bending elbows during the movement",
+        "Using momentum or swinging",
+        "Not achieving full stretch at top position"
+      ],
+      "alternatives": ["Pull-overs", "Lat Pulldown", "Pull-ups"]
+    },
+    {
+      "name": "Overhead Press (Barbell)",
+      "description": "A fundamental shoulder-building exercise that develops all three deltoid heads and overhead strength.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["shoulders", "triceps", "upper chest", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with feet shoulder-width apart, barbell at shoulder height",
+        "Grip bar just outside shoulders with palms facing forward",
+        "Brace core and squeeze glutes, maintaining slight upper back arch",
+        "Press bar overhead in straight line, moving head slightly back to clear bar",
+        "Lock out at top with bar over center of body, then lower with control"
+      ],
+      "tips": [
+        "Shrug shoulders at top to engage traps and protect rotator cuff",
+        "Keep elbows pointed forward and down under wrists",
+        "Don't arch lower back excessively—squeeze glutes to prevent this"
+      ],
+      "common_mistakes": [
+        "Excessive lower back arching",
+        "Letting elbows flare out to sides",
+        "Pressing too far forward or behind body",
+        "Not reaching full elbow extension at top"
+      ],
+      "alternatives": ["Dumbbell Overhead Press", "Machine Shoulder Press", "Push Press"]
+    },
+    {
+      "name": "Overhead Press (Dumbbell)",
+      "description": "A shoulder press using dumbbells that allows for natural arm movement and independent work for each side.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["shoulders", "triceps", "core"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Stand or sit with dumbbells at shoulder height, palms facing forward",
+        "Brace core and maintain neutral spine",
+        "Press dumbbells overhead until arms are fully extended",
+        "Keep dumbbells moving in straight vertical path",
+        "Lower dumbbells back to shoulder height with control"
+      ],
+      "tips": [
+        "Can be performed seated to reduce core involvement and isolate shoulders",
+        "Keep wrists neutral and locked in position",
+        "Avoid letting dumbbells drift too far forward or back"
+      ],
+      "common_mistakes": [
+        "Arching lower back excessively",
+        "Not pressing dumbbells in vertical line",
+        "Letting one side lag behind the other"
+      ],
+      "alternatives": ["Barbell Overhead Press", "Arnold Press", "Machine Shoulder Press"]
+    },
+    {
+      "name": "Arnold Press",
+      "description": "A shoulder press variation with rotation that targets all three deltoid heads with increased range of motion.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["shoulders", "triceps", "upper chest"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Sit or stand with dumbbells at shoulder height, palms facing toward you",
+        "Press dumbbells up while simultaneously rotating wrists outward",
+        "Finish with arms extended overhead and palms facing forward",
+        "Reverse the movement by rotating palms back while lowering",
+        "Return to starting position with palms facing you at shoulder level"
+      ],
+      "tips": [
+        "The rotation targets rear delts in addition to front and side delts",
+        "Start with lighter weight than standard shoulder press",
+        "Move smoothly through the rotation"
+      ],
+      "common_mistakes": [
+        "Using too much weight and losing control of rotation",
+        "Not completing full range of motion at bottom",
+        "Rushing through the movement"
+      ],
+      "alternatives": ["Dumbbell Shoulder Press", "Barbell Overhead Press", "Machine Press"]
+    },
+    {
+      "name": "Lateral Raise (Dumbbell)",
+      "description": "An isolation exercise that targets the side deltoids to build shoulder width.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["side deltoids", "traps"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand with feet shoulder-width apart, dumbbells at sides with palms facing body",
+        "Maintain slight bend in elbows throughout movement",
+        "Raise arms out to sides, leading with elbows",
+        "Lift until arms are parallel to ground (shoulder height)",
+        "Lower dumbbells with control back to starting position"
+      ],
+      "tips": [
+        "Lead with elbows, not hands—elbows should be higher than hands",
+        "Raise dumbbells 20 degrees in front of chest, not straight out to sides",
+        "Use lighter weight and focus on form over load",
+        "3-second count up, 3-second count down"
+      ],
+      "common_mistakes": [
+        "Using momentum or swinging weights",
+        "Leading with hands instead of elbows",
+        "Going above shoulder height unnecessarily",
+        "Bending at waist"
+      ],
+      "alternatives": ["Cable Lateral Raise", "Machine Lateral Raise", "Band Lateral Raise"]
+    },
+    {
+      "name": "Front Raise (Dumbbell)",
+      "description": "An isolation exercise that primarily targets the front deltoids.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["front deltoids", "upper chest"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Stand with dumbbells in front of thighs, palms facing downward or toward body",
+        "Brace core and maintain neutral spine",
+        "Raise dumbbells forward in arc motion until arms are parallel to floor",
+        "Keep arms extended with slight elbow bend throughout",
+        "Lower dumbbells slowly back to starting position"
+      ],
+      "tips": [
+        "Can be performed alternating arms for each repetition",
+        "Keep torso stationary—don't lean back",
+        "Stop at shoulder height, no need to go higher"
+      ],
+      "common_mistakes": [
+        "Using momentum by swinging weights",
+        "Leaning back to assist the lift",
+        "Raising dumbbells too high above shoulder level"
+      ],
+      "alternatives": ["Barbell Front Raise", "Cable Front Raise", "Plate Front Raise"]
+    },
+    {
+      "name": "Rear Delt Fly (Dumbbell)",
+      "description": "An isolation movement that targets the often-neglected rear deltoids.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["rear deltoids", "upper back"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Hinge forward at hips with slight knee bend until torso is nearly parallel to floor",
+        "Hold dumbbells with arms hanging down, palms facing each other",
+        "Raise dumbbells out to sides with slight elbow bend",
+        "Squeeze shoulder blades together at top of movement",
+        "Lower dumbbells with control back to starting position"
+      ],
+      "tips": [
+        "Keep back flat and core engaged throughout",
+        "Lead with elbows, not hands",
+        "Focus on rear delt contraction rather than weight used"
+      ],
+      "common_mistakes": [
+        "Using too much weight and losing form",
+        "Not maintaining bent-over position",
+        "Letting upper back do the work instead of rear delts"
+      ],
+      "alternatives": ["Face Pulls", "Reverse Pec Deck", "Cable Rear Delt Fly"]
+    },
+    {
+      "name": "Upright Row (Barbell)",
+      "description": "A pulling exercise that targets shoulders and traps by lifting the barbell vertically along the body.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["shoulders", "traps", "upper back"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Stand with feet shoulder-width apart, holding barbell at waist with overhand grip",
+        "Grip width slightly narrower than shoulder-width",
+        "Pull barbell up along body toward chin, leading with elbows",
+        "Keep elbows higher than wrists throughout movement",
+        "Lower barbell slowly back to starting position"
+      ],
+      "tips": [
+        "Wider grip works side deltoids more; narrower grip targets traps",
+        "Don't raise bar above upper chest/chin level",
+        "Engage shoulders and traps, avoid using lower back"
+      ],
+      "common_mistakes": [
+        "Using lower back to lift weight",
+        "Raising bar too high (increases shoulder impingement risk)",
+        "Swinging weight instead of controlled movement"
+      ],
+      "alternatives": ["Dumbbell Upright Row", "Face Pulls", "Cable Upright Row"]
+    },
+    {
+      "name": "Cable Lateral Raise",
+      "description": "A cable variation of lateral raises that provides constant tension throughout the movement.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["side deltoids"],
+      "equipment_required": ["cable machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Set cable pulley to lowest position and attach handle",
+        "Stand beside cable machine and grip handle with far hand",
+        "Maintain slight elbow bend and raise arm out to side",
+        "Lift until arm is parallel to ground at shoulder height",
+        "Lower with control back to starting position"
+      ],
+      "tips": [
+        "Cable provides constant tension unlike dumbbells",
+        "Can perform one arm at a time for better focus",
+        "Lead with elbow, not hand"
+      ],
+      "common_mistakes": [
+        "Using too much weight and losing form",
+        "Leaning away from cable",
+        "Not controlling the eccentric (lowering) portion"
+      ],
+      "alternatives": ["Dumbbell Lateral Raise", "Machine Lateral Raise"]
+    },
+    {
+      "name": "Barbell Curl",
+      "description": "A fundamental biceps exercise using a straight barbell to build arm size and strength.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps", "forearms"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand with feet shoulder-width apart, holding barbell with underhand grip",
+        "Start with arms fully extended, barbell at thigh level",
+        "Keep elbows tight to sides and curl bar up toward shoulders",
+        "Squeeze biceps at top of movement",
+        "Lower bar with control to full arm extension"
+      ],
+      "tips": [
+        "Keep elbows stationary—don't let them move forward",
+        "Avoid swinging or using momentum",
+        "Full range of motion from complete extension to full contraction"
+      ],
+      "common_mistakes": [
+        "Swinging weight using back and hips",
+        "Letting elbows drift forward",
+        "Not lowering to full arm extension",
+        "Using wrists instead of keeping them neutral"
+      ],
+      "alternatives": ["Dumbbell Curl", "EZ Bar Curl", "Cable Curl"]
+    },
+    {
+      "name": "EZ Bar Curl",
+      "description": "A biceps curl using an EZ bar with angled grips that reduces wrist strain.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps", "forearms"],
+      "equipment_required": ["EZ bar"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand with feet shoulder-width apart holding EZ bar with underhand grip on angled sections",
+        "Arms fully extended with bar at thigh level",
+        "Keep elbows pinned to sides and curl bar toward shoulders",
+        "Squeeze biceps at top, avoiding backward lean",
+        "Lower bar slowly to full extension before next rep"
+      ],
+      "tips": [
+        "Angled grip allows semi-supinated position that's easier on wrists",
+        "Wide grip emphasizes bicep width; narrow grip targets bicep peak",
+        "Maintain straight wrists—can slightly cock away from body for advanced lifters"
+      ],
+      "common_mistakes": [
+        "Swinging elbows forward",
+        "Using momentum instead of bicep strength",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Barbell Curl", "Dumbbell Curl", "Preacher Curl"]
+    },
+    {
+      "name": "Dumbbell Curl",
+      "description": "A biceps exercise using dumbbells that allows for natural arm movement and independent work.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps", "forearms"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand with dumbbells at sides, arms fully extended, palms facing forward",
+        "Keep elbows close to body throughout movement",
+        "Curl dumbbells toward shoulders, keeping upper arms stationary",
+        "Squeeze biceps at top of movement",
+        "Lower dumbbells with control to starting position"
+      ],
+      "tips": [
+        "Can be performed alternating arms or simultaneously",
+        "Rotate pinkies toward ceiling as you curl for maximum contraction",
+        "Keep shoulders back and core engaged"
+      ],
+      "common_mistakes": [
+        "Swinging weights using momentum",
+        "Letting elbows drift away from sides",
+        "Not controlling the descent"
+      ],
+      "alternatives": ["Barbell Curl", "Hammer Curl", "Cable Curl"]
+    },
+    {
+      "name": "Hammer Curl",
+      "description": "A biceps curl variation using neutral grip that targets the brachialis and brachioradialis.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps", "brachialis", "forearms"],
+      "equipment_required": ["dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand or sit with dumbbells at sides, palms facing each other (neutral grip)",
+        "Keep upper arms and elbows close to body",
+        "Curl dumbbells toward shoulders maintaining neutral grip throughout",
+        "Pause at top and squeeze biceps and forearms",
+        "Lower with control to starting position"
+      ],
+      "tips": [
+        "Neutral grip activates forearms and deeper bicep muscles (brachialis)",
+        "Targets upper and outer bicep for balanced arm development",
+        "Can perform seated to limit momentum"
+      ],
+      "common_mistakes": [
+        "Rotating wrists during movement",
+        "Using momentum to lift weight",
+        "Allowing elbows to move away from body"
+      ],
+      "alternatives": ["Dumbbell Curl", "Cross-Body Hammer Curl", "Cable Hammer Curl"]
+    },
+    {
+      "name": "Preacher Curl",
+      "description": "A biceps curl performed on a preacher bench that emphasizes the lengthened position of the biceps.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps"],
+      "equipment_required": ["preacher bench", "barbell or dumbbells"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Adjust bench so chest is flush against pad with armpits wedged in",
+        "Extend arms over pad and grip weight with underhand grip",
+        "Curl weight up, rotating pinkies toward ceiling",
+        "Stop before forearms are perpendicular to maintain tension",
+        "Lower weight below 90 degrees to emphasize lengthened position"
+      ],
+      "tips": [
+        "Emphasizes lengthened-position tension which is crucial for bicep growth",
+        "Keep elbows on pad throughout—lifting them invites shoulder flexion",
+        "Don't let weight rest on bench at any point during set"
+      ],
+      "common_mistakes": [
+        "Lifting elbows off the pad",
+        "Going to full perpendicular position (loses tension)",
+        "Using too much weight and cheating form"
+      ],
+      "alternatives": ["Incline Dumbbell Curl", "Cable Curl", "Concentration Curl"]
+    },
+    {
+      "name": "Concentration Curl",
+      "description": "A seated biceps isolation exercise that eliminates momentum and emphasizes peak contraction.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps"],
+      "equipment_required": ["dumbbell", "bench"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": true,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit on bench with dumbbell between legs",
+        "Place upper arm (triceps) against inner thigh with arm perpendicular to ground",
+        "Make fist with opposite hand and extend to side for balance",
+        "Curl dumbbell up with control, keeping wrist neutral",
+        "Squeeze biceps hard at top without leaning back, then lower slowly"
+      ],
+      "tips": [
+        "Wedge upper arm into thigh, not just elbow",
+        "Upper arm should stay perpendicular to ground throughout",
+        "Emphasize squeeze at top for peak biceps development"
+      ],
+      "common_mistakes": [
+        "Wedging elbow instead of upper arm into thigh",
+        "Leaning back as you curl",
+        "Curling too high causing triceps to lose thigh contact"
+      ],
+      "alternatives": ["Preacher Curl", "Cable Curl", "Dumbbell Curl"]
+    },
+    {
+      "name": "Incline Dumbbell Curl",
+      "description": "A biceps curl performed on an incline bench that maximizes stretch on the long head of the biceps.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["biceps", "forearms"],
+      "equipment_required": ["dumbbells", "incline bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Set bench to 45-60 degree incline and sit with back against pad",
+        "Hold dumbbells with arms hanging behind body, palms facing forward",
+        "Keep upper arms stationary and curl dumbbells toward shoulders",
+        "Squeeze biceps at top of movement",
+        "Lower slowly with control to maximize eccentric stretch"
+      ],
+      "tips": [
+        "45-degree angle provides optimal stretch on long head of biceps",
+        "Arms behind body creates greater range of motion than standing curls",
+        "Longer eccentric portion enhances hypertrophy"
+      ],
+      "common_mistakes": [
+        "Setting incline too low (negates benefits)",
+        "Letting upper arms move forward during curl",
+        "Not lowering to full extension"
+      ],
+      "alternatives": ["Preacher Curl", "Dumbbell Curl", "Cable Curl"]
+    },
+    {
+      "name": "Tricep Pushdown (Cable)",
+      "description": "A cable isolation exercise that targets all three heads of the triceps with constant tension.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["triceps"],
+      "equipment_required": ["cable machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Set cable pulley to high position and attach straight bar or rope",
+        "Stand facing machine with feet hip-width apart, slight knee bend",
+        "Grip attachment with elbows pinned to sides at 90 degrees",
+        "Push bar/rope down by extending only at elbows until arms are straight",
+        "Return to starting position with control"
+      ],
+      "tips": [
+        "Keep elbows tight to sides—they shouldn't move",
+        "Focus on tricep extension, not pressing with shoulders",
+        "Can use rope attachment for slightly different angle"
+      ],
+      "common_mistakes": [
+        "Allowing elbows to drift forward or flare out",
+        "Using shoulders and upper body to press weight",
+        "Not achieving full extension at bottom"
+      ],
+      "alternatives": ["Skull Crushers", "Overhead Tricep Extension", "Close-Grip Bench Press", "Dips"]
+    },
+    {
+      "name": "Skull Crushers (Lying Tricep Extension)",
+      "description": "A lying triceps exercise that builds mass by allowing heavy weight with focus on tricep extension.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["triceps"],
+      "equipment_required": ["barbell or dumbbells", "bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Lie on flat bench with barbell or dumbbells held with arms perpendicular to chest",
+        "Grip EZ bar or dumbbells with hands at shoulder-width",
+        "Lower weight toward forehead by bending only at elbows",
+        "Extend arms back to starting position using triceps",
+        "Can lower above head for greater long head emphasis and constant tension"
+      ],
+      "tips": [
+        "EZ bar grip reduces wrist stress and emphasizes lateral head",
+        "Extending arms further back overhead targets long head more",
+        "Keep upper arms stationary throughout"
+      ],
+      "common_mistakes": [
+        "Letting elbows flare out to sides",
+        "Moving upper arms instead of just forearms",
+        "Dropping weight too fast risking head injury"
+      ],
+      "alternatives": ["Overhead Tricep Extension", "Tricep Pushdown", "Close-Grip Bench Press"]
+    },
+    {
+      "name": "Overhead Tricep Extension (Dumbbell)",
+      "description": "A triceps exercise performed overhead that emphasizes the long head of the triceps.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["triceps"],
+      "equipment_required": ["dumbbell"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand or sit holding dumbbell overhead with both hands cupping one end",
+        "Extend arms fully overhead to starting position",
+        "Brace core and pull belly button toward pelvis",
+        "Lower dumbbell behind head by bending only at elbows",
+        "Extend arms back to starting position by squeezing triceps"
+      ],
+      "tips": [
+        "Keep upper arms stationary—only forearms should move",
+        "Can perform seated to reduce lower back stress",
+        "Standing version engages core more"
+      ],
+      "common_mistakes": [
+        "Overextending lower back",
+        "Allowing upper arms to move forward",
+        "Using too much weight and losing form"
+      ],
+      "alternatives": ["Cable Overhead Extension", "Skull Crushers", "Tricep Pushdown"]
+    },
+    {
+      "name": "Dips (Tricep Focus)",
+      "description": "A bodyweight exercise emphasizing the triceps through an upright body position.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["triceps", "chest", "shoulders"],
+      "equipment_required": ["dip bars"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Grip dip bars and lift to starting position with arms extended",
+        "Keep body upright with head facing forward",
+        "Extend legs downward and keep elbows close to body",
+        "Lower body by bending elbows until upper arms are parallel to floor",
+        "Press back up using triceps without fully locking elbows"
+      ],
+      "tips": [
+        "Upright torso maximizes tricep activation",
+        "Narrow grip emphasizes triceps more than wide grip",
+        "Don't go below 90-degree angle to protect shoulders"
+      ],
+      "common_mistakes": [
+        "Leaning forward (shifts emphasis to chest)",
+        "Letting elbows flare out",
+        "Fully locking out elbows at top"
+      ],
+      "alternatives": ["Close-Grip Bench Press", "Tricep Pushdown", "Overhead Tricep Extension"]
+    },
+    {
+      "name": "Close-Grip Bench Press",
+      "description": "A bench press variation with narrow grip that emphasizes triceps while still engaging chest.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["triceps", "chest", "shoulders"],
+      "equipment_required": ["barbell", "bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Lie on flat bench and grip barbell with hands closer than shoulder-width",
+        "Position bar over chest with arms extended",
+        "Lower bar to mid-chest keeping elbows tucked close to sides",
+        "Press bar back up focusing on tricep extension",
+        "Lock out at top and repeat"
+      ],
+      "tips": [
+        "Keep elbows tucked at approximately 30-45 degrees from body",
+        "Don't grip too narrow as this can strain wrists",
+        "Excellent for building tricep mass and lockout strength"
+      ],
+      "common_mistakes": [
+        "Gripping too narrow causing wrist pain",
+        "Letting elbows flare out wide",
+        "Bouncing bar off chest"
+      ],
+      "alternatives": ["Tricep Dips", "Skull Crushers", "Tricep Pushdown"]
+    }
+  ]
+}

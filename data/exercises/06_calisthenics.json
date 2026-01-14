@@ -1,0 +1,1321 @@
+{
+  "category": "calisthenics",
+  "exercises": [
+    {
+      "name": "Push-up (Standard)",
+      "description": "The fundamental horizontal pushing movement that builds chest, shoulders, and triceps strength.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["chest", "triceps", "shoulders", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Start in plank position with hands slightly wider than shoulder-width, body in straight line",
+        "Lower chest to floor by bending elbows, keeping them at 45-degree angle to torso",
+        "Descend until chest nearly touches ground, maintaining tight core",
+        "Press through palms to return to starting position, repeat for desired reps"
+      ],
+      "tips": [
+        "Keep body in straight line from head to heels - no sagging hips",
+        "Engage core throughout entire movement",
+        "Breathe in on descent, breathe out on ascent"
+      ],
+      "common_mistakes": [
+        "Letting hips sag or pike up",
+        "Flaring elbows out to 90 degrees",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Incline push-up (easier)", "Decline push-up (harder)", "Diamond push-up"]
+    },
+    {
+      "name": "Wide Push-up",
+      "description": "A push-up variation with hands placed wider to emphasize chest activation.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["chest", "shoulders", "triceps"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Place hands 6-12 inches wider than shoulder-width in plank position",
+        "Lower body while keeping elbows tracking over wrists",
+        "Descend until chest is 1-2 inches from floor",
+        "Press back up maintaining wide hand position throughout"
+      ],
+      "tips": [
+        "This variation places more emphasis on outer chest",
+        "Keep core tight to prevent lower back arch",
+        "Don't go so wide that shoulder stability is compromised"
+      ],
+      "common_mistakes": [
+        "Hands too wide causing shoulder instability",
+        "Incomplete range of motion",
+        "Losing core tension"
+      ],
+      "alternatives": ["Standard push-up", "Archer push-up", "Pseudo planche push-up"]
+    },
+    {
+      "name": "Diamond Push-up",
+      "description": "A narrow-grip push-up that significantly increases triceps activation.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "chest", "shoulders"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Form diamond shape with hands by touching thumbs and index fingers together",
+        "Position hands directly under chest in plank position",
+        "Lower body keeping elbows close to sides",
+        "Press back up focusing on triceps engagement"
+      ],
+      "tips": [
+        "Keep elbows tucked close to body throughout movement",
+        "This is one of the best triceps bodyweight exercises",
+        "Progression toward archer and one-arm push-ups"
+      ],
+      "common_mistakes": [
+        "Letting elbows flare out wide",
+        "Not descending low enough",
+        "Rushing through reps"
+      ],
+      "alternatives": ["Close-grip push-up", "Archer push-up", "Standard push-up (easier)"]
+    },
+    {
+      "name": "Decline Push-up",
+      "description": "An elevated-feet push-up that increases difficulty and upper chest activation.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["upper chest", "shoulders", "triceps", "core"],
+      "equipment_required": ["box", "bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Place feet on elevated surface 12-24 inches high",
+        "Assume push-up position with hands on ground",
+        "Lower chest to ground with controlled descent",
+        "Push back up maintaining elevated foot position"
+      ],
+      "tips": [
+        "Higher elevation increases difficulty and shoulder engagement",
+        "Progression toward pike push-ups and handstand push-ups",
+        "Maintain straight body line throughout"
+      ],
+      "common_mistakes": [
+        "Piking hips up",
+        "Inadequate depth",
+        "Losing shoulder stability at bottom"
+      ],
+      "alternatives": ["Standard push-up", "Pike push-up", "Handstand push-up (advanced)"]
+    },
+    {
+      "name": "Archer Push-up",
+      "description": "A unilateral push-up progression that loads one arm while the other assists.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["chest", "triceps", "shoulders", "core"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Start in wide push-up position with hands 1.5-2x shoulder-width apart",
+        "Shift weight toward one arm while descending, keeping that elbow bent",
+        "Extend opposite arm straight out to side as you lower",
+        "Push back up to center, then repeat on other side"
+      ],
+      "tips": [
+        "Working arm should be in diamond push-up position",
+        "Extended arm provides minimal assistance",
+        "Key progression toward one-arm push-ups"
+      ],
+      "common_mistakes": [
+        "Not shifting enough weight to working arm",
+        "Bending extended arm too much",
+        "Rotating torso instead of staying square"
+      ],
+      "alternatives": ["Wide push-up (easier)", "One-arm push-up progression", "Typewriter push-up"]
+    },
+    {
+      "name": "Pseudo Planche Push-up",
+      "description": "An advanced push-up with hands positioned by hips to mimic planche position.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "chest", "core", "triceps"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Place hands by hips with fingers pointing toward feet",
+        "Lean shoulders forward past wrists while maintaining plank",
+        "Lower body while keeping forward lean",
+        "Push back up maintaining planche-lean position throughout"
+      ],
+      "tips": [
+        "Essential progression for planche training",
+        "Start with hands by ribs before moving to hips",
+        "Extreme shoulder and core engagement required"
+      ],
+      "common_mistakes": [
+        "Not leaning far enough forward",
+        "Placing hands too far forward",
+        "Losing forward lean during push"
+      ],
+      "alternatives": ["Planche lean", "Standard push-up", "Planche push-up"]
+    },
+    {
+      "name": "One-Arm Push-up Progression",
+      "description": "Progressive steps toward performing a full one-arm push-up.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["chest", "triceps", "shoulders", "core", "obliques"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Start with archer push-ups to build unilateral strength",
+        "Progress to assisted one-arm (other hand on basketball or elevated surface)",
+        "Widen stance for better balance and stability",
+        "Gradually reduce assistance until performing full one-arm push-up"
+      ],
+      "tips": [
+        "Feet wider than shoulders helps with balance",
+        "Keep hips square to ground, minimal rotation",
+        "Takes months to years to achieve"
+      ],
+      "common_mistakes": [
+        "Excessive hip rotation",
+        "Not achieving full depth",
+        "Rushing progression steps"
+      ],
+      "alternatives": ["Archer push-up", "Elevated one-arm push-up", "Planche push-up"]
+    },
+    {
+      "name": "Planche Push-up",
+      "description": "The ultimate horizontal push - a push-up performed from full planche position.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "chest", "core", "triceps", "back"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Achieve full planche position with body parallel to ground",
+        "Lower body slightly by bending arms while maintaining horizontal position",
+        "Press back up to full planche lock-out",
+        "Requires years of specific strength training to achieve"
+      ],
+      "tips": [
+        "Master planche hold for 10+ seconds first",
+        "Start with tuck planche push-ups",
+        "One of the most difficult bodyweight exercises"
+      ],
+      "common_mistakes": [
+        "Losing planche position during push",
+        "Insufficient shoulder protraction",
+        "Attempting before ready"
+      ],
+      "alternatives": ["Pseudo planche push-up", "Planche hold", "Straddle planche push-up"]
+    },
+    {
+      "name": "Pike Push-up",
+      "description": "A vertical pushing movement that targets shoulders and prepares for handstand push-ups.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "triceps", "upper chest"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Start in downward dog position with hips high, forming inverted V-shape",
+        "Place hands shoulder-width apart, feet 3-4 feet behind hands",
+        "Lower head toward ground by bending elbows, sending head forward of hands",
+        "Press back up to starting position, keeping hips high throughout"
+      ],
+      "tips": [
+        "Head should travel forward and down, not straight down",
+        "Nose should touch ground for full range of motion",
+        "Key progression to handstand push-ups"
+      ],
+      "common_mistakes": [
+        "Lowering head between hands instead of forward",
+        "Not achieving full depth",
+        "Letting hips drop"
+      ],
+      "alternatives": ["Elevated pike push-up", "Wall handstand push-up", "Decline push-up (easier)"]
+    },
+    {
+      "name": "Wall Handstand Hold",
+      "description": "A foundational inversion hold that builds shoulder strength and body awareness.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "core", "arms"],
+      "equipment_required": ["wall"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Place hands 6-12 inches from wall, kick up into handstand with heels against wall",
+        "Stack shoulders over wrists, engage core to prevent lower back arch",
+        "Look between hands keeping neutral neck position",
+        "Hold for time, building up to 60 seconds"
+      ],
+      "tips": [
+        "Chest should face wall, not back to wall initially",
+        "Focus on straight body line with engaged core",
+        "Foundation for all handstand work"
+      ],
+      "common_mistakes": [
+        "Arching lower back excessively",
+        "Not pushing through shoulders",
+        "Holding breath"
+      ],
+      "alternatives": ["Headstand", "Wall handstand push-up", "Freestanding handstand"]
+    },
+    {
+      "name": "Wall Handstand Push-up",
+      "description": "A vertical pushing movement performed in handstand position against wall.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "triceps", "upper chest", "core"],
+      "equipment_required": ["wall"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Kick up into wall handstand with chest facing wall",
+        "Lower head toward ground by bending elbows",
+        "Descend until head lightly touches floor",
+        "Press back up to full lockout"
+      ],
+      "tips": [
+        "Master 45-60 second wall handstand hold first",
+        "Use deficit (hands on parallettes) for increased range",
+        "Breathe at top of movement"
+      ],
+      "common_mistakes": [
+        "Not achieving full depth",
+        "Excessive back arch",
+        "Flaring elbows too wide"
+      ],
+      "alternatives": ["Elevated pike push-up", "Freestanding handstand push-up", "90-degree push-up"]
+    },
+    {
+      "name": "Freestanding Handstand",
+      "description": "An unsupported handstand requiring balance, strength, and body awareness.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "core", "wrists", "forearms"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "From standing, place hands on ground and kick up to handstand",
+        "Find balance point by making micro-adjustments with fingers and shoulders",
+        "Maintain straight body line with engaged core",
+        "Hold for time, working up to 30+ seconds"
+      ],
+      "tips": [
+        "Master wall handstand hold for 60 seconds first",
+        "Practice chest-to-wall handstand for proper alignment",
+        "Takes months of consistent practice"
+      ],
+      "common_mistakes": [
+        "Banana back (excessive arch)",
+        "Not engaging core",
+        "Giving up too quickly on balance attempts"
+      ],
+      "alternatives": ["Wall handstand", "Headstand", "Handstand push-up"]
+    },
+    {
+      "name": "Handstand Push-up (Freestanding)",
+      "description": "The ultimate vertical push - a push-up performed in freestanding handstand.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "triceps", "core", "upper chest"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Kick up or press up into freestanding handstand",
+        "Maintain balance while lowering head toward ground",
+        "Touch head to ground lightly",
+        "Press back up while maintaining balance throughout"
+      ],
+      "tips": [
+        "Requires mastery of freestanding handstand first",
+        "Start with wall handstand push-ups",
+        "One of the most difficult bodyweight pressing movements"
+      ],
+      "common_mistakes": [
+        "Losing balance during descent",
+        "Incomplete range of motion",
+        "Not being properly prepared"
+      ],
+      "alternatives": ["Wall handstand push-up", "Freestanding handstand hold", "90-degree push-up"]
+    },
+    {
+      "name": "90-Degree Push-up",
+      "description": "An advanced bent-arm strength hold where body is parallel to ground.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "chest", "triceps", "core"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "From plank position, lean forward significantly past wrists",
+        "Lower into push-up position until upper arms are parallel to ground",
+        "Hold this position with body parallel to floor",
+        "Maintain extreme forward lean and core tension"
+      ],
+      "tips": [
+        "Bridge between planche and handstand training",
+        "Requires significant shoulder and core strength",
+        "Start with short holds of 3-5 seconds"
+      ],
+      "common_mistakes": [
+        "Not leaning far enough forward",
+        "Letting hips sag",
+        "Holding breath"
+      ],
+      "alternatives": ["Pseudo planche push-up", "Planche progression", "Handstand push-up"]
+    },
+    {
+      "name": "Dead Hang",
+      "description": "A foundational hanging position that builds grip strength and shoulder stability.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["forearms", "grip", "shoulders", "back"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Grasp pull-up bar with shoulder-width overhand grip",
+        "Hang with arms fully extended and body relaxed",
+        "Engage shoulders slightly to prevent complete relaxation",
+        "Hold for time, building up to 60+ seconds"
+      ],
+      "tips": [
+        "Foundation for all pulling movements",
+        "Builds critical grip strength",
+        "Active hang (shoulders engaged) vs passive hang"
+      ],
+      "common_mistakes": [
+        "Completely relaxing shoulders (passive hang)",
+        "Swinging body",
+        "Not breathing steadily"
+      ],
+      "alternatives": ["Assisted dead hang", "Scapular pulls", "Flexed-arm hang"]
+    },
+    {
+      "name": "Scapular Pulls",
+      "description": "An isolation exercise that teaches scapular retraction essential for pull-ups.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["scapular muscles", "lats", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Hang from bar in dead hang position",
+        "Without bending elbows, depress and retract shoulder blades",
+        "Body should rise slightly (1-2 inches) from scapular movement alone",
+        "Lower back to dead hang and repeat"
+      ],
+      "tips": [
+        "Essential movement pattern for pull-up success",
+        "Focus on squeezing shoulder blades down and together",
+        "No elbow bend - all movement from shoulders"
+      ],
+      "common_mistakes": [
+        "Bending elbows instead of moving scapula",
+        "Not achieving full range of scapular motion",
+        "Rushing the movement"
+      ],
+      "alternatives": ["Dead hang", "Negative pull-ups", "Band-assisted pull-ups"]
+    },
+    {
+      "name": "Chin-ups",
+      "description": "A vertical pulling movement with underhand grip that emphasizes biceps.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["biceps", "lats", "back", "forearms"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Grasp bar with underhand (supinated) grip at shoulder-width",
+        "From dead hang, initiate pull by depressing scapula",
+        "Pull body up until chin clears bar",
+        "Lower with control back to full dead hang"
+      ],
+      "tips": [
+        "Generally easier than pull-ups due to bicep engagement",
+        "Full range of motion is critical",
+        "Good progression before overhand pull-ups"
+      ],
+      "common_mistakes": [
+        "Not achieving full lockout at bottom",
+        "Using momentum/kipping",
+        "Incomplete range at top"
+      ],
+      "alternatives": ["Assisted chin-ups", "Pull-ups", "Neutral grip pull-ups"]
+    },
+    {
+      "name": "Pull-ups",
+      "description": "The fundamental vertical pulling movement with overhand grip.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "forearms", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Grasp bar with overhand (pronated) grip slightly wider than shoulders",
+        "Hang with arms fully extended, engage core",
+        "Pull body up leading with chest until chin clears bar",
+        "Lower with control to full dead hang"
+      ],
+      "tips": [
+        "Think about pulling elbows down and back",
+        "Maintain slight hollow body position",
+        "Cornerstone of calisthenics training"
+      ],
+      "common_mistakes": [
+        "Not achieving full range of motion",
+        "Excessive swinging/kipping",
+        "Rushing repetitions"
+      ],
+      "alternatives": ["Chin-ups (easier)", "Wide-grip pull-ups", "Archer pull-ups"]
+    },
+    {
+      "name": "Wide Grip Pull-ups",
+      "description": "Pull-ups with wider grip that emphasizes lat width development.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Grasp bar with hands 6-12 inches wider than shoulder-width",
+        "From dead hang, pull body up focusing on lat engagement",
+        "Pull until upper chest approaches bar",
+        "Lower with control to full extension"
+      ],
+      "tips": [
+        "Reduces bicep involvement, increases lat activation",
+        "May need to reduce range initially",
+        "Builds back width"
+      ],
+      "common_mistakes": [
+        "Grip too wide causing shoulder issues",
+        "Not pulling high enough",
+        "Using momentum"
+      ],
+      "alternatives": ["Standard pull-ups", "Close-grip pull-ups", "Archer pull-ups"]
+    },
+    {
+      "name": "Archer Pull-ups",
+      "description": "A unilateral pull-up variation that loads one arm significantly more.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Grasp bar with wide grip (1.5-2x shoulder-width)",
+        "Pull body toward one arm while extending opposite arm straight",
+        "Pull until working-side shoulder approaches hand",
+        "Lower and repeat on opposite side"
+      ],
+      "tips": [
+        "Key progression toward one-arm pull-ups",
+        "Extended arm provides minimal assistance",
+        "Maintain control throughout movement"
+      ],
+      "common_mistakes": [
+        "Not pulling far enough to working side",
+        "Bending extended arm too much",
+        "Excessive body rotation"
+      ],
+      "alternatives": ["Typewriter pull-ups", "One-arm pull-up progression", "Pull-ups"]
+    },
+    {
+      "name": "Typewriter Pull-ups",
+      "description": "A dynamic pull-up variation alternating between archer positions at the top.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Pull up to top of bar with wide grip",
+        "While maintaining height, shift body toward right hand",
+        "Slide horizontally across bar to left hand",
+        "Lower down and repeat"
+      ],
+      "tips": [
+        "Stay at top of pull-up throughout horizontal movement",
+        "Great for building endurance and unilateral strength",
+        "Requires strong pull-up foundation"
+      ],
+      "common_mistakes": [
+        "Dropping down between sides",
+        "Not maintaining height throughout slide",
+        "Moving too quickly"
+      ],
+      "alternatives": ["Archer pull-ups", "One-arm pull-up progression", "Muscle-ups"]
+    },
+    {
+      "name": "One-Arm Pull-up Progression",
+      "description": "Progressive steps toward performing a full one-arm pull-up.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "core", "grip"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Master archer pull-ups with minimal assistance from extended arm",
+        "Progress to assisted one-arm (grab wrist or use towel)",
+        "Practice one-arm negatives (lower slowly from top)",
+        "Eventually perform full one-arm pull-up from dead hang to chin over bar"
+      ],
+      "tips": [
+        "Takes months to years to achieve",
+        "High strength-to-weight ratio required",
+        "One of calisthenics' ultimate pulling achievements"
+      ],
+      "common_mistakes": [
+        "Skipping progression steps",
+        "Excessive body rotation",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Archer pull-ups", "Weighted pull-ups", "Front lever progressions"]
+    },
+    {
+      "name": "Muscle-ups",
+      "description": "A dynamic movement combining pull-up and dip in one explosive motion.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "chest", "triceps", "shoulders", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "From dead hang, perform explosive pull-up pulling bar to waist level",
+        "Transition by rotating wrists and leaning forward over bar",
+        "Press down into dip position finishing with locked arms above bar",
+        "Lower with control back to dead hang"
+      ],
+      "tips": [
+        "Requires chest-to-bar pull-up strength and strong dip",
+        "False grip helps with transition",
+        "Explosive power essential for strict muscle-up"
+      ],
+      "common_mistakes": [
+        "Using excessive kipping/swing",
+        "Poor transition technique",
+        "Attempting before ready"
+      ],
+      "alternatives": ["Chest-to-bar pull-ups", "Band-assisted muscle-ups", "Ring muscle-ups"]
+    },
+    {
+      "name": "Australian Rows (Inverted Rows)",
+      "description": "A horizontal pulling movement performed under a bar at waist height.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["back", "lats", "biceps", "rear delts"],
+      "equipment_required": ["pull-up bar", "rings"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Position bar at waist height, lie underneath with body straight",
+        "Grasp bar with overhand grip at shoulder-width",
+        "Pull chest to bar by retracting shoulder blades and bending elbows",
+        "Lower with control maintaining straight body line"
+      ],
+      "tips": [
+        "Lower bar height increases difficulty",
+        "Great progression toward pull-ups",
+        "Keep body rigid like a plank throughout"
+      ],
+      "common_mistakes": [
+        "Letting hips sag",
+        "Not achieving full range",
+        "Using momentum"
+      ],
+      "alternatives": ["Elevated rows (easier)", "Archer rows", "Front lever rows"]
+    },
+    {
+      "name": "Archer Rows",
+      "description": "Unilateral horizontal row that shifts weight to one arm.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["back", "lats", "biceps", "core"],
+      "equipment_required": ["pull-up bar", "rings"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Set up as for Australian rows with wider grip",
+        "Pull body toward one arm while extending opposite arm",
+        "Pull until working-side shoulder approaches hand",
+        "Lower and repeat on other side"
+      ],
+      "tips": [
+        "Progression toward one-arm rows",
+        "Maintain straight body line",
+        "Control is key"
+      ],
+      "common_mistakes": [
+        "Excessive rotation",
+        "Bending extended arm too much",
+        "Losing body tension"
+      ],
+      "alternatives": ["Australian rows", "One-arm rows", "Front lever rows"]
+    },
+    {
+      "name": "Front Lever Raises",
+      "description": "A dynamic movement raising body from dead hang toward front lever position.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "core", "back", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "From dead hang, engage lats and pull body backward",
+        "Raise legs toward horizontal while pulling shoulders down",
+        "Aim to achieve front lever position or highest point possible",
+        "Lower with control back to dead hang"
+      ],
+      "tips": [
+        "Start with tuck front lever raises",
+        "Focus on lat engagement, not just leg lift",
+        "Progression exercise for front lever hold"
+      ],
+      "common_mistakes": [
+        "Using momentum to swing up",
+        "Not engaging lats properly",
+        "Bending arms"
+      ],
+      "alternatives": ["Tuck front lever raises", "Front lever hold", "Ice cream makers"]
+    },
+    {
+      "name": "Front Lever",
+      "description": "An advanced static hold with body horizontal in front of bar.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "core", "back", "shoulders", "biceps"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "From dead hang, engage lats powerfully and raise legs",
+        "Achieve horizontal body position with arms straight",
+        "Maintain perfect straight line from head to toes",
+        "Hold position for time"
+      ],
+      "tips": [
+        "Progress through tuck, advanced tuck, straddle, then full",
+        "Requires exceptional lat and core strength",
+        "Can take 1-2 years of specific training"
+      ],
+      "common_mistakes": [
+        "Allowing body to pike",
+        "Bending arms",
+        "Not achieving horizontal position"
+      ],
+      "alternatives": ["Tuck front lever", "Straddle front lever", "Back lever"]
+    },
+    {
+      "name": "Bench Dips",
+      "description": "A beginner dipping movement using a bench or chair.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "chest", "shoulders"],
+      "equipment_required": ["bench"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Sit on edge of bench, place hands next to hips",
+        "Walk feet forward and lower hips off bench",
+        "Lower body by bending elbows to 90 degrees",
+        "Press back up to starting position"
+      ],
+      "tips": [
+        "Keep elbows tracking back, not flaring out",
+        "Feet further from bench increases difficulty",
+        "Good introduction to dipping movement"
+      ],
+      "common_mistakes": [
+        "Going too low causing shoulder strain",
+        "Elbows flaring wide",
+        "Using legs too much for assistance"
+      ],
+      "alternatives": ["Elevated bench dips", "Parallel bar dips", "Ring dips"]
+    },
+    {
+      "name": "Parallel Bar Dips",
+      "description": "The fundamental dipping movement on parallel bars.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "chest", "shoulders"],
+      "equipment_required": ["parallel bars"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Jump or step into support position on parallel bars with arms locked",
+        "Lower body by bending elbows until shoulders are below elbows",
+        "Lean forward slightly for chest emphasis or stay upright for triceps",
+        "Press back up to full lockout"
+      ],
+      "tips": [
+        "Full range of motion is critical",
+        "Control descent to protect shoulders",
+        "Foundation for advanced dip variations"
+      ],
+      "common_mistakes": [
+        "Not achieving sufficient depth",
+        "Excessive forward lean",
+        "Bouncing out of bottom position"
+      ],
+      "alternatives": ["Assisted dips", "Ring dips", "Korean dips"]
+    },
+    {
+      "name": "Ring Dips",
+      "description": "An advanced dip variation on gymnastic rings requiring stabilization.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "chest", "shoulders", "core"],
+      "equipment_required": ["rings"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Mount rings and achieve stable support position with rings close to body",
+        "Lower body while actively turning rings out to prevent instability",
+        "Descend to full depth with shoulders below elbows",
+        "Press up powerfully while maintaining ring control"
+      ],
+      "tips": [
+        "Much harder than parallel bar dips due to instability",
+        "Turn rings out (RTO) position increases difficulty",
+        "Essential for ring training progression"
+      ],
+      "common_mistakes": [
+        "Allowing rings to move away from body",
+        "Not controlling ring rotation",
+        "Insufficient depth"
+      ],
+      "alternatives": ["Parallel bar dips", "Band-assisted ring dips", "Korean dips"]
+    },
+    {
+      "name": "Korean Dips",
+      "description": "An advanced dip variation with body behind the bars.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "shoulders", "chest", "core"],
+      "equipment_required": ["parallel bars"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Start in support position, lean back and shift body behind bars",
+        "Maintain horizontal back position while performing dip",
+        "Lower by bending elbows while keeping body behind bars",
+        "Press back up maintaining posterior lean"
+      ],
+      "tips": [
+        "Requires exceptional shoulder flexibility and strength",
+        "Progress from regular dips first",
+        "Very advanced movement"
+      ],
+      "common_mistakes": [
+        "Not leaning back far enough",
+        "Losing position during dip",
+        "Insufficient shoulder preparation"
+      ],
+      "alternatives": ["Parallel bar dips", "Ring dips", "Straight bar dips"]
+    },
+    {
+      "name": "Straight Bar Dips",
+      "description": "Dips performed on a single straight bar requiring balance.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["triceps", "chest", "shoulders", "core"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Jump or muscle-up to support position on top of bar",
+        "Balance on bar with hands pronated or in false grip",
+        "Lower body by bending elbows while maintaining balance",
+        "Press back up to support position"
+      ],
+      "tips": [
+        "Requires excellent balance and core control",
+        "False grip can help with stability",
+        "Foundation for more advanced bar skills"
+      ],
+      "common_mistakes": [
+        "Losing balance during descent",
+        "Not achieving full depth",
+        "Poor bar positioning on palms"
+      ],
+      "alternatives": ["Parallel bar dips", "Korean dips", "Impossible dips"]
+    },
+    {
+      "name": "Impossible Dips",
+      "description": "An extremely advanced dip where body passes through arms.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "triceps", "chest", "core"],
+      "equipment_required": ["parallel bars"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "From dip support position, lower body forward through arms",
+        "Shift shoulders in front of hands while descending",
+        "Achieve position where body has passed through arm line",
+        "Press back up reversing the motion"
+      ],
+      "tips": [
+        "One of the most difficult dip variations",
+        "Requires extreme shoulder mobility and strength",
+        "Master Korean dips first"
+      ],
+      "common_mistakes": [
+        "Insufficient shoulder preparation",
+        "Not shifting weight forward enough",
+        "Attempting without proper prerequisites"
+      ],
+      "alternatives": ["Korean dips", "Straight bar dips", "Ring dips"]
+    },
+    {
+      "name": "Bodyweight Squat",
+      "description": "The fundamental lower body movement pattern.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with feet shoulder-width apart, toes slightly turned out",
+        "Lower body by bending knees and hips simultaneously",
+        "Descend until thighs are parallel to ground or deeper",
+        "Drive through heels to return to standing"
+      ],
+      "tips": [
+        "Keep chest up and core engaged throughout",
+        "Knees should track over toes, not cave inward",
+        "Foundation for all squatting movements"
+      ],
+      "common_mistakes": [
+        "Knees caving inward",
+        "Heels lifting off ground",
+        "Not achieving sufficient depth"
+      ],
+      "alternatives": ["Assisted squat", "Jump squat", "Pistol squat progression"]
+    },
+    {
+      "name": "Jump Squat",
+      "description": "An explosive plyometric squat variation.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": [],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Start in squat position with feet shoulder-width apart",
+        "Explosively jump upward driving through balls of feet",
+        "Extend fully through hips, knees, and ankles",
+        "Land softly and immediately descend into next rep"
+      ],
+      "tips": [
+        "Focus on soft landings to protect joints",
+        "Builds explosive power",
+        "Great for athletic performance"
+      ],
+      "common_mistakes": [
+        "Landing with locked knees",
+        "Not achieving full squat depth",
+        "Poor landing mechanics"
+      ],
+      "alternatives": ["Bodyweight squat", "Box jumps", "Broad jumps"]
+    },
+    {
+      "name": "Sissy Squat",
+      "description": "An advanced quad-dominant squat leaning backward.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["quadriceps", "core"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with feet hip-width apart, hold support for balance",
+        "Lean torso backward while bending knees forward",
+        "Lower body until shins are nearly parallel to ground",
+        "Rise back up maintaining backward lean"
+      ],
+      "tips": [
+        "Extreme quad isolation exercise",
+        "Requires good knee health",
+        "Start with partial range of motion"
+      ],
+      "common_mistakes": [
+        "Not maintaining backward lean",
+        "Forcing range beyond capability",
+        "Poor knee alignment"
+      ],
+      "alternatives": ["Bodyweight squat", "Nordic curls", "Pistol squat"]
+    },
+    {
+      "name": "Shrimp Squat Progression",
+      "description": "A single-leg squat holding rear foot behind body.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "balance"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Stand on one leg, bend opposite knee bringing foot behind",
+        "Hold rear foot with hand on same side",
+        "Lower body by bending standing leg while descending",
+        "Touch rear knee to ground, then drive up to standing"
+      ],
+      "tips": [
+        "Alternative to pistol squat requiring less mobility",
+        "Excellent for quad and glute development",
+        "Progress from assisted versions"
+      ],
+      "common_mistakes": [
+        "Not achieving full depth",
+        "Losing balance",
+        "Using too much assistance"
+      ],
+      "alternatives": ["Bulgarian split squat", "Pistol squat", "Bodyweight squat"]
+    },
+    {
+      "name": "Pistol Squat Progression",
+      "description": "Progressive steps toward performing a full single-leg squat.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core", "balance"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Progress through: box pistols, assisted pistols with support, negative pistols",
+        "For full pistol: extend one leg forward, lower on other leg to full depth",
+        "Maintain extended leg parallel to ground throughout",
+        "Drive through heel to stand while keeping other leg extended"
+      ],
+      "tips": [
+        "Requires strength, mobility, and balance",
+        "Takes months of progressive training",
+        "One of the ultimate bodyweight leg exercises"
+      ],
+      "common_mistakes": [
+        "Not achieving full depth",
+        "Losing balance",
+        "Letting extended leg drop"
+      ],
+      "alternatives": ["Box pistols", "Assisted pistols", "Shrimp squats"]
+    },
+    {
+      "name": "Nordic Curl",
+      "description": "An intense hamstring exercise lowering body forward from kneeling position.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["hamstrings", "glutes", "core"],
+      "equipment_required": ["anchor point"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Kneel with feet secured under immovable object or held by partner",
+        "Keep body straight from knees to head, cross arms over chest",
+        "Slowly lower torso forward by eccentrically resisting with hamstrings",
+        "Catch yourself with hands and push back to start"
+      ],
+      "tips": [
+        "One of the best hamstring exercises",
+        "Focus on slow eccentric phase",
+        "May need to use hands significantly at first"
+      ],
+      "common_mistakes": [
+        "Breaking at hips instead of staying straight",
+        "Descending too quickly",
+        "Not engaging hamstrings properly"
+      ],
+      "alternatives": ["Single-leg Romanian deadlift", "Glute-ham raise", "Hamstring curls"]
+    },
+    {
+      "name": "Hollow Body Hold",
+      "description": "A fundamental core position creating total body tension.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["core", "hip flexors", "shoulders"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back, press lower back into floor",
+        "Lift shoulders and legs off ground creating banana shape",
+        "Arms can extend overhead or by sides",
+        "Hold position maintaining lower back contact with floor"
+      ],
+      "tips": [
+        "Foundation position for gymnastics and calisthenics",
+        "Essential for proper body alignment",
+        "If back arches, raise legs higher or bend knees"
+      ],
+      "common_mistakes": [
+        "Allowing lower back to arch off floor",
+        "Not maintaining tension throughout body",
+        "Holding breath"
+      ],
+      "alternatives": ["Bent-knee hollow hold", "Hollow rocks", "Plank"]
+    },
+    {
+      "name": "L-Sit Progression",
+      "description": "Progressive steps toward holding an L-sit position.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["core", "hip flexors", "triceps", "shoulders"],
+      "equipment_required": ["parallettes", "parallel bars"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Progress from: foot-supported L-sit, one-leg L-sit, tuck L-sit",
+        "For full L-sit: support body on hands with straight arms",
+        "Lift legs to horizontal position with straight knees",
+        "Hold position maintaining compression and straight arms"
+      ],
+      "tips": [
+        "Parallettes make it easier than floor",
+        "Requires hip flexor and core strength",
+        "Foundation for V-sit and more advanced skills"
+      ],
+      "common_mistakes": [
+        "Bending arms",
+        "Not achieving horizontal leg position",
+        "Hunching shoulders"
+      ],
+      "alternatives": ["Tuck L-sit", "V-sit", "Hollow body hold"]
+    },
+    {
+      "name": "V-Sit",
+      "description": "An advanced core hold with legs raised higher than L-sit.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["core", "hip flexors", "shoulders"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "From seated position, lift legs toward ceiling at 45+ degrees",
+        "Balance on sit bones with arms supporting on sides or extended forward",
+        "Create V-shape with body",
+        "Hold position with control"
+      ],
+      "tips": [
+        "Requires extreme hip flexor and core strength",
+        "Greater compression than L-sit",
+        "Foundation for more advanced compression work"
+      ],
+      "common_mistakes": [
+        "Not achieving true V-shape",
+        "Rounding back excessively",
+        "Using arms too much for support"
+      ],
+      "alternatives": ["L-sit", "Pike compression drills", "Hollow body hold"]
+    },
+    {
+      "name": "Dragon Flag",
+      "description": "An advanced core exercise where body is lowered and raised while suspended from shoulders.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["core", "lats", "hip flexors"],
+      "equipment_required": ["bench"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Lie on bench, grip behind head for anchor point",
+        "Raise entire body until only shoulders remain on bench",
+        "Lower body with control maintaining straight line",
+        "Descend as low as possible without back touching bench, then raise"
+      ],
+      "tips": [
+        "One of the most difficult core exercises",
+        "Start with negative-only reps",
+        "Made famous by Bruce Lee"
+      ],
+      "common_mistakes": [
+        "Bending at hips instead of staying straight",
+        "Descending too quickly losing control",
+        "Not having sufficient core strength"
+      ],
+      "alternatives": ["Negative dragon flags", "Hanging leg raises", "Ab rollouts"]
+    },
+    {
+      "name": "Human Flag Progression",
+      "description": "Progressive steps toward holding body horizontal from a vertical pole.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["obliques", "lats", "shoulders", "core"],
+      "equipment_required": ["vertical pole"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Progress from: flag plank with foot support, low flag, high flag, angled flag",
+        "Then: tuck flag, one-leg flag, straddle flag, full flag",
+        "Bottom arm pushes, top arm pulls to create stability",
+        "Achieve horizontal body position parallel to ground"
+      ],
+      "tips": [
+        "One of the most visually impressive skills",
+        "Requires months to years of training",
+        "Each progression should be held 15-20 seconds before advancing"
+      ],
+      "common_mistakes": [
+        "Not engaging both arms properly",
+        "Progressing too quickly",
+        "Poor pole positioning"
+      ],
+      "alternatives": ["Side plank", "Oblique exercises", "Pole climb"]
+    },
+    {
+      "name": "Back Lever",
+      "description": "A static hold with body horizontal behind the bar.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "back", "biceps", "core", "shoulders"],
+      "equipment_required": ["pull-up bar", "rings"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "From inverted hang, lower body backward toward horizontal",
+        "Achieve position with back facing ground, body straight",
+        "Arms remain straight throughout",
+        "Hold position for time"
+      ],
+      "tips": [
+        "Progress through: tuck, advanced tuck, straddle, then full",
+        "Generally easier than front lever",
+        "Excellent for developing straight-arm strength"
+      ],
+      "common_mistakes": [
+        "Bending arms",
+        "Not achieving horizontal position",
+        "Inadequate shoulder conditioning"
+      ],
+      "alternatives": ["Tuck back lever", "German hang", "Front lever"]
+    },
+    {
+      "name": "Front Lever (Hold)",
+      "description": "An advanced static hold with body horizontal in front of bar.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["lats", "core", "back", "shoulders"],
+      "equipment_required": ["pull-up bar"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "From dead hang, engage lats powerfully",
+        "Raise body to horizontal position with arms straight",
+        "Maintain perfect straight line from head to toes",
+        "Hold static position for time"
+      ],
+      "tips": [
+        "One of the most difficult static holds",
+        "Progress through tuck, advanced tuck, straddle progressions",
+        "Can take 1-2 years of dedicated training"
+      ],
+      "common_mistakes": [
+        "Body piking instead of staying straight",
+        "Arms bending",
+        "Not achieving true horizontal"
+      ],
+      "alternatives": ["Tuck front lever", "Straddle front lever", "Front lever raises"]
+    },
+    {
+      "name": "Planche Progression",
+      "description": "Progressive steps toward holding a full planche.",
+      "exercise_type": "calisthenics",
+      "muscle_groups": ["shoulders", "core", "chest", "back", "triceps"],
+      "equipment_required": [],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Progress through: frog stand, tuck planche, advanced tuck, straddle planche",
+        "For full planche: achieve horizontal body position with only hands touching ground",
+        "Arms straight, shoulders protracted, body parallel to floor",
+        "Requires years of specific strength training"
+      ],
+      "tips": [
+        "One of the ultimate calisthenics skills",
+        "Requires exceptional shoulder and core strength",
+        "Lean progressions and pseudo planche push-ups help build strength"
+      ],
+      "common_mistakes": [
+        "Progressing too quickly between variations",
+        "Not developing sufficient shoulder strength",
+        "Poor scapular positioning"
+      ],
+      "alternatives": ["Planche leans", "Tuck planche", "Pseudo planche push-ups"]
+    }
+  ]
+}

@@ -1,0 +1,892 @@
+{
+  "category": "weight_training_lower",
+  "exercises": [
+    {
+      "name": "Back Squat (Barbell)",
+      "description": "A fundamental compound exercise where a barbell is positioned on the upper back while performing a squatting motion.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core"],
+      "equipment_required": ["barbell", "squat rack"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Position barbell on upper back/traps and step back from rack with feet shoulder-width apart",
+        "Keep chest up, core braced, and maintain neutral spine throughout",
+        "Push hips back and bend knees to lower until thighs are parallel to ground or below",
+        "Keep knees tracking in line with toes and maintain even weight distribution across feet",
+        "Drive through heels and midfoot to stand back up, squeezing glutes at top"
+      ],
+      "tips": [
+        "Keep your chest up and maintain a slight arch in lower back",
+        "Your knees should track in line with your toes, not caving inward",
+        "Depth should be at least parallel, but go as deep as mobility allows with good form"
+      ],
+      "common_mistakes": [
+        "Letting knees cave inward (valgus collapse)",
+        "Rounding the lower back at the bottom",
+        "Rising onto toes or shifting weight forward",
+        "Not going deep enough or bouncing at the bottom"
+      ],
+      "alternatives": ["Front Squat", "Goblet Squat", "Leg Press", "Bulgarian Split Squat"]
+    },
+    {
+      "name": "Front Squat (Barbell)",
+      "description": "A squat variation with the barbell positioned on the front of the shoulders, emphasizing quads and requiring greater core stability.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "core", "glutes", "upper back"],
+      "equipment_required": ["barbell", "squat rack"],
+      "difficulty_level": "advanced",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Position barbell on front of shoulders in the rack position with elbows high",
+        "Step back with feet shoulder-width apart, toes slightly pointed out",
+        "Keep torso upright and core braced throughout the movement",
+        "Descend by bending knees and hips simultaneously until thighs are parallel or below",
+        "Drive through entire foot to stand back up maintaining upright torso position"
+      ],
+      "tips": [
+        "Keep elbows as high as possible to prevent bar from rolling forward",
+        "Front squats demand greater thoracic mobility and upright posture than back squats",
+        "Use cross-arm grip if full rack position is uncomfortable"
+      ],
+      "common_mistakes": [
+        "Dropping elbows which causes torso to lean forward",
+        "Not maintaining upright torso angle",
+        "Letting weight shift onto toes"
+      ],
+      "alternatives": ["Goblet Squat", "Back Squat", "Zercher Squat", "Safety Bar Squat"]
+    },
+    {
+      "name": "Goblet Squat",
+      "description": "A beginner-friendly squat variation holding a dumbbell or kettlebell at chest level.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "core", "hamstrings"],
+      "equipment_required": ["dumbbell or kettlebell"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Hold dumbbell or kettlebell vertically at chest level with both hands under the top weight",
+        "Stand with feet slightly wider than shoulder-width, toes pointed slightly out",
+        "Keep chest up and core engaged as you push hips back and bend knees",
+        "Lower until thighs are parallel to ground while keeping elbows inside knees",
+        "Drive through feet to return to starting position, squeezing glutes at top"
+      ],
+      "tips": [
+        "Front-loaded position naturally keeps torso upright and core engaged",
+        "Use elbows to push knees out at the bottom for better depth",
+        "Excellent teaching tool for proper squat mechanics"
+      ],
+      "common_mistakes": [
+        "Letting weight pull torso forward",
+        "Not achieving adequate depth",
+        "Allowing knees to cave inward"
+      ],
+      "alternatives": ["Front Squat", "Back Squat", "Bodyweight Squat"]
+    },
+    {
+      "name": "Leg Press",
+      "description": "A machine-based exercise that allows heavy loading of the legs with back support.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings"],
+      "equipment_required": ["leg press machine"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Sit in leg press machine with back flat against pad and feet shoulder-width apart on platform",
+        "Release safety bars and extend legs without locking knees",
+        "Slowly lower platform by bending knees until they reach 90 degrees or slightly below",
+        "Keep back flat against pad and avoid lifting hips during descent",
+        "Press through entire foot to extend legs back to starting position"
+      ],
+      "tips": [
+        "Foot placement affects muscle emphasis: higher = more glutes/hamstrings, lower = more quads",
+        "Wide stance targets inner thighs and glutes more",
+        "Never lock out knees completely at top"
+      ],
+      "common_mistakes": [
+        "Letting hips lift off the pad (increases injury risk)",
+        "Going too deep causing lower back to round",
+        "Locking knees at full extension",
+        "Allowing knees to cave inward"
+      ],
+      "alternatives": ["Squat variations", "Hack Squat", "Bulgarian Split Squat"]
+    },
+    {
+      "name": "Leg Extension",
+      "description": "An isolation exercise that targets the quadriceps using a leg extension machine.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps"],
+      "equipment_required": ["leg extension machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Sit on machine with back against pad and adjust leg pad so it sits on lower shins",
+        "Grip handles on sides for stability",
+        "Extend legs by contracting quadriceps until legs are nearly straight",
+        "Pause briefly at top with quads fully contracted",
+        "Lower weight with control back to starting position"
+      ],
+      "tips": [
+        "Don't lock out knees completely to maintain constant tension",
+        "Control both the lifting and lowering phases",
+        "Point toes upward or slightly outward to maximize quad activation"
+      ],
+      "common_mistakes": [
+        "Using momentum or swinging the weight",
+        "Lifting hips off seat",
+        "Locking out knees forcefully",
+        "Using too much weight and sacrificing form"
+      ],
+      "alternatives": ["Squats", "Lunges", "Bulgarian Split Squats", "Sissy Squats"]
+    },
+    {
+      "name": "Bulgarian Split Squat",
+      "description": "A unilateral leg exercise with the rear foot elevated on a bench or platform.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings"],
+      "equipment_required": ["bench", "dumbbells (optional)"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Stand 2-4 feet in front of bench with one foot resting on bench behind you, laces down",
+        "Feet should be hip-width apart for stability, not in a straight line",
+        "Lower body by bending front knee until it reaches 90 degrees and back knee nearly touches floor",
+        "Keep torso upright for quad emphasis or lean forward slightly for glute emphasis",
+        "Push through front foot to return to starting position"
+      ],
+      "tips": [
+        "Back leg is for balance only - push primarily through front leg",
+        "Front foot position: closer to bench = more quads, farther = more glutes",
+        "Maintain stable base by keeping feet hip-width apart, not on a tightrope"
+      ],
+      "common_mistakes": [
+        "Placing back foot directly behind front foot (reduces stability)",
+        "Pushing through back leg instead of front leg",
+        "Leaning too far forward or rising onto toes",
+        "Not descending deep enough"
+      ],
+      "alternatives": ["Walking Lunges", "Reverse Lunges", "Split Squats", "Step-ups"]
+    },
+    {
+      "name": "Walking Lunges (Barbell)",
+      "description": "A dynamic lunge variation performed while walking forward, building leg strength and balance.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Position barbell on upper back and stand with feet hip-width apart",
+        "Take a large step forward with one leg and lower hips until both knees are at 90 degrees",
+        "Front knee should be aligned with ankle, back knee hovering just above floor",
+        "Push through front heel to bring back leg forward into next lunge",
+        "Continue alternating legs in a walking motion for desired distance or reps"
+      ],
+      "tips": [
+        "Maintain firm heel contact on front foot throughout movement",
+        "Keep chest up and core braced for stability",
+        "Step length should allow 90-degree angles at both knees at bottom"
+      ],
+      "common_mistakes": [
+        "Taking too short or too long steps",
+        "Allowing front knee to collapse inward",
+        "Letting torso lean excessively forward",
+        "Touching back knee to ground forcefully"
+      ],
+      "alternatives": ["Reverse Lunges", "Bulgarian Split Squats", "Step-ups", "Forward Lunges"]
+    },
+    {
+      "name": "Step-ups",
+      "description": "A unilateral exercise stepping onto an elevated platform to develop leg strength and balance.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves"],
+      "equipment_required": ["box or bench", "dumbbells (optional)"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand facing box or bench with entire foot of working leg planted on platform",
+        "Drive through working leg to step up onto platform, keeping torso upright",
+        "Fully extend hip and knee at top, bringing other foot to meet working leg or hover",
+        "Lower down slowly with control using non-working leg",
+        "Reset and repeat for all reps before switching legs"
+      ],
+      "tips": [
+        "Box height should allow front knee to bend at 90 degrees or slightly below",
+        "Push through the heel of elevated foot, not the back leg",
+        "Higher box emphasizes glutes more; lower box targets quads"
+      ],
+      "common_mistakes": [
+        "Using back leg to push up instead of front leg",
+        "Allowing front knee to cave inward",
+        "Dropping down quickly instead of controlling descent",
+        "Leaning too far forward"
+      ],
+      "alternatives": ["Bulgarian Split Squats", "Lunges", "Single Leg Squats", "Box Jumps"]
+    },
+    {
+      "name": "Hack Squat (Machine)",
+      "description": "A machine-based squat variation that isolates the quads while minimizing lower back stress.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings"],
+      "equipment_required": ["hack squat machine"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Position back against pad with shoulders under shoulder pads",
+        "Place feet shoulder-width apart on platform with toes slightly pointed out",
+        "Release safety handles and extend legs to starting position",
+        "Lower sled by bending knees and hips until knees reach 90 degrees or slightly lower",
+        "Push through entire foot to drive platform back to starting position"
+      ],
+      "tips": [
+        "Keep entire back in contact with pad throughout movement",
+        "Foot placement affects emphasis: lower = more quads, higher = more glutes/hams",
+        "Drive through mid-foot and heels, not just toes"
+      ],
+      "common_mistakes": [
+        "Lifting lower back off pad during descent",
+        "Locking knees forcefully at top",
+        "Allowing knees to cave inward",
+        "Not achieving adequate depth"
+      ],
+      "alternatives": ["Leg Press", "Front Squat", "Back Squat", "Smith Machine Squat"]
+    },
+    {
+      "name": "Romanian Deadlift (RDL)",
+      "description": "A hip-hinge exercise that primarily targets the hamstrings and glutes through controlled lowering.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings", "glutes", "lower back", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand holding barbell at hip level with overhand grip, feet hip-width apart",
+        "Maintain slight knee bend and brace core with neutral spine",
+        "Hinge at hips by pushing them back and lowering bar down front of legs",
+        "Lower until you feel deep stretch in hamstrings, typically just below knees",
+        "Drive hips forward and squeeze glutes to return to standing position"
+      ],
+      "tips": [
+        "Keep bar close to body throughout - it should drag along shins and thighs",
+        "Focus on hip hinge not squat - shins should stay mostly vertical",
+        "Think about 'shutting a car door with your butt' as you hinge back"
+      ],
+      "common_mistakes": [
+        "Rounding the back instead of maintaining neutral spine",
+        "Bending knees too much (turns into squat)",
+        "Letting bar drift away from body",
+        "Not achieving full stretch in hamstrings"
+      ],
+      "alternatives": ["Stiff-Leg Deadlift", "Good Mornings", "Glute-Ham Raises", "Leg Curls"]
+    },
+    {
+      "name": "Stiff-Leg Deadlift",
+      "description": "A deadlift variation with straighter legs that maximally stretches the hamstrings.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings", "glutes", "lower back"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Stand with barbell at hip level, feet hip-width apart with minimal knee bend",
+        "Keep legs nearly straight with only slight bend in knees throughout",
+        "Hinge at hips to lower bar toward floor while maintaining flat back",
+        "Lower until maximum hamstring stretch is achieved without rounding back",
+        "Reverse movement by contracting hamstrings and glutes to stand upright"
+      ],
+      "tips": [
+        "Straighter legs than RDL create greater hamstring stretch",
+        "Maintain neutral spine - don't round to get lower",
+        "Hamstring flexibility determines how low you can go safely"
+      ],
+      "common_mistakes": [
+        "Rounding lower back to reach further down",
+        "Bending knees too much (becomes RDL)",
+        "Not maintaining tension in hamstrings throughout"
+      ],
+      "alternatives": ["Romanian Deadlift", "Good Mornings", "Leg Curls", "Nordic Curls"]
+    },
+    {
+      "name": "Lying Leg Curl",
+      "description": "An isolation exercise using a machine to target the hamstrings through knee flexion.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings", "calves"],
+      "equipment_required": ["leg curl machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie face down on leg curl machine with pad positioned on lower calves",
+        "Grip handles for stability and ensure hips stay on pad",
+        "Curl legs by bending knees and bringing heels toward glutes",
+        "Squeeze hamstrings at top of movement",
+        "Lower weight with control back to starting position without fully extending"
+      ],
+      "tips": [
+        "Keep hips pressed against pad - don't lift them during curl",
+        "Point toes down or keep feet flexed for variation",
+        "Control the eccentric (lowering) portion for maximum benefit"
+      ],
+      "common_mistakes": [
+        "Lifting hips off pad to curl more weight",
+        "Using momentum or swinging motion",
+        "Not achieving full range of motion",
+        "Dropping weight too quickly"
+      ],
+      "alternatives": ["Seated Leg Curl", "Nordic Curls", "Romanian Deadlift", "Good Mornings"]
+    },
+    {
+      "name": "Seated Leg Curl",
+      "description": "A machine-based hamstring isolation exercise performed in a seated position.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings"],
+      "equipment_required": ["seated leg curl machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Sit on machine and adjust pad so it sits on lower calves",
+        "Position thigh pad securely over thighs and grip handles",
+        "Curl legs down by pulling heels toward glutes",
+        "Squeeze hamstrings at bottom of movement",
+        "Slowly return to starting position maintaining tension"
+      ],
+      "tips": [
+        "Seated position puts more emphasis on lower hamstrings",
+        "Keep upper body stable against back pad",
+        "Focus on hamstring contraction, not just moving weight"
+      ],
+      "common_mistakes": [
+        "Using too much weight and partial range of motion",
+        "Jerking the weight down with momentum",
+        "Not controlling the return phase"
+      ],
+      "alternatives": ["Lying Leg Curl", "Nordic Curls", "Stability Ball Leg Curl", "Romanian Deadlift"]
+    },
+    {
+      "name": "Good Mornings",
+      "description": "A hip-hinge movement with barbell on back that develops hamstrings, glutes, and lower back strength.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings", "glutes", "lower back", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Position barbell on upper back as in a squat, feet hip to shoulder-width apart",
+        "Brace core and maintain slight arch in lower back throughout",
+        "Hinge at hips by pushing them back with slight knee bend",
+        "Lower torso until nearly parallel to floor while maintaining neutral spine",
+        "Drive hips forward to return to standing position"
+      ],
+      "tips": [
+        "Think about pushing hips back like closing a door with your butt",
+        "Keep slight knee bend but shins should stay mostly vertical",
+        "Maintain tight core and neutral spine - never round the back"
+      ],
+      "common_mistakes": [
+        "Rounding the lower back during descent",
+        "Bending knees too much (becomes a squat)",
+        "Looking up instead of maintaining neutral neck",
+        "Using too much weight before mastering form"
+      ],
+      "alternatives": ["Romanian Deadlift", "Stiff-Leg Deadlift", "Back Extensions", "Glute-Ham Raises"]
+    },
+    {
+      "name": "Nordic Hamstring Curl",
+      "description": "An advanced bodyweight exercise that develops eccentric hamstring strength by controlling forward descent.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["hamstrings", "core", "glutes"],
+      "equipment_required": ["partner or ankle anchor"],
+      "difficulty_level": "advanced",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Kneel on pad with ankles secured by partner or anchor",
+        "Keep body in straight line from knees to shoulders with core braced",
+        "Slowly lower torso forward using hamstrings to control descent",
+        "Lower as far as possible with control before using hands to catch yourself",
+        "Push off floor with hands to return to starting position"
+      ],
+      "tips": [
+        "Focus on eccentric (lowering) portion - this builds tremendous hamstring strength",
+        "Use assistance from partner or bands if needed when starting out",
+        "Proven to significantly reduce hamstring injury risk"
+      ],
+      "common_mistakes": [
+        "Breaking at hips instead of maintaining straight body line",
+        "Dropping too quickly without controlling descent",
+        "Not engaging core throughout movement"
+      ],
+      "alternatives": ["Glute-Ham Raise", "Stability Ball Leg Curl", "Eccentric RDL", "Lying Leg Curl"]
+    },
+    {
+      "name": "Hip Thrust (Barbell)",
+      "description": "The premier glute-building exercise involving hip extension with shoulders elevated on a bench.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "hamstrings", "core"],
+      "equipment_required": ["barbell", "bench", "pad"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Sit on floor with upper back against bench, barbell over hips with pad for comfort",
+        "Plant feet flat on floor hip to shoulder-width apart",
+        "Drive through heels to lift hips until body forms straight line from shoulders to knees",
+        "Squeeze glutes hard at top with chin tucked and ribs down",
+        "Lower hips with control and repeat without touching ground between reps"
+      ],
+      "tips": [
+        "Keep chin tucked to prevent lower back hyperextension",
+        "Push knees out slightly to maximize glute activation",
+        "Produces higher glute activation than squats or deadlifts"
+      ],
+      "common_mistakes": [
+        "Hyperextending lower back instead of using glutes",
+        "Not achieving full hip extension at top",
+        "Letting knees cave inward",
+        "Pushing through toes instead of heels"
+      ],
+      "alternatives": ["Glute Bridge", "Single Leg Hip Thrust", "Glute-Ham Raise", "Deadlifts"]
+    },
+    {
+      "name": "Hip Thrust (Single Leg)",
+      "description": "A unilateral hip thrust variation that addresses muscle imbalances and increases glute activation.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "hamstrings", "core"],
+      "equipment_required": ["bench"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": true,
+      "calories_per_minute": 7,
+      "instructions": [
+        "Sit with upper back against bench, one foot planted and other leg extended",
+        "Drive through planted heel to lift hips while keeping other leg straight",
+        "Extend hips until body forms straight line with extended leg parallel to ground",
+        "Squeeze glute of working leg at top",
+        "Lower with control and repeat for all reps before switching legs"
+      ],
+      "tips": [
+        "Keep hips level - don't let them rotate to one side",
+        "Extended leg should stay straight and aligned with torso",
+        "Excellent for correcting strength imbalances between sides"
+      ],
+      "common_mistakes": [
+        "Rotating hips instead of keeping them square",
+        "Not achieving full hip extension",
+        "Using momentum instead of controlled movement"
+      ],
+      "alternatives": ["Barbell Hip Thrust", "Single Leg Glute Bridge", "Bulgarian Split Squat"]
+    },
+    {
+      "name": "Glute Bridge",
+      "description": "A foundational hip extension exercise performed lying on the floor.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "hamstrings", "core"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 6,
+      "instructions": [
+        "Lie on back with knees bent and feet flat on floor hip-width apart",
+        "Place arms at sides or across chest",
+        "Engage core and drive through heels to lift hips toward ceiling",
+        "Squeeze glutes hard at top until body forms straight line from knees to shoulders",
+        "Lower hips back down with control without fully resting on floor"
+      ],
+      "tips": [
+        "Focus on glute contraction rather than just lifting hips",
+        "Can be weighted by placing barbell or dumbbell across hips",
+        "Excellent warm-up or activation exercise"
+      ],
+      "common_mistakes": [
+        "Pushing through toes instead of heels",
+        "Hyperextending lower back at top",
+        "Not squeezing glutes at peak",
+        "Rushing through reps"
+      ],
+      "alternatives": ["Hip Thrust", "Single Leg Bridge", "Frog Pumps", "Deadlifts"]
+    },
+    {
+      "name": "Cable Kickback",
+      "description": "An isolation exercise using cables to target the glutes through hip extension.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "hamstrings"],
+      "equipment_required": ["cable machine", "ankle strap"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Attach ankle strap to low cable pulley and secure around working ankle",
+        "Face machine and hold on for support with slight forward hip hinge",
+        "Keep core engaged and hips squared forward throughout",
+        "Extend working leg straight back by contracting glutes, pushing through heel",
+        "Squeeze glutes at peak then return leg with control maintaining tension"
+      ],
+      "tips": [
+        "Keep hips squared - don't rotate them as you kick back",
+        "Push through heel not toes for better glute activation",
+        "Maintain slight forward lean from hips for optimal position"
+      ],
+      "common_mistakes": [
+        "Rotating hips during movement",
+        "Swinging leg with momentum",
+        "Arching lower back excessively",
+        "Not controlling the return phase"
+      ],
+      "alternatives": ["Glute Bridge", "Hip Thrust", "Donkey Kicks", "Romanian Deadlift"]
+    },
+    {
+      "name": "Sumo Deadlift",
+      "description": "A wide-stance deadlift variation that emphasizes the glutes, quads, and adductors.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "quadriceps", "adductors", "hamstrings", "lower back"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Stand with feet wide (1.5-2x shoulder width) and toes pointed out 30-45 degrees",
+        "Grip barbell with hands inside legs at shoulder-width, arms hanging straight down",
+        "Drop hips lower than conventional deadlift with more upright torso",
+        "Brace core and drive through feet to lift bar while keeping it close to body",
+        "Stand fully upright by extending hips and knees, squeeze glutes at top"
+      ],
+      "tips": [
+        "Wider stance reduces range of motion and emphasizes quads/glutes over hamstrings",
+        "Keep knees tracking over toes - push them out during ascent",
+        "Torso should be more upright than conventional deadlift"
+      ],
+      "common_mistakes": [
+        "Taking stance too wide beyond hip mobility limits",
+        "Letting knees cave inward",
+        "Starting with hips too low or too high",
+        "Pulling with arms instead of pushing through legs"
+      ],
+      "alternatives": ["Conventional Deadlift", "Trap Bar Deadlift", "Wide Stance Squats"]
+    },
+    {
+      "name": "Frog Pumps",
+      "description": "A glute isolation exercise performed with soles of feet together in a butterfly position.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes"],
+      "equipment_required": [],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lie on back with soles of feet together and knees dropped out to sides",
+        "Position feet close to glutes in butterfly position",
+        "Drive through outer edges of feet to lift hips toward ceiling",
+        "Squeeze glutes hard at top of movement",
+        "Lower hips back down and repeat for high reps"
+      ],
+      "tips": [
+        "Excellent for glute activation and high-rep pump work",
+        "Keep soles of feet pressed together throughout",
+        "Can be weighted with dumbbell or barbell across hips"
+      ],
+      "common_mistakes": [
+        "Not squeezing glutes at top",
+        "Hyperextending lower back",
+        "Losing foot contact"
+      ],
+      "alternatives": ["Glute Bridge", "Hip Thrust", "Clamshells"]
+    },
+    {
+      "name": "Clamshells (Banded)",
+      "description": "A glute medius activation exercise using a resistance band around the thighs.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glute medius", "glute minimus", "hip abductors"],
+      "equipment_required": ["resistance band"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Lie on side with hips and knees bent, resistance band around thighs above knees",
+        "Stack hips and shoulders vertically with feet together",
+        "Keep feet together and open top knee as high as possible against band resistance",
+        "Squeeze glute medius at top position",
+        "Lower knee with control and repeat for all reps before switching sides"
+      ],
+      "tips": [
+        "Keep hips stacked - don't let them roll back",
+        "Movement should come from hip rotation, not tilting pelvis",
+        "Essential for hip stability and injury prevention"
+      ],
+      "common_mistakes": [
+        "Allowing hips to roll backward",
+        "Using momentum instead of controlled movement",
+        "Not achieving full range of motion"
+      ],
+      "alternatives": ["Side Lying Hip Abduction", "Monster Walks", "Lateral Band Walks"]
+    },
+    {
+      "name": "Standing Calf Raise",
+      "description": "A fundamental calf exercise targeting the gastrocnemius muscle.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["gastrocnemius", "soleus"],
+      "equipment_required": ["calf raise machine or dumbbells"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand on edge of step or platform with balls of feet, heels hanging off",
+        "Keep legs straight with just slight knee bend throughout",
+        "Rise up onto toes as high as possible by contracting calves",
+        "Hold peak contraction briefly",
+        "Lower heels below platform level for full stretch before next rep"
+      ],
+      "tips": [
+        "Full range of motion is crucial - from deep stretch to high peak",
+        "Standing calf raises emphasize gastrocnemius more than seated",
+        "Can perform single-leg for greater intensity and balance challenge"
+      ],
+      "common_mistakes": [
+        "Not achieving full range of motion at top or bottom",
+        "Bouncing at bottom instead of controlled stretch",
+        "Bending knees which shifts emphasis to soleus"
+      ],
+      "alternatives": ["Seated Calf Raise", "Single Leg Calf Raise", "Donkey Calf Raise"]
+    },
+    {
+      "name": "Seated Calf Raise",
+      "description": "A calf exercise performed seated that emphasizes the soleus muscle.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["soleus", "gastrocnemius"],
+      "equipment_required": ["seated calf raise machine"],
+      "difficulty_level": "beginner",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 4,
+      "instructions": [
+        "Sit on machine with balls of feet on platform and knees under pad",
+        "Release safety and let heels drop for full stretch",
+        "Push through balls of feet to raise heels as high as possible",
+        "Squeeze calves at top position",
+        "Lower heels slowly back to stretched position"
+      ],
+      "tips": [
+        "Bent knee position targets soleus more than gastrocnemius",
+        "Soleus is important for calf development and often undertrained",
+        "Use full range of motion for maximum benefit"
+      ],
+      "common_mistakes": [
+        "Using too much weight and sacrificing range of motion",
+        "Not pausing at top contraction",
+        "Bouncing at bottom stretch position"
+      ],
+      "alternatives": ["Standing Calf Raise", "Donkey Calf Raise", "Leg Press Calf Raise"]
+    },
+    {
+      "name": "Donkey Calf Raise",
+      "description": "A calf exercise performed in a bent-over position for maximum stretch and calf activation.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["gastrocnemius", "soleus"],
+      "equipment_required": ["calf raise platform", "weight belt or partner"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": false,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Lean forward at hips onto bench or support with torso roughly parallel to floor",
+        "Position balls of feet on edge of platform with heels hanging off",
+        "Have partner sit on lower back or use weight belt for resistance",
+        "Rise up onto toes as high as possible",
+        "Lower heels for deep stretch and repeat"
+      ],
+      "tips": [
+        "Bent-over position allows greater range of motion than standing raises",
+        "Excellent for overall calf development",
+        "Keep knees straight throughout movement"
+      ],
+      "common_mistakes": [
+        "Not maintaining bent-over position",
+        "Bending knees during movement",
+        "Not achieving full stretch at bottom"
+      ],
+      "alternatives": ["Standing Calf Raise", "Seated Calf Raise", "Leg Press Calf Raise"]
+    },
+    {
+      "name": "Single Leg Calf Raise",
+      "description": "A unilateral calf raise that builds strength and addresses muscle imbalances.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["gastrocnemius", "soleus"],
+      "equipment_required": ["step or platform", "dumbbell (optional)"],
+      "difficulty_level": "intermediate",
+      "is_compound": false,
+      "is_unilateral": true,
+      "calories_per_minute": 5,
+      "instructions": [
+        "Stand on one leg with ball of foot on edge of step, other leg bent behind",
+        "Hold onto support for balance with one hand, optional dumbbell in other",
+        "Lower heel below step level for maximum stretch",
+        "Rise up onto toes as high as possible",
+        "Complete all reps before switching to other leg"
+      ],
+      "tips": [
+        "Challenges balance and strengthens ankle stability",
+        "Helps identify and correct strength imbalances between legs",
+        "Start without weight until balance is mastered"
+      ],
+      "common_mistakes": [
+        "Using too much momentum",
+        "Not achieving full range of motion",
+        "Gripping support too tightly instead of using for balance only"
+      ],
+      "alternatives": ["Standing Calf Raise", "Seated Calf Raise", "Balance Board Calf Raise"]
+    },
+    {
+      "name": "Conventional Deadlift",
+      "description": "The king of compound exercises, lifting a barbell from the floor using the entire posterior chain.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["glutes", "hamstrings", "lower back", "traps", "quadriceps", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Stand with feet hip-width apart, barbell over midfoot",
+        "Hinge at hips and grip bar just outside legs with arms straight",
+        "Lower hips with chest up, back flat, and shoulders over or slightly ahead of bar",
+        "Brace core, engage lats, and push floor away with feet to lift bar",
+        "Stand fully upright with hips and knees locked, then lower bar with control"
+      ],
+      "tips": [
+        "Keep bar close to body throughout - drag it up shins and thighs",
+        "Think 'push the floor away' rather than 'pull the bar up'",
+        "Maintain neutral spine - never round the back"
+      ],
+      "common_mistakes": [
+        "Rounding the back at any point",
+        "Starting with hips too low or too high",
+        "Letting bar drift away from body",
+        "Not maintaining full-foot contact with ground"
+      ],
+      "alternatives": ["Trap Bar Deadlift", "Sumo Deadlift", "Romanian Deadlift", "Rack Pulls"]
+    },
+    {
+      "name": "Trap Bar Deadlift (Hex Bar)",
+      "description": "A deadlift variation using a hexagonal bar that allows for a more quad-dominant pulling position.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "lower back", "traps"],
+      "equipment_required": ["trap bar/hex bar"],
+      "difficulty_level": "beginner",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 9,
+      "instructions": [
+        "Stand in center of trap bar with feet hip-width apart",
+        "Hinge at hips and grip handles at sides with neutral grip",
+        "Lower hips with chest up and back flat until handles are at hand level",
+        "Brace core and drive through feet to stand upright",
+        "Lower bar back to ground with control and reset"
+      ],
+      "tips": [
+        "Neutral grip and centered weight reduces stress on lower back",
+        "More quad-dominant than conventional deadlift",
+        "Excellent for those with mobility limitations or back issues"
+      ],
+      "common_mistakes": [
+        "Not standing in exact center of bar",
+        "Rounding back during lift",
+        "Letting weight shift forward or backward"
+      ],
+      "alternatives": ["Conventional Deadlift", "Romanian Deadlift", "Squats"]
+    },
+    {
+      "name": "Barbell Lunges (Reverse)",
+      "description": "A lunge variation stepping backward that emphasizes glutes while being easier on the knees.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "core"],
+      "equipment_required": ["barbell"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 8,
+      "instructions": [
+        "Position barbell on upper back and stand with feet hip-width apart",
+        "Step one leg backward and lower hips until both knees are at 90 degrees",
+        "Front knee should align with ankle, back knee hovering above floor",
+        "Push through front heel to return to starting position",
+        "Alternate legs or complete all reps on one side before switching"
+      ],
+      "tips": [
+        "Reverse lunges are generally easier on knees than forward lunges",
+        "Keep torso upright and core braced throughout",
+        "Front knee should not travel past toes"
+      ],
+      "common_mistakes": [
+        "Taking too small backward step",
+        "Allowing front knee to collapse inward",
+        "Leaning too far forward",
+        "Not achieving 90-degree angles at both knees"
+      ],
+      "alternatives": ["Walking Lunges", "Bulgarian Split Squats", "Forward Lunges", "Step-ups"]
+    },
+    {
+      "name": "Sled Push",
+      "description": "A functional full-body exercise pushing a weighted sled that emphasizes legs and conditioning.",
+      "exercise_type": "weightTraining",
+      "muscle_groups": ["quadriceps", "glutes", "hamstrings", "calves", "core"],
+      "equipment_required": ["sled"],
+      "difficulty_level": "intermediate",
+      "is_compound": true,
+      "is_unilateral": false,
+      "calories_per_minute": 10,
+      "instructions": [
+        "Load sled with appropriate weight and grip handles at chest or shoulder height",
+        "Lean forward with body at 45-degree angle and core braced",
+        "Drive through legs with powerful strides, pushing sled forward",
+        "Maintain forward lean and continue pushing for desired distance",
+        "Keep arms extended and drive with legs, not by pushing with arms"
+      ],
+      "tips": [
+        "Lower handle position = more horizontal drive and quad emphasis",
+        "Higher handle position = more upright posture",
+        "Excellent for building leg strength without eccentric stress"
+      ],
+      "common_mistakes": [
+        "Standing too upright which reduces power output",
+        "Pushing with arms instead of driving with legs",
+        "Taking too short or choppy steps",
+        "Not maintaining forward lean"
+      ],
+      "alternatives": ["Prowler Push", "Hill Sprints", "Squats", "Leg Press"]
+    }
+  ]
+}

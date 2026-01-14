@@ -24,6 +24,7 @@ export interface FeedItem {
   userEmail: string;
   friendEmail: string;
   friendDisplayName: string;  // Friend's display name from user_profiles
+  friendAvatarUrl: string | null;  // Friend's profile picture
   activityType: FeedActivityType;
   title: string;
   subtitle: string | null;
@@ -34,6 +35,8 @@ export interface FeedItem {
   hasCheered: boolean;
   cheeredAt: string | null;
   cheerEmoji: string | null;
+  likeCount: number;  // Total reactions
+  commentCount: number;  // Total comments
   activityAt: string;
   expiresAt: string;
   createdAt: string;
@@ -75,21 +78,49 @@ class FriendFeedServiceClass {
         return { items: [], hasMore: false };
       }
 
-      // Get friend display names from user_profiles
+      // Get friend display names and avatars from user_profiles
       const friendEmails = [...new Set((data || []).map((row: any) => row.friend_email))];
       const { data: profiles } = await this.supabase
         .from('user_profiles')
-        .select('email, display_name, full_name, first_name')
+        .select('email, display_name, full_name, first_name, avatar_url')
         .in('email', friendEmails);
 
-      // Create a map of email -> display name
+      // Create maps for name and avatar
       const nameMap = new Map<string, string>();
+      const avatarMap = new Map<string, string | null>();
       (profiles || []).forEach((p: any) => {
         const displayName = p.display_name || p.first_name || p.full_name?.split(' ')[0] || p.email.split('@')[0];
         nameMap.set(p.email, displayName);
+        avatarMap.set(p.email, p.avatar_url || null);
       });
 
-      const items = (data || []).map((row: any) => this.mapFeedItem(row, nameMap));
+      // Get reaction and comment counts for all feed items
+      const feedItemIds = (data || []).map((row: any) => row.id);
+
+      const [reactionsResult, commentsResult] = await Promise.all([
+        this.supabase
+          .from('feed_reactions')
+          .select('feed_item_id')
+          .in('feed_item_id', feedItemIds),
+        this.supabase
+          .from('feed_comments')
+          .select('feed_item_id')
+          .in('feed_item_id', feedItemIds),
+      ]);
+
+      // Count reactions and comments per feed item
+      const likeCountMap = new Map<string, number>();
+      const commentCountMap = new Map<string, number>();
+
+      (reactionsResult.data || []).forEach((r: any) => {
+        likeCountMap.set(r.feed_item_id, (likeCountMap.get(r.feed_item_id) || 0) + 1);
+      });
+
+      (commentsResult.data || []).forEach((c: any) => {
+        commentCountMap.set(c.feed_item_id, (commentCountMap.get(c.feed_item_id) || 0) + 1);
+      });
+
+      const items = (data || []).map((row: any) => this.mapFeedItem(row, nameMap, avatarMap, likeCountMap, commentCountMap));
       const hasMore = items.length > limit;
 
       return { items: items.slice(0, limit), hasMore };
@@ -263,7 +294,47 @@ class FriendFeedServiceClass {
         return [];
       }
 
-      return (data || []).map(this.mapFeedItem);
+      // Get friend display name and avatar from user_profiles
+      const { data: profile } = await this.supabase
+        .from('user_profiles')
+        .select('email, display_name, full_name, first_name, avatar_url')
+        .eq('email', friendEmail)
+        .single();
+
+      const nameMap = new Map<string, string>();
+      const avatarMap = new Map<string, string | null>();
+      if (profile) {
+        const displayName = profile.display_name || profile.first_name || profile.full_name?.split(' ')[0] || friendEmail.split('@')[0];
+        nameMap.set(friendEmail, displayName);
+        avatarMap.set(friendEmail, profile.avatar_url || null);
+      }
+
+      // Get reaction and comment counts
+      const feedItemIds = (data || []).map((row: any) => row.id);
+
+      const [reactionsResult, commentsResult] = await Promise.all([
+        this.supabase
+          .from('feed_reactions')
+          .select('feed_item_id')
+          .in('feed_item_id', feedItemIds),
+        this.supabase
+          .from('feed_comments')
+          .select('feed_item_id')
+          .in('feed_item_id', feedItemIds),
+      ]);
+
+      const likeCountMap = new Map<string, number>();
+      const commentCountMap = new Map<string, number>();
+
+      (reactionsResult.data || []).forEach((r: any) => {
+        likeCountMap.set(r.feed_item_id, (likeCountMap.get(r.feed_item_id) || 0) + 1);
+      });
+
+      (commentsResult.data || []).forEach((c: any) => {
+        commentCountMap.set(c.feed_item_id, (commentCountMap.get(c.feed_item_id) || 0) + 1);
+      });
+
+      return (data || []).map((row: any) => this.mapFeedItem(row, nameMap, avatarMap, likeCountMap, commentCountMap));
     } catch (error) {
       logger.error('Exception fetching friend feed', { error });
       return [];
@@ -300,15 +371,25 @@ class FriendFeedServiceClass {
   // HELPERS
   // ============================================
 
-  private mapFeedItem(row: any, nameMap?: Map<string, string>): FeedItem {
+  private mapFeedItem(
+    row: any,
+    nameMap?: Map<string, string>,
+    avatarMap?: Map<string, string | null>,
+    likeCountMap?: Map<string, number>,
+    commentCountMap?: Map<string, number>
+  ): FeedItem {
     const friendEmail = row.friend_email;
     const friendDisplayName = nameMap?.get(friendEmail) || friendEmail.split('@')[0];
+    const friendAvatarUrl = avatarMap?.get(friendEmail) || null;
+    const likeCount = likeCountMap?.get(row.id) || 0;
+    const commentCount = commentCountMap?.get(row.id) || 0;
 
     return {
       id: row.id,
       userEmail: row.user_email,
       friendEmail,
       friendDisplayName,
+      friendAvatarUrl,
       activityType: row.activity_type,
       title: row.title,
       subtitle: row.subtitle,
@@ -319,6 +400,8 @@ class FriendFeedServiceClass {
       hasCheered: row.has_cheered,
       cheeredAt: row.cheered_at,
       cheerEmoji: row.cheer_emoji,
+      likeCount,
+      commentCount,
       activityAt: row.activity_at,
       expiresAt: row.expires_at,
       createdAt: row.created_at,

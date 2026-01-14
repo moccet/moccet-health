@@ -12,7 +12,11 @@ import { createLogger } from '@/lib/utils/logger';
 import { WisdomLibraryService, WisdomEntry, WisdomCategory } from './wisdom-library-service';
 import { AIWisdomGenerator, WisdomHealthContext, GeneratedWisdom } from './ai-wisdom-generator';
 import { PreferenceLearner } from './preference-learner';
-import { sendPushNotification } from './onesignal-service';
+import {
+  sendPushNotification,
+  canSendNotification,
+  markThemeNotified,
+} from './onesignal-service';
 import { fetchAllEcosystemData } from './ecosystem-fetcher';
 import OpenAI from 'openai';
 
@@ -545,6 +549,7 @@ class DailyDigestServiceClass {
   /**
    * Send digest notification to user
    * Sends wisdom title + contextualized body with health data
+   * Respects daily notification limits
    */
   async sendDigestNotification(
     email: string,
@@ -553,6 +558,13 @@ class DailyDigestServiceClass {
     try {
       if (digest.items.length === 0) {
         logger.info('No items in digest, skipping notification', { email });
+        return false;
+      }
+
+      // Check daily notification limit first
+      const canSend = await canSendNotification(email, 'medium', 'digest');
+      if (!canSend) {
+        logger.info('Skipping digest notification - daily limit reached', { email });
         return false;
       }
 
@@ -604,6 +616,11 @@ class DailyDigestServiceClass {
           action_url: '/sage',
         },
       });
+
+      if (sent > 0) {
+        // Track digest notification for daily limit
+        await markThemeNotified(email, 'digest', 'digest');
+      }
 
       logger.info('Digest notification sent', { email, sent: sent > 0, title });
       return sent > 0;

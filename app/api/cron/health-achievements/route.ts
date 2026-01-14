@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { sendPushNotification } from '@/lib/services/onesignal-service';
+import { sendPushNotification, markThemeNotified } from '@/lib/services/onesignal-service';
 
 /**
  * Health Achievements Cron Job
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
           const feedResult = await generateFeedForFriends(supabase, email, achievement);
           stats.feed_items_created += feedResult.count;
 
-          // Send notification to the user
+          // Send notification to the user (achievements bypass daily limit)
           const sent = await sendPushNotification(email, {
             title: `Achievement Unlocked! ${achievement.emoji}`,
             body: achievement.title,
@@ -120,7 +120,11 @@ export async function GET(request: NextRequest) {
               achievement_type: achievement.type,
             },
           });
-          if (sent > 0) stats.notifications_sent++;
+          if (sent > 0) {
+            stats.notifications_sent++;
+            // Track achievement notification (bypasses limit but still counted for monitoring)
+            await markThemeNotified(email, 'achievement', 'achievement');
+          }
         }
       } catch (err) {
         console.error(`[Health Achievements] Error processing ${email}:`, err);

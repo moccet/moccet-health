@@ -26,7 +26,13 @@ import {
   SpotifyData,
   DeepContentData,
 } from './ecosystem-fetcher';
-import { sendInsightNotification } from './onesignal-service';
+import {
+  sendInsightNotification,
+  canSendNotification,
+  wasThemeNotifiedToday,
+  markThemeNotified,
+  getInsightTheme,
+} from './onesignal-service';
 import { getUserContext, UserContext, getUserSubscriptionTier } from './user-context-service';
 import { getCompactedHistory, formatHistoryForPrompt } from './conversation-compactor';
 import { formatSentimentForPrompt } from './content-sentiment-analyzer';
@@ -2633,6 +2639,29 @@ async function isDuplicateInsight(
 
   // Category exists recently - now check for actual duplicates within same category
 
+  // Check 0: For audio_wellness (Spotify/music) insights, only allow ONE per 24 hours
+  // This is stricter because AI tends to generate varied music-related titles
+  if (insightCategory === 'audio_wellness') {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentAudioInsight } = await supabase
+      .from('real_time_insights')
+      .select('id, title')
+      .eq('email', email)
+      .eq('insight_type', 'audio_wellness')
+      .gte('created_at', last24h)
+      .is('dismissed_at', null)
+      .limit(1);
+
+    if ((recentAudioInsight?.length ?? 0) > 0) {
+      logger.info('Blocking duplicate audio_wellness insight (1 per 24h limit)', {
+        email,
+        existingTitle: recentAudioInsight[0]?.title?.substring(0, 50),
+        newTitle: title.substring(0, 50),
+      });
+      return true;
+    }
+  }
+
   // Check 1: Exact same title in window
   const { data: titleMatch } = await supabase
     .from('real_time_insights')
@@ -2801,7 +2830,7 @@ function extractActionableKeywords(text: string): string[] {
 
 /**
  * Store a generated insight in the database and send push notification
- * Now includes deduplication check to prevent repetitive insights
+ * Now includes deduplication check and notification throttling to prevent spam
  */
 async function storeInsight(email: string, insight: GeneratedInsight): Promise<string | null> {
   // Use admin client to bypass RLS for deduplication checks and storage
@@ -2850,9 +2879,36 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
 
   const insightId = data?.id;
 
-  // Send push notification via OneSignal
+  // Send push notification via OneSignal (with throttling)
   if (insightId) {
     try {
+      // Check 1: Daily notification limit (critical alerts bypass)
+      const canSend = await canSendNotification(email, insight.severity, 'insight');
+
+      if (!canSend) {
+        logger.info('Skipping notification - daily limit reached', {
+          email,
+          insightId,
+          severity: insight.severity,
+        });
+        return insightId;
+      }
+
+      // Check 2: Theme deduplication (only 1 per theme per day)
+      const theme = getInsightTheme(insight.title, insight.message);
+      const themeAlreadySent = await wasThemeNotifiedToday(email, theme);
+
+      if (themeAlreadySent) {
+        logger.info('Skipping notification - theme already sent today', {
+          email,
+          insightId,
+          theme,
+          title: insight.title.substring(0, 50),
+        });
+        return insightId;
+      }
+
+      // Both checks passed - send the notification
       const sentCount = await sendInsightNotification(email, {
         id: insightId,
         title: insight.title,
@@ -2863,6 +2919,7 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
 
       // Mark notification as sent if successful
       if (sentCount > 0) {
+        // Update insight record
         await supabase
           .from('real_time_insights')
           .update({
@@ -2871,6 +2928,16 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
             notification_channel: 'push',
           })
           .eq('id', insightId);
+
+        // Track theme for deduplication
+        await markThemeNotified(email, theme, 'insight');
+
+        logger.info('Notification sent successfully', {
+          email,
+          insightId,
+          theme,
+          title: insight.title.substring(0, 50),
+        });
       }
     } catch (pushError) {
       logger.error('Error sending push notification', pushError, { email, insightId });

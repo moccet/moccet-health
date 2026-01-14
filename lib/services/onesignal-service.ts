@@ -20,6 +20,156 @@ export interface PushNotificationPayload {
 }
 
 /**
+ * Notification types for throttling purposes
+ */
+export type NotificationType = 'insight' | 'achievement' | 'digest' | 'critical';
+
+/**
+ * Daily notification limit (excluding critical alerts and achievements)
+ */
+const DAILY_NOTIFICATION_LIMIT = 5;
+
+/**
+ * Theme keywords for categorizing insights
+ * Used to prevent duplicate theme notifications (e.g., multiple music insights)
+ */
+const INSIGHT_THEMES: Record<string, string[]> = {
+  'music': ['spotify', 'music', 'playlist', 'listening', 'song', 'track', 'rhythm', 'audio', 'melody'],
+  'social': ['social', 'connection', 'collaboration', 'friend', 'colleague', 'community', 'together'],
+  'sleep': ['sleep', 'bed', 'rest', 'circadian', 'night', 'wake', 'morning'],
+  'recovery': ['recovery', 'hrv', 'strain', 'fatigue', 'overtraining', 'resilience'],
+  'exercise': ['cardio', 'workout', 'exercise', 'active', 'steps', 'fitness', 'walk', 'run'],
+  'work_balance': ['work', 'meeting', 'email', 'after-hours', 'digital', 'calendar', 'focus', 'cognitive'],
+  'nutrition': ['diet', 'food', 'glucose', 'meal', 'nutrition', 'eating', 'mediterranean', 'immune'],
+};
+
+/**
+ * Extract the theme from an insight based on title and message content
+ */
+export function getInsightTheme(title: string, message: string): string {
+  const text = `${title} ${message}`.toLowerCase();
+  for (const [theme, keywords] of Object.entries(INSIGHT_THEMES)) {
+    if (keywords.some(kw => text.includes(kw))) {
+      return theme;
+    }
+  }
+  return 'general';
+}
+
+/**
+ * Get count of notifications sent today for a user
+ */
+export async function getDailyNotificationCount(email: string): Promise<number> {
+  const supabase = createAdminClient();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { count, error } = await supabase
+    .from('notification_daily_themes')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email)
+    .gte('notified_at', todayStart.toISOString());
+
+  if (error) {
+    console.error('[OneSignal Service] Error getting daily notification count:', error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+/**
+ * Check if a specific theme was already notified today
+ */
+export async function wasThemeNotifiedToday(email: string, theme: string): Promise<boolean> {
+  const supabase = createAdminClient();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from('notification_daily_themes')
+    .select('id')
+    .eq('email', email)
+    .eq('theme', theme)
+    .gte('notified_at', todayStart.toISOString())
+    .limit(1);
+
+  if (error) {
+    console.error('[OneSignal Service] Error checking theme notification:', error);
+    return false; // Allow sending if check fails
+  }
+
+  return data && data.length > 0;
+}
+
+/**
+ * Mark a theme as notified for today
+ */
+export async function markThemeNotified(
+  email: string,
+  theme: string,
+  notificationType: NotificationType = 'insight'
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('notification_daily_themes')
+    .insert({
+      email,
+      theme,
+      notification_type: notificationType,
+      notified_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error('[OneSignal Service] Error marking theme as notified:', error);
+  }
+}
+
+/**
+ * Check if a notification can be sent based on daily limits and type
+ *
+ * @param email - User email
+ * @param severity - Insight severity (critical always bypasses)
+ * @param notificationType - Type of notification
+ * @returns Whether the notification can be sent
+ */
+export async function canSendNotification(
+  email: string,
+  severity: string,
+  notificationType: NotificationType
+): Promise<boolean> {
+  // Critical alerts always send immediately
+  if (severity === 'critical') {
+    console.log(`[OneSignal Service] Critical alert for ${email} - bypassing limits`);
+    return true;
+  }
+
+  // Achievements always send (per user preference)
+  if (notificationType === 'achievement') {
+    console.log(`[OneSignal Service] Achievement for ${email} - bypassing limits`);
+    return true;
+  }
+
+  // Check daily count for other notification types
+  const dailyCount = await getDailyNotificationCount(email);
+
+  if (dailyCount >= DAILY_NOTIFICATION_LIMIT) {
+    console.log(
+      `[OneSignal Service] Daily limit reached for ${email}: ${dailyCount}/${DAILY_NOTIFICATION_LIMIT} - skipping`
+    );
+    return false;
+  }
+
+  console.log(
+    `[OneSignal Service] Daily count for ${email}: ${dailyCount}/${DAILY_NOTIFICATION_LIMIT} - can send`
+  );
+  return true;
+}
+
+/**
  * Send a push notification to a user's devices via OneSignal
  *
  * @param email - User email to send notification to

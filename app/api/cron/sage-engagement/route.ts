@@ -16,19 +16,19 @@ const supabase = createClient(
 // Positive, encouraging notification messages
 const ENGAGEMENT_MESSAGES = [
   {
-    title: "Your personalized nutrition journey awaits! 🌱",
+    title: "Your personalized nutrition journey awaits",
     body: "Take 2 minutes to set up your meal plan and start feeling your best. Your body will thank you!",
   },
   {
-    title: "Ready to unlock your nutrition potential? ✨",
+    title: "Ready to unlock your nutrition potential?",
     body: "Your personalized meal plan is waiting! Start tracking today and discover insights tailored just for you.",
   },
   {
-    title: "Small steps, big results 💪",
+    title: "Small steps, big results",
     body: "Logging your first meal takes just seconds. Let's build healthy habits together - your future self will be grateful!",
   },
   {
-    title: "Your wellness journey starts with one tap 🎯",
+    title: "Your wellness journey starts with one tap",
     body: "Get your AI-powered meal plan and start tracking. It's easier than you think, and we're here to help!",
   },
 ];

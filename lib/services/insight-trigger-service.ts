@@ -1737,6 +1737,9 @@ async function generateAIInsights(
   }
 
   try {
+    // Fetch insight history for deduplication - tell AI what to avoid
+    const insightHistory = await fetchUserInsightHistory(email, 30);
+
     // Build comprehensive context sections
     const contextSections: string[] = [];
 
@@ -2110,6 +2113,12 @@ async function generateAIInsights(
 
     if (ecosystemParts.length > 0) {
       contextSections.push(`## Current Health & Lifestyle Data\n${ecosystemParts.join('\n')}`);
+    }
+
+    // Add insight history avoidance section (tells AI what NOT to repeat)
+    const historyAvoidanceSection = buildHistoryAvoidanceSection(insightHistory);
+    if (historyAvoidanceSection) {
+      contextSections.push(historyAvoidanceSection);
     }
 
     const fullContext = contextSections.join('\n\n');
@@ -2719,6 +2728,110 @@ async function isDuplicateInsight(
   return false;
 }
 
+// ============================================================================
+// INSIGHT HISTORY FUNCTIONS (for deduplication)
+// ============================================================================
+
+interface InsightHistoryRecord {
+  category: string;
+  title: string;
+  recommendation: string | null;
+  shown_at: string;
+}
+
+/**
+ * Fetch user's insight history for deduplication
+ * Returns insights shown in the specified time window
+ */
+async function fetchUserInsightHistory(
+  email: string,
+  windowDays: number = 30
+): Promise<InsightHistoryRecord[]> {
+  const supabase = createAdminClient();
+  const cutoff = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const { data, error } = await supabase
+      .from('insight_history')
+      .select('category, title, recommendation, shown_at')
+      .eq('email', email)
+      .gte('shown_at', cutoff)
+      .order('shown_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      logger.warn('Failed to fetch insight history', { email, error: error.message });
+      return [];
+    }
+
+    logger.info('Fetched insight history for deduplication', {
+      email,
+      count: data?.length || 0,
+      windowDays,
+    });
+
+    return data || [];
+  } catch (e) {
+    logger.error('Error fetching insight history', { email, error: e });
+    return [];
+  }
+}
+
+/**
+ * Build a prompt section that tells the AI what insights to avoid
+ * Groups by recency: last 7 days (strict avoid) vs 7-30 days (softer avoid)
+ */
+function buildHistoryAvoidanceSection(history: InsightHistoryRecord[]): string {
+  if (history.length === 0) return '';
+
+  const sections = ['\n## INSIGHT HISTORY - AVOID REPETITION'];
+  sections.push('These insights were recently shown. Generate NEW, DIFFERENT insights:\n');
+
+  // Group by recency
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recent = history.filter(h => new Date(h.shown_at).getTime() > sevenDaysAgo);
+  const older = history.filter(h => new Date(h.shown_at).getTime() <= sevenDaysAgo);
+
+  if (recent.length > 0) {
+    sections.push('### Last 7 Days - DO NOT REPEAT:');
+    recent.slice(0, 15).forEach(h => {
+      sections.push(`- [${h.category}] "${h.title}"`);
+    });
+  }
+
+  if (older.length > 0) {
+    sections.push('\n### 7-30 Days Ago - Avoid Similar Topics:');
+    older.slice(0, 10).forEach(h => {
+      sections.push(`- "${h.title}"`);
+    });
+  }
+
+  // Category distribution for diversity guidance
+  const categoryCounts: Record<string, number> = {};
+  history.forEach(h => {
+    categoryCounts[h.category] = (categoryCounts[h.category] || 0) + 1;
+  });
+
+  const sortedCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (sortedCategories.length > 0) {
+    sections.push('\n### Recent Category Distribution:');
+    sortedCategories.forEach(([cat, count]) => {
+      sections.push(`- ${cat}: ${count} insights`);
+    });
+  }
+
+  sections.push('\n### DIVERSITY REQUIREMENTS:');
+  sections.push('1. If a topic appeared in last 7 days, DO NOT generate similar insight');
+  sections.push('2. Prioritize UNDERREPRESENTED categories for variety');
+  sections.push('3. Same health data can yield DIFFERENT actionable recommendations');
+  sections.push('4. Focus on new angles, not repeated themes\n');
+
+  return sections.join('\n');
+}
+
 /**
  * Extract lab biomarker names from text
  * These are specific medical terms that shouldn't be repeated frequently
@@ -2878,6 +2991,28 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
   }
 
   const insightId = data?.id;
+
+  // Record to insight_history for future deduplication
+  // This ensures the AI knows about this insight when generating future ones
+  if (insightId) {
+    try {
+      await supabase.from('insight_history').upsert(
+        {
+          email,
+          insight_id: insightId,
+          category: insight.insight_type,
+          title: insight.title,
+          recommendation: insight.actionable_recommendation,
+          shown_at: new Date().toISOString(),
+        },
+        { onConflict: 'email,insight_id' }
+      );
+      logger.debug('Recorded insight to history', { email, insightId, category: insight.insight_type });
+    } catch (historyError) {
+      // Non-blocking - don't fail if history recording fails
+      logger.warn('Failed to record insight to history', { email, insightId, error: historyError });
+    }
+  }
 
   // Send push notification via OneSignal (with throttling)
   if (insightId) {

@@ -11,6 +11,7 @@ import {
   UserContext,
   UserPreferences,
   DeepContentContext,
+  InsightHistoryContext,
 } from './types';
 
 export abstract class BaseAgent {
@@ -70,8 +71,8 @@ export abstract class BaseAgent {
     // Build the prompt
     const prompt = this.buildPrompt(relevantData);
 
-    // Build system prompt with user preferences and deep content
-    const systemPrompt = this.getSystemPrompt(context.userPreferences, context.recentFeedbackComments, context.deepContent);
+    // Build system prompt with user preferences, deep content, and insight history
+    const systemPrompt = this.getSystemPrompt(context.userPreferences, context.recentFeedbackComments, context.deepContent, context.insightHistory);
 
     // Generate response from AI
     const response = await openai.chat.completions.create({
@@ -112,7 +113,8 @@ export abstract class BaseAgent {
   protected getSystemPrompt(
     userPreferences?: UserPreferences,
     recentFeedback?: Array<{ taskType: string; action: string; comment: string; timestamp: Date }>,
-    deepContent?: DeepContentContext
+    deepContent?: DeepContentContext,
+    insightHistory?: InsightHistoryContext
   ): string {
     let basePrompt = `You are a ${this.agentName} specializing in ${this.domain} analysis.
 Your job is to analyze health data and generate actionable insights.
@@ -169,6 +171,12 @@ GOOD EXAMPLES (specific and actionable):
     const deepContentSection = this.buildDeepContentPrompt(deepContent);
     if (deepContentSection) {
       basePrompt += deepContentSection;
+    }
+
+    // Add insight history section to avoid repetition
+    const insightHistorySection = this.buildInsightHistoryPrompt(insightHistory);
+    if (insightHistorySection) {
+      basePrompt += insightHistorySection;
     }
 
     return basePrompt;
@@ -310,6 +318,54 @@ GOOD EXAMPLES (specific and actionable):
 
     sections.push('\n→ Generate recommendations that RESPECT these preferences and constraints.');
     sections.push('→ If the user said they "can\'t" do something, suggest ALTERNATIVES instead.');
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Build insight history section to avoid repetition
+   */
+  protected buildInsightHistoryPrompt(insightHistory?: InsightHistoryContext): string {
+    if (!insightHistory) {
+      return '';
+    }
+
+    const hasRecent = insightHistory.recent && insightHistory.recent.length > 0;
+    const hasHistorical = insightHistory.categoryCounts && Object.keys(insightHistory.categoryCounts).length > 0;
+
+    if (!hasRecent && !hasHistorical) {
+      return '';
+    }
+
+    const sections: string[] = ['\n\n=== INSIGHT HISTORY (avoid repetition) ==='];
+    sections.push('The user has recently seen these insights. Generate NEW and DIFFERENT recommendations:');
+
+    // Recent insights - full detail, DO NOT repeat
+    if (hasRecent) {
+      sections.push('\n🔄 RECENT INSIGHTS (last 7 days) - DO NOT repeat these exact topics:');
+      for (const insight of insightHistory.recent.slice(0, 10)) {
+        const daysAgo = Math.floor((Date.now() - new Date(insight.shownAt).getTime()) / (24 * 60 * 60 * 1000));
+        const timeLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+        sections.push(`- [${insight.category}] "${insight.title}" - ${timeLabel}`);
+      }
+    }
+
+    // Historical patterns - aggregated counts
+    if (hasHistorical) {
+      sections.push('\n📊 HISTORICAL PATTERNS (older than 7 days):');
+      const sortedCategories = Object.entries(insightHistory.categoryCounts)
+        .sort((a, b) => b[1] - a[1]);
+      for (const [category, count] of sortedCategories) {
+        sections.push(`- ${category}: ${count} insights shown`);
+      }
+      sections.push('→ Categories with high counts are OVERREPRESENTED - prioritize underrepresented domains');
+    }
+
+    sections.push('\n⚠️ IMPORTANT GUIDANCE:');
+    sections.push('- If health data is similar to previous days, acknowledge this and suggest NEW interventions');
+    sections.push('- Vary your framing and recommendations - don\'t repeat the same advice');
+    sections.push('- If a category is overrepresented in history, explore different angles or other domains');
+    sections.push('- It\'s OK to mention the same TOPIC occasionally, but recommend DIFFERENT actions');
 
     return sections.join('\n');
   }

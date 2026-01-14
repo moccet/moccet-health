@@ -231,6 +231,9 @@ export interface UserContext {
   // Travel context for timezone-based travel detection
   travelContext?: TravelContext;
 
+  // Insight history for avoiding repetition
+  insightHistory?: InsightHistoryContext;
+
   // Available data sources
   availableDataSources: DataSource[];
 }
@@ -551,4 +554,23 @@ export interface UserPreferences {
   }>;
   // Explicit constraints from user comments
   constraints: UserConstraint[];
+}
+
+// ============================================================
+// INSIGHT HISTORY (for avoiding repetition)
+// ============================================================
+
+export interface InsightHistoryRecord {
+  category: string;
+  designCategory?: string;
+  title: string;
+  recommendation?: string;
+  shownAt: string;
+}
+
+export interface InsightHistoryContext {
+  // Recent insights (last 7 days) - full detail
+  recent: InsightHistoryRecord[];
+  // Older insights aggregated by category
+  categoryCounts: Record<string, number>;
 }

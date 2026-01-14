@@ -3,7 +3,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { DataSource, UserContext, UserPreferences, LearnedPattern, PatternType, DeepContentContext } from './types';
+import { DataSource, UserContext, UserPreferences, LearnedPattern, PatternType, DeepContentContext, InsightHistoryContext } from './types';
 import { getCombinedDeepAnalysis } from '@/lib/services/deep-content-analyzer';
 
 /**
@@ -242,6 +242,17 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     }
   } catch (e) {
     console.log('[ContextBuilder] No recent feedback:', e);
+  }
+
+  // Fetch insight history for avoiding repetition
+  try {
+    const insightHistory = await fetchInsightHistory(supabase, email);
+    if (insightHistory) {
+      context.insightHistory = insightHistory;
+      console.log(`[ContextBuilder] Found insight history: ${insightHistory.recent.length} recent, ${Object.keys(insightHistory.categoryCounts).length} historical categories`);
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] No insight history:', e);
   }
 
   // Fetch deep content analysis (tasks, urgency, interruptions)
@@ -510,4 +521,48 @@ async function fetchRecentFeedbackComments(
       comment: f.user_comment!,
       timestamp: new Date(f.timestamp),
     }));
+}
+
+/**
+ * Fetch insight history for avoiding repetition
+ * Returns recent insights (7 days) with full detail, older insights aggregated by category
+ */
+async function fetchInsightHistory(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<InsightHistoryContext | null> {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Get all insight history (last 100 max)
+  const { data, error } = await supabase
+    .from('insight_history')
+    .select('category, design_category, title, recommendation, shown_at')
+    .eq('email', email)
+    .order('shown_at', { ascending: false })
+    .limit(100);
+
+  if (error || !data || data.length === 0) {
+    return null;
+  }
+
+  // Split into recent (full detail) vs older (aggregated)
+  const recent = data
+    .filter(r => r.shown_at > sevenDaysAgo)
+    .map(r => ({
+      category: r.category,
+      designCategory: r.design_category,
+      title: r.title,
+      recommendation: r.recommendation,
+      shownAt: r.shown_at,
+    }));
+
+  const older = data.filter(r => r.shown_at <= sevenDaysAgo);
+
+  // Aggregate older by category
+  const categoryCounts: Record<string, number> = {};
+  for (const r of older) {
+    categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+  }
+
+  return { recent, categoryCounts };
 }

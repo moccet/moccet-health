@@ -35,7 +35,15 @@ export type DataSource =
   | 'nutrition'
   | 'behavioral'
   | 'apple_health'
-  | 'conversation';
+  | 'conversation'
+  // NEW: Rich context sources for hyper-personalization
+  | 'sage'           // Full Sage nutrition plans + food logs
+  | 'forge'          // Full Forge fitness plans + workout patterns
+  | 'goals'          // Health goals with auto-progress
+  | 'life_events'    // Life events from email analysis
+  | 'interventions'  // Active health experiments
+  | 'checkins'       // Daily mood/energy check-ins
+  | 'outcomes';      // Advice outcomes (what worked/didn't)
 
 export interface ContextSelectionResult {
   sources: DataSource[];
@@ -58,14 +66,14 @@ export interface ContextLimits {
 
 const SUBSCRIPTION_LIMITS: Record<string, ContextLimits> = {
   free: {
-    maxTokens: 2000,
+    maxTokens: 3000,
     conversationDepth: 10,
-    allowedSources: ['profile', 'insights', 'labs', 'conversation'],
+    allowedSources: ['profile', 'insights', 'labs', 'conversation', 'goals'],
     enableCompaction: false,
     model: 'gpt-4o-mini',
   },
   pro: {
-    maxTokens: 8000,
+    maxTokens: 12000, // Increased from 8000 for richer context
     conversationDepth: 50,
     allowedSources: [
       'profile',
@@ -77,12 +85,20 @@ const SUBSCRIPTION_LIMITS: Record<string, ContextLimits> = {
       'nutrition',
       'behavioral',
       'conversation',
+      // NEW: Rich context sources
+      'sage',
+      'forge',
+      'goals',
+      'life_events',
+      'interventions',
+      'checkins',
+      'outcomes',
     ],
     enableCompaction: true,
     model: 'gpt-4o',
   },
   max: {
-    maxTokens: 16000,
+    maxTokens: 24000, // Increased from 16000 for full context
     conversationDepth: -1, // Unlimited (with compaction)
     allowedSources: [
       'profile',
@@ -95,6 +111,14 @@ const SUBSCRIPTION_LIMITS: Record<string, ContextLimits> = {
       'behavioral',
       'apple_health',
       'conversation',
+      // NEW: Rich context sources
+      'sage',
+      'forge',
+      'goals',
+      'life_events',
+      'interventions',
+      'checkins',
+      'outcomes',
     ],
     enableCompaction: true,
     model: 'gpt-4o',
@@ -113,6 +137,14 @@ const TOKEN_ESTIMATES: Record<DataSource, number> = {
   behavioral: 300,
   apple_health: 500,
   conversation: 1000, // Variable, but base estimate
+  // NEW: Rich context sources
+  sage: 1000,          // Full meal plans + food logs
+  forge: 800,          // Full workout programs + patterns
+  goals: 500,          // Health goals with progress
+  life_events: 400,    // Recent life events
+  interventions: 300,  // Active experiments
+  checkins: 300,       // Daily check-ins
+  outcomes: 400,       // Advice effectiveness tracking
 };
 
 // ============================================================================
@@ -233,7 +265,7 @@ const KEYWORD_SOURCE_MAP: Record<string, DataSource[]> = {
   wellness: ['insights', 'oura'],
   feeling: ['insights', 'oura'],
   energy: ['oura', 'dexcom', 'insights'],
-  mood: ['insights', 'oura', 'behavioral'],
+  mood: ['checkins', 'insights', 'oura', 'behavioral'],
   supplement: ['labs', 'nutrition'],
   supplements: ['labs', 'nutrition'],
   medication: ['labs', 'profile'],
@@ -255,6 +287,81 @@ const KEYWORD_SOURCE_MAP: Record<string, DataSource[]> = {
   'i told you': ['conversation'],
   before: ['conversation'],
   previously: ['conversation'],
+
+  // NEW: Sage (full nutrition plans + food logs)
+  'meal plan': ['sage', 'nutrition'],
+  'what to eat': ['sage', 'nutrition', 'dexcom'],
+  breakfast: ['sage', 'nutrition'],
+  lunch: ['sage', 'nutrition'],
+  dinner: ['sage', 'nutrition'],
+  snack: ['sage', 'nutrition'],
+  'food log': ['sage'],
+  'what i ate': ['sage'],
+  'eating today': ['sage', 'nutrition'],
+  'my meals': ['sage', 'nutrition'],
+
+  // NEW: Forge (full fitness plans + workout patterns)
+  'workout plan': ['forge', 'training'],
+  'fitness plan': ['forge', 'training'],
+  'training plan': ['forge', 'training'],
+  'what workout': ['forge', 'training'],
+  'exercise today': ['forge', 'training'],
+  'my workouts': ['forge', 'training'],
+  'training schedule': ['forge', 'training'],
+  'workout schedule': ['forge', 'training'],
+
+  // NEW: Goals (health goals with progress)
+  'my goals': ['goals', 'profile'],
+  progress: ['goals', 'insights'],
+  milestone: ['goals'],
+  target: ['goals', 'profile'],
+  'how am i doing': ['goals', 'insights', 'oura'],
+  tracking: ['goals', 'insights'],
+  achieving: ['goals'],
+
+  // NEW: Life events
+  travel: ['life_events', 'behavioral'],
+  traveling: ['life_events', 'behavioral'],
+  vacation: ['life_events', 'behavioral'],
+  trip: ['life_events', 'behavioral'],
+  moving: ['life_events'],
+  'new job': ['life_events', 'behavioral'],
+  'job change': ['life_events', 'behavioral'],
+  'busy week': ['life_events', 'behavioral'],
+  'big event': ['life_events'],
+  wedding: ['life_events'],
+  conference: ['life_events', 'behavioral'],
+
+  // NEW: Interventions (health experiments)
+  trying: ['interventions', 'outcomes'],
+  experiment: ['interventions'],
+  testing: ['interventions'],
+  'new supplement': ['interventions', 'nutrition'],
+  'new habit': ['interventions'],
+  'started taking': ['interventions', 'nutrition'],
+  'been doing': ['interventions'],
+
+  // NEW: Check-ins (daily mood/energy)
+  'how i feel': ['checkins', 'oura'],
+  'energy level': ['checkins', 'oura', 'dexcom'],
+  'stress level': ['checkins', 'behavioral', 'oura'],
+  today: ['checkins', 'insights'],
+  'this morning': ['checkins', 'oura'],
+  anxious: ['checkins', 'behavioral'],
+  happy: ['checkins'],
+  sad: ['checkins'],
+  motivated: ['checkins'],
+
+  // NEW: Outcomes (what worked/didn't)
+  'did that work': ['outcomes'],
+  'did it help': ['outcomes'],
+  helped: ['outcomes'],
+  improved: ['outcomes', 'insights'],
+  worsened: ['outcomes'],
+  effective: ['outcomes'],
+  'what worked': ['outcomes'],
+  'what helped': ['outcomes'],
+  'last advice': ['outcomes', 'conversation'],
 };
 
 // Sources that are ALWAYS included (profile is lightweight and essential)

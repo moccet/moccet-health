@@ -96,6 +96,64 @@ export interface LearnedFact {
   learnedAt: string;
 }
 
+// NEW: Rich context types for hyper-personalization
+export interface SageContext {
+  nutritionPlan: any | null;
+  recentFoodLogs: any[];
+}
+
+export interface ForgeContext {
+  fitnessPlan: any | null;
+  workoutPatterns: any | null;
+}
+
+export interface HealthGoal {
+  id: string;
+  category: string;
+  target_value: number;
+  current_value: number;
+  progress_pct: number;
+  metric_name: string;
+  is_active: boolean;
+}
+
+export interface LifeEvent {
+  event_type: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date?: string;
+  status: string;
+  confidence: number;
+}
+
+export interface Intervention {
+  id: string;
+  intervention_type: string;
+  description: string;
+  started_at: string;
+  status: string;
+  target_metric?: string;
+}
+
+export interface DailyCheckin {
+  date: string;
+  mood_score?: number;
+  energy_score?: number;
+  stress_score?: number;
+  notes?: string;
+}
+
+export interface AdviceOutcome {
+  advice_type: string;
+  advice_given: string;
+  outcome: 'improved' | 'worsened' | 'no_change' | 'pending';
+  metric_name?: string;
+  baseline_value?: number;
+  current_value?: number;
+  improvement_pct?: number;
+}
+
 export interface UserContext {
   profile: UserProfile | null;
   insights: HealthInsight[];
@@ -116,6 +174,14 @@ export interface UserContext {
   conversationHistory: CompactedHistory | null;
   selectionResult: ContextSelectionResult;
   fetchedAt: string;
+  // NEW: Rich context for hyper-personalization
+  sage: SageContext | null;
+  forge: ForgeContext | null;
+  healthGoals: HealthGoal[];
+  lifeEvents: LifeEvent[];
+  interventions: Intervention[];
+  dailyCheckins: DailyCheckin[];
+  adviceOutcomes: AdviceOutcome[];
 }
 
 export interface FormattedContext {
@@ -140,30 +206,54 @@ const TOKEN_LIMITS: Record<string, Record<DataSource, number>> = {
     behavioral: 0,
     apple_health: 0,
     conversation: 500,
+    // NEW: Rich context sources (limited for free tier)
+    sage: 0,
+    forge: 0,
+    goals: 400,  // Goals visible to free tier
+    life_events: 0,
+    interventions: 0,
+    checkins: 0,
+    outcomes: 0,
   },
   pro: {
     profile: 500,
     insights: 1500,
     labs: 1000,
-    oura: 800,
-    dexcom: 600,
+    oura: 1000,
+    dexcom: 800,
     training: 500,
     nutrition: 500,
-    behavioral: 400,
+    behavioral: 500,
     apple_health: 0,
-    conversation: 2000,
+    conversation: 3000,
+    // NEW: Rich context sources
+    sage: 1000,
+    forge: 800,
+    goals: 500,
+    life_events: 400,
+    interventions: 300,
+    checkins: 300,
+    outcomes: 400,
   },
   max: {
     profile: 800,
     insights: 2000,
     labs: 1500,
-    oura: 1200,
-    dexcom: 1000,
+    oura: 1500,
+    dexcom: 1200,
     training: 800,
     nutrition: 800,
-    behavioral: 600,
+    behavioral: 800,
     apple_health: 800,
-    conversation: 3000,
+    conversation: 5000,
+    // NEW: Rich context sources (full access)
+    sage: 1500,
+    forge: 1200,
+    goals: 800,
+    life_events: 600,
+    interventions: 500,
+    checkins: 500,
+    outcomes: 600,
   },
 };
 
@@ -258,6 +348,35 @@ export async function getUserContext(
     fetchPromises.conversation = getCompactedHistory(email, threadId, subscriptionTier);
   }
 
+  // NEW: Rich context sources for hyper-personalization
+  if (selectionResult.sources.includes('sage')) {
+    fetchPromises.sage = fetchSageContext(email);
+  }
+
+  if (selectionResult.sources.includes('forge')) {
+    fetchPromises.forge = fetchForgeContext(email);
+  }
+
+  if (selectionResult.sources.includes('goals')) {
+    fetchPromises.goals = fetchHealthGoals(email);
+  }
+
+  if (selectionResult.sources.includes('life_events')) {
+    fetchPromises.lifeEvents = fetchLifeEvents(email);
+  }
+
+  if (selectionResult.sources.includes('interventions')) {
+    fetchPromises.interventions = fetchInterventions(email);
+  }
+
+  if (selectionResult.sources.includes('checkins')) {
+    fetchPromises.checkins = fetchDailyCheckins(email);
+  }
+
+  if (selectionResult.sources.includes('outcomes')) {
+    fetchPromises.outcomes = fetchAdviceOutcomes(email);
+  }
+
   // Wait for all fetches
   const results = await Promise.all(
     Object.entries(fetchPromises).map(async ([key, promise]) => {
@@ -294,6 +413,14 @@ export async function getUserContext(
     conversationHistory: contextData.conversation || null,
     selectionResult,
     fetchedAt: new Date().toISOString(),
+    // NEW: Rich context for hyper-personalization
+    sage: contextData.sage || null,
+    forge: contextData.forge || null,
+    healthGoals: contextData.goals || [],
+    lifeEvents: contextData.lifeEvents || [],
+    interventions: contextData.interventions || [],
+    dailyCheckins: contextData.checkins || [],
+    adviceOutcomes: contextData.outcomes || [],
   };
 
   const duration = Date.now() - startTime;
@@ -408,6 +535,71 @@ export function formatContextForPrompt(
     }
   }
 
+  // NEW: Rich Context for Hyper-Personalization
+
+  // Sage Context (full meal plans + food logs)
+  if (context.sage) {
+    const sageText = formatSageContext(context.sage, limits.sage || 1000);
+    if (sageText) {
+      parts.push('## Nutrition Plan & Food Log\n' + sageText);
+      tokenEstimate += estimateTokens(sageText);
+    }
+  }
+
+  // Forge Context (workout plans + patterns)
+  if (context.forge) {
+    const forgeText = formatForgeContext(context.forge, limits.forge || 800);
+    if (forgeText) {
+      parts.push('## Fitness Program & Patterns\n' + forgeText);
+      tokenEstimate += estimateTokens(forgeText);
+    }
+  }
+
+  // Health Goals with Progress
+  if (context.healthGoals && context.healthGoals.length > 0) {
+    const goalsText = formatHealthGoals(context.healthGoals, limits.goals || 500);
+    if (goalsText) {
+      parts.push('## Health Goals\n' + goalsText);
+      tokenEstimate += estimateTokens(goalsText);
+    }
+  }
+
+  // Life Events
+  if (context.lifeEvents && context.lifeEvents.length > 0) {
+    const eventsText = formatLifeEventsContext(context.lifeEvents, limits.life_events || 400);
+    if (eventsText) {
+      parts.push('## Life Events\n' + eventsText);
+      tokenEstimate += estimateTokens(eventsText);
+    }
+  }
+
+  // Active Interventions
+  if (context.interventions && context.interventions.length > 0) {
+    const interventionsText = formatInterventions(context.interventions, limits.interventions || 300);
+    if (interventionsText) {
+      parts.push('## Active Experiments\n' + interventionsText);
+      tokenEstimate += estimateTokens(interventionsText);
+    }
+  }
+
+  // Daily Check-ins
+  if (context.dailyCheckins && context.dailyCheckins.length > 0) {
+    const checkinsText = formatDailyCheckins(context.dailyCheckins, limits.checkins || 300);
+    if (checkinsText) {
+      parts.push('## Recent Check-ins\n' + checkinsText);
+      tokenEstimate += estimateTokens(checkinsText);
+    }
+  }
+
+  // Advice Outcomes
+  if (context.adviceOutcomes && context.adviceOutcomes.length > 0) {
+    const outcomesText = formatAdviceOutcomes(context.adviceOutcomes, limits.outcomes || 400);
+    if (outcomesText) {
+      parts.push('## Advice History\n' + outcomesText);
+      tokenEstimate += estimateTokens(outcomesText);
+    }
+  }
+
   // Conversation History
   if (context.conversationHistory) {
     const historyText = formatHistoryForPrompt(context.conversationHistory);
@@ -447,6 +639,29 @@ export function formatContextForPrompt(
   }
   if (context.conversationHistory?.totalMessageCount) {
     summaryParts.push(`${context.conversationHistory.totalMessageCount} messages in history`);
+  }
+
+  // NEW: Rich context summaries
+  if (context.sage?.nutritionPlan) {
+    summaryParts.push('Nutrition plan');
+  }
+  if (context.forge?.fitnessPlan) {
+    summaryParts.push('Fitness program');
+  }
+  if (context.healthGoals?.length) {
+    summaryParts.push(`${context.healthGoals.length} goals`);
+  }
+  if (context.lifeEvents?.length) {
+    summaryParts.push(`${context.lifeEvents.length} life events`);
+  }
+  if (context.interventions?.length) {
+    summaryParts.push(`${context.interventions.length} experiments`);
+  }
+  if (context.dailyCheckins?.length) {
+    summaryParts.push('Check-ins');
+  }
+  if (context.adviceOutcomes?.length) {
+    summaryParts.push('Advice history');
   }
 
   return {
@@ -640,6 +855,207 @@ async function fetchLearnedFacts(email: string): Promise<LearnedFact[]> {
     confidence: row.confidence,
     source: row.source,
     learnedAt: row.learned_at,
+  }));
+}
+
+// ============================================================================
+// NEW: RICH CONTEXT FETCHER FUNCTIONS
+// ============================================================================
+
+/**
+ * Fetch full Sage nutrition context (meal plans + food logs)
+ */
+async function fetchSageContext(email: string): Promise<SageContext> {
+  const supabase = createAdminClient();
+
+  const [nutritionPlanResult, foodLogsResult] = await Promise.all([
+    supabase
+      .from('sage_nutrition_plans')
+      .select('*')
+      .eq('user_email', email)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('sage_food_logs')
+      .select('*')
+      .eq('user_email', email)
+      .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('date', { ascending: false })
+      .limit(7),
+  ]);
+
+  return {
+    nutritionPlan: nutritionPlanResult.data || null,
+    recentFoodLogs: foodLogsResult.data || [],
+  };
+}
+
+/**
+ * Fetch full Forge fitness context (workout plans + patterns)
+ */
+async function fetchForgeContext(email: string): Promise<ForgeContext> {
+  const supabase = createAdminClient();
+
+  const [fitnessPlanResult, workoutPatternsResult] = await Promise.all([
+    supabase
+      .from('forge_fitness_plans')
+      .select('*')
+      .eq('user_email', email)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('forge_workout_patterns')
+      .select('*')
+      .eq('user_email', email)
+      .order('analyzed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return {
+    fitnessPlan: fitnessPlanResult.data || null,
+    workoutPatterns: workoutPatternsResult.data || null,
+  };
+}
+
+/**
+ * Fetch active health goals with progress
+ */
+async function fetchHealthGoals(email: string): Promise<HealthGoal[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('user_health_goals')
+    .select('*')
+    .eq('user_email', email)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    category: row.category,
+    target_value: row.target_value,
+    current_value: row.current_value,
+    progress_pct: row.progress_pct || (row.current_value / row.target_value) * 100,
+    metric_name: row.metric_name,
+    is_active: row.is_active,
+  }));
+}
+
+/**
+ * Fetch recent life events (travel, work changes, etc.)
+ */
+async function fetchLifeEvents(email: string): Promise<LifeEvent[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('life_events_history')
+    .select('*')
+    .eq('user_email', email)
+    .gte('detected_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .order('detected_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    event_type: row.event_type,
+    title: row.title,
+    description: row.description,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    status: row.status,
+    confidence: row.confidence,
+  }));
+}
+
+/**
+ * Fetch active health interventions/experiments
+ */
+async function fetchInterventions(email: string): Promise<Intervention[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('user_intervention_experiments')
+    .select('*')
+    .eq('user_email', email)
+    .eq('status', 'active')
+    .order('started_at', { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    id: row.id,
+    intervention_type: row.intervention_type,
+    description: row.description,
+    started_at: row.started_at,
+    status: row.status,
+    target_metric: row.target_metric,
+  }));
+}
+
+/**
+ * Fetch recent daily check-ins (mood, energy, stress)
+ */
+async function fetchDailyCheckins(email: string): Promise<DailyCheckin[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('user_daily_checkins')
+    .select('*')
+    .eq('user_email', email)
+    .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+    .order('date', { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    date: row.date,
+    mood_score: row.mood_score,
+    energy_score: row.energy_score,
+    stress_score: row.stress_score,
+    notes: row.notes,
+  }));
+}
+
+/**
+ * Fetch advice outcomes (what worked/didn't)
+ */
+async function fetchAdviceOutcomes(email: string): Promise<AdviceOutcome[]> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('advice_outcomes')
+    .select('*')
+    .eq('user_email', email)
+    .in('outcome', ['improved', 'worsened', 'no_change'])
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    advice_type: row.advice_type,
+    advice_given: row.advice_given,
+    outcome: row.outcome,
+    metric_name: row.metric_name,
+    baseline_value: row.baseline_value,
+    current_value: row.current_value,
+    improvement_pct: row.improvement_pct,
   }));
 }
 
@@ -859,6 +1275,220 @@ function formatBehavioralData(
     const slack = behavioral.slack.data as any;
     if (slack.collaborationIntensity) {
       parts.push(`Collaboration intensity: ${slack.collaborationIntensity}`);
+    }
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+// ============================================================================
+// NEW: RICH CONTEXT FORMATTING FUNCTIONS
+// ============================================================================
+
+/**
+ * Format Sage nutrition context (meal plans + food logs)
+ */
+function formatSageContext(sage: SageContext, maxTokens: number): string {
+  const parts: string[] = [];
+
+  if (sage.nutritionPlan) {
+    const plan = sage.nutritionPlan;
+    parts.push('### Current Nutrition Plan');
+    if (plan.calorie_target) parts.push(`Daily calorie target: ${plan.calorie_target}`);
+    if (plan.macro_targets) {
+      parts.push(`Macros: ${plan.macro_targets.protein}g protein, ${plan.macro_targets.carbs}g carbs, ${plan.macro_targets.fat}g fat`);
+    }
+    if (plan.meal_plan) {
+      parts.push('\n**Today\'s Meals:**');
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const todayPlan = plan.meal_plan[today] || plan.meal_plan.monday;
+      if (todayPlan) {
+        if (todayPlan.breakfast) parts.push(`- Breakfast: ${todayPlan.breakfast.name || todayPlan.breakfast}`);
+        if (todayPlan.lunch) parts.push(`- Lunch: ${todayPlan.lunch.name || todayPlan.lunch}`);
+        if (todayPlan.dinner) parts.push(`- Dinner: ${todayPlan.dinner.name || todayPlan.dinner}`);
+        if (todayPlan.snacks?.length) parts.push(`- Snacks: ${todayPlan.snacks.map((s: any) => s.name || s).join(', ')}`);
+      }
+    }
+  }
+
+  if (sage.recentFoodLogs?.length > 0) {
+    parts.push('\n### Recent Food Log (Last 7 Days)');
+    let totalCalories = 0;
+    let totalProtein = 0;
+    for (const log of sage.recentFoodLogs.slice(0, 3)) {
+      totalCalories += log.calories || 0;
+      totalProtein += log.protein || 0;
+      parts.push(`- ${log.date}: ${log.calories || 0} cal, ${log.protein || 0}g protein`);
+    }
+    if (sage.recentFoodLogs.length > 0) {
+      const avgCalories = Math.round(totalCalories / Math.min(3, sage.recentFoodLogs.length));
+      parts.push(`Average: ~${avgCalories} cal/day`);
+    }
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+/**
+ * Format Forge fitness context (workout plans + patterns)
+ */
+function formatForgeContext(forge: ForgeContext, maxTokens: number): string {
+  const parts: string[] = [];
+
+  if (forge.fitnessPlan) {
+    const plan = forge.fitnessPlan;
+    parts.push('### Current Fitness Program');
+    if (plan.program_name) parts.push(`Program: ${plan.program_name}`);
+    if (plan.goal) parts.push(`Goal: ${plan.goal}`);
+    if (plan.weekly_schedule) {
+      parts.push('\n**This Week\'s Schedule:**');
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      for (const [day, workout] of Object.entries(plan.weekly_schedule)) {
+        const isToday = day.toLowerCase() === today;
+        const label = isToday ? `${day} (TODAY)` : day;
+        const workoutDesc = typeof workout === 'string' ? workout : (workout as any)?.name || 'Rest';
+        parts.push(`- ${label}: ${workoutDesc}`);
+      }
+    }
+  }
+
+  if (forge.workoutPatterns) {
+    const patterns = forge.workoutPatterns;
+    parts.push('\n### Workout Patterns');
+    if (patterns.weekly_frequency) parts.push(`Weekly frequency: ${patterns.weekly_frequency} workouts/week`);
+    if (patterns.preferred_times) parts.push(`Preferred times: ${patterns.preferred_times}`);
+    if (patterns.consistency_score) parts.push(`Consistency: ${Math.round(patterns.consistency_score * 100)}%`);
+    if (patterns.strength_progress) parts.push(`Strength trend: ${patterns.strength_progress}`);
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+/**
+ * Format health goals with progress
+ */
+function formatHealthGoals(goals: HealthGoal[], maxTokens: number): string {
+  if (!goals || goals.length === 0) return '';
+
+  const parts: string[] = ['### Active Health Goals'];
+
+  for (const goal of goals) {
+    const progressBar = getProgressBar(goal.progress_pct);
+    const status = goal.progress_pct >= 100 ? '✓' : goal.progress_pct >= 75 ? '→' : '○';
+    parts.push(`${status} **${goal.metric_name}**: ${goal.current_value}/${goal.target_value} ${progressBar} ${Math.round(goal.progress_pct)}%`);
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+function getProgressBar(pct: number): string {
+  const filled = Math.round(pct / 10);
+  const empty = 10 - filled;
+  return '[' + '█'.repeat(Math.min(filled, 10)) + '░'.repeat(Math.max(empty, 0)) + ']';
+}
+
+/**
+ * Format life events (travel, work changes, etc.)
+ */
+function formatLifeEventsContext(events: LifeEvent[], maxTokens: number): string {
+  if (!events || events.length === 0) return '';
+
+  const parts: string[] = ['### Life Events & Context'];
+
+  const upcoming = events.filter(e => e.status === 'upcoming');
+  const recent = events.filter(e => e.status === 'occurred' || e.status === 'ongoing');
+
+  if (upcoming.length > 0) {
+    parts.push('**Upcoming:**');
+    for (const event of upcoming.slice(0, 3)) {
+      parts.push(`- ${event.title} (${event.event_type}) - ${event.start_date}`);
+    }
+  }
+
+  if (recent.length > 0) {
+    parts.push('**Recent:**');
+    for (const event of recent.slice(0, 3)) {
+      parts.push(`- ${event.title} (${event.event_type})`);
+    }
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+/**
+ * Format active interventions/experiments
+ */
+function formatInterventions(interventions: Intervention[], maxTokens: number): string {
+  if (!interventions || interventions.length === 0) return '';
+
+  const parts: string[] = ['### Active Health Experiments'];
+
+  for (const intervention of interventions) {
+    const duration = getDaysSince(intervention.started_at);
+    parts.push(`- **${intervention.intervention_type}**: ${intervention.description} (Day ${duration})`);
+    if (intervention.target_metric) {
+      parts.push(`  Tracking: ${intervention.target_metric}`);
+    }
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+function getDaysSince(dateStr: string): number {
+  const date = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Format daily check-ins (mood, energy, stress)
+ */
+function formatDailyCheckins(checkins: DailyCheckin[], maxTokens: number): string {
+  if (!checkins || checkins.length === 0) return '';
+
+  const parts: string[] = ['### Recent Check-ins'];
+
+  // Calculate averages
+  const avgMood = checkins.reduce((sum, c) => sum + (c.mood_score || 0), 0) / checkins.length;
+  const avgEnergy = checkins.reduce((sum, c) => sum + (c.energy_score || 0), 0) / checkins.length;
+  const avgStress = checkins.reduce((sum, c) => sum + (c.stress_score || 0), 0) / checkins.length;
+
+  parts.push(`7-day averages: Mood ${avgMood.toFixed(1)}/10, Energy ${avgEnergy.toFixed(1)}/10, Stress ${avgStress.toFixed(1)}/10`);
+
+  // Today's check-in
+  const today = checkins[0];
+  if (today) {
+    parts.push(`\n**Today**: Mood ${today.mood_score || '-'}/10, Energy ${today.energy_score || '-'}/10, Stress ${today.stress_score || '-'}/10`);
+    if (today.notes) parts.push(`Notes: "${today.notes}"`);
+  }
+
+  return truncateToTokens(parts.join('\n'), maxTokens);
+}
+
+/**
+ * Format advice outcomes (what worked/didn't)
+ */
+function formatAdviceOutcomes(outcomes: AdviceOutcome[], maxTokens: number): string {
+  if (!outcomes || outcomes.length === 0) return '';
+
+  const parts: string[] = ['### Past Advice Outcomes'];
+  parts.push('Use this to inform recommendations - repeat what worked, avoid what didn\'t:');
+
+  const improved = outcomes.filter(o => o.outcome === 'improved');
+  const worsened = outcomes.filter(o => o.outcome === 'worsened');
+
+  if (improved.length > 0) {
+    parts.push('\n**What Worked ✓**');
+    for (const outcome of improved.slice(0, 3)) {
+      const change = outcome.improvement_pct ? ` (+${Math.round(outcome.improvement_pct)}%)` : '';
+      parts.push(`- ${outcome.advice_given.substring(0, 80)}...${change}`);
+    }
+  }
+
+  if (worsened.length > 0) {
+    parts.push('\n**What Didn\'t Work ✗**');
+    for (const outcome of worsened.slice(0, 2)) {
+      parts.push(`- ${outcome.advice_given.substring(0, 80)}...`);
     }
   }
 

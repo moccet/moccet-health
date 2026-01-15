@@ -701,10 +701,10 @@ export async function POST(request: NextRequest) {
 
               // Capture final response and stream it in chunks
               if (nodeState.status === 'completed' && nodeState.finalResult) {
-                // finalResult has: { success, summary, actionsCompleted, recommendations }
-                // The 'summary' field contains the actual response text
-                finalResponse = nodeState.finalResult.summary ||
-                               nodeState.finalResult.response ||
+                // finalResult has: { success, response, actionsCompleted, recommendations }
+                // The 'response' field contains the actual conversational response text
+                finalResponse = nodeState.finalResult.response ||
+                               nodeState.finalResult.summary || // Backwards compatibility
                                (typeof nodeState.finalResult === 'string' ? nodeState.finalResult : JSON.stringify(nodeState.finalResult));
                 console.log('[CHAT] Final response captured, length:', finalResponse?.length || 0);
                 console.log('[CHAT] Final response preview:', finalResponse?.substring(0, 200));

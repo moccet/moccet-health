@@ -102,7 +102,7 @@ const AgentStateAnnotation = Annotation.Root({
   }),
   finalResult: Annotation<{
     success: boolean;
-    summary: string;
+    response: string;
     actionsCompleted: string[];
     recommendations?: string[];
   } | null>({
@@ -207,11 +207,16 @@ You must respond in JSON format with one of these structures:
 2. To complete the task:
 {
   "type": "complete",
-  "thinking": "Your reasoning about why the task is complete",
-  "summary": "Summary of what was accomplished",
+  "thinking": "Your internal reasoning (not shown to user)",
+  "response": "Your conversational reply to the user - this is EXACTLY what they will hear/read. Be natural and friendly.",
   "actionsCompleted": ["action1", "action2"],
   "recommendations": ["optional recommendations for user"]
 }
+
+IMPORTANT: The "response" field must contain your actual conversational reply, NOT a meta-description.
+- For "hi" → response: "Hi! How can I help you today?"
+- For "thanks" → response: "You're welcome! Let me know if you need anything else."
+- NEVER write things like "Greeted the user" - write the actual greeting!
 
 Always respond with valid JSON only.`;
 
@@ -256,7 +261,7 @@ Always respond with valid JSON only.`;
       status: 'completed',
       finalResult: {
         success: true,
-        summary: content,
+        response: content,
         actionsCompleted: [],
       },
     };
@@ -297,7 +302,7 @@ Always respond with valid JSON only.`;
       status: 'completed',
       finalResult: {
         success: true,
-        summary: parsed.summary,
+        response: parsed.response || parsed.summary, // Support both for backwards compatibility
         actionsCompleted: parsed.actionsCompleted || [],
         recommendations: parsed.recommendations,
       },

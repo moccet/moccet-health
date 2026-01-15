@@ -635,3 +635,349 @@ export function getSubscriptionInfo(tier: string): {
     features,
   };
 }
+
+// ============================================================================
+// DYNAMIC TOKEN ALLOCATION
+// ============================================================================
+
+export type QueryDomain =
+  | 'sleep'
+  | 'nutrition'
+  | 'fitness'
+  | 'glucose'
+  | 'stress'
+  | 'recovery'
+  | 'goals'
+  | 'general';
+
+export interface TokenAllocation {
+  source: DataSource;
+  maxTokens: number;
+  priority: number; // 1-10, higher = more important
+  isRequired: boolean;
+}
+
+export interface DynamicAllocationResult {
+  allocations: TokenAllocation[];
+  totalBudget: number;
+  queryDomain: QueryDomain;
+  reasoning: string;
+}
+
+/**
+ * Query domain detection patterns
+ */
+const DOMAIN_PATTERNS: Record<QueryDomain, RegExp[]> = {
+  sleep: [
+    /sleep|slept|sleeping|insomnia|tired|fatigue|rest|bedtime|wake|dream|rem|deep\s*sleep/i,
+  ],
+  nutrition: [
+    /eat|food|meal|diet|nutrition|calorie|protein|carb|fat|macro|recipe|cook|breakfast|lunch|dinner/i,
+  ],
+  fitness: [
+    /workout|exercise|training|gym|lift|strength|cardio|run|steps|activity|fitness|performance/i,
+  ],
+  glucose: [
+    /glucose|blood\s*sugar|cgm|dexcom|spike|insulin|glycemic|a1c|time\s*in\s*range/i,
+  ],
+  stress: [
+    /stress|anxious|anxiety|overwhelm|meditation|calm|mental|mood|worry|tense/i,
+  ],
+  recovery: [
+    /recover|recovery|strain|overtrain|rest\s*day|fatigue|readiness|hrv/i,
+  ],
+  goals: [
+    /goal|target|progress|achieve|milestone|track|habit|streak/i,
+  ],
+  general: [],
+};
+
+/**
+ * Token allocation weights by domain
+ * Values represent percentage of budget for each source category
+ */
+const DOMAIN_ALLOCATIONS: Record<QueryDomain, Record<string, number>> = {
+  sleep: {
+    primary: 0.50,      // oura, apple_health (sleep data)
+    secondary: 0.20,    // behavioral, stress (correlations)
+    context: 0.15,      // conversation, profile
+    support: 0.15,      // insights, checkins
+  },
+  nutrition: {
+    primary: 0.50,      // sage, nutrition
+    secondary: 0.25,    // dexcom (glucose response)
+    context: 0.15,      // conversation, profile, goals
+    support: 0.10,      // insights
+  },
+  fitness: {
+    primary: 0.45,      // forge, training
+    secondary: 0.25,    // oura (recovery/strain)
+    context: 0.15,      // conversation, profile, goals
+    support: 0.15,      // nutrition (fueling), insights
+  },
+  glucose: {
+    primary: 0.50,      // dexcom
+    secondary: 0.25,    // nutrition, sage (food impact)
+    context: 0.15,      // conversation, profile
+    support: 0.10,      // insights, labs
+  },
+  stress: {
+    primary: 0.40,      // behavioral, checkins
+    secondary: 0.30,    // oura (HRV, sleep quality)
+    context: 0.15,      // conversation, profile
+    support: 0.15,      // insights, life_events
+  },
+  recovery: {
+    primary: 0.45,      // oura (HRV, readiness)
+    secondary: 0.25,    // training, forge (strain)
+    context: 0.15,      // conversation, profile
+    support: 0.15,      // sleep, nutrition
+  },
+  goals: {
+    primary: 0.40,      // goals, interventions
+    secondary: 0.25,    // outcomes (what worked)
+    context: 0.20,      // conversation, profile
+    support: 0.15,      // insights, checkins
+  },
+  general: {
+    primary: 0.30,
+    secondary: 0.25,
+    context: 0.25,
+    support: 0.20,
+  },
+};
+
+/**
+ * Source categorization by domain
+ */
+const SOURCE_CATEGORIES: Record<QueryDomain, {
+  primary: DataSource[];
+  secondary: DataSource[];
+  context: DataSource[];
+  support: DataSource[];
+}> = {
+  sleep: {
+    primary: ['oura', 'apple_health'],
+    secondary: ['behavioral', 'checkins'],
+    context: ['conversation', 'profile'],
+    support: ['insights', 'labs'],
+  },
+  nutrition: {
+    primary: ['sage', 'nutrition'],
+    secondary: ['dexcom', 'labs'],
+    context: ['conversation', 'profile', 'goals'],
+    support: ['insights', 'checkins'],
+  },
+  fitness: {
+    primary: ['forge', 'training'],
+    secondary: ['oura', 'apple_health'],
+    context: ['conversation', 'profile', 'goals'],
+    support: ['nutrition', 'insights'],
+  },
+  glucose: {
+    primary: ['dexcom'],
+    secondary: ['sage', 'nutrition'],
+    context: ['conversation', 'profile'],
+    support: ['insights', 'labs', 'checkins'],
+  },
+  stress: {
+    primary: ['behavioral', 'checkins'],
+    secondary: ['oura'],
+    context: ['conversation', 'profile'],
+    support: ['insights', 'life_events'],
+  },
+  recovery: {
+    primary: ['oura'],
+    secondary: ['forge', 'training'],
+    context: ['conversation', 'profile'],
+    support: ['nutrition', 'insights', 'checkins'],
+  },
+  goals: {
+    primary: ['goals', 'interventions'],
+    secondary: ['outcomes'],
+    context: ['conversation', 'profile'],
+    support: ['insights', 'checkins', 'forge', 'sage'],
+  },
+  general: {
+    primary: ['insights'],
+    secondary: ['oura', 'nutrition', 'training'],
+    context: ['conversation', 'profile'],
+    support: ['goals', 'checkins'],
+  },
+};
+
+/**
+ * Detect the primary domain of a query
+ */
+export function detectQueryDomain(message: string): QueryDomain {
+  const lowerMessage = message.toLowerCase();
+  let bestMatch: QueryDomain = 'general';
+  let highestScore = 0;
+
+  for (const [domain, patterns] of Object.entries(DOMAIN_PATTERNS) as [QueryDomain, RegExp[]][]) {
+    if (domain === 'general') continue;
+
+    let score = 0;
+    for (const pattern of patterns) {
+      const matches = lowerMessage.match(pattern);
+      if (matches) {
+        score += matches.length;
+      }
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = domain;
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Dynamically allocate token budget based on query relevance
+ */
+export function allocateTokensDynamically(
+  message: string,
+  totalBudget: number,
+  availableSources: DataSource[]
+): DynamicAllocationResult {
+  const domain = detectQueryDomain(message);
+  const weights = DOMAIN_ALLOCATIONS[domain];
+  const categories = SOURCE_CATEGORIES[domain];
+
+  const allocations: TokenAllocation[] = [];
+  let remainingBudget = totalBudget;
+
+  // Helper to add allocation for a category
+  const addCategoryAllocations = (
+    categoryName: 'primary' | 'secondary' | 'context' | 'support',
+    weight: number,
+    priorityBase: number
+  ) => {
+    const sources = categories[categoryName];
+    const categoryBudget = Math.floor(totalBudget * weight);
+    const availableInCategory = sources.filter(s => availableSources.includes(s));
+
+    if (availableInCategory.length === 0) return;
+
+    const perSourceBudget = Math.floor(categoryBudget / availableInCategory.length);
+
+    availableInCategory.forEach((source, idx) => {
+      const allocation: TokenAllocation = {
+        source,
+        maxTokens: Math.min(perSourceBudget, TOKEN_ESTIMATES[source] * 2), // Cap at 2x base estimate
+        priority: priorityBase - idx,
+        isRequired: categoryName === 'primary' || categoryName === 'context',
+      };
+      allocations.push(allocation);
+      remainingBudget -= allocation.maxTokens;
+    });
+  };
+
+  // Allocate by category priority
+  addCategoryAllocations('primary', weights.primary, 10);
+  addCategoryAllocations('secondary', weights.secondary, 7);
+  addCategoryAllocations('context', weights.context, 5);
+  addCategoryAllocations('support', weights.support, 3);
+
+  // Ensure profile is always included
+  if (!allocations.find(a => a.source === 'profile')) {
+    allocations.push({
+      source: 'profile',
+      maxTokens: TOKEN_ESTIMATES.profile,
+      priority: 6,
+      isRequired: true,
+    });
+  }
+
+  // Distribute any remaining budget to primary sources
+  if (remainingBudget > 100) {
+    const primaryAllocations = allocations.filter(a =>
+      categories.primary.includes(a.source)
+    );
+    if (primaryAllocations.length > 0) {
+      const bonus = Math.floor(remainingBudget / primaryAllocations.length);
+      primaryAllocations.forEach(a => {
+        a.maxTokens += bonus;
+      });
+    }
+  }
+
+  // Sort by priority (descending)
+  allocations.sort((a, b) => b.priority - a.priority);
+
+  return {
+    allocations,
+    totalBudget,
+    queryDomain: domain,
+    reasoning: `Query domain detected as "${domain}". Allocated ${Math.round(weights.primary * 100)}% to primary sources (${categories.primary.join(', ')}), ${Math.round(weights.secondary * 100)}% to secondary, ${Math.round(weights.context * 100)}% to context.`,
+  };
+}
+
+/**
+ * Get optimized token allocation for a specific query
+ */
+export async function getOptimizedAllocation(
+  message: string,
+  options: {
+    subscriptionTier?: string;
+    connectedSources?: DataSource[];
+  } = {}
+): Promise<DynamicAllocationResult> {
+  const { subscriptionTier = 'free', connectedSources } = options;
+  const limits = getContextLimits(subscriptionTier);
+
+  // Determine available sources (intersection of allowed and connected)
+  const availableSources = connectedSources
+    ? limits.allowedSources.filter(s => connectedSources.includes(s) || s === 'profile' || s === 'conversation' || s === 'insights')
+    : limits.allowedSources;
+
+  return allocateTokensDynamically(message, limits.maxTokens, availableSources);
+}
+
+/**
+ * Format allocation for logging/debugging
+ */
+export function formatAllocationForLogging(allocation: DynamicAllocationResult): string {
+  const lines = [
+    `Query Domain: ${allocation.queryDomain}`,
+    `Total Budget: ${allocation.totalBudget} tokens`,
+    '',
+    'Allocations:',
+    ...allocation.allocations.map(a =>
+      `  ${a.source}: ${a.maxTokens} tokens (priority: ${a.priority}${a.isRequired ? ', required' : ''})`
+    ),
+    '',
+    allocation.reasoning,
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * Apply allocation to trim context to budget
+ */
+export function applyAllocationToContext(
+  contextData: Record<DataSource, string>,
+  allocation: DynamicAllocationResult
+): Record<DataSource, string> {
+  const result: Record<DataSource, string> = {} as Record<DataSource, string>;
+
+  for (const alloc of allocation.allocations) {
+    const content = contextData[alloc.source];
+    if (!content) continue;
+
+    // Estimate tokens (rough: 4 chars per token)
+    const estimatedTokens = Math.ceil(content.length / 4);
+
+    if (estimatedTokens <= alloc.maxTokens) {
+      result[alloc.source] = content;
+    } else {
+      // Truncate to fit budget
+      const maxChars = alloc.maxTokens * 4;
+      result[alloc.source] = content.slice(0, maxChars) + '\n... [truncated]';
+    }
+  }
+
+  return result;
+}

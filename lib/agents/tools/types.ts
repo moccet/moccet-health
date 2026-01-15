@@ -50,6 +50,18 @@ export const TOOL_RISK_LEVELS: Record<string, RiskLevel> = {
   add_tracks_to_playlist: 'low',
   get_user_context: 'low',
 
+  // Health logging tools - low risk (user-initiated, reversible)
+  log_water_intake: 'low',
+  quick_log_water: 'low',
+  get_water_intake: 'low',
+  log_food: 'low',
+  get_food_log: 'low',
+  log_weight: 'low',
+  get_weight_history: 'low',
+
+  // Goal tools - low risk for reading
+  get_health_goals: 'low',
+
   // Medium risk - modifies user data
   create_calendar_event: 'medium',
   update_calendar_event: 'medium',
@@ -57,10 +69,52 @@ export const TOOL_RISK_LEVELS: Record<string, RiskLevel> = {
   add_to_cart: 'medium',
   send_notification: 'medium',
 
+  // Health logging tools - medium risk (changes settings)
+  set_water_goal: 'medium',
+  set_weight_goal: 'medium',
+
+  // Goal tools - medium risk (creates/modifies goals)
+  create_health_goal: 'medium',
+  update_goal_progress: 'medium',
+  pause_goal: 'medium',
+  resume_goal: 'medium',
+  complete_goal: 'medium',
+  abandon_goal: 'medium',
+
+  // Social tools (Moccet Connect) - low risk for reading
+  get_friends: 'low',
+  get_pending_friend_requests: 'low',
+  get_meeting_suggestions: 'low',
+  get_upcoming_meetups: 'low',
+
+  // Social tools - medium risk (social actions)
+  send_friend_request: 'medium',
+  accept_friend_request: 'medium',
+  reject_friend_request: 'medium',
+  accept_meeting_suggestion: 'medium',
+  decline_meeting_suggestion: 'medium',
+
+  // Caregiving tools (Moccet Share) - low risk for reading
+  get_my_caregivers: 'low',
+  get_my_sharing_settings: 'low',
+  get_care_recipients: 'low',
+  get_care_recipient_status: 'low',
+  get_care_alerts: 'low',
+
+  // Caregiving tools - medium risk (privacy/permission changes)
+  invite_caregiver: 'medium',
+  update_sharing_permissions: 'medium',
+  pause_sharing: 'medium',
+  revoke_sharing: 'medium',
+  acknowledge_alert: 'medium',
+  create_reminder: 'medium',
+  request_checkin: 'medium',
+
   // High risk - costs money or medical
   complete_purchase: 'high',
   book_appointment: 'high',
   cancel_appointment: 'high',
+  trigger_emergency_contact: 'high',
 };
 
 export function getToolRiskLevel(toolName: string): RiskLevel {

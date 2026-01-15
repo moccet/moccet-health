@@ -319,5 +319,5 @@ function assembleFinalPlan(
 // EXPORT FOR EXTERNAL USE
 // ============================================================================
 
-export { SagePlanOutput } from './types/sage-plan-output';
-export { ClientProfileCard } from './types/client-profile';
+export type { SagePlanOutput } from './types/sage-plan-output';
+export type { ClientProfileCard } from './types/client-profile';

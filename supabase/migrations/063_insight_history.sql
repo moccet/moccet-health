@@ -19,13 +19,20 @@ CREATE TABLE IF NOT EXISTS insight_history (
 );
 
 -- Index for efficient querying by user and recency
-CREATE INDEX idx_insight_history_email_shown ON insight_history(email, shown_at DESC);
+CREATE INDEX IF NOT EXISTS idx_insight_history_email_shown ON insight_history(email, shown_at DESC);
 
 -- Index for category-based aggregation queries
-CREATE INDEX idx_insight_history_email_category ON insight_history(email, category);
+CREATE INDEX IF NOT EXISTS idx_insight_history_email_category ON insight_history(email, category);
 
--- Enable Row Level Security
+-- Enable Row Level Security (idempotent - no error if already enabled)
 ALTER TABLE insight_history ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first (if any) to make this idempotent
+DROP POLICY IF EXISTS "Users can view own insight history" ON insight_history;
+DROP POLICY IF EXISTS "Users can insert own insight history" ON insight_history;
+DROP POLICY IF EXISTS "Users can update own insight history" ON insight_history;
+DROP POLICY IF EXISTS "Users can delete own insight history" ON insight_history;
+DROP POLICY IF EXISTS "Service role full access" ON insight_history;
 
 -- Users can only access their own insight history
 CREATE POLICY "Users can view own insight history" ON insight_history

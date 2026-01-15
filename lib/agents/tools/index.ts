@@ -12,22 +12,30 @@ import {
   TOOL_RISK_LEVELS,
 } from './types';
 import { healthDataTools } from './health-data';
+import { healthLoggingTools } from './health-logging';
+import { goalsTools } from './goals';
 import { calendarTools } from './calendar';
 import { spotifyTools } from './spotify';
 import { supplementTools } from './supplements';
 import { shoppingTools } from './shopping';
 import { bookingTools } from './booking';
 import { emailTools } from './email';
+import { socialTools } from './social';
+import { caregivingTools } from './caregiving';
 
 // Export all tools
 export const allTools: ToolDefinition[] = [
   ...healthDataTools,
+  ...healthLoggingTools,
+  ...goalsTools,
   ...calendarTools,
   ...spotifyTools,
   ...supplementTools,
   ...shoppingTools,
   ...bookingTools,
   ...emailTools,
+  ...socialTools,
+  ...caregivingTools,
 ];
 
 // Tool map for quick lookup
@@ -104,9 +112,13 @@ export { getToolRiskLevel, TOOL_RISK_LEVELS };
 
 // Export individual tool sets for granular imports
 export { healthDataTools } from './health-data';
+export { healthLoggingTools } from './health-logging';
+export { goalsTools } from './goals';
 export { calendarTools } from './calendar';
 export { spotifyTools } from './spotify';
 export { supplementTools } from './supplements';
 export { shoppingTools } from './shopping';
 export { bookingTools } from './booking';
 export { emailTools } from './email';
+export { socialTools } from './social';
+export { caregivingTools } from './caregiving';

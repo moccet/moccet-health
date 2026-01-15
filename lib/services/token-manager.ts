@@ -631,6 +631,90 @@ export async function getUserIntegrations(
 }
 
 /**
+ * Get stored token with full metadata
+ * Used by routes that need access to token metadata (e.g., organization name)
+ */
+export async function getToken(
+  userEmail: string,
+  provider: Provider,
+  userCode?: string
+): Promise<{
+  success: boolean;
+  token?: {
+    accessToken: string;
+    refreshToken?: string;
+    metadata?: Record<string, unknown>;
+  };
+  error?: string;
+}> {
+  try {
+    const supabase = createAdminClient();
+
+    // Strategy: Try by code first, then fallback to email
+    let data: any = null;
+
+    if (userCode) {
+      const codeResult = await supabase
+        .from('integration_tokens')
+        .select('*')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_code', userCode)
+        .single();
+
+      if (codeResult.data) {
+        data = codeResult.data;
+      }
+    }
+
+    if (!data) {
+      const emailResult = await supabase
+        .from('integration_tokens')
+        .select('*')
+        .eq('provider', provider)
+        .eq('is_active', true)
+        .eq('user_email', userEmail)
+        .single();
+
+      if (emailResult.data) {
+        data = emailResult.data;
+      }
+    }
+
+    if (!data) {
+      return { success: false, error: 'No token found' };
+    }
+
+    // Check if expired
+    const isExpired = data.expires_at ? new Date(data.expires_at) < new Date() : false;
+
+    if (isExpired && data.refresh_token) {
+      const refreshResult = await refreshToken(userEmail, provider, data.user_code || userCode);
+      if (!refreshResult.success) {
+        return { success: false, error: `Token expired: ${refreshResult.error}` };
+      }
+      // Re-fetch the token after refresh
+      return getToken(userEmail, provider, userCode);
+    }
+
+    return {
+      success: true,
+      token: {
+        accessToken: decryptToken(data.access_token),
+        refreshToken: data.refresh_token ? decryptToken(data.refresh_token) : undefined,
+        metadata: data.metadata || {},
+      },
+    };
+  } catch (error) {
+    console.error('[TokenManager] Exception in getToken:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Invalidate ecosystem context cache for a user
  * Should be called when new integrations are connected
  */

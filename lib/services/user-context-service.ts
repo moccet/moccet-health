@@ -50,6 +50,19 @@ import {
   formatHealthAnalysisForPrompt,
   HealthAnalysis,
 } from './health-pattern-analyzer';
+import {
+  resilientFetch,
+  batchResilientFetch,
+  FetchResult,
+} from './resilient-fetcher';
+import {
+  getContextHealth,
+  getContextHealthForQuery,
+  formatContextHealthForPrompt,
+  detectQueryType,
+  ContextHealthReport,
+} from './context-health';
+import { buildContextHealthPrompt } from '@/lib/agents/prompts';
 
 // ============================================================================
 // TYPES
@@ -182,6 +195,15 @@ export interface UserContext {
   interventions: Intervention[];
   dailyCheckins: DailyCheckin[];
   adviceOutcomes: AdviceOutcome[];
+  // NEW: Context health tracking
+  contextHealth: ContextHealthReport | null;
+  fetchStats: {
+    totalSources: number;
+    successfulFetches: number;
+    failedFetches: number;
+    partialFetches: number;
+    totalLatencyMs: number;
+  };
 }
 
 export interface FormattedContext {
@@ -377,13 +399,42 @@ export async function getUserContext(
     fetchPromises.outcomes = fetchAdviceOutcomes(email);
   }
 
-  // Wait for all fetches
+  // Wait for all fetches with resilient error handling
+  let successfulFetches = 0;
+  let failedFetches = 0;
+  let partialFetches = 0;
+
   const results = await Promise.all(
     Object.entries(fetchPromises).map(async ([key, promise]) => {
       try {
-        const data = await promise;
-        return [key, data];
+        // Wrap each fetch with resilient fetching for retry logic
+        const result = await resilientFetch(
+          key,
+          () => promise,
+          {
+            retries: 2,
+            backoffMs: [100, 500],
+            timeout: 10000,
+            onRetry: (attempt, error) => {
+              console.log(`[User Context] Retrying ${key} (attempt ${attempt}): ${error.message}`);
+            },
+          }
+        );
+
+        if (result.status === 'success') {
+          successfulFetches++;
+          return [key, result.data];
+        } else if (result.status === 'partial') {
+          partialFetches++;
+          console.warn(`[User Context] Partial result for ${key}: ${result.error}`);
+          return [key, result.data];
+        } else {
+          failedFetches++;
+          console.error(`[User Context] Failed to fetch ${key}: ${result.error}`);
+          return [key, null];
+        }
       } catch (error) {
+        failedFetches++;
         console.error(`[User Context] Error fetching ${key}:`, error);
         return [key, null];
       }
@@ -392,6 +443,21 @@ export async function getUserContext(
 
   // Build context object
   const contextData = Object.fromEntries(results);
+
+  // Fetch context health report
+  const queryType = detectQueryType(message);
+  let contextHealth: ContextHealthReport | null = null;
+
+  try {
+    const supabase = createAdminClient();
+    contextHealth = queryType
+      ? await getContextHealthForQuery(email, queryType, supabase)
+      : await getContextHealth(email, supabase);
+  } catch (error) {
+    console.error('[User Context] Error fetching context health:', error);
+  }
+
+  const duration = Date.now() - startTime;
 
   const context: UserContext = {
     profile: contextData.profile || null,
@@ -421,10 +487,18 @@ export async function getUserContext(
     interventions: contextData.interventions || [],
     dailyCheckins: contextData.checkins || [],
     adviceOutcomes: contextData.outcomes || [],
+    // NEW: Context health tracking
+    contextHealth,
+    fetchStats: {
+      totalSources: Object.keys(fetchPromises).length,
+      successfulFetches,
+      failedFetches,
+      partialFetches,
+      totalLatencyMs: duration,
+    },
   };
 
-  const duration = Date.now() - startTime;
-  console.log(`[User Context] Context fetched in ${duration}ms`);
+  console.log(`[User Context] Context fetched in ${duration}ms (${successfulFetches}/${Object.keys(fetchPromises).length} successful)`);
 
   return context;
 }
@@ -606,6 +680,32 @@ export function formatContextForPrompt(
     if (historyText) {
       parts.push(historyText);
       tokenEstimate += estimateTokens(historyText);
+    }
+  }
+
+  // Context Health (data freshness and availability)
+  if (context.contextHealth) {
+    const healthSummary = {
+      overall: context.contextHealth.overall,
+      freshSources: context.contextHealth.freshSources,
+      staleSources: context.contextHealth.sources
+        .filter(s => s.staleness === 'warning' || s.staleness === 'critical')
+        .map(s => ({
+          name: s.displayName,
+          timeSinceSync: s.timeSinceSync || 'unknown',
+          level: s.staleness as 'warning' | 'critical',
+        })),
+      unavailableSources: context.contextHealth.unavailableSources,
+      requiredSourcesAvailable: context.contextHealth.sources
+        .filter(s => s.isRequired)
+        .every(s => s.status === 'connected' && s.staleness !== 'critical'),
+      completenessScore: context.contextHealth.completenessScore,
+    };
+
+    const healthText = buildContextHealthPrompt(healthSummary);
+    if (healthText) {
+      parts.push(healthText);
+      tokenEstimate += estimateTokens(healthText);
     }
   }
 

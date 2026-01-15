@@ -7,8 +7,8 @@
  */
 
 // Reuse ecosystem insights and biomarker types from athlete-profile
-export { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
-import { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
+export type { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
+import type { EcosystemInsight, BiomarkerFlag, DetailedEcosystemMetrics } from './athlete-profile';
 
 // ============================================================================
 // BASIC PROFILE SECTION

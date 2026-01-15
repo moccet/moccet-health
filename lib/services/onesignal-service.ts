@@ -395,3 +395,113 @@ export async function sendToPlayerIds(
     return 0;
   }
 }
+
+/**
+ * OneSignal Service Class
+ *
+ * Wrapper class for push notification functionality.
+ * Provides a class-based interface for use in services.
+ */
+export class OneSignalService {
+  /**
+   * Send a push notification to a user
+   */
+  static async sendNotification(
+    email: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>
+  ): Promise<number> {
+    return sendPushNotification(email, { title, body, data });
+  }
+
+  /**
+   * Send an achievement notification
+   */
+  static async sendAchievementNotification(
+    email: string,
+    achievement: {
+      title: string;
+      description: string;
+      emoji: string;
+      type: string;
+    }
+  ): Promise<number> {
+    return sendPushNotification(email, {
+      title: `${achievement.emoji} ${achievement.title}`,
+      body: achievement.description,
+      data: {
+        type: 'achievement',
+        achievement_type: achievement.type,
+      },
+    });
+  }
+
+  /**
+   * Send a challenge notification
+   */
+  static async sendChallengeNotification(
+    email: string,
+    notification: {
+      title: string;
+      message: string;
+      challengeId: string;
+      type: 'invite' | 'update' | 'complete' | 'reminder';
+    }
+  ): Promise<number> {
+    return sendPushNotification(email, {
+      title: notification.title,
+      body: notification.message,
+      data: {
+        type: 'challenge',
+        challenge_id: notification.challengeId,
+        notification_type: notification.type,
+      },
+    });
+  }
+
+  /**
+   * Send a goal update notification
+   */
+  static async sendGoalNotification(
+    email: string,
+    notification: {
+      title: string;
+      message: string;
+      goalId: string;
+      type: 'progress' | 'milestone' | 'complete' | 'reminder';
+    }
+  ): Promise<number> {
+    return sendPushNotification(email, {
+      title: notification.title,
+      body: notification.message,
+      data: {
+        type: 'goal',
+        goal_id: notification.goalId,
+        notification_type: notification.type,
+      },
+    });
+  }
+
+  /**
+   * Check if notification can be sent (respects daily limits)
+   */
+  static async canSend(
+    email: string,
+    severity: string,
+    notificationType: NotificationType
+  ): Promise<boolean> {
+    return canSendNotification(email, severity, notificationType);
+  }
+
+  /**
+   * Mark a theme as notified for today
+   */
+  static async markTheme(
+    email: string,
+    theme: string,
+    notificationType: NotificationType = 'insight'
+  ): Promise<void> {
+    return markThemeNotified(email, theme, notificationType);
+  }
+}

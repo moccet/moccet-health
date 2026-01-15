@@ -297,3 +297,395 @@ export function buildMemoryAwarePrompt(memory: MemoryContext): string {
 
   return sections.join('\n');
 }
+
+// =============================================================================
+// DATABASE SCHEMA AWARENESS
+// =============================================================================
+
+export const DATABASE_CAPABILITIES_PROMPT = `
+## Database Capabilities
+
+You have the ability to READ and WRITE to certain parts of the user's health data. Here's what you can do:
+
+### Health Logging (You CAN write)
+Use these tools to help users track their health:
+
+- **Water Tracking**
+  - log_water_intake: Log water in ml (e.g., "Log 500ml of water")
+  - quick_log_water: Log by glasses (1 glass = 250ml)
+  - get_water_intake: Check today's intake and progress
+  - set_water_goal: Set daily water goal (requires approval)
+
+- **Food Tracking**
+  - log_food: Log meals with calories and macros
+  - get_food_log: Get food log for a day or range
+
+- **Weight Tracking**
+  - log_weight: Log weight (can include body fat %)
+  - get_weight_history: View weight trend over time
+  - set_weight_goal: Set target weight (requires approval)
+
+### Health Goals (You CAN manage)
+- get_health_goals: View active goals and progress
+- create_health_goal: Create new goals (SLEEP, ACTIVITY, RECOVERY, GLUCOSE, WEIGHT, STRESS, CUSTOM)
+- update_goal_progress: Update progress on manual goals
+- pause_goal, resume_goal, complete_goal, abandon_goal: Manage goal lifecycle
+
+### Plans (READ + limited actions)
+- **Sage (Nutrition)**: Can read meal plans, log meals from plan
+- **Forge (Fitness)**: Can read workout plans, mark workouts complete
+
+### External Connectors (READ ONLY)
+Data from these sources is synced automatically. You can READ but NOT modify:
+- Oura Ring: Sleep, activity, HRV, readiness
+- Dexcom CGM: Glucose readings, trends, alerts
+- Whoop: Recovery, strain, sleep performance
+- Fitbit: Steps, heart rate, sleep
+- Apple Health: Activity, workouts, health metrics
+- Strava: Running, cycling activities
+- And more...
+
+**Important**: When a user asks you to modify data from external connectors (like "change my Oura sleep score"), explain that this data comes from their device and can only be viewed, not edited.
+
+### Social Features (You CAN manage)
+- **Moccet Connect**: Friend connections, meeting suggestions
+- **Moccet Share**: Caregiving relationships, alerts, permissions
+
+### What You CANNOT Do
+- Modify data in external connectors (Oura, Dexcom, etc.)
+- Access other users' data
+- Make purchases without explicit approval
+- Book appointments without explicit approval
+`;
+
+// =============================================================================
+// CONNECTOR AWARENESS
+// =============================================================================
+
+export interface ConnectorStatus {
+  name: string;
+  displayName: string;
+  connected: boolean;
+  lastSynced?: string;
+  canRead: string[];
+  canWrite: string[];
+}
+
+/**
+ * Build connector awareness section for the system prompt
+ */
+export function buildConnectorAwarenessPrompt(connectors: ConnectorStatus[]): string {
+  const sections: string[] = [];
+
+  sections.push('## Your Connected Data Sources\n');
+
+  const connected = connectors.filter(c => c.connected);
+  const disconnected = connectors.filter(c => !c.connected);
+
+  if (connected.length > 0) {
+    sections.push('### Currently Connected');
+    for (const c of connected) {
+      const readPerms = c.canRead.length > 0 ? `read: ${c.canRead.join(', ')}` : '';
+      const writePerms = c.canWrite.length > 0 ? `write: ${c.canWrite.join(', ')}` : 'write: none';
+      sections.push(`- **${c.displayName}** ✓ (${readPerms} | ${writePerms})`);
+    }
+    sections.push('');
+  }
+
+  if (disconnected.length > 0) {
+    sections.push('### Not Connected');
+    sections.push(`These services are available but not connected: ${disconnected.map(c => c.displayName).join(', ')}`);
+    sections.push('');
+  }
+
+  sections.push('**Note**: If the user asks about data from a disconnected service, let them know they can connect it in the Connectors section of the app.');
+
+  return sections.join('\n');
+}
+
+// =============================================================================
+// SOCIAL CONTEXT
+// =============================================================================
+
+export interface SocialContext {
+  friendCount: number;
+  pendingRequests: number;
+  upcomingMeetings: Array<{
+    friend: string;
+    activity: string;
+    scheduledFor: string;
+  }>;
+  recentSocialActivity: string;
+}
+
+export interface CaregivingContext {
+  isCaregiver: boolean;
+  careRecipients: Array<{
+    name: string;
+    status: 'good' | 'fair' | 'concerning';
+    lastAlert?: string;
+  }>;
+  isBeingCaredFor: boolean;
+  caregivers: Array<{
+    name: string;
+    role: string;
+  }>;
+  pendingAlerts: number;
+}
+
+/**
+ * Build social context section for the system prompt
+ */
+export function buildSocialContextPrompt(social: SocialContext | null, caregiving: CaregivingContext | null): string {
+  const sections: string[] = [];
+
+  sections.push('## Social & Caregiving Status\n');
+
+  // Moccet Connect
+  if (social) {
+    sections.push('### Moccet Connect (Friends)');
+    sections.push(`- Friends: ${social.friendCount}`);
+    if (social.pendingRequests > 0) {
+      sections.push(`- Pending friend requests: ${social.pendingRequests}`);
+    }
+    if (social.upcomingMeetings && social.upcomingMeetings.length > 0) {
+      sections.push('- Upcoming meetups:');
+      for (const m of social.upcomingMeetings.slice(0, 3)) {
+        sections.push(`  - ${m.activity} with ${m.friend} on ${m.scheduledFor}`);
+      }
+    }
+    if (social.recentSocialActivity) {
+      sections.push(`- Recent: ${social.recentSocialActivity}`);
+    }
+    sections.push('');
+  }
+
+  // Moccet Share (Caregiving)
+  if (caregiving) {
+    sections.push('### Moccet Share (Caregiving)');
+
+    if (caregiving.isCaregiver && caregiving.careRecipients.length > 0) {
+      sections.push('**As a caregiver, monitoring:**');
+      for (const r of caregiving.careRecipients) {
+        const statusIcon = r.status === 'good' ? '✓' : r.status === 'fair' ? '~' : '⚠️';
+        sections.push(`- ${statusIcon} ${r.name}: ${r.status}${r.lastAlert ? ` (last alert: ${r.lastAlert})` : ''}`);
+      }
+      if (caregiving.pendingAlerts > 0) {
+        sections.push(`- **${caregiving.pendingAlerts} pending alerts to review**`);
+      }
+    }
+
+    if (caregiving.isBeingCaredFor && caregiving.caregivers.length > 0) {
+      sections.push('**Your caregivers:**');
+      for (const c of caregiving.caregivers) {
+        sections.push(`- ${c.name} (${c.role})`);
+      }
+    }
+    sections.push('');
+  }
+
+  if (!social && !caregiving) {
+    sections.push('No social or caregiving relationships set up.');
+  }
+
+  return sections.join('\n');
+}
+
+// =============================================================================
+// CONTEXT HEALTH AWARENESS
+// =============================================================================
+
+export interface ContextHealthSummary {
+  overall: 'healthy' | 'degraded' | 'critical';
+  freshSources: string[];
+  staleSources: Array<{ name: string; timeSinceSync: string; level: 'warning' | 'critical' }>;
+  unavailableSources: string[];
+  requiredSourcesAvailable: boolean;
+  completenessScore: number;
+}
+
+/**
+ * Build context health section for the system prompt
+ * This helps the agent acknowledge data freshness and uncertainty
+ */
+export function buildContextHealthPrompt(health: ContextHealthSummary): string {
+  const sections: string[] = [];
+
+  sections.push('## Data Quality Status\n');
+
+  // Overall status indicator
+  const statusEmoji = health.overall === 'healthy' ? '✅' : health.overall === 'degraded' ? '⚠️' : '❌';
+  sections.push(`**Overall**: ${statusEmoji} ${health.overall.toUpperCase()} (${health.completenessScore}% coverage)\n`);
+
+  // Fresh data
+  if (health.freshSources.length > 0) {
+    sections.push('### ✓ Fresh Data (use confidently)');
+    sections.push(health.freshSources.join(', '));
+    sections.push('');
+  }
+
+  // Stale data with warnings
+  if (health.staleSources.length > 0) {
+    sections.push('### ⚠️ Stale Data (acknowledge uncertainty)');
+    for (const source of health.staleSources) {
+      const icon = source.level === 'critical' ? '🔴' : '🟡';
+      sections.push(`- ${icon} **${source.name}**: last synced ${source.timeSinceSync}`);
+    }
+    sections.push('');
+    sections.push('When using stale data, acknowledge it naturally:');
+    sections.push('- "Based on your data from 2 days ago..."');
+    sections.push('- "Your last sync was yesterday, but..."');
+    sections.push('');
+  }
+
+  // Unavailable sources
+  if (health.unavailableSources.length > 0) {
+    sections.push('### ✗ Not Available');
+    sections.push(`Disconnected: ${health.unavailableSources.join(', ')}`);
+    sections.push('');
+    sections.push('If the user asks about this data, suggest connecting the service.');
+    sections.push('');
+  }
+
+  // Instructions for degraded/critical states
+  if (health.overall !== 'healthy') {
+    sections.push('### How to Handle Data Gaps');
+    sections.push('- Be transparent about data limitations');
+    sections.push('- Offer recommendations with appropriate caveats');
+    sections.push('- Suggest syncing devices if data is critically stale');
+    sections.push('- Focus on data sources that ARE fresh');
+    sections.push('');
+  }
+
+  // Required sources warning
+  if (!health.requiredSourcesAvailable) {
+    sections.push('**⚠️ IMPORTANT**: Some data sources required for this query are unavailable or stale.');
+    sections.push('Acknowledge this limitation upfront in your response.');
+    sections.push('');
+  }
+
+  return sections.join('\n');
+}
+
+// =============================================================================
+// ENGAGEMENT OPTIMIZATION
+// =============================================================================
+
+export interface EngagementInsights {
+  optimalNotificationsPerDay: number;
+  preferredHours: number[];
+  highEngagementTopics: string[];
+  lowEngagementTopics: string[];
+  currentStreaks: Array<{ type: string; days: number; atRisk: boolean }>;
+}
+
+/**
+ * Build engagement awareness section for proactive agent behavior
+ */
+export function buildEngagementAwarenessPrompt(insights: EngagementInsights): string {
+  const sections: string[] = [];
+
+  sections.push('## User Engagement Patterns\n');
+
+  // Notification preferences
+  sections.push('### Communication Preferences');
+  const hourStrings = insights.preferredHours.map(h =>
+    h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`
+  );
+  sections.push(`- Best times to send notifications: ${hourStrings.join(', ')}`);
+  sections.push(`- Optimal daily notifications: ${insights.optimalNotificationsPerDay}`);
+  sections.push('');
+
+  // Topic engagement
+  if (insights.highEngagementTopics.length > 0) {
+    sections.push('### High Engagement Topics');
+    sections.push(`User responds well to: ${insights.highEngagementTopics.join(', ')}`);
+    sections.push('');
+  }
+
+  if (insights.lowEngagementTopics.length > 0) {
+    sections.push('### Low Engagement Topics');
+    sections.push(`User rarely engages with: ${insights.lowEngagementTopics.join(', ')}`);
+    sections.push('Consider reducing or reframing these types of messages.');
+    sections.push('');
+  }
+
+  // Active streaks
+  if (insights.currentStreaks.length > 0) {
+    sections.push('### Active Streaks');
+    for (const streak of insights.currentStreaks) {
+      if (streak.atRisk) {
+        sections.push(`- 🔥 **${streak.type}**: ${streak.days} days - AT RISK (not logged today)`);
+      } else if (streak.days >= 7) {
+        sections.push(`- ✓ ${streak.type}: ${streak.days} days`);
+      }
+    }
+
+    const atRiskStreaks = insights.currentStreaks.filter(s => s.atRisk);
+    if (atRiskStreaks.length > 0) {
+      sections.push('');
+      sections.push('**Streak Protection**: If appropriate, remind the user about at-risk streaks.');
+    }
+    sections.push('');
+  }
+
+  return sections.join('\n');
+}
+
+// =============================================================================
+// ADVICE EFFECTIVENESS
+// =============================================================================
+
+export interface AdvicePattern {
+  category: string;
+  successRate: number;
+  avgImprovement: number;
+  abandonmentRate: number;
+  successfulStrategies: string[];
+  failedStrategies: string[];
+}
+
+/**
+ * Build advice effectiveness section to help agent give better recommendations
+ */
+export function buildAdviceEffectivenessPrompt(patterns: AdvicePattern[]): string {
+  const sections: string[] = [];
+
+  sections.push('## What Works for This User\n');
+  sections.push('Based on tracked outcomes from past advice:\n');
+
+  // Sort by success rate
+  const sorted = [...patterns].sort((a, b) => b.successRate - a.successRate);
+
+  for (const pattern of sorted) {
+    const successEmoji = pattern.successRate >= 0.7 ? '✓' : pattern.successRate >= 0.4 ? '~' : '✗';
+    sections.push(`### ${successEmoji} ${pattern.category}`);
+    sections.push(`- Success rate: ${Math.round(pattern.successRate * 100)}%`);
+    sections.push(`- Avg improvement when followed: ${Math.round(pattern.avgImprovement)}%`);
+    sections.push(`- Abandonment rate: ${Math.round(pattern.abandonmentRate * 100)}%`);
+
+    if (pattern.successfulStrategies.length > 0) {
+      sections.push(`- **What worked**: ${pattern.successfulStrategies.slice(0, 3).join('; ')}`);
+    }
+    if (pattern.failedStrategies.length > 0) {
+      sections.push(`- **What didn't work**: ${pattern.failedStrategies.slice(0, 2).join('; ')}`);
+    }
+    sections.push('');
+  }
+
+  sections.push('### Recommendations');
+  const highSuccess = sorted.filter(p => p.successRate >= 0.6);
+  const highAbandonment = sorted.filter(p => p.abandonmentRate >= 0.5);
+
+  if (highSuccess.length > 0) {
+    sections.push(`- Lean into: ${highSuccess.map(p => p.category).join(', ')}`);
+  }
+  if (highAbandonment.length > 0) {
+    sections.push(`- Keep simpler: ${highAbandonment.map(p => p.category).join(', ')} (high abandonment)`);
+  }
+  sections.push('- Reference past successes: "Last time we tried X and it helped by Y%"');
+  sections.push('- Avoid repeating failed strategies');
+  sections.push('');
+
+  return sections.join('\n');
+}

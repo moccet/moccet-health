@@ -80,18 +80,36 @@ class FriendFeedServiceClass {
 
       // Get friend display names and avatars from user_profiles
       const friendEmails = [...new Set((data || []).map((row: any) => row.friend_email))];
-      const { data: profiles } = await this.supabase
+
+      // Try matching by email first, then by user_code for any that don't match
+      const { data: profilesByEmail } = await this.supabase
         .from('user_profiles')
-        .select('email, display_name, full_name, first_name, avatar_url')
+        .select('email, user_code, display_name, full_name, first_name, avatar_url')
         .in('email', friendEmails);
 
-      // Create maps for name and avatar
+      // Also try matching by user_code in case friend_email contains user codes
+      const { data: profilesByCode } = await this.supabase
+        .from('user_profiles')
+        .select('email, user_code, display_name, full_name, first_name, avatar_url')
+        .in('user_code', friendEmails);
+
+      // Merge results
+      const profiles = [...(profilesByEmail || []), ...(profilesByCode || [])];
+
+      // Create maps for name and avatar (keyed by both email and user_code)
       const nameMap = new Map<string, string>();
       const avatarMap = new Map<string, string | null>();
       (profiles || []).forEach((p: any) => {
-        const displayName = p.display_name || p.first_name || p.full_name?.split(' ')[0] || p.email.split('@')[0];
-        nameMap.set(p.email, displayName);
-        avatarMap.set(p.email, p.avatar_url || null);
+        const displayName = p.display_name || p.first_name || p.full_name?.split(' ')[0] || p.email?.split('@')[0] || 'User';
+        // Map by both email and user_code so we can find by either
+        if (p.email) {
+          nameMap.set(p.email, displayName);
+          avatarMap.set(p.email, p.avatar_url || null);
+        }
+        if (p.user_code) {
+          nameMap.set(p.user_code, displayName);
+          avatarMap.set(p.user_code, p.avatar_url || null);
+        }
       });
 
       // Get reaction and comment counts for all feed items
@@ -294,17 +312,25 @@ class FriendFeedServiceClass {
         return [];
       }
 
-      // Get friend display name and avatar from user_profiles
-      const { data: profile } = await this.supabase
+      // Get friend display name and avatar from user_profiles (try email and user_code)
+      const { data: profileByEmail } = await this.supabase
         .from('user_profiles')
-        .select('email, display_name, full_name, first_name, avatar_url')
+        .select('email, user_code, display_name, full_name, first_name, avatar_url')
         .eq('email', friendEmail)
         .single();
+
+      const { data: profileByCode } = await this.supabase
+        .from('user_profiles')
+        .select('email, user_code, display_name, full_name, first_name, avatar_url')
+        .eq('user_code', friendEmail)
+        .single();
+
+      const profile = profileByEmail || profileByCode;
 
       const nameMap = new Map<string, string>();
       const avatarMap = new Map<string, string | null>();
       if (profile) {
-        const displayName = profile.display_name || profile.first_name || profile.full_name?.split(' ')[0] || friendEmail.split('@')[0];
+        const displayName = profile.display_name || profile.first_name || profile.full_name?.split(' ')[0] || profile.email?.split('@')[0] || 'User';
         nameMap.set(friendEmail, displayName);
         avatarMap.set(friendEmail, profile.avatar_url || null);
       }

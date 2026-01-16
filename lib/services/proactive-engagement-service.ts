@@ -1275,6 +1275,44 @@ function hasEnoughData(ecosystemData: EcosystemData): boolean {
  * Only send when there's genuinely meaningful content to share.
  * Max 2 notifications per day per user.
  */
+/**
+ * Get the user's local time of day based on their timezone
+ */
+function getUserLocalTimeOfDay(timezone: string | undefined): 'morning' | 'midday' | 'evening' | null {
+  try {
+    // Default to UTC if no timezone specified
+    const tz = timezone || 'UTC';
+
+    // Get current time in user's timezone
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      hour12: false,
+    });
+    const localHour = parseInt(formatter.format(now), 10);
+
+    // Determine time of day based on local hour
+    // Morning: 6am - 10am
+    // Midday: 11am - 5pm
+    // Evening: 6pm - 10pm
+    // Night (no notifications): 11pm - 5am
+    if (localHour >= 6 && localHour < 11) {
+      return 'morning';
+    } else if (localHour >= 11 && localHour < 18) {
+      return 'midday';
+    } else if (localHour >= 18 && localHour < 23) {
+      return 'evening';
+    } else {
+      // Night time - don't send notifications
+      return null;
+    }
+  } catch (e) {
+    console.error(`[Proactive Engagement] Error parsing timezone ${timezone}:`, e);
+    return null;
+  }
+}
+
 export async function processProactiveEngagement(
   email: string,
   timeOfDay: 'morning' | 'midday' | 'evening'
@@ -1308,10 +1346,25 @@ export async function processProactiveEngagement(
         subscriptionTier: 'max',
         includeConversation: true,
       });
-      console.log(`[Proactive Engagement] Got user context: profile=${!!userContext?.profile}, labs=${userContext?.labResults?.length || 0}, goals=${userContext?.profile?.goals?.length || 0}`);
+      console.log(`[Proactive Engagement] Got user context: profile=${!!userContext?.profile}, labs=${userContext?.labResults?.length || 0}, goals=${userContext?.profile?.goals?.length || 0}, timezone=${userContext?.profile?.timezone || 'not set'}`);
     } catch (e) {
       console.error(`[Proactive Engagement] Error fetching user context:`, e);
     }
+
+    // Determine the ACTUAL time of day for this user based on their timezone
+    // This overrides what the cron says - we send the right notification for their local time
+    const userTimezone = userContext?.profile?.timezone;
+    const userLocalTimeOfDay = getUserLocalTimeOfDay(userTimezone);
+
+    if (userLocalTimeOfDay === null) {
+      console.log(`[Proactive Engagement] It's nighttime for ${email} (timezone: ${userTimezone || 'UTC'}), skipping notifications`);
+      return 0;
+    }
+
+    // Use the user's LOCAL time of day, not what the cron specified
+    // This ensures users get morning notifications in their morning, etc.
+    const effectiveTimeOfDay = userLocalTimeOfDay;
+    console.log(`[Proactive Engagement] Using user's local time of day: ${effectiveTimeOfDay} (cron said: ${timeOfDay}, timezone: ${userTimezone || 'UTC'})`);
 
     // Fetch deep content analysis (tasks, urgency, interruptions) for work context
     try {
@@ -1329,7 +1382,7 @@ export async function processProactiveEngagement(
     };
 
     // Morning: Only send if there's something notable about their morning state
-    if (timeOfDay === 'morning') {
+    if (effectiveTimeOfDay === 'morning') {
       // Only send morning motivation if recovery is notably good OR bad (not average)
       const recovery = ecosystemData.whoop?.data?.avgRecoveryScore;
       const readiness = ecosystemData.oura?.data?.avgReadinessScore;
@@ -1355,7 +1408,7 @@ export async function processProactiveEngagement(
     }
 
     // Midday: Prioritize by importance, stop after sending one
-    if (timeOfDay === 'midday' && await canSendMoreToday(email)) {
+    if (effectiveTimeOfDay === 'midday' && await canSendMoreToday(email)) {
       // Priority 0: Urgent tasks from deep analysis
       if (notificationsSent === 0 && deepAnalysis?.pendingTasks?.length) {
         const urgentTasks = deepAnalysis.pendingTasks.filter(t => t.urgency === 'critical' || t.urgency === 'high');
@@ -1414,7 +1467,7 @@ export async function processProactiveEngagement(
     }
 
     // Evening: Only send if they had a demanding day or are working late
-    if (timeOfDay === 'evening' && await canSendMoreToday(email)) {
+    if (effectiveTimeOfDay === 'evening' && await canSendMoreToday(email)) {
       const hadDemandingDay = ecosystemData.whoop?.data?.avgStrainScore &&
                               ecosystemData.whoop.data.avgStrainScore > 14;
       const workingLate = ecosystemData.gmail?.data?.emailVolume?.afterHoursPercentage &&

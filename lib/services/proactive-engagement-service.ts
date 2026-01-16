@@ -190,11 +190,42 @@ async function generateDailyDigest(
 
   if (!message) return null;
 
+  // Build data quote from highlights and concerns
+  const allMetrics = [...highlights, ...concerns];
+  const dataQuote = allMetrics.length > 0
+    ? allMetrics.slice(0, 3).join(' · ')
+    : 'Your daily health snapshot';
+
+  // Build recommendation based on balance of highlights vs concerns
+  let recommendation: string;
+  if (concerns.length > highlights.length) {
+    recommendation = 'Focus on rest and recovery today. Small improvements compound over time.';
+  } else if (highlights.length > 0) {
+    recommendation = 'You\'re on a great path! Keep up the healthy habits that got you here.';
+  } else {
+    recommendation = 'Steady progress is still progress. Stay consistent with your routines.';
+  }
+
   return {
     type: 'daily_digest',
     title,
     message,
     context_data: { highlights, concerns },
+    category: 'CROSS_DOMAIN',
+    data_quote: dataQuote,
+    recommendation,
+    science_explanation: 'Daily health monitoring helps identify patterns and trends before they become problems. Research shows that people who regularly review their health metrics are more likely to make positive lifestyle changes and catch issues early.',
+    action_steps: highlights.length >= concerns.length
+      ? [
+          'Maintain your current sleep and exercise routines',
+          'Note what you did well yesterday to repeat it',
+          'Share your progress with an accountability partner',
+        ]
+      : [
+          'Prioritize sleep tonight - aim for 7+ hours',
+          'Take short breaks throughout the day',
+          'Choose one small healthy habit to focus on today',
+        ],
   };
 }
 
@@ -267,11 +298,52 @@ async function generateMorningMotivation(
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from context
+  const dataQuoteParts: string[] = [];
+  if (context.recovery !== undefined) {
+    const recovery = context.recovery as number;
+    if (recovery >= 67) {
+      dataQuoteParts.push(`recovery at ${Math.round(recovery)}% (great!)`);
+    } else if (recovery < 40) {
+      dataQuoteParts.push(`recovery at ${Math.round(recovery)}% (take it easy)`);
+    } else {
+      dataQuoteParts.push(`recovery at ${Math.round(recovery)}%`);
+    }
+  }
+  if (context.sleepHours !== undefined) {
+    dataQuoteParts.push(`${(context.sleepHours as number).toFixed(1)} hours of sleep`);
+  }
+  if (context.busyDay) {
+    dataQuoteParts.push('busy calendar ahead');
+  }
+
+  // Build recommendation based on recovery
+  let recommendation = 'Start your day with intention. ';
+  const recovery = context.recovery as number | undefined;
+  if (recovery !== undefined && recovery >= 67) {
+    recommendation += 'Your body is well-recovered - a great day for challenging work or exercise.';
+  } else if (recovery !== undefined && recovery < 40) {
+    recommendation += 'Consider lighter activities today and prioritize rest when possible.';
+  } else {
+    recommendation += 'Listen to your body and pace yourself throughout the day.';
+  }
+
   return {
     type: 'morning_motivation',
     title: 'Good Morning',
     message,
     context_data: context,
+    category: 'RECOVERY',
+    data_quote: dataQuoteParts.length > 0
+      ? dataQuoteParts.join(' · ')
+      : 'Ready to start a new day',
+    recommendation,
+    science_explanation: 'Morning routines that align with your recovery state help optimize performance and prevent burnout. When recovery is high, your body can handle more stress. When it\'s low, pacing yourself helps maintain long-term health.',
+    action_steps: [
+      'Take a moment to set your top priority for today',
+      'Hydrate well - your body needs water after sleep',
+      'Get some natural light within the first hour of waking',
+    ],
   };
 }
 
@@ -458,11 +530,40 @@ Make them feel proud of their progress.`;
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from achievements
+  const dataQuoteParts: string[] = [];
+  if (context.recoveryStreak) {
+    dataQuoteParts.push(`${context.recoveryStreak}-day recovery streak`);
+  }
+  if (context.recovery) {
+    dataQuoteParts.push(`${Math.round(context.recovery as number)}% recovery`);
+  }
+  if (context.readiness) {
+    dataQuoteParts.push(`${Math.round(context.readiness as number)}% readiness`);
+  }
+  if (context.sleepConsistency) {
+    dataQuoteParts.push(`${Math.round(context.sleepConsistency as number)}% sleep consistency`);
+  }
+  if (context.glucoseInRange) {
+    dataQuoteParts.push(`${Math.round(context.glucoseInRange as number)}% time in range`);
+  }
+
   return {
     type: 'achievement_celebration',
     title: "You're crushing it!",
     message,
     context_data: context,
+    category: 'ACTIVITY',
+    data_quote: dataQuoteParts.length > 0
+      ? dataQuoteParts.join(' · ')
+      : achievements.join(', '),
+    recommendation: 'Keep up the great work! Consistency is key to long-term health improvements.',
+    science_explanation: 'Celebrating small wins reinforces positive behaviors and releases dopamine, making it easier to maintain healthy habits. Research shows that acknowledging progress, even incremental improvements, significantly increases the likelihood of sustained behavior change.',
+    action_steps: [
+      'Take a moment to appreciate your progress',
+      'Share your achievement with someone who supports you',
+      'Set your next small goal to keep the momentum going',
+    ],
   };
 }
 
@@ -529,11 +630,56 @@ async function generateEveningReflection(
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from context
+  const dataQuoteParts: string[] = [];
+  if (context.highStrain) {
+    const strain = ecosystemData.whoop?.data?.avgStrainScore;
+    dataQuoteParts.push(`strain score of ${strain?.toFixed(1) || 'high'} today`);
+  }
+  if (context.workingLate) {
+    dataQuoteParts.push('working into the evening hours');
+  }
+  if (context.needsRest) {
+    dataQuoteParts.push('some sleep debt to recover');
+  }
+  if (context.tasksCompleted) {
+    dataQuoteParts.push(`${context.tasksCompleted} tasks completed today`);
+  }
+  if (context.tasksPending) {
+    dataQuoteParts.push(`${context.tasksPending} tasks can wait until tomorrow`);
+  }
+
+  const dataQuote = dataQuoteParts.length > 0
+    ? `${dataQuoteParts.join(', ')}. It's important to give yourself a break, too.`
+    : "It sounds like you've been really dedicated this evening, but it's important to give yourself a break, too.";
+
+  // Build recommendation based on context
+  let recommendation = 'Consider starting your wind-down routine now. ';
+  if (context.needsRest) {
+    recommendation += 'An earlier bedtime tonight would help recover some sleep debt.';
+  } else if (context.highStrain) {
+    recommendation += 'After a demanding day, quality rest will help your body recover.';
+  } else if (context.workingLate) {
+    recommendation += 'Stepping away from work now will help your mind relax before sleep.';
+  } else {
+    recommendation += 'A peaceful night\'s rest will help you tackle tomorrow with fresh energy.';
+  }
+
   return {
     type: 'evening_reflection',
     title: 'Time to Wind Down',
     message,
     context_data: context,
+    category: 'SLEEP',
+    data_quote: dataQuote,
+    recommendation,
+    science_explanation: 'Evening wind-down routines help activate your parasympathetic nervous system, lowering cortisol and preparing your body for restorative sleep. Research shows that a consistent pre-sleep routine can improve sleep quality by up to 30% and reduce the time it takes to fall asleep.',
+    action_steps: [
+      'Dim the lights and reduce screen brightness',
+      'Take a few slow, deep breaths to release tension',
+      'Reflect on one positive moment from today',
+      'Set your intentions for tomorrow, then let go of work thoughts',
+    ],
   };
 }
 
@@ -580,11 +726,34 @@ Don't be preachy - just offer a gentle invitation to take a breath.`;
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from context
+  const dataQuoteParts: string[] = [];
+  if (context.backToBackMeetings) {
+    dataQuoteParts.push('back-to-back meetings detected');
+  }
+  if (context.lowRecovery) {
+    dataQuoteParts.push(`recovery at ${Math.round(context.lowRecovery as number)}%`);
+  }
+  if (context.alwaysOn) {
+    dataQuoteParts.push('constant availability pattern');
+  }
+
   return {
     type: 'mindfulness_prompt',
     title: 'Quick Pause',
     message,
     context_data: context,
+    category: 'STRESS',
+    data_quote: dataQuoteParts.length > 0
+      ? `I noticed: ${dataQuoteParts.join(', ')}. A brief pause can help.`
+      : 'Taking a moment to breathe can reset your focus.',
+    recommendation: 'Even 30 seconds of focused breathing can lower cortisol and improve focus. Try it now.',
+    science_explanation: 'Brief mindfulness breaks activate your parasympathetic nervous system, reducing stress hormones and improving cognitive function. Studies show that even short breathing exercises can lower heart rate and improve decision-making.',
+    action_steps: [
+      'Close your eyes or soften your gaze',
+      'Take 3 slow breaths: inhale for 4 counts, exhale for 6',
+      'Notice how your body feels before continuing',
+    ],
   };
 }
 
@@ -637,11 +806,61 @@ async function generateBiomarkerReminder(
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from lab results
+  const biomarkerInfo = lowBiomarkers.find(b => b.biomarker === context.biomarker) || lowBiomarkers[0];
+  const dataQuote = `Your ${biomarkerInfo.biomarker} is at ${biomarkerInfo.value} ${biomarkerInfo.unit || ''} (${biomarkerInfo.status})`;
+
+  // Build science explanation based on biomarker type
+  let scienceExplanation = '';
+  const biomarkerLower = (context.biomarker as string).toLowerCase();
+  if (biomarkerLower.includes('vitamin d')) {
+    scienceExplanation = 'Vitamin D is essential for bone health, immune function, and mood regulation. Low levels are linked to fatigue, weakened immunity, and increased risk of depression. Morning sunlight and supplementation are effective ways to improve levels.';
+  } else if (biomarkerLower.includes('iron') || biomarkerLower.includes('ferritin')) {
+    scienceExplanation = 'Iron is crucial for oxygen transport in your blood and energy production. Low iron can cause fatigue, weakness, and difficulty concentrating. Pairing iron-rich foods with vitamin C enhances absorption.';
+  } else if (biomarkerLower.includes('b12')) {
+    scienceExplanation = 'Vitamin B12 is vital for nerve function, red blood cell formation, and DNA synthesis. Deficiency can cause fatigue, neurological issues, and mood changes. It\'s primarily found in animal products or supplements.';
+  } else {
+    scienceExplanation = 'Maintaining optimal biomarker levels supports your body\'s essential functions. Regular monitoring and targeted interventions can help you feel your best and prevent long-term health issues.';
+  }
+
+  // Build action steps based on biomarker
+  let actionSteps: string[];
+  if (biomarkerLower.includes('vitamin d')) {
+    actionSteps = [
+      'Take your vitamin D supplement with a fat-containing meal for better absorption',
+      'Try to get 10-15 minutes of morning sunlight',
+      'Consider foods fortified with vitamin D like milk or cereals',
+    ];
+  } else if (biomarkerLower.includes('iron') || biomarkerLower.includes('ferritin')) {
+    actionSteps = [
+      'Include iron-rich foods like spinach, legumes, or lean red meat today',
+      'Pair iron-rich foods with vitamin C (citrus, bell peppers) to boost absorption',
+      'Avoid coffee or tea with iron-rich meals as they inhibit absorption',
+    ];
+  } else if (biomarkerLower.includes('b12')) {
+    actionSteps = [
+      'Take your B12 supplement if prescribed',
+      'Include B12-rich foods like eggs, fish, or fortified plant milks',
+      'Consider a sublingual B12 for better absorption if you have digestive issues',
+    ];
+  } else {
+    actionSteps = [
+      'Follow your healthcare provider\'s recommendations',
+      'Track your symptoms and energy levels',
+      'Schedule a follow-up to monitor your progress',
+    ];
+  }
+
   return {
     type: 'biomarker_reminder',
     title: `${context.biomarker} Reminder`,
     message,
     context_data: context,
+    category: 'BLOOD',
+    data_quote: dataQuote,
+    recommendation: `Supporting your ${context.biomarker} levels can improve your energy and overall wellbeing. Small daily actions add up.`,
+    science_explanation: scienceExplanation,
+    action_steps: actionSteps,
   };
 }
 
@@ -675,11 +894,43 @@ Be supportive, not stressful. Help them prioritize if multiple tasks.`;
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from tasks
+  const dataQuoteParts: string[] = [];
+  dataQuoteParts.push(`${urgentTasks.length} task${urgentTasks.length > 1 ? 's' : ''} needing attention`);
+  if (context.recovery && (context.recovery as number) < 50) {
+    dataQuoteParts.push(`recovery at ${Math.round(context.recovery as number)}%`);
+  }
+  const taskWithDeadline = urgentTasks.find(t => t.deadline);
+  if (taskWithDeadline) {
+    dataQuoteParts.push(`nearest deadline: ${taskWithDeadline.deadline}`);
+  }
+
+  // Build recommendation based on recovery and task count
+  let recommendation: string;
+  const recovery = context.recovery as number | undefined;
+  if (recovery && recovery < 50) {
+    recommendation = 'Your recovery is low today. Focus on your most critical task and give yourself permission to delegate or postpone the rest.';
+  } else if (urgentTasks.length > 2) {
+    recommendation = 'With multiple tasks, prioritize by impact. Start with the one that will create the most relief or progress when completed.';
+  } else {
+    recommendation = 'Block out focused time to tackle this task. You\'ve got this!';
+  }
+
   return {
     type: 'challenge_encouragement',
     title: urgentTasks.length === 1 ? 'Task Reminder' : `${urgentTasks.length} Tasks Need Attention`,
     message,
     context_data: context,
+    category: 'ACTIVITY',
+    data_quote: dataQuoteParts.join(' · '),
+    recommendation,
+    science_explanation: 'Task completion triggers dopamine release, creating positive momentum. Breaking tasks into smaller steps and tackling the most important one first reduces cognitive load and stress. Research shows that acknowledging tasks explicitly increases completion rates.',
+    action_steps: [
+      'Pick the single most important task and commit to starting it',
+      'Set a 25-minute focused work block (Pomodoro technique)',
+      'Remove distractions - close unnecessary tabs and silence notifications',
+      'Celebrate completing each task, no matter how small',
+    ],
   };
 }
 
@@ -724,11 +975,57 @@ Connect their data to one of their goals. Be encouraging and specific. One sente
   const message = await generatePersonalizedMessage(prompt, context);
   if (!message) return null;
 
+  // Build data quote from current metrics
+  const dataQuoteParts: string[] = [];
+  if (context.sleepHours) {
+    dataQuoteParts.push(`${(context.sleepHours as number).toFixed(1)} hours sleep`);
+  }
+  if (context.recovery) {
+    dataQuoteParts.push(`${Math.round(context.recovery as number)}% recovery`);
+  }
+  if (context.strain) {
+    dataQuoteParts.push(`${(context.strain as number).toFixed(1)} strain`);
+  }
+
+  // Build recommendation based on goals
+  let recommendation = 'Keep tracking your progress - consistency is key to reaching your goals. ';
+  const goalsLower = healthGoals.map(g => g.toLowerCase()).join(' ');
+  if (goalsLower.includes('sleep')) {
+    recommendation += 'Prioritize your sleep routine tonight.';
+  } else if (goalsLower.includes('fitness') || goalsLower.includes('energy')) {
+    recommendation += 'Small daily efforts compound into big results.';
+  } else if (goalsLower.includes('stress')) {
+    recommendation += 'Remember to take breaks and breathe deeply.';
+  } else {
+    recommendation += 'Every positive choice moves you closer to your goals.';
+  }
+
+  // Build action steps based on goals
+  const actionSteps: string[] = [];
+  if (goalsLower.includes('sleep')) {
+    actionSteps.push('Maintain a consistent bedtime tonight');
+  }
+  if (goalsLower.includes('fitness') || goalsLower.includes('energy')) {
+    actionSteps.push('Schedule your next workout or movement session');
+  }
+  if (goalsLower.includes('stress') || goalsLower.includes('recovery')) {
+    actionSteps.push('Take 5 minutes for deep breathing or meditation');
+  }
+  actionSteps.push('Review your goals and celebrate small wins');
+  actionSteps.push('Identify one action you can take today toward your goal');
+
   return {
     type: 'goal_progress',
     title: 'Goal Check-in',
     message,
     context_data: context,
+    category: 'ACTIVITY',
+    data_quote: dataQuoteParts.length > 0
+      ? `Current metrics: ${dataQuoteParts.join(' · ')}`
+      : `Working toward: ${healthGoals.slice(0, 2).join(', ')}`,
+    recommendation,
+    science_explanation: 'Regular goal check-ins increase success rates by up to 40%. Connecting daily actions to larger goals creates meaning and motivation. Tracking progress, even when imperfect, builds self-awareness and helps identify what\'s working.',
+    action_steps: actionSteps.slice(0, 4),
   };
 }
 

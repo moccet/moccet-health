@@ -253,3 +253,139 @@ export interface SplitTemplate {
   maxDays: number;
   days: DayFocus[];
 }
+
+// ==================== HEALTH-AWARE TRAINING MODIFICATIONS ====================
+
+/**
+ * AI-interpreted training modifications based on health data
+ * Cached for 24 hours
+ */
+export interface TrainingModifications {
+  // Global adjustments (percentages, -30 to +10)
+  volumeAdjustment: number;
+  intensityAdjustment: number;
+
+  // Flags
+  avoidHighIntensity: boolean;
+  prioritizeRecovery: boolean;
+  skipTrainingToday: boolean;
+
+  // Training day adjustments
+  extraRestDays: number;
+  maxTrainingDays: number | null;
+
+  // Muscle-specific modifications
+  muscleGroupModifiers: Record<string, MuscleGroupModifier>;
+
+  // Exercise type restrictions
+  avoidExerciseTypes: ExerciseType[];
+  prioritizeExerciseTypes: ExerciseType[];
+
+  // Metadata
+  reasoningSummary: string;
+  dataSourcesUsed: string[];
+  generatedAt: string;
+  expiresAt: string;
+}
+
+export interface MuscleGroupModifier {
+  avoid?: boolean;
+  reduceVolume?: number;
+  reason?: string;
+}
+
+/**
+ * Default training modifications (no health concerns)
+ */
+export function getDefaultTrainingModifications(): TrainingModifications {
+  return {
+    volumeAdjustment: 0,
+    intensityAdjustment: 0,
+    avoidHighIntensity: false,
+    prioritizeRecovery: false,
+    skipTrainingToday: false,
+    extraRestDays: 0,
+    maxTrainingDays: null,
+    muscleGroupModifiers: {},
+    avoidExerciseTypes: [],
+    prioritizeExerciseTypes: [],
+    reasoningSummary: 'Normal training - no health concerns detected',
+    dataSourcesUsed: [],
+    generatedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
+// ==================== UNIFIED HEALTH CONTEXT ====================
+
+/**
+ * Aggregated health data from all sources for AI interpretation
+ */
+export interface UnifiedHealthContext {
+  bloodBiomarkers?: BloodBiomarkersContext;
+  recovery?: RecoveryContext;
+  sleep?: SleepContext;
+  glucose?: GlucoseContext;
+  activity?: ActivityContext;
+}
+
+export interface BloodBiomarkersContext {
+  available: boolean;
+  lastTestDate?: string;
+  biomarkers?: Array<{
+    name: string;
+    value: number;
+    unit: string;
+    status: 'normal' | 'low' | 'high' | 'critical';
+    referenceRange?: string;
+  }>;
+}
+
+export interface RecoveryContext {
+  source: 'oura' | 'whoop' | 'apple_health' | 'manual';
+  score?: number; // 0-100
+  status?: 'red' | 'yellow' | 'green';
+  hrvAvg?: number;
+  hrvTrend?: 'improving' | 'stable' | 'declining';
+  restingHR?: number;
+  strainLevel?: number;
+  overtrainingRisk?: 'low' | 'moderate' | 'high';
+}
+
+export interface SleepContext {
+  source: 'oura' | 'whoop' | 'apple_health' | 'manual';
+  avgHoursLast7Days: number;
+  lastNightHours?: number;
+  quality: 'poor' | 'fair' | 'good' | 'excellent';
+  deepSleepMinutes?: number;
+  remSleepMinutes?: number;
+  sleepDebtHours?: number;
+}
+
+export interface GlucoseContext {
+  source: 'dexcom' | 'libre' | 'manual';
+  avgGlucose: number; // mg/dL
+  variabilityCV: number; // coefficient of variation %
+  timeInRange: number; // % time in 70-180 mg/dL
+  spikeCountLast24h: number;
+  status: 'optimal' | 'good' | 'needs_optimization';
+}
+
+export interface ActivityContext {
+  source: 'apple_health' | 'whoop' | 'oura' | 'manual';
+  avgStepsLast7Days: number;
+  workoutsLast7Days: number;
+  activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active';
+  lastWorkoutDate?: string;
+  lastWorkoutType?: string;
+}
+
+// ==================== ENHANCED QUERY PARAMS ====================
+
+export interface EnhancedExerciseQueryParams extends ExerciseQueryParams {
+  healthModifications?: TrainingModifications;
+  excludeMuscleGroups?: string[];
+  maxDifficulty?: DifficultyLevel;
+  preferCompound?: boolean;
+  avoidHighImpact?: boolean;
+}

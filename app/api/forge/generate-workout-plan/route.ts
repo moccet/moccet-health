@@ -1,31 +1,28 @@
 /**
  * Workout Plan Generator API
- * Generates personalized workout plans using exercises from forge_exercises database
+ * Generates personalized workout plans using deterministic exercise matching
+ * with health-aware modifications from AI interpretation (cached 24h)
  *
  * POST /api/forge/generate-workout-plan
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { getServiceClient } from '@/lib/supabase/server';
 import {
-  queryEligibleExercises,
+  queryExercisesWithHealthMods,
   categorizeExercises,
   loadUserProfile,
   normalizeEquipment,
+  getInjuriesFromHealthMods,
 } from '@/lib/forge/exercise-selector';
+import { selectSplitType } from '@/lib/forge/split-templates';
+import { aggregateHealthContext } from '@/lib/forge/health-context-aggregator';
+import { interpretHealthForTraining } from '@/lib/forge/health-interpreter';
 import {
-  selectSplitType,
-  adjustSplitForDays,
-  getProgressionStrategy,
-  SPLIT_TEMPLATES,
-} from '@/lib/forge/split-templates';
-import {
-  buildWorkoutPlanPrompt,
-  createExerciseLookup,
-  resolveExerciseReferences,
-  parseAIResponse,
-} from '@/lib/forge/workout-plan-prompt';
+  buildDeterministicPlan,
+  buildRecoveryOnlyPlan,
+  countExercisesInPlan,
+} from '@/lib/forge/deterministic-plan-builder';
 import type {
   GenerateWorkoutPlanRequest,
   GenerateWorkoutPlanResponse,
@@ -34,37 +31,8 @@ import type {
   ExerciseType,
 } from '@/lib/forge/types';
 
-// Allow up to 2 minutes for generation
-export const maxDuration = 120;
-
-// ==================== OPENAI CLIENT ====================
-
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not configured');
-  }
-  return new OpenAI({
-    apiKey,
-    timeout: 90000, // 90 second timeout
-    maxRetries: 2,
-  });
-}
-
-// ==================== SYSTEM PROMPT ====================
-
-const SYSTEM_PROMPT = `You are an expert strength and conditioning coach creating a personalized workout plan.
-
-CRITICAL RULES:
-1. You MUST ONLY select exercises from the provided exercise lists - DO NOT invent exercises
-2. Use SIMPLE LANGUAGE for intensity (never "RPE 8", use "Challenging but doable with 2 reps left")
-3. Prescribe SPECIFIC rest periods in seconds
-4. Start each training day with compound movements, end with isolation
-5. Include warmup and cooldown for each training day
-6. Provide progression notes for key exercises
-
-OUTPUT FORMAT:
-Return a valid JSON object matching the specified schema exactly. No markdown, no explanations.`;
+// Allow up to 60 seconds (reduced from 120 since no large AI call)
+export const maxDuration = 60;
 
 // ==================== MAIN HANDLER ====================
 
@@ -86,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load user profile
+    // 1. Load user profile
     console.log(`[WorkoutPlanGenerator] Loading profile for ${userEmail}`);
     const profile = await loadUserProfile(userEmail);
 
@@ -97,8 +65,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Apply overrides
-    const trainingDays = overrides?.trainingDays ?? profile.training_days_per_week;
+    // 2. Aggregate health context from all sources
+    console.log('[WorkoutPlanGenerator] Aggregating health context...');
+    const healthContext = await aggregateHealthContext(userEmail);
+
+    // 3. Interpret health data for training modifications (cached 24h)
+    console.log('[WorkoutPlanGenerator] Interpreting health data...');
+    const healthMods = await interpretHealthForTraining(healthContext, userEmail);
+    console.log(`[WorkoutPlanGenerator] Health interpretation: ${healthMods.reasoningSummary}`);
+
+    // Check if training should be skipped entirely
+    if (healthMods.skipTrainingToday) {
+      console.log('[WorkoutPlanGenerator] Training skipped due to health data');
+      const recoveryPlan = buildRecoveryOnlyPlan(profile);
+
+      // Store recovery plan
+      const supabase = getServiceClient();
+      const { data: storedPlan } = await supabase
+        .from('forge_workout_plans')
+        .insert({
+          user_email: userEmail,
+          name: 'Recovery Day',
+          description: 'Rest and recovery based on your current health status',
+          duration_weeks: 1,
+          days_per_week: 0,
+          plan_data: recoveryPlan,
+          health_modifications: healthMods,
+          based_on_goal: profile.primary_goal,
+          based_on_level: profile.experience_level,
+          is_active: true,
+          started_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      return NextResponse.json<GenerateWorkoutPlanResponse>({
+        success: true,
+        planId: storedPlan?.id,
+        plan: recoveryPlan,
+        metadata: {
+          exercisesUsed: 0,
+          exercisesAvailable: 0,
+          generationTimeMs: Date.now() - startTime,
+          estimatedCost: 0,
+          splitTypeUsed: 'full_body',
+        },
+      });
+    }
+
+    // 4. Calculate effective training parameters
+    const effectiveTrainingDays = Math.max(
+      2,
+      Math.min(
+        healthMods.maxTrainingDays ?? 7,
+        (overrides?.trainingDays ?? profile.training_days_per_week) - healthMods.extraRestDays
+      )
+    );
     const sessionLength = overrides?.sessionLength ?? profile.session_length_minutes;
 
     // Determine split type
@@ -106,34 +128,51 @@ export async function POST(request: NextRequest) {
     if (overrides?.splitType && overrides.splitType !== 'auto') {
       splitType = overrides.splitType;
     } else {
-      splitType = selectSplitType(trainingDays, profile.primary_goal);
+      splitType = selectSplitType(effectiveTrainingDays, profile.primary_goal);
     }
 
-    console.log(`[WorkoutPlanGenerator] Using ${splitType} split for ${trainingDays} days/week`);
+    console.log(`[WorkoutPlanGenerator] Using ${splitType} split for ${effectiveTrainingDays} days/week`);
 
-    // Normalize equipment
+    // 5. Normalize equipment
     const normalizedEquipment = normalizeEquipment(profile.equipment || []);
     console.log(`[WorkoutPlanGenerator] Equipment available:`, normalizedEquipment);
 
-    // Determine which exercise types to include based on split and preferences
-    const exerciseTypes: ExerciseType[] = profile.preferred_exercises?.length > 0
+    // Determine which exercise types to include
+    let exerciseTypes: ExerciseType[] = profile.preferred_exercises?.length > 0
       ? profile.preferred_exercises
       : ['weightTraining', 'calisthenics'];
 
-    // Query eligible exercises
-    console.log('[WorkoutPlanGenerator] Querying exercises...');
-    const eligibleExercises = await queryEligibleExercises({
+    // Remove avoided exercise types from preferences
+    exerciseTypes = exerciseTypes.filter(t => !healthMods.avoidExerciseTypes.includes(t));
+
+    // Add prioritized types if not already included
+    for (const priorityType of healthMods.prioritizeExerciseTypes) {
+      if (!exerciseTypes.includes(priorityType)) {
+        exerciseTypes.push(priorityType);
+      }
+    }
+
+    // 6. Combine profile injuries with health-derived injuries
+    const healthDerivedInjuries = getInjuriesFromHealthMods(healthMods);
+    const allInjuries = [...new Set([...(profile.injuries || []), ...healthDerivedInjuries])];
+
+    // 7. Query exercises with health modifications applied
+    console.log('[WorkoutPlanGenerator] Querying exercises with health modifications...');
+    const eligibleExercises = await queryExercisesWithHealthMods({
       equipmentAvailable: normalizedEquipment,
-      injuriesToAvoid: profile.injuries || [],
+      injuriesToAvoid: allInjuries,
       experienceLevel: profile.experience_level,
       exerciseTypes,
+      healthModifications: healthMods,
+      avoidHighImpact: healthMods.avoidHighIntensity,
+      preferCompound: profile.primary_goal === 'getStronger' || profile.primary_goal === 'buildMuscle',
     });
 
     if (eligibleExercises.length === 0) {
       return NextResponse.json<GenerateWorkoutPlanResponse>(
         {
           success: false,
-          error: 'No exercises available for your equipment and injury requirements. Try adjusting your profile.',
+          error: 'No exercises available for your equipment and health requirements. Try adjusting your profile.',
         },
         { status: 400 }
       );
@@ -141,84 +180,27 @@ export async function POST(request: NextRequest) {
 
     console.log(`[WorkoutPlanGenerator] Found ${eligibleExercises.length} eligible exercises`);
 
-    // Categorize exercises
-    const categorized = categorizeExercises(eligibleExercises);
+    // 8. Categorize exercises for split-based programming
+    const categorizedExercises = categorizeExercises(eligibleExercises);
 
-    // Get day focuses for the split
-    const dayFocuses = adjustSplitForDays(splitType, trainingDays);
-
-    // Build prompt
-    const prompt = buildWorkoutPlanPrompt({
-      profile,
-      categorizedExercises: categorized,
-      splitType,
-      dayFocuses,
-    });
-
-    // Create exercise lookup for resolving references
-    const exerciseLookup = createExerciseLookup(eligibleExercises);
-
-    // Call OpenAI
-    console.log('[WorkoutPlanGenerator] Calling OpenAI...');
-    const openai = getOpenAIClient();
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 8000,
-    });
-
-    const responseText = completion.choices[0]?.message?.content;
-    if (!responseText) {
-      throw new Error('Empty response from OpenAI');
-    }
-
-    // Parse and validate response
-    console.log('[WorkoutPlanGenerator] Parsing AI response...');
-    const aiOutput = parseAIResponse(responseText);
-
-    // Resolve exercise references
-    const { resolved, unmatchedExercises } = resolveExerciseReferences(aiOutput, exerciseLookup);
-
-    if (unmatchedExercises.length > 0) {
-      console.warn('[WorkoutPlanGenerator] Unmatched exercises:', unmatchedExercises);
-    }
-
-    // Build final plan data
-    const progression = getProgressionStrategy(profile.primary_goal, profile.experience_level);
-
-    const planData: WorkoutPlanData = {
-      version: '1.0',
-      generatedAt: new Date().toISOString(),
-      splitType,
-      userProfile: {
-        goal: profile.primary_goal,
-        experience: profile.experience_level,
-        trainingDays,
-        sessionLength,
-      },
-      weeks: [{
-        weekNumber: 1,
-        days: Object.entries(resolved.weeklyProgram as Record<string, unknown>).map(([day, data]) => ({
-          dayOfWeek: day as WorkoutPlanData['weeks'][0]['days'][0]['dayOfWeek'],
-          ...(data as object),
-        })),
-      }],
-      progression: {
-        strategy: progression.strategy,
-        weeklyIncrements: progression.weeklyIncrements,
-        repProgression: (resolved.progression as Record<string, unknown>)?.repProgression as string || 'Add 1-2 reps before increasing weight',
-        deloadFrequency: progression.deloadFrequency,
-        plateauStrategy: (resolved.progression as Record<string, unknown>)?.plateauStrategy as string || 'Reduce weight by 10% and rebuild',
-      },
+    // 9. Build plan deterministically (no AI)
+    console.log('[WorkoutPlanGenerator] Building deterministic plan...');
+    const profileWithOverrides = {
+      ...profile,
+      training_days_per_week: effectiveTrainingDays,
+      session_length_minutes: sessionLength,
     };
 
-    // Store plan in database
+    const planData = await buildDeterministicPlan(
+      profileWithOverrides,
+      healthMods,
+      categorizedExercises
+    );
+
+    // Override the split type in the plan
+    planData.splitType = splitType;
+
+    // 10. Store plan in database
     console.log('[WorkoutPlanGenerator] Storing plan...');
     const supabase = getServiceClient();
 
@@ -227,10 +209,11 @@ export async function POST(request: NextRequest) {
       .insert({
         user_email: userEmail,
         name: `${formatSplitName(splitType)} - Week 1`,
-        description: `${trainingDays}-day ${splitType.replace(/_/g, ' ')} program for ${formatGoal(profile.primary_goal)}`,
+        description: `${effectiveTrainingDays}-day ${splitType.replace(/_/g, ' ')} program for ${formatGoal(profile.primary_goal)}`,
         duration_weeks: 4,
-        days_per_week: trainingDays,
+        days_per_week: effectiveTrainingDays,
         plan_data: planData,
+        health_modifications: healthMods,
         based_on_goal: profile.primary_goal,
         based_on_level: profile.experience_level,
         is_active: true,
@@ -245,7 +228,8 @@ export async function POST(request: NextRequest) {
     }
 
     const generationTime = Date.now() - startTime;
-    const estimatedCost = (completion.usage?.total_tokens || 0) * 0.00000015; // GPT-4o-mini pricing
+    // Cost is now minimal - only health interpretation AI call (cached)
+    const estimatedCost = healthMods.dataSourcesUsed.length > 0 ? 0.002 : 0;
 
     console.log(`[WorkoutPlanGenerator] ✅ Plan generated in ${generationTime}ms (cost: $${estimatedCost.toFixed(4)})`);
 
@@ -300,18 +284,6 @@ function formatGoal(goal: string): string {
   return goals[goal] || goal;
 }
 
-function countExercisesInPlan(plan: WorkoutPlanData): number {
-  let count = 0;
-  for (const week of plan.weeks) {
-    for (const day of week.days) {
-      if ('mainWorkout' in day && day.mainWorkout?.exercises) {
-        count += (day.mainWorkout.exercises as unknown[]).length;
-      }
-    }
-  }
-  return count;
-}
-
 // ==================== GET HANDLER ====================
 
 export async function GET(request: NextRequest) {
@@ -352,6 +324,7 @@ export async function GET(request: NextRequest) {
       success: true,
       planId: plans[0].id,
       plan: plans[0].plan_data,
+      healthModifications: plans[0].health_modifications,
     });
 
   } catch (error) {

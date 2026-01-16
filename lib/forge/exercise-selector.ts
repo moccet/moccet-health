@@ -8,9 +8,11 @@ import type {
   ForgeExercise,
   ForgeProfile,
   ExerciseQueryParams,
+  EnhancedExerciseQueryParams,
   CategorizedExercises,
   DifficultyLevel,
   InjuryArea,
+  TrainingModifications,
 } from './types';
 
 // ==================== INJURY TO MUSCLE MAPPING ====================
@@ -124,6 +126,149 @@ export async function queryEligibleExercises(
   console.log(`[ExerciseSelector] ${filteredExercises.length} exercises after filtering`);
 
   return filteredExercises;
+}
+
+// ==================== HEALTH-AWARE QUERY ====================
+
+/**
+ * Query exercises with health-derived modifications applied
+ * Extends base query with additional health-based filtering
+ */
+export async function queryExercisesWithHealthMods(
+  params: EnhancedExerciseQueryParams
+): Promise<ForgeExercise[]> {
+  // First, get base eligible exercises
+  const baseExercises = await queryEligibleExercises({
+    equipmentAvailable: params.equipmentAvailable,
+    injuriesToAvoid: params.injuriesToAvoid,
+    experienceLevel: params.experienceLevel,
+    exerciseTypes: params.exerciseTypes,
+    muscleGroups: params.muscleGroups,
+  });
+
+  // If no health modifications, return base results
+  if (!params.healthModifications) {
+    return baseExercises;
+  }
+
+  const mods = params.healthModifications;
+  console.log(`[ExerciseSelector] Applying health modifications: ${mods.reasoningSummary}`);
+
+  // Apply health-based filters
+  const filteredExercises = baseExercises.filter((ex) => {
+    // Filter out exercises targeting avoided muscle groups
+    const muscleGroups = (ex.muscle_groups || []).map(m => m.toLowerCase());
+    for (const [muscle, modifier] of Object.entries(mods.muscleGroupModifiers)) {
+      if (modifier.avoid && muscleGroups.some(m => m.includes(muscle.toLowerCase()))) {
+        return false;
+      }
+    }
+
+    // Filter out avoided exercise types
+    if (mods.avoidExerciseTypes.includes(ex.exercise_type)) {
+      return false;
+    }
+
+    // Filter out high-intensity exercises if flagged
+    if (mods.avoidHighIntensity) {
+      const highIntensityTypes = ['hiit', 'crossfit'];
+      if (highIntensityTypes.includes(ex.exercise_type)) {
+        return false;
+      }
+      // Also filter advanced compound exercises (typically heavy)
+      if (ex.is_compound && ex.difficulty_level === 'advanced') {
+        return false;
+      }
+    }
+
+    // Filter by max difficulty if specified
+    if (params.maxDifficulty) {
+      const difficultyOrder: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced'];
+      const maxIdx = difficultyOrder.indexOf(params.maxDifficulty);
+      const exIdx = difficultyOrder.indexOf(ex.difficulty_level);
+      if (exIdx > maxIdx) {
+        return false;
+      }
+    }
+
+    // Filter out high-impact exercises if specified
+    if (params.avoidHighImpact) {
+      const highImpactKeywords = ['jump', 'plyo', 'sprint', 'burpee', 'box jump'];
+      if (highImpactKeywords.some(k => ex.name.toLowerCase().includes(k))) {
+        return false;
+      }
+    }
+
+    // Filter out exercises from excluded muscle groups
+    if (params.excludeMuscleGroups && params.excludeMuscleGroups.length > 0) {
+      const hasExcluded = muscleGroups.some(m =>
+        params.excludeMuscleGroups!.some(ex => m.includes(ex.toLowerCase()))
+      );
+      if (hasExcluded) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Sort to prioritize preferred exercise types
+  if (mods.prioritizeExerciseTypes.length > 0) {
+    filteredExercises.sort((a, b) => {
+      const aIsPrioritized = mods.prioritizeExerciseTypes.includes(a.exercise_type);
+      const bIsPrioritized = mods.prioritizeExerciseTypes.includes(b.exercise_type);
+      if (aIsPrioritized && !bIsPrioritized) return -1;
+      if (!aIsPrioritized && bIsPrioritized) return 1;
+      return 0;
+    });
+  }
+
+  // Sort to prioritize compound exercises if requested
+  if (params.preferCompound) {
+    filteredExercises.sort((a, b) => {
+      if (a.is_compound && !b.is_compound) return -1;
+      if (!a.is_compound && b.is_compound) return 1;
+      return 0;
+    });
+  }
+
+  console.log(`[ExerciseSelector] ${filteredExercises.length} exercises after health modifications`);
+
+  return filteredExercises;
+}
+
+/**
+ * Get injuries derived from health modifications
+ * (e.g., if health data indicates to avoid certain muscle groups)
+ */
+export function getInjuriesFromHealthMods(mods: TrainingModifications): InjuryArea[] {
+  const injuries: InjuryArea[] = [];
+
+  // Map muscle group modifiers to injury areas
+  const muscleToInjury: Record<string, InjuryArea> = {
+    shoulders: 'shoulder',
+    deltoids: 'shoulder',
+    triceps: 'elbow',
+    biceps: 'elbow',
+    forearms: 'wrist',
+    lower_back: 'lower_back',
+    glutes: 'hip',
+    hip_flexors: 'hip',
+    quadriceps: 'knee',
+    hamstrings: 'knee',
+    calves: 'ankle',
+  };
+
+  for (const [muscle, modifier] of Object.entries(mods.muscleGroupModifiers)) {
+    if (modifier.avoid) {
+      const injury = muscleToInjury[muscle.toLowerCase()];
+      if (injury && !injuries.includes(injury)) {
+        injuries.push(injury);
+      }
+    }
+  }
+
+  return injuries;
 }
 
 // ==================== CATEGORIZATION ====================

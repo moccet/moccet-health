@@ -32,6 +32,58 @@ import {
   fetchBloodBiomarkers,
   EcosystemDataSource,
 } from './ecosystem-fetcher';
+
+// ============================================================================
+// IN-MEMORY CACHE FOR DATA SOURCES (5 min TTL)
+// Reduces redundant fetches during conversation
+// ============================================================================
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const DATA_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const dataSourceCache = new Map<string, CacheEntry<any>>();
+
+function getCached<T>(key: string): T | null {
+  const entry = dataSourceCache.get(key);
+  if (entry && entry.expiresAt > Date.now()) {
+    return entry.data as T;
+  }
+  dataSourceCache.delete(key);
+  return null;
+}
+
+function setCache<T>(key: string, data: T): void {
+  dataSourceCache.set(key, {
+    data,
+    expiresAt: Date.now() + DATA_CACHE_TTL,
+  });
+  // Cleanup old entries if cache gets too big
+  if (dataSourceCache.size > 500) {
+    const now = Date.now();
+    for (const [k, v] of dataSourceCache.entries()) {
+      if (v.expiresAt < now) dataSourceCache.delete(k);
+    }
+  }
+}
+
+// Cached wrapper for data fetching
+async function cachedFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const cached = getCached<T>(key);
+  if (cached !== null) {
+    console.log(`[User Context] Cache HIT: ${key}`);
+    return cached;
+  }
+  console.log(`[User Context] Cache MISS: ${key}`);
+  const data = await fetcher();
+  setCache(key, data);
+  return data;
+}
 import {
   getCompactedHistory,
   formatHistoryForPrompt,
@@ -329,92 +381,93 @@ export async function getUserContext(
 
   console.log(`[User Context] Selected sources: ${selectionResult.sources.join(', ')}`);
 
-  // Step 2: Fetch data from selected sources in parallel
+  // Step 2: Fetch data from selected sources in parallel (with caching)
   const fetchPromises: Record<string, Promise<any>> = {};
 
   // Profile and learned facts are always fetched (lightweight but critical for personalization)
-  fetchPromises.profile = fetchUserProfile(email);
-  fetchPromises.learnedFacts = fetchLearnedFacts(email);
+  fetchPromises.profile = cachedFetch(`profile:${email}`, () => fetchUserProfile(email));
+  fetchPromises.learnedFacts = cachedFetch(`facts:${email}`, () => fetchLearnedFacts(email));
 
-  // Conditional fetches based on selection
+  // Conditional fetches based on selection - all cached for 5 min
   if (selectionResult.sources.includes('insights')) {
-    fetchPromises.insights = fetchUserInsights(email, subscriptionTier);
+    fetchPromises.insights = cachedFetch(`insights:${email}:${subscriptionTier}`, () => fetchUserInsights(email, subscriptionTier));
   }
 
   if (selectionResult.sources.includes('labs')) {
-    fetchPromises.labs = fetchLabResults(email);
+    fetchPromises.labs = cachedFetch(`labs:${email}`, () => fetchLabResults(email));
   }
 
   if (selectionResult.sources.includes('oura')) {
-    fetchPromises.oura = fetchOuraData(email);
+    fetchPromises.oura = cachedFetch(`oura:${email}`, () => fetchOuraData(email));
     // Pro/Max: Also fetch health pattern analysis
     if (subscriptionTier === 'pro' || subscriptionTier === 'max') {
-      fetchPromises.healthAnalysis = getHealthAnalysis(email);
+      fetchPromises.healthAnalysis = cachedFetch(`healthAnalysis:${email}`, () => getHealthAnalysis(email));
     }
   }
 
   if (selectionResult.sources.includes('dexcom')) {
-    fetchPromises.dexcom = fetchDexcomData(email);
+    fetchPromises.dexcom = cachedFetch(`dexcom:${email}`, () => fetchDexcomData(email));
   }
 
   if (selectionResult.sources.includes('training')) {
-    fetchPromises.training = fetchTrainingData(email);
+    fetchPromises.training = cachedFetch(`training:${email}`, () => fetchTrainingData(email));
   }
 
   if (selectionResult.sources.includes('nutrition')) {
-    fetchPromises.nutrition = fetchNutritionData(email);
+    fetchPromises.nutrition = cachedFetch(`nutrition:${email}`, () => fetchNutritionData(email));
   }
 
   if (selectionResult.sources.includes('behavioral')) {
-    fetchPromises.gmail = fetchGmailPatterns(email);
-    fetchPromises.slack = fetchSlackPatterns(email);
+    fetchPromises.gmail = cachedFetch(`gmail:${email}`, () => fetchGmailPatterns(email));
+    fetchPromises.slack = cachedFetch(`slack:${email}`, () => fetchSlackPatterns(email));
     // Also fetch sentiment analysis if behavioral data is requested
-    fetchPromises.sentiment = getSentimentAnalysis(email, { days: 7 });
+    fetchPromises.sentiment = cachedFetch(`sentiment:${email}`, () => getSentimentAnalysis(email, { days: 7 }));
     // Pro/Max: Also fetch life context (events & patterns from Gmail)
     if (subscriptionTier === 'pro' || subscriptionTier === 'max') {
-      fetchPromises.lifeContext = getLifeContext(email);
+      fetchPromises.lifeContext = cachedFetch(`lifeContext:${email}`, () => getLifeContext(email));
     }
   }
 
   if (selectionResult.sources.includes('apple_health')) {
-    fetchPromises.appleHealth = fetchAppleHealthData(email);
+    fetchPromises.appleHealth = cachedFetch(`appleHealth:${email}`, () => fetchAppleHealthData(email));
   }
 
   if (selectionResult.sources.includes('conversation')) {
+    // Don't cache conversation - it changes frequently
     fetchPromises.conversation = getCompactedHistory(email, threadId, subscriptionTier);
   }
 
-  // NEW: Rich context sources for hyper-personalization
+  // NEW: Rich context sources for hyper-personalization (all cached)
   if (selectionResult.sources.includes('sage')) {
-    fetchPromises.sage = fetchSageContext(email);
+    fetchPromises.sage = cachedFetch(`sage:${email}`, () => fetchSageContext(email));
   }
 
   if (selectionResult.sources.includes('forge')) {
-    fetchPromises.forge = fetchForgeContext(email);
+    fetchPromises.forge = cachedFetch(`forge:${email}`, () => fetchForgeContext(email));
   }
 
   if (selectionResult.sources.includes('goals')) {
-    fetchPromises.goals = fetchHealthGoals(email);
+    fetchPromises.goals = cachedFetch(`goals:${email}`, () => fetchHealthGoals(email));
   }
 
   if (selectionResult.sources.includes('life_events')) {
-    fetchPromises.lifeEvents = fetchLifeEvents(email);
+    fetchPromises.lifeEvents = cachedFetch(`lifeEvents:${email}`, () => fetchLifeEvents(email));
   }
 
   if (selectionResult.sources.includes('interventions')) {
-    fetchPromises.interventions = fetchInterventions(email);
+    fetchPromises.interventions = cachedFetch(`interventions:${email}`, () => fetchInterventions(email));
   }
 
   if (selectionResult.sources.includes('checkins')) {
-    fetchPromises.checkins = fetchDailyCheckins(email);
+    fetchPromises.checkins = cachedFetch(`checkins:${email}`, () => fetchDailyCheckins(email));
   }
 
   if (selectionResult.sources.includes('outcomes')) {
-    fetchPromises.outcomes = fetchAdviceOutcomes(email);
+    fetchPromises.outcomes = cachedFetch(`outcomes:${email}`, () => fetchAdviceOutcomes(email));
   }
 
-  // Always fetch location profile (lightweight, critical for insight enhancement)
-  fetchPromises.locationProfile = fetchLocationProfile(email);
+  // Always fetch location profile (lightweight, cached)
+  fetchPromises.locationProfile = cachedFetch(`location:${email}`, () => fetchLocationProfile(email));
 
   // Wait for all fetches with resilient error handling
   let successfulFetches = 0;

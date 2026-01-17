@@ -140,6 +140,182 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Fetch actual last data sync times from the relevant data tables
+ * Returns a map of connector name -> last sync timestamp
+ */
+async function getActualSyncTimes(supabase: ReturnType<typeof createAdminClient>, userEmail: string): Promise<Record<string, string>> {
+  const syncTimes: Record<string, string> = {};
+
+  try {
+    // Query all providers in parallel for efficiency
+    const [
+      ouraResult,
+      whoopResult,
+      gmailResult,
+      slackResult,
+      outlookResult,
+      teamsResult,
+      dexcomResult,
+      spotifyResult,
+      stravaResult,
+      fitbitResult,
+      notionResult,
+      linearResult,
+      appleHealthResult,
+    ] = await Promise.all([
+      // Oura - from oura_data table
+      supabase
+        .from('oura_data')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Whoop - from forge_training_data
+      supabase
+        .from('forge_training_data')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .eq('provider', 'whoop')
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Gmail - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['gmail', 'google', 'Gmail', 'Google'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Slack - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['slack', 'Slack'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Outlook - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['outlook', 'Outlook'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Teams - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['teams', 'Teams'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Dexcom - from dexcom_data
+      supabase
+        .from('dexcom_data')
+        .select('created_at')
+        .eq('user_email', userEmail)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Spotify - from unified_health_data (or integration_tokens as fallback)
+      supabase
+        .from('unified_health_data')
+        .select('created_at')
+        .eq('email', userEmail)
+        .eq('provider', 'spotify')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Strava - from forge_training_data
+      supabase
+        .from('forge_training_data')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .eq('provider', 'strava')
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Fitbit - from forge_training_data
+      supabase
+        .from('forge_training_data')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .eq('provider', 'fitbit')
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Notion - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['notion', 'Notion'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Linear - from behavioral_patterns
+      supabase
+        .from('behavioral_patterns')
+        .select('sync_date')
+        .eq('email', userEmail)
+        .in('source', ['linear', 'Linear'])
+        .order('sync_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+
+      // Apple Health - from sage_onboarding_data or unified_health_data
+      supabase
+        .from('unified_health_data')
+        .select('created_at')
+        .eq('email', userEmail)
+        .eq('provider', 'apple_health')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    // Map results to connector names
+    if (ouraResult.data?.sync_date) syncTimes['Oura Ring'] = ouraResult.data.sync_date;
+    if (whoopResult.data?.sync_date) syncTimes['Whoop'] = whoopResult.data.sync_date;
+    if (gmailResult.data?.sync_date) syncTimes['Gmail'] = gmailResult.data.sync_date;
+    if (slackResult.data?.sync_date) syncTimes['Slack'] = slackResult.data.sync_date;
+    if (outlookResult.data?.sync_date) syncTimes['Outlook'] = outlookResult.data.sync_date;
+    if (teamsResult.data?.sync_date) syncTimes['Teams'] = teamsResult.data.sync_date;
+    if (dexcomResult.data?.created_at) syncTimes['Dexcom'] = dexcomResult.data.created_at;
+    if (spotifyResult.data?.created_at) syncTimes['Spotify'] = spotifyResult.data.created_at;
+    if (stravaResult.data?.sync_date) syncTimes['Strava'] = stravaResult.data.sync_date;
+    if (fitbitResult.data?.sync_date) syncTimes['Fitbit'] = fitbitResult.data.sync_date;
+    if (notionResult.data?.sync_date) syncTimes['Notion'] = notionResult.data.sync_date;
+    if (linearResult.data?.sync_date) syncTimes['Linear'] = linearResult.data.sync_date;
+    if (appleHealthResult.data?.created_at) syncTimes['Apple Health'] = appleHealthResult.data.created_at;
+
+    console.log(`[Connector Sync Times] Found sync times for ${Object.keys(syncTimes).length} providers`);
+  } catch (e) {
+    console.error('[Connector Sync Times] Error fetching sync times:', e);
+  }
+
+  return syncTimes;
+}
+
+/**
  * GET endpoint to fetch connector status for a user
  * Checks both user_connectors table AND integration_tokens for OAuth connections
  */
@@ -170,14 +346,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Fetch actual sync times from data tables (in parallel with connector processing)
+    const actualSyncTimes = userEmail ? await getActualSyncTimes(supabase, userEmail) : {};
+
     // Build a map of connector status from user_connectors
     // Also track recently updated connectors to skip validation (race condition with OAuth)
     const connectors: Record<string, boolean> = {};
+    const connectorDetails: Record<string, { connected: boolean; lastSync?: string; connectedAt?: string }> = {};
     const recentlyUpdated: Set<string> = new Set();
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
 
     for (const row of connectorData || []) {
       connectors[row.connector_name] = row.is_connected;
+
+      // Use actual sync time from data tables, fall back to connector timestamps
+      const actualSync = actualSyncTimes[row.connector_name];
+
+      // Store detailed info including timestamps
+      connectorDetails[row.connector_name] = {
+        connected: row.is_connected,
+        lastSync: actualSync || row.updated_at || row.connected_at || undefined,
+        connectedAt: row.connected_at || undefined,
+      };
 
       // Skip validation for connectors updated in the last 2 minutes
       // This prevents race conditions when returning from OAuth flow
@@ -287,6 +477,10 @@ export async function GET(request: NextRequest) {
       for (const result of validationResults) {
         if (result.connectorName) {
           connectors[result.connectorName] = result.valid;
+          // Also update connectorDetails
+          if (connectorDetails[result.connectorName]) {
+            connectorDetails[result.connectorName].connected = result.valid;
+          }
         }
       }
     }
@@ -295,6 +489,7 @@ export async function GET(request: NextRequest) {
       success: true,
       user_id,
       connectors,
+      connectorDetails,
       raw: connectorData,
     });
   } catch (error) {

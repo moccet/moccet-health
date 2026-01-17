@@ -16,6 +16,7 @@ import { clinicalCoordinationService } from '@/lib/services/share/clinical-coord
 import { anomalyDetectionService } from '@/lib/services/share/anomaly-detection-service';
 import { contextBuilderService } from '@/lib/services/share/context-builder-service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isValidCronRequest } from '@/lib/utils/cron-auth';
 
 // Lazy initialization to avoid build-time errors
 let supabaseInstance: SupabaseClient | null = null;
@@ -34,22 +35,9 @@ function getSupabase(): SupabaseClient {
   return supabaseInstance;
 }
 
-// Verify cron secret to prevent unauthorized access
-function verifyCronSecret(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    console.warn('CRON_SECRET not configured');
-    return true; // Allow in development
-  }
-
-  return authHeader === `Bearer ${cronSecret}`;
-}
-
 export async function GET(request: NextRequest) {
   // Verify authorization
-  if (!verifyCronSecret(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

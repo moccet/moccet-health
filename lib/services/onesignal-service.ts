@@ -4,6 +4,10 @@
  * Sends push notifications to users' devices via OneSignal REST API.
  * Requires OneSignal App ID and REST API Key in environment variables.
  *
+ * IMPORTANT: For coordinated notifications with rate limiting and deduplication,
+ * use the NotificationCoordinator service instead of calling these functions directly.
+ * Direct calls bypass all rate limiting and deduplication logic.
+ *
  * Required env vars:
  * - ONESIGNAL_APP_ID
  * - ONESIGNAL_REST_API_KEY
@@ -12,6 +16,13 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
+import {
+  NotificationCoordinator,
+  SourceService,
+  NotificationSeverity,
+  SendResult,
+  extractTheme,
+} from './notification-coordinator';
 
 export interface PushNotificationPayload {
   title: string;
@@ -496,6 +507,7 @@ export class OneSignalService {
 
   /**
    * Mark a theme as notified for today
+   * @deprecated Use NotificationCoordinator.send() instead - it handles theme tracking automatically
    */
   static async markTheme(
     email: string,
@@ -504,4 +516,141 @@ export class OneSignalService {
   ): Promise<void> {
     return markThemeNotified(email, theme, notificationType);
   }
+
+  /**
+   * Send a coordinated notification through the NotificationCoordinator
+   * This is the RECOMMENDED way to send notifications - it handles:
+   * - Global rate limiting (6/day max)
+   * - Per-service rate limiting
+   * - Theme deduplication
+   * - Cross-system awareness
+   * - Quiet hours
+   */
+  static async sendCoordinated(
+    email: string,
+    title: string,
+    body: string,
+    options: {
+      sourceService?: SourceService;
+      notificationType?: string;
+      theme?: string;
+      category?: string;
+      severity?: NotificationSeverity;
+      data?: Record<string, any>;
+      relatedEntityType?: string;
+      relatedEntityId?: string;
+      bypassLimits?: boolean;
+    } = {}
+  ): Promise<SendResult> {
+    return NotificationCoordinator.send({
+      userEmail: email,
+      sourceService: options.sourceService || 'insights',
+      notificationType: options.notificationType || 'general',
+      theme: options.theme || extractTheme(title, body),
+      category: options.category,
+      severity: options.severity || 'medium',
+      title,
+      body,
+      data: options.data,
+      relatedEntityType: options.relatedEntityType,
+      relatedEntityId: options.relatedEntityId,
+      bypassLimits: options.bypassLimits,
+    });
+  }
+}
+
+// =============================================================================
+// COORDINATED NOTIFICATION FUNCTIONS
+// =============================================================================
+
+/**
+ * Send a coordinated push notification through the NotificationCoordinator
+ * This is the RECOMMENDED way to send notifications from any service
+ *
+ * @param email - User email to send notification to
+ * @param payload - Notification content
+ * @param options - Coordination options (source, type, theme, severity, etc.)
+ * @returns SendResult with success status and suppression info
+ */
+export async function sendCoordinatedNotification(
+  email: string,
+  payload: PushNotificationPayload,
+  options: {
+    sourceService: SourceService;
+    notificationType: string;
+    theme?: string;
+    category?: string;
+    severity?: NotificationSeverity;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+    bypassLimits?: boolean;
+  }
+): Promise<SendResult> {
+  return NotificationCoordinator.send({
+    userEmail: email,
+    sourceService: options.sourceService,
+    notificationType: options.notificationType,
+    theme: options.theme || extractTheme(payload.title, payload.body),
+    category: options.category,
+    severity: options.severity || 'medium',
+    title: payload.title,
+    body: payload.body,
+    data: payload.data,
+    relatedEntityType: options.relatedEntityType,
+    relatedEntityId: options.relatedEntityId,
+    bypassLimits: options.bypassLimits,
+  });
+}
+
+/**
+ * Send a coordinated insight notification
+ * Routes through the NotificationCoordinator for proper rate limiting
+ */
+export async function sendCoordinatedInsightNotification(
+  email: string,
+  insight: {
+    id: string;
+    title: string;
+    message: string;
+    insight_type: string;
+    severity: string;
+    category?: string;
+    data_quote?: string;
+    recommendation?: string;
+    science_explanation?: string;
+    action_steps?: string[];
+  }
+): Promise<SendResult> {
+  // Map severity to NotificationSeverity type
+  const severityMap: Record<string, NotificationSeverity> = {
+    critical: 'critical',
+    high: 'high',
+    medium: 'medium',
+    low: 'low',
+    info: 'low',
+  };
+
+  return NotificationCoordinator.send({
+    userEmail: email,
+    sourceService: 'insights',
+    notificationType: insight.insight_type,
+    theme: extractTheme(insight.title, insight.message),
+    category: insight.category || insight.insight_type.toUpperCase(),
+    severity: severityMap[insight.severity] || 'medium',
+    title: insight.title,
+    body: insight.message,
+    data: {
+      insight_id: insight.id,
+      insight_type: insight.insight_type,
+      severity: insight.severity,
+      category: insight.category || insight.insight_type,
+      data_quote: insight.data_quote,
+      recommendation: insight.recommendation,
+      science_explanation: insight.science_explanation,
+      action_steps: insight.action_steps,
+    },
+    relatedEntityType: 'insight',
+    relatedEntityId: insight.id,
+    bypassLimits: insight.severity === 'critical',
+  });
 }

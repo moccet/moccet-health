@@ -36,6 +36,8 @@ import {
   ContextAgent,
   NutritionAgent,
   TravelContextAgent,
+  // Post-processing
+  getEnhancedInsights,
 } from './agents';
 
 export class MultiAgentOrchestrator {
@@ -143,7 +145,18 @@ export class MultiAgentOrchestrator {
 
     // Apply positive language optimization
     console.log(`[Orchestrator] Applying language optimization...`);
-    const finalInsights = await optimizeInsightLanguage(prioritizedInsights);
+    const optimizedInsights = await optimizeInsightLanguage(prioritizedInsights);
+
+    // Apply insight enhancement with local recommendations (if location data available)
+    console.log(`[Orchestrator] Applying insight enhancement...`);
+    let finalInsights = optimizedInsights;
+    try {
+      finalInsights = await getEnhancedInsights(context.email, optimizedInsights, this.openai);
+      console.log(`[Orchestrator] Insight enhancement complete`);
+    } catch (enhancementError) {
+      console.error(`[Orchestrator] Insight enhancement failed, using optimized insights:`, enhancementError);
+      // Fall back to optimized insights without enhancement
+    }
 
     console.log(`[Orchestrator] Final insights: ${finalInsights.length}`);
     console.log(`[Orchestrator] Total processing time: ${Date.now() - startTime}ms`);

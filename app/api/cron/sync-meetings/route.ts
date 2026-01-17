@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { syncUpcomingMeetingsForUser } from '@/lib/services/meeting-notetaker/google-meet-bot';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
 
 // Vercel Cron job - runs every hour
 // Configure in vercel.json: { "path": "/api/cron/sync-meetings", "schedule": "0 * * * *" }
 export const maxDuration = 300; // 5 minutes max for cron job
 
-// Verify the request is from Vercel cron or has proper auth
-function isAuthorizedRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  // If CRON_SECRET is set, verify it
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return true;
-  }
-
-  // Check for Vercel's cron header
-  const vercelCron = request.headers.get('x-vercel-cron');
-  return vercelCron === '1';
-}
-
 export async function GET(request: NextRequest) {
   // Verify this is a legitimate cron request
-  if (!isAuthorizedRequest(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -140,10 +126,7 @@ export async function GET(request: NextRequest) {
 
 // Also support POST for manual triggering (with auth)
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -204,6 +204,20 @@ export interface UserContext {
     partialFetches: number;
     totalLatencyMs: number;
   };
+  // NEW: Location profile for local recommendations
+  locationProfile: LocationProfile | null;
+}
+
+// Location profile for insight enhancement
+export interface LocationProfile {
+  email: string;
+  city: string | null;
+  neighborhood: string | null;
+  homeLatitude: number | null;
+  homeLongitude: number | null;
+  preferredRadiusKm: number;
+  inferredActivities: string[];
+  primaryActivity: string | null;
 }
 
 export interface FormattedContext {
@@ -399,6 +413,9 @@ export async function getUserContext(
     fetchPromises.outcomes = fetchAdviceOutcomes(email);
   }
 
+  // Always fetch location profile (lightweight, critical for insight enhancement)
+  fetchPromises.locationProfile = fetchLocationProfile(email);
+
   // Wait for all fetches with resilient error handling
   let successfulFetches = 0;
   let failedFetches = 0;
@@ -496,6 +513,8 @@ export async function getUserContext(
       partialFetches,
       totalLatencyMs: duration,
     },
+    // NEW: Location profile for insight enhancement
+    locationProfile: contextData.locationProfile || null,
   };
 
   console.log(`[User Context] Context fetched in ${duration}ms (${successfulFetches}/${Object.keys(fetchPromises).length} successful)`);
@@ -1157,6 +1176,71 @@ async function fetchAdviceOutcomes(email: string): Promise<AdviceOutcome[]> {
     current_value: row.current_value,
     improvement_pct: row.improvement_pct,
   }));
+}
+
+/**
+ * Fetch user's location profile for insight enhancement
+ */
+async function fetchLocationProfile(email: string): Promise<LocationProfile | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('user_location_profile')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (error || !data) {
+    // Try to infer from device context
+    const { data: deviceData } = await supabase
+      .from('user_device_context')
+      .select('locale, timezone')
+      .eq('email', email)
+      .order('synced_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Try to infer from travel context
+    const { data: travelData } = await supabase
+      .from('user_travel_context')
+      .select('estimated_location')
+      .eq('email', email)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Parse locale if it contains city info (e.g., "London, UK")
+    let city: string | null = null;
+    if (deviceData?.locale && deviceData.locale.includes(',')) {
+      city = deviceData.locale.split(',')[0].trim();
+    } else if (travelData?.estimated_location) {
+      city = travelData.estimated_location.split(',')[0].trim();
+    }
+
+    if (!city) return null;
+
+    return {
+      email,
+      city,
+      neighborhood: null,
+      homeLatitude: null,
+      homeLongitude: null,
+      preferredRadiusKm: 10,
+      inferredActivities: [],
+      primaryActivity: null,
+    };
+  }
+
+  return {
+    email: data.email,
+    city: data.city,
+    neighborhood: data.neighborhood,
+    homeLatitude: data.home_latitude,
+    homeLongitude: data.home_longitude,
+    preferredRadiusKm: data.preferred_radius_km || 10,
+    inferredActivities: data.inferred_activities || [],
+    primaryActivity: data.primary_activity,
+  };
 }
 
 // ============================================================================

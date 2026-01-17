@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendPushNotification } from '@/lib/services/onesignal-service';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
 
 /**
  * Sage Meal Reminder Cron Job
@@ -34,20 +35,8 @@ const REMINDER_MESSAGES = [
   },
 ];
 
-function isVercelCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret) {
-    return authHeader === `Bearer ${cronSecret}`;
-  }
-
-  const vercelCron = request.headers.get('x-vercel-cron');
-  return vercelCron === '1';
-}
-
 export async function GET(request: NextRequest) {
-  if (!isVercelCronRequest(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -176,10 +165,7 @@ export async function GET(request: NextRequest) {
 
 // Manual trigger
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -21,11 +21,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DailyDigestService } from '@/lib/services/daily-digest-service';
 import { MorningBriefingService } from '@/lib/services/morning-briefing-service';
 import { createLogger } from '@/lib/utils/logger';
+import { isValidCronRequest } from '@/lib/utils/cron-auth';
 
 const logger = createLogger('DailyDigestCron');
-
-// Cron secret for verification (set in env)
-const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
 
 /**
  * GET - Run scheduled digest job
@@ -33,18 +31,8 @@ const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret (Vercel sends this in Authorization header)
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = request.headers.get('x-cron-secret');
-
-    // Check for Vercel cron verification or manual secret
-    const isVercelCron = authHeader === `Bearer ${CRON_SECRET}`;
-    const hasSecret = cronSecret === CRON_SECRET;
-
-    // In development, allow without secret
-    const isDev = process.env.NODE_ENV === 'development';
-
-    if (!isVercelCron && !hasSecret && !isDev) {
+    // Verify this is a legitimate cron request
+    if (!isValidCronRequest(request)) {
       logger.warn('Unauthorized cron request');
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -87,7 +75,7 @@ export async function GET(request: NextRequest) {
         },
       },
       // Only include detailed results in dev
-      ...(isDev ? {
+      ...(process.env.NODE_ENV === 'development' ? {
         digestResults: digestResult.results,
         briefingResults: briefingResult.results,
       } : {}),

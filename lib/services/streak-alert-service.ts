@@ -2,9 +2,17 @@
  * Streak Alert Service
  * Monitors user streaks and sends proactive alerts to protect them.
  * Helps users maintain their habits through timely reminders.
+ *
+ * NOTE: This service uses the NotificationCoordinator for sending alerts,
+ * which handles global rate limiting and cross-system deduplication.
  */
 
 import { createClient } from '@supabase/supabase-js';
+import {
+  NotificationCoordinator,
+  urgencyToSeverity,
+  NotificationSeverity,
+} from './notification-coordinator';
 
 // =============================================================================
 // TYPES
@@ -445,10 +453,14 @@ export async function updateAlertPreferences(
 
 /**
  * Process all users for streak alerts (called by cron)
+ *
+ * NOTE: This function now uses the NotificationCoordinator for sending alerts.
+ * The sendNotification callback is deprecated but kept for backward compatibility.
+ * The coordinator handles all rate limiting and cross-system deduplication.
  */
 export async function processAllStreakAlerts(
   supabase: ReturnType<typeof createClient>,
-  sendNotification: (alert: StreakAlert) => Promise<void>
+  sendNotification?: (alert: StreakAlert) => Promise<void>
 ): Promise<{ processed: number; alertsSent: number }> {
   // Get all users with active streaks
   const { data: activeUsers } = await supabase
@@ -468,18 +480,42 @@ export async function processAllStreakAlerts(
 
     for (const alert of alerts) {
       try {
-        await sendNotification(alert);
-        alertsSent++;
-
-        // Record that alert was sent
-        await (supabase.from('streak_alerts_log') as any).insert({
-          id: alert.id,
-          user_email: alert.userEmail,
-          streak_type: alert.streakType,
-          alert_type: alert.alertType,
-          urgency: alert.urgency,
-          sent_at: new Date().toISOString(),
+        // Send through NotificationCoordinator - it handles rate limiting, dedup, etc.
+        const result = await NotificationCoordinator.send({
+          userEmail: alert.userEmail,
+          sourceService: 'streak_alerts',
+          notificationType: alert.alertType,
+          theme: `streak_${alert.streakType}`,
+          category: 'ACTIVITY',
+          severity: urgencyToSeverity(alert.urgency) as NotificationSeverity,
+          title: alert.title,
+          body: alert.message,
+          data: {
+            streak_type: alert.streakType,
+            current_days: alert.currentDays,
+            alert_type: alert.alertType,
+            urgency: alert.urgency,
+          },
+          relatedEntityType: 'streak',
+          relatedEntityId: `${alert.userEmail}_${alert.streakType}`,
+          bypassLimits: alert.urgency === 'critical', // Critical alerts bypass limits
         });
+
+        if (result.success) {
+          alertsSent++;
+
+          // Record that alert was sent (for backward compatibility)
+          await (supabase.from('streak_alerts_log') as any).insert({
+            id: alert.id,
+            user_email: alert.userEmail,
+            streak_type: alert.streakType,
+            alert_type: alert.alertType,
+            urgency: alert.urgency,
+            sent_at: new Date().toISOString(),
+          });
+        } else if (result.suppressed) {
+          console.log(`[StreakAlerts] Alert suppressed for ${email}: ${result.suppressionReason}`);
+        }
       } catch (error) {
         console.error(`[StreakAlerts] Failed to send alert to ${email}:`, error);
       }
@@ -487,6 +523,34 @@ export async function processAllStreakAlerts(
   }
 
   return { processed: userEmails.length, alertsSent };
+}
+
+/**
+ * Send a single streak alert through the coordinator
+ * Use this for ad-hoc alert sending outside of batch processing
+ */
+export async function sendStreakAlert(alert: StreakAlert): Promise<boolean> {
+  const result = await NotificationCoordinator.send({
+    userEmail: alert.userEmail,
+    sourceService: 'streak_alerts',
+    notificationType: alert.alertType,
+    theme: `streak_${alert.streakType}`,
+    category: 'ACTIVITY',
+    severity: urgencyToSeverity(alert.urgency) as NotificationSeverity,
+    title: alert.title,
+    body: alert.message,
+    data: {
+      streak_type: alert.streakType,
+      current_days: alert.currentDays,
+      alert_type: alert.alertType,
+      urgency: alert.urgency,
+    },
+    relatedEntityType: 'streak',
+    relatedEntityId: `${alert.userEmail}_${alert.streakType}`,
+    bypassLimits: alert.urgency === 'critical',
+  });
+
+  return result.success;
 }
 
 // =============================================================================

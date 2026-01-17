@@ -9,86 +9,22 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createHealthAgent, AgentState } from '@/lib/agents/health-agent';
-import { runChefAgent } from '@/lib/agents/moccet-chef';
-import { runTrainerAgent } from '@/lib/agents/moccet-trainer';
 import { UserMemoryService } from '@/lib/services/memory/user-memory';
 import { buildMemoryAwarePrompt } from '@/lib/agents/prompts';
 import { generateSpeech, isElevenLabsConfigured, VoiceId } from '@/lib/services/tts-service';
 import { getUserContext, formatContextForPrompt, getUserSubscriptionTier } from '@/lib/services/user-context-service';
 import { saveMessage } from '@/lib/services/conversation-compactor';
 
-// Agent types
-type AgentType = 'moccet-chef' | 'moccet-trainer' | 'moccet-health' | 'moccet-orchestrator';
+// Agent type - all queries go through the orchestrator
+type AgentType = 'moccet-orchestrator';
 
-interface AgentInfo {
-  type: AgentType;
-  displayName: string;
-  icon: string;
-}
-
-const AGENT_INFO: Record<AgentType, AgentInfo> = {
-  'moccet-chef': {
-    type: 'moccet-chef',
-    displayName: 'Chef',
-    icon: 'chef_hat',
-  },
-  'moccet-trainer': {
-    type: 'moccet-trainer',
-    displayName: 'Trainer',
-    icon: 'fitness_center',
-  },
-  'moccet-health': {
-    type: 'moccet-health',
-    displayName: 'Health',
-    icon: 'heart',
-  },
+const AGENT_INFO = {
   'moccet-orchestrator': {
-    type: 'moccet-orchestrator',
-    displayName: 'Orchestrator',
+    type: 'moccet-orchestrator' as const,
+    displayName: 'Moccet',
     icon: 'brain',
   },
 };
-
-/**
- * Classify which agent should handle the request
- */
-function classifyAgentType(message: string): AgentType {
-  const lowerMessage = message.toLowerCase();
-
-  // Fitness/workout related - route to moccet-trainer
-  const trainerKeywords = [
-    'workout', 'workouts', 'exercise', 'exercises', 'gym', 'training', 'train',
-    'lift', 'lifting', 'weights', 'strength', 'cardio', 'hiit', 'run', 'running',
-    'push up', 'pushup', 'pull up', 'pullup', 'squat', 'deadlift', 'bench press',
-    'muscle', 'muscles', 'fitness', 'fit', 'reps', 'sets', 'personal trainer',
-    'leg day', 'arm day', 'chest day', 'back day', 'shoulder', 'bicep', 'tricep',
-    'abs', 'core', 'glutes', 'quads', 'hamstring', 'stretch', 'stretching',
-    'warm up', 'cool down', 'rest day', 'split', 'routine', 'program',
-    'how many sets', 'how many reps', 'what exercises', 'build muscle',
-    'lose fat', 'get stronger', 'bulk', 'cut', 'tone', 'toning',
-  ];
-
-  if (trainerKeywords.some(kw => lowerMessage.includes(kw))) {
-    return 'moccet-trainer';
-  }
-
-  // Food/nutrition related - route to moccet-chef
-  const chefKeywords = [
-    'recipe', 'recipes', 'cook', 'cooking', 'meal', 'meals', 'food', 'foods',
-    'eat', 'eating', 'breakfast', 'lunch', 'dinner', 'snack', 'nutrition',
-    'nutritious', 'ingredient', 'ingredients', 'dish', 'dishes', 'cuisine',
-    'healthy food', 'what should i eat', 'what can i make', 'what to cook',
-    'hungry', 'dietary', 'diet', 'menu', 'protein', 'carbs', 'vegetables',
-    'fruit', 'calories', 'vitamins', 'iron-rich', 'vitamin d', 'b12',
-  ];
-
-  if (chefKeywords.some(kw => lowerMessage.includes(kw))) {
-    return 'moccet-chef';
-  }
-
-  // Default to orchestrator (which uses health agent for now)
-  return 'moccet-orchestrator';
-}
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -156,17 +92,16 @@ export async function POST(request: NextRequest) {
 
     console.log('[CHAT] Step 2: Parsing request body...');
     const body = await request.json();
-    const { message, threadId: providedThreadId, requestTTS, voiceId, requestedAgent, skipAcknowledgment = true } = body;
+    const { message, threadId: providedThreadId, requestTTS, voiceId, skipAcknowledgment = true } = body;
     console.log('[CHAT] Message:', message?.substring(0, 100));
     console.log('[CHAT] ThreadId:', providedThreadId);
     console.log('[CHAT] RequestTTS:', requestTTS);
     console.log('[CHAT] VoiceId:', voiceId);
-    console.log('[CHAT] RequestedAgent:', requestedAgent);
 
-    // Determine which agent should handle this request
-    const agentType: AgentType = requestedAgent || classifyAgentType(message);
+    // All queries go through the orchestrator
+    const agentType: AgentType = 'moccet-orchestrator';
     const agentInfo = AGENT_INFO[agentType];
-    console.log('[CHAT] Selected agent:', agentType);
+    console.log('[CHAT] Using orchestrator agent (full context and tools)');
 
     // Check if TTS is available
     const elevenLabsConfigured = isElevenLabsConfigured();
@@ -290,19 +225,80 @@ export async function POST(request: NextRequest) {
 
           // Get user's memory context for personalization (parallel with user context)
           console.log('[CHAT] Step 5: Getting memory and user context...');
+
+          // Helper: retry with exponential backoff
+          const retryWithBackoff = async <T>(
+            fn: () => Promise<T>,
+            retries = 2,
+            baseDelayMs = 500
+          ): Promise<T> => {
+            for (let i = 0; i <= retries; i++) {
+              try {
+                return await fn();
+              } catch (err) {
+                if (i === retries) throw err;
+                await new Promise(r => setTimeout(r, baseDelayMs * (i + 1)));
+              }
+            }
+            throw new Error('Retry exhausted');
+          };
+
+          // Timeout wrapper
+          const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
+            return Promise.race([
+              promise,
+              new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs))
+            ]);
+          };
+
+          // Empty fallback for when context loading completely fails
+          const emptyUserContext = {
+            profile: null,
+            insights: [],
+            labResults: [],
+            learnedFacts: [],
+            sentimentAnalysis: null,
+            lifeContext: null,
+            healthAnalysis: null,
+            oura: null,
+            dexcom: null,
+            training: null,
+            nutrition: null,
+            behavioral: {},
+            appleHealth: null,
+            conversationHistory: null,
+            selectionResult: { sources: [], summary: 'Context loading failed - some data may be unavailable' },
+            fetchedAt: new Date().toISOString(),
+            sage: null,
+            forge: null,
+            healthGoals: [],
+            lifeEvents: [],
+            interventions: [],
+            dailyCheckins: [],
+            adviceOutcomes: [],
+            contextHealth: null,
+            fetchStats: { totalSources: 0, successfulFetches: 0, failedFetches: 1, partialFetches: 0, totalLatencyMs: 0 },
+            locationProfile: null,
+          };
+
           const [memoryContext, userContext] = await Promise.all([
             memoryService.getMemoryContext(userEmail).catch((err) => {
               console.error('[CHAT] ERROR getting memory context:', err);
               return { facts: [], style: null, outcomes: [], preferences: [], recentSummary: null, recentConversations: [] };
             }),
-            getUserContext(userEmail, message, {
-              subscriptionTier,
-              threadId: providedThreadId,
-              includeConversation: true,
-              useAISelection: subscriptionTier !== 'free', // Only use AI selection for paid tiers
-            }).catch((err) => {
-              console.error('[CHAT] ERROR getting user context:', err);
-              return null;
+            // Retry context loading with timeout, fallback to empty context
+            withTimeout(
+              retryWithBackoff(() => getUserContext(userEmail, message, {
+                subscriptionTier,
+                threadId: providedThreadId,
+                includeConversation: true,
+                useAISelection: subscriptionTier !== 'free',
+              })),
+              5000, // 5 second timeout
+              emptyUserContext
+            ).catch((err) => {
+              console.error('[CHAT] ERROR getting user context after retries:', err);
+              return emptyUserContext;
             }),
           ]);
           console.log('[CHAT] Memory context loaded, facts count:', memoryContext?.facts?.length || 0);
@@ -334,252 +330,7 @@ export async function POST(request: NextRequest) {
           }
 
           // ================================================================
-          // AGENT ROUTING - Route to appropriate agent based on classification
-          // ================================================================
-
-          if (agentType === 'moccet-chef') {
-            // MOCCET CHEF AGENT - Handles food/nutrition/recipe queries
-            console.log('[CHAT] Routing to Moccet Chef agent...');
-
-            try {
-              const chefResult = await runChefAgent(userEmail, message);
-              console.log('[CHAT] Chef agent completed');
-
-              const finalResponse = chefResult.response;
-
-              // Stream the response in sentence chunks
-              const sentences = splitIntoSentences(finalResponse);
-
-              // Start audio generation in parallel (if TTS is enabled)
-              const audioPromises: Promise<{ audio: string; index: number } | null>[] = [];
-              if (ttsEnabled) {
-                console.log('[CHAT] TTS enabled, generating audio for', sentences.length, 'sentences');
-                for (let i = 0; i < sentences.length; i++) {
-                  audioPromises.push(
-                    generateSpeech(sentences[i], { voiceId: (voiceId as VoiceId) || 'rachel' })
-                      .then(audio => ({ audio, index: i }))
-                      .catch(err => {
-                        console.error(`[CHAT] TTS error for sentence ${i}:`, err);
-                        return null;
-                      })
-                  );
-                }
-              }
-
-              // Send text chunks immediately
-              for (let i = 0; i < sentences.length; i++) {
-                const isLast = i === sentences.length - 1;
-                sendEvent('text_chunk', {
-                  text: sentences[i],
-                  index: i,
-                  isFinal: isLast,
-                });
-                if (!isLast) {
-                  await new Promise(resolve => setTimeout(resolve, 10));
-                }
-              }
-              console.log('[CHAT] Sent', sentences.length, 'text chunks from chef');
-
-              // Send audio chunks
-              if (ttsEnabled && audioPromises.length > 0) {
-                const audioResults = await Promise.all(audioPromises);
-                const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
-                validResults.sort((a, b) => a.index - b.index);
-
-                for (const result of validResults) {
-                  const isLast = result.index === sentences.length - 1;
-                  sendEvent('audio_chunk', {
-                    audio: result.audio,
-                    index: result.index,
-                    isFinal: isLast,
-                  });
-                }
-                console.log('[CHAT] Sent', validResults.length, 'audio chunks from chef');
-              }
-
-              // Send complete event
-              sendEvent('complete', {
-                response: finalResponse,
-                threadId,
-                recipe: chefResult.recipe,
-              });
-
-              // Save conversation to both memory and history
-              const conversationMessages = existingConversation?.messages || [];
-              conversationMessages.push({
-                role: 'user',
-                content: message,
-                timestamp: new Date().toISOString(),
-              });
-              conversationMessages.push({
-                role: 'assistant',
-                content: finalResponse,
-                timestamp: new Date().toISOString(),
-              });
-
-              try {
-                // Save to existing memory system
-                await memoryService.saveConversation(
-                  userEmail,
-                  threadId,
-                  conversationMessages,
-                  extractTopic(message)
-                );
-
-                // Also save to new conversation_history table for compaction
-                await Promise.all([
-                  saveMessage(userEmail, 'user', message, {
-                    threadId,
-                    agent: 'moccet-chef',
-                  }),
-                  saveMessage(userEmail, 'assistant', finalResponse, {
-                    threadId,
-                    agent: 'moccet-chef',
-                  }),
-                ]);
-              } catch (saveError) {
-                console.error('[CHAT] Error saving conversation:', saveError);
-              }
-
-              sendEvent('end', {});
-              controller.close();
-              return;
-
-            } catch (chefError) {
-              console.error('[CHAT] Chef agent error:', chefError);
-              sendEvent('error', {
-                error: chefError instanceof Error ? chefError.message : 'Chef agent failed',
-              });
-              sendEvent('end', {});
-              controller.close();
-              return;
-            }
-          }
-
-          // ================================================================
-          // MOCCET TRAINER AGENT - Handles fitness/workout queries
-          // ================================================================
-
-          if (agentType === 'moccet-trainer') {
-            console.log('[CHAT] Routing to Moccet Trainer agent...');
-
-            try {
-              const trainerResult = await runTrainerAgent(userEmail, message);
-              console.log('[CHAT] Trainer agent completed');
-
-              const finalResponse = trainerResult.response;
-
-              // Stream the response in sentence chunks
-              const sentences = splitIntoSentences(finalResponse);
-
-              // Start audio generation in parallel (if TTS is enabled)
-              const audioPromises: Promise<{ audio: string; index: number } | null>[] = [];
-              if (ttsEnabled) {
-                console.log('[CHAT] TTS enabled, generating audio for', sentences.length, 'sentences');
-                for (let i = 0; i < sentences.length; i++) {
-                  audioPromises.push(
-                    generateSpeech(sentences[i], { voiceId: (voiceId as VoiceId) || 'rachel' })
-                      .then(audio => ({ audio, index: i }))
-                      .catch(err => {
-                        console.error(`[CHAT] TTS error for sentence ${i}:`, err);
-                        return null;
-                      })
-                  );
-                }
-              }
-
-              // Send text chunks immediately
-              for (let i = 0; i < sentences.length; i++) {
-                const isLast = i === sentences.length - 1;
-                sendEvent('text_chunk', {
-                  text: sentences[i],
-                  index: i,
-                  isFinal: isLast,
-                });
-                if (!isLast) {
-                  await new Promise(resolve => setTimeout(resolve, 10));
-                }
-              }
-              console.log('[CHAT] Sent', sentences.length, 'text chunks from trainer');
-
-              // Send audio chunks
-              if (ttsEnabled && audioPromises.length > 0) {
-                const audioResults = await Promise.all(audioPromises);
-                const validResults = audioResults.filter((r): r is { audio: string; index: number } => r !== null);
-                validResults.sort((a, b) => a.index - b.index);
-
-                for (const result of validResults) {
-                  const isLast = result.index === sentences.length - 1;
-                  sendEvent('audio_chunk', {
-                    audio: result.audio,
-                    index: result.index,
-                    isFinal: isLast,
-                  });
-                }
-                console.log('[CHAT] Sent', validResults.length, 'audio chunks from trainer');
-              }
-
-              // Send complete event
-              sendEvent('complete', {
-                response: finalResponse,
-                threadId,
-                workout: trainerResult.workout,
-              });
-
-              // Save conversation to both memory and history
-              const conversationMessages = existingConversation?.messages || [];
-              conversationMessages.push({
-                role: 'user',
-                content: message,
-                timestamp: new Date().toISOString(),
-              });
-              conversationMessages.push({
-                role: 'assistant',
-                content: finalResponse,
-                timestamp: new Date().toISOString(),
-              });
-
-              try {
-                // Save to existing memory system
-                await memoryService.saveConversation(
-                  userEmail,
-                  threadId,
-                  conversationMessages,
-                  extractTopic(message)
-                );
-
-                // Also save to new conversation_history table for compaction
-                await Promise.all([
-                  saveMessage(userEmail, 'user', message, {
-                    threadId,
-                    agent: 'moccet-trainer',
-                  }),
-                  saveMessage(userEmail, 'assistant', finalResponse, {
-                    threadId,
-                    agent: 'moccet-trainer',
-                  }),
-                ]);
-              } catch (saveError) {
-                console.error('[CHAT] Error saving conversation:', saveError);
-              }
-
-              sendEvent('end', {});
-              controller.close();
-              return;
-
-            } catch (trainerError) {
-              console.error('[CHAT] Trainer agent error:', trainerError);
-              sendEvent('error', {
-                error: trainerError instanceof Error ? trainerError.message : 'Trainer agent failed',
-              });
-              sendEvent('end', {});
-              controller.close();
-              return;
-            }
-          }
-
-          // ================================================================
-          // HEALTH AGENT (default / orchestrator) - Handles general health queries
+          // ORCHESTRATOR AGENT - Full context, tools, and reasoning
           // ================================================================
 
           // Create agent

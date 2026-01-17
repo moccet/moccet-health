@@ -2,25 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateWeeklyAnalysis, getUsersWithIntegrations } from '@/lib/services/insight-trigger-service';
 import { createClient } from '@/lib/supabase/server';
 import { sendInsightNotification } from '@/lib/services/onesignal-service';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
 
 // Vercel Cron job - runs every Sunday at 9am UTC
 // Configure in vercel.json: { "path": "/api/cron/weekly-analysis", "schedule": "0 9 * * 0" }
 export const maxDuration = 300; // 5 minutes max for cron job
-
-// Cron jobs are triggered by Vercel, verify the request is from Vercel
-function isVercelCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  // If CRON_SECRET is set, verify it
-  if (cronSecret) {
-    return authHeader === `Bearer ${cronSecret}`;
-  }
-
-  // Check for Vercel's cron header
-  const vercelCron = request.headers.get('x-vercel-cron');
-  return vercelCron === '1';
-}
 
 /**
  * Store a weekly insight and send push notification
@@ -96,7 +82,7 @@ async function storeAndNotifyWeeklyInsight(
 
 export async function GET(request: NextRequest) {
   // Verify this is a legitimate cron request
-  if (!isVercelCronRequest(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -212,10 +198,7 @@ export async function GET(request: NextRequest) {
 // Also support POST for manual triggering (with auth)
 export async function POST(request: NextRequest) {
   // For manual triggers, require CRON_SECRET
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

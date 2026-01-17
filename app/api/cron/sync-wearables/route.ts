@@ -17,26 +17,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getValidatedAccessToken, getAccessToken } from '@/lib/services/token-manager';
 import { syncGoalProgress } from '@/lib/services/goal-progress-sync';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
+import {
+  transformWhoopRecovery,
+  transformOuraSleep,
+  transformOuraReadiness,
+  transformOuraActivity,
+  transformStravaActivity,
+  dualWriteUnifiedRecords,
+  WhoopRecoveryRecord,
+  OuraSleepRecord,
+  OuraReadinessRecord,
+  OuraActivityRecord,
+  StravaActivityRecord,
+  UnifiedHealthRecord,
+} from '@/lib/services/unified-data';
 
 export const maxDuration = 300; // 5 minutes max
-
-const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
-
-/**
- * Verify cron request
- */
-function isValidCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = request.headers.get('x-cron-secret');
-  const vercelCron = request.headers.get('x-vercel-cron');
-
-  return (
-    authHeader === `Bearer ${CRON_SECRET}` ||
-    cronSecret === CRON_SECRET ||
-    vercelCron === '1' ||
-    process.env.NODE_ENV === 'development'
-  );
-}
 
 /**
  * Validate Whoop token
@@ -202,6 +199,29 @@ async function fetchWhoopDataForUser(email: string): Promise<{
       console.error(`[Whoop Sync] DB error for ${email}:`, dbError);
     }
 
+    // Dual-write to unified health data
+    try {
+      const unifiedRecords: UnifiedHealthRecord[] = [];
+      for (const cycle of cycles.slice(0, 14)) { // Last 14 records
+        if (cycle.recovery) {
+          unifiedRecords.push(transformWhoopRecovery(email, {
+            cycle_id: cycle.id,
+            created_at: cycle.start || new Date().toISOString(),
+            score: {
+              recovery_score: cycle.recovery.score,
+              resting_heart_rate: cycle.recovery.resting_heart_rate,
+              hrv_rmssd_milli: cycle.recovery.hrv_rmssd,
+            },
+          } as WhoopRecoveryRecord));
+        }
+      }
+      if (unifiedRecords.length > 0) {
+        await dualWriteUnifiedRecords(unifiedRecords, { skipOnError: true, logPrefix: 'WhoopCronSync' });
+      }
+    } catch (unifiedError) {
+      console.warn(`[Whoop Sync] Unified write error for ${email}:`, unifiedError);
+    }
+
     // Also sync goal progress with fresh data
     try {
       await syncGoalProgress(email);
@@ -330,6 +350,33 @@ async function fetchOuraDataForUser(email: string): Promise<{
         },
         { onConflict: 'user_email,date' }
       );
+    }
+
+    // Dual-write to unified health data
+    try {
+      const unifiedRecords: UnifiedHealthRecord[] = [];
+
+      // Sleep records
+      for (const sleep of sleepData.slice(-14)) {
+        unifiedRecords.push(transformOuraSleep(email, sleep as OuraSleepRecord));
+      }
+
+      // Readiness records
+      for (const readiness of readinessData.slice(-14)) {
+        unifiedRecords.push(transformOuraReadiness(email, readiness as OuraReadinessRecord));
+      }
+
+      // Activity records
+      const activityData = allData.daily_activity as any[] || [];
+      for (const activity of activityData.slice(-14)) {
+        unifiedRecords.push(transformOuraActivity(email, activity as OuraActivityRecord));
+      }
+
+      if (unifiedRecords.length > 0) {
+        await dualWriteUnifiedRecords(unifiedRecords, { skipOnError: true, logPrefix: 'OuraCronSync' });
+      }
+    } catch (unifiedError) {
+      console.warn(`[Oura Sync] Unified write error for ${email}:`, unifiedError);
     }
 
     // Sync goal progress
@@ -1100,8 +1147,7 @@ export async function GET(request: NextRequest) {
  * POST - Manual trigger
  */
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

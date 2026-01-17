@@ -11,6 +11,16 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getAccessToken } from '@/lib/services/token-manager';
 import { sendInsightNotification } from '@/lib/services/onesignal-service';
 import { createLogger } from '@/lib/utils/logger';
+import {
+  transformWhoopRecovery,
+  transformWhoopSleep,
+  transformWhoopWorkout,
+  dualWriteUnifiedRecords,
+  WhoopRecoveryRecord,
+  WhoopSleepRecord,
+  WhoopWorkoutRecord,
+  UnifiedHealthRecord,
+} from './unified-data';
 
 const logger = createLogger('WhoopWebhookService');
 
@@ -113,6 +123,9 @@ export async function processWhoopWebhookEvent(
       return result;
     }
 
+    // Dual-write to unified health data table
+    await writeWhoopToUnified(email, eventData);
+
     // Generate insights based on the data
     const insights = await generateInsights(email, event.type, eventData);
     result.insights_generated = insights.length;
@@ -202,6 +215,60 @@ async function fetchEventData(
   } catch (error) {
     logger.error('Error fetching Whoop data', error);
     return null;
+  }
+}
+
+/**
+ * Write Whoop data to unified health data table (dual-write)
+ */
+async function writeWhoopToUnified(
+  email: string,
+  eventData: Record<string, unknown>
+): Promise<void> {
+  try {
+    const eventType = eventData.type as string;
+    const allRecords = (eventData.all_records as unknown[]) || [];
+    const unifiedRecords: UnifiedHealthRecord[] = [];
+
+    if (eventType === 'recovery.updated' || eventType === 'recovery.created') {
+      for (const record of allRecords.slice(0, 7)) { // Last 7 records
+        unifiedRecords.push(
+          transformWhoopRecovery(email, record as WhoopRecoveryRecord)
+        );
+      }
+    } else if (eventType === 'sleep.updated' || eventType === 'sleep.created') {
+      for (const record of allRecords.slice(0, 7)) {
+        unifiedRecords.push(
+          transformWhoopSleep(email, record as WhoopSleepRecord)
+        );
+      }
+    } else if (eventType === 'workout.updated' || eventType === 'workout.created') {
+      for (const record of allRecords.slice(0, 7)) {
+        unifiedRecords.push(
+          transformWhoopWorkout(email, record as WhoopWorkoutRecord)
+        );
+      }
+    }
+
+    if (unifiedRecords.length > 0) {
+      const result = await dualWriteUnifiedRecords(unifiedRecords, {
+        skipOnError: true,
+        logPrefix: 'WhoopWebhook',
+      });
+
+      logger.debug('Whoop dual-write complete', {
+        email,
+        eventType,
+        written: result.written,
+        failed: result.failed,
+      });
+    }
+  } catch (error) {
+    // Log but don't fail the main webhook processing
+    logger.warn('Whoop dual-write error', {
+      email,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 }
 

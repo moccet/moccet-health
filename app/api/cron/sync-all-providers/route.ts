@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processAllProviders, getUsersWithIntegrations } from '@/lib/services/insight-trigger-service';
 import { createAdminClient } from '@/lib/supabase/server';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
 
 // Vercel Cron job - runs every 2 hours
 // Configure in vercel.json: { "path": "/api/cron/sync-all-providers", "schedule": "0 */2 * * *" }
@@ -9,7 +10,6 @@ export const maxDuration = 300; // 5 minutes max for cron job
 const BASE_URL = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const CRON_SECRET = process.env.CRON_SECRET || '';
 
 /**
  * Fetch fresh data from all provider APIs for a user
@@ -63,24 +63,9 @@ async function refreshUserData(email: string): Promise<Record<string, boolean>> 
   return results;
 }
 
-// Cron jobs are triggered by Vercel, verify the request is from Vercel
-function isVercelCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  // If CRON_SECRET is set, verify it
-  if (cronSecret) {
-    return authHeader === `Bearer ${cronSecret}`;
-  }
-
-  // Check for Vercel's cron header
-  const vercelCron = request.headers.get('x-vercel-cron');
-  return vercelCron === '1';
-}
-
 export async function GET(request: NextRequest) {
   // Verify this is a legitimate cron request
-  if (!isVercelCronRequest(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -176,10 +161,7 @@ export async function GET(request: NextRequest) {
 // Also support POST for manual triggering (with auth)
 export async function POST(request: NextRequest) {
   // For manual triggers, require CRON_SECRET
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

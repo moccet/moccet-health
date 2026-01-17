@@ -24,5 +24,12 @@ export { ContextAgent } from './context-agent';
 export { NutritionAgent } from './nutrition-agent';
 export { TravelContextAgent } from './travel-context-agent';
 
+// Post-processing Agents
+export {
+  enhanceInsights,
+  getEnhancedInsights,
+  hasLocationData,
+} from './insight-enhancer-agent';
+
 // Re-export base agent
 export { BaseAgent } from '../base-agent';

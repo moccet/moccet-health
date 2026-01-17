@@ -2,7 +2,7 @@
  * Morning Briefing Service
  *
  * Generates and sends proactive morning briefings that combine:
- * - Wellness recommendations based on HRV/recovery
+ * - AI-generated personalized affirmations based on goals, health, and context
  * - Aggregated tasks from Slack, Linear, Notion, Gmail
  *
  * @module lib/services/morning-briefing-service
@@ -19,6 +19,9 @@ import {
   NotionBriefingData,
   GmailBriefingData,
 } from './morning-briefing-aggregators';
+import OpenAI from 'openai';
+
+const openai = new OpenAI();
 
 const logger = createLogger('MorningBriefingService');
 
@@ -64,6 +67,87 @@ const DEFAULT_RECOMMENDATIONS = [
   "Connect with your breath. Three slow inhales before you open Slack.",
 ];
 
+// ============================================================================
+// VARIED RECOMMENDATIONS BY HEALTH STATE
+// Each state has multiple options to prevent repetition
+// ============================================================================
+
+const RECOMMENDATIONS_BY_STATE: Record<string, string[]> = {
+  // Low recovery (< 50)
+  low_recovery: [
+    "Your recovery is on the lower side today. Consider a gentle start - a short walk and some deep breaths before diving into tasks.",
+    "Recovery is below optimal. Start with lighter tasks and save demanding work for later when you've built momentum.",
+    "Your body needs some TLC today. A slower morning with extra hydration will help you perform better later.",
+    "Low recovery detected. Focus on one priority this morning instead of multitasking.",
+    "Recovery is rebuilding. Some morning sunlight and a calm breakfast can help reset your energy.",
+    "Take it slow this morning. Your body is still recuperating - schedule your toughest tasks for tomorrow.",
+  ],
+
+  // Low HRV (< 40)
+  low_hrv: [
+    "Your HRV suggests some stress. A 10-minute walk or light stretch before opening Slack could help you focus.",
+    "HRV is lower than usual. Try box breathing (4 counts in, hold, out, hold) before your first meeting.",
+    "Stress signals detected in your HRV. Consider starting with a grounding activity like journaling or tea.",
+    "Your nervous system could use some support. A brief meditation or gentle movement will help you focus.",
+    "HRV indicates your body is working hard. Protect your morning energy with a calm, intentional start.",
+    "Lower HRV today. Avoid coffee overload - opt for green tea and start with creative work first.",
+  ],
+
+  // Poor sleep (< 6 hours)
+  poor_sleep: [
+    "You had a shorter night. Be kind to yourself - tackle your most important task first while energy is fresh.",
+    "Sleep was limited. Front-load your priorities and schedule a brief afternoon rest if possible.",
+    "Short sleep detected. Avoid complex decisions early - start with routine tasks to build momentum.",
+    "You're running on less sleep. Stay hydrated and take a short walk mid-morning to boost alertness.",
+    "Limited rest last night. Focus on your #1 priority and delegate what you can today.",
+    "Sleep deficit noted. A protein-rich breakfast will help sustain your energy through the morning.",
+  ],
+
+  // High recovery (>= 70)
+  high_recovery: [
+    "Great recovery! You're primed for a productive day. Perfect time to tackle challenging tasks.",
+    "Excellent recovery scores! Your body is ready for high performance. Take on that challenging project.",
+    "You're well-recovered. This is a great day for creative work, strategic thinking, or tough conversations.",
+    "Recovery is optimal! Capitalize on this energy with your most demanding priorities.",
+    "Top recovery today. Use this energy wisely - schedule your hardest tasks for this morning.",
+    "Your body bounced back well. Perfect day for that workout you've been planning or a big initiative.",
+  ],
+
+  // High energy level
+  high_energy: [
+    "Your body is well-rested. A brief energizing stretch will have you ready to crush your tasks.",
+    "Energy levels are up! Channel this into focused work - protect your first 2 hours for deep work.",
+    "You're charged up today. Perfect time for that challenging project or creative brainstorm.",
+    "High energy detected. Don't waste it on emails first - dive into meaningful work right away.",
+    "Your vitals show you're ready to perform. Make the most of this with your highest-impact tasks.",
+    "Energy is flowing well. Start with something ambitious while your reserves are full.",
+    "Clear day ahead! Great time for deep work.",
+    "Strong start to your day. Use this momentum for your most important priorities.",
+  ],
+
+  // Low energy level
+  low_energy: [
+    "Take it easy this morning. A gentle walk and some water will help you find your rhythm.",
+    "Energy is lower today. Start with simpler tasks and build momentum gradually.",
+    "Ease into your day. A short walk and healthy breakfast will help lift your energy naturally.",
+    "Lower energy this morning. Be selective with your commitments and protect time for rest later.",
+    "Your body needs a gentler start. Prioritize essentials and postpone what can wait.",
+    "Energy reserves are low. Focus on just 2-3 must-do items today.",
+  ],
+
+  // Moderate/default
+  moderate: [
+    "A quick 5-10 minute walk before work can boost your focus and set a productive tone.",
+    "Balanced start today. Set clear intentions and tackle your priorities in order of importance.",
+    "Steady energy levels. Perfect for a structured, focused morning routine.",
+    "Moderate readiness today. A bit of movement and your usual coffee will get you in the zone.",
+    "Your metrics look stable. A normal productive day ahead - start with what matters most.",
+    "Average energy today. Make it count by eliminating distractions for your first deep work block.",
+    "Good foundation for today. Start with intention and build momentum from there.",
+    "Solid baseline this morning. A brief stretch and your priorities list will set you up well.",
+  ],
+};
+
 /**
  * Get a random studio image path
  */
@@ -78,6 +162,357 @@ function getRandomStudioImage(): string {
 function getRandomDefaultRecommendation(): string {
   const index = Math.floor(Math.random() * DEFAULT_RECOMMENDATIONS.length);
   return DEFAULT_RECOMMENDATIONS[index];
+}
+
+// ============================================================================
+// PERSONALIZED AFFIRMATION SYSTEM
+// ============================================================================
+
+/**
+ * Context for generating personalized affirmations
+ */
+interface AffirmationContext {
+  health: {
+    hrv?: number;
+    recovery?: number;
+    sleepHours?: number;
+    sleepQuality?: string;
+    energyLevel: string;
+    stressLevel?: string;
+  };
+  goals: {
+    active: Array<{ title: string; progress: number; category: string; daysActive?: number }>;
+    recentlyCompleted: Array<{ title: string; completedDaysAgo: number }>;
+  };
+  today: {
+    meetingCount: number;
+    firstMeetingTime?: string;
+    hasClearMorning: boolean;
+    urgentTasks: number;
+    totalTasks: number;
+  };
+  learnedFacts: string[];
+  userName?: string;
+  dayOfWeek: string;
+}
+
+/**
+ * Build the context for generating a personalized affirmation
+ */
+async function buildAffirmationContext(
+  email: string,
+  health: HealthContext | null,
+  platformData: {
+    slack: SlackBriefingData | null;
+    linear: LinearBriefingData | null;
+    notion: NotionBriefingData | null;
+    gmail: GmailBriefingData | null;
+    totals: { actionItems: number; urgentItems: number };
+  }
+): Promise<AffirmationContext> {
+  const supabase = createAdminClient();
+
+  // Get user's name from profile
+  const { data: profile } = await supabase
+    .from('sage_onboarding_data')
+    .select('name')
+    .eq('email', email)
+    .maybeSingle();
+
+  // Get active goals with progress
+  const { data: goalsData } = await supabase
+    .from('user_health_goals')
+    .select('title, category, current_value, target_value, progress_pct, status, created_at')
+    .eq('user_email', email)
+    .in('status', ['active', 'completed'])
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  const activeGoals: AffirmationContext['goals']['active'] = [];
+  const completedGoals: AffirmationContext['goals']['recentlyCompleted'] = [];
+
+  for (const goal of goalsData || []) {
+    const daysActive = Math.floor((Date.now() - new Date(goal.created_at).getTime()) / (1000 * 60 * 60 * 24));
+
+    if (goal.status === 'active') {
+      activeGoals.push({
+        title: goal.title,
+        progress: goal.progress_pct || 0,
+        category: goal.category,
+        daysActive,
+      });
+    } else if (goal.status === 'completed') {
+      completedGoals.push({
+        title: goal.title,
+        completedDaysAgo: daysActive,
+      });
+    }
+  }
+
+  // Get learned facts (preferences, lifestyle, etc.)
+  const { data: factsData } = await supabase
+    .from('user_learned_facts')
+    .select('fact_value, category')
+    .eq('user_email', email)
+    .gte('confidence', 0.6)
+    .in('category', ['preference', 'lifestyle', 'goal', 'schedule'])
+    .order('learned_at', { ascending: false })
+    .limit(5);
+
+  const learnedFacts = (factsData || []).map(f => f.fact_value);
+
+  // Calculate today's overview from platform data
+  const meetingCount = platformData.gmail?.pendingEmails || 0;
+  const urgentTasks = platformData.totals.urgentItems;
+  const totalTasks = platformData.totals.actionItems;
+
+  // Check if morning is clear (before 11am)
+  const hasClearMorning = totalTasks < 3 && urgentTasks === 0;
+
+  const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+  return {
+    health: {
+      hrv: health?.hrv,
+      recovery: health?.recovery,
+      sleepHours: health?.sleepHours,
+      energyLevel: health?.energyLevel || 'moderate',
+      stressLevel: health?.stressLevel,
+    },
+    goals: {
+      active: activeGoals.slice(0, 3),
+      recentlyCompleted: completedGoals.filter(g => g.completedDaysAgo <= 7).slice(0, 2),
+    },
+    today: {
+      meetingCount,
+      hasClearMorning,
+      urgentTasks,
+      totalTasks,
+    },
+    learnedFacts,
+    userName: profile?.name || undefined,
+    dayOfWeek,
+  };
+}
+
+/**
+ * Generate a personalized affirmation using AI
+ */
+async function generateAIAffirmation(context: AffirmationContext): Promise<string | null> {
+  try {
+    // Build the context summary for the prompt
+    const healthSummary = buildHealthSummary(context.health);
+    const goalsSummary = buildGoalsSummary(context.goals);
+    const todaySummary = buildTodaySummary(context.today, context.dayOfWeek);
+    const factsSummary = context.learnedFacts.length > 0
+      ? `Known about them: ${context.learnedFacts.join('; ')}`
+      : '';
+
+    const prompt = `Generate a personalized morning affirmation for ${context.userName || 'the user'}.
+
+CONTEXT:
+${healthSummary}
+${goalsSummary}
+${todaySummary}
+${factsSummary}
+
+Generate a 1-2 sentence morning affirmation that:
+1. References specific data when available (numbers, progress, metrics)
+2. Connects to their goals or recent achievements if relevant
+3. Acknowledges today's context (busy day, clear day, Monday energy, etc.)
+4. Is encouraging and specific - NOT generic fluff
+5. Sounds natural and conversational
+
+BAD examples (too generic):
+- "Have a great day! Remember to stay hydrated!"
+- "You've got this! Make today count!"
+
+GOOD examples:
+- "HRV is strong at 62ms. Your 3 workouts this week are building momentum toward your fitness goal."
+- "Sleep was short but recovery is solid. Light task load today - good day to tackle that creative project."
+- "Monday energy: your weekend recovery was excellent. Channel that into your top priority this morning."
+
+Return ONLY the affirmation text (1-2 sentences max), nothing else.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+
+    const affirmation = response.choices[0]?.message?.content?.trim();
+
+    if (affirmation && affirmation.length > 10 && affirmation.length < 300) {
+      logger.info('Generated AI affirmation', { email: context.userName, length: affirmation.length });
+      return affirmation;
+    }
+
+    return null;
+  } catch (error) {
+    logger.error('Error generating AI affirmation', error);
+    return null;
+  }
+}
+
+/**
+ * Build health summary for the AI prompt
+ */
+function buildHealthSummary(health: AffirmationContext['health']): string {
+  const parts: string[] = [];
+
+  if (health.hrv !== undefined) {
+    parts.push(`HRV: ${health.hrv}ms`);
+  }
+  if (health.recovery !== undefined) {
+    parts.push(`Recovery: ${health.recovery}%`);
+  }
+  if (health.sleepHours !== undefined) {
+    parts.push(`Sleep: ${health.sleepHours.toFixed(1)} hours`);
+  }
+  if (health.energyLevel) {
+    parts.push(`Energy: ${health.energyLevel}`);
+  }
+  if (health.stressLevel) {
+    parts.push(`Stress: ${health.stressLevel}`);
+  }
+
+  return parts.length > 0 ? `Health: ${parts.join(', ')}` : 'Health data: not available';
+}
+
+/**
+ * Build goals summary for the AI prompt
+ */
+function buildGoalsSummary(goals: AffirmationContext['goals']): string {
+  const parts: string[] = [];
+
+  if (goals.active.length > 0) {
+    const goalStrings = goals.active.map(g =>
+      `"${g.title}" (${g.progress}% complete, ${g.daysActive} days active)`
+    );
+    parts.push(`Active goals: ${goalStrings.join('; ')}`);
+  }
+
+  if (goals.recentlyCompleted.length > 0) {
+    const completedStrings = goals.recentlyCompleted.map(g =>
+      `"${g.title}" (completed ${g.completedDaysAgo} days ago)`
+    );
+    parts.push(`Recently completed: ${completedStrings.join('; ')}`);
+  }
+
+  return parts.length > 0 ? parts.join('\n') : 'Goals: none set';
+}
+
+/**
+ * Build today's overview for the AI prompt
+ */
+function buildTodaySummary(today: AffirmationContext['today'], dayOfWeek: string): string {
+  const parts: string[] = [`Day: ${dayOfWeek}`];
+
+  if (today.totalTasks > 0) {
+    parts.push(`Tasks: ${today.totalTasks} items (${today.urgentTasks} urgent)`);
+  } else {
+    parts.push('Tasks: clear schedule');
+  }
+
+  if (today.hasClearMorning) {
+    parts.push('Morning: light workload, good for focused work');
+  }
+
+  return `Today: ${parts.join(', ')}`;
+}
+
+// ============================================================================
+// RECOMMENDATION TRACKING - Prevent repetition
+// ============================================================================
+
+/**
+ * Get recently shown recommendations for a user (last 7 days)
+ */
+async function getRecentRecommendations(email: string): Promise<string[]> {
+  const supabase = createAdminClient();
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  try {
+    // First try to get from the dedicated column
+    const { data, error } = await supabase
+      .from('morning_briefings')
+      .select('wellness_recommendation, wellness_data')
+      .eq('user_email', email)
+      .gte('generated_at', sevenDaysAgo.toISOString())
+      .order('generated_at', { ascending: false })
+      .limit(7);
+
+    if (error || !data) {
+      return [];
+    }
+
+    // Extract recommendations from either the dedicated column or JSONB
+    return data
+      .map(row => row.wellness_recommendation || (row.wellness_data as Record<string, unknown>)?.recommendation as string)
+      .filter((rec): rec is string => !!rec);
+  } catch {
+    // Table might not exist yet
+    return [];
+  }
+}
+
+/**
+ * Pick a recommendation from a pool that hasn't been shown recently
+ */
+function pickUnseenRecommendation(
+  pool: string[],
+  recentRecommendations: string[]
+): string {
+  // Filter out recently shown recommendations
+  const unseen = pool.filter(rec => !recentRecommendations.includes(rec));
+
+  // If all have been shown, just pick randomly from the pool
+  const availablePool = unseen.length > 0 ? unseen : pool;
+
+  // Pick a random one
+  const index = Math.floor(Math.random() * availablePool.length);
+  return availablePool[index];
+}
+
+/**
+ * Determine the health state category based on metrics
+ */
+function determineHealthState(health: HealthContext | null): string {
+  if (!health) {
+    return 'default';
+  }
+
+  const { recovery, hrv, sleepHours, energyLevel } = health;
+
+  // Priority order: critical states first, then positive states
+  if (recovery !== undefined && recovery < 50) {
+    return 'low_recovery';
+  }
+
+  if (hrv !== undefined && hrv < 40) {
+    return 'low_hrv';
+  }
+
+  if (sleepHours !== undefined && sleepHours < 6) {
+    return 'poor_sleep';
+  }
+
+  if (recovery !== undefined && recovery >= 70) {
+    return 'high_recovery';
+  }
+
+  if (energyLevel === 'high') {
+    return 'high_energy';
+  }
+
+  if (energyLevel === 'low') {
+    return 'low_energy';
+  }
+
+  return 'moderate';
 }
 
 // ============================================================================
@@ -118,44 +553,69 @@ export interface BriefingDeliveryResult {
 // ============================================================================
 
 /**
- * Generate a wellness recommendation based on health metrics
+ * Generate a personalized morning affirmation
+ * Uses AI to create context-aware affirmations based on goals, health, and daily context
+ * Falls back to static recommendations if AI fails
  */
-function generateWellnessRecommendation(health: HealthContext | null): string {
+async function generatePersonalizedAffirmation(
+  health: HealthContext | null,
+  email: string,
+  platformData: {
+    slack: SlackBriefingData | null;
+    linear: LinearBriefingData | null;
+    notion: NotionBriefingData | null;
+    gmail: GmailBriefingData | null;
+    totals: { actionItems: number; urgentItems: number };
+  }
+): Promise<string> {
+  // Try AI-generated personalized affirmation first
+  try {
+    const context = await buildAffirmationContext(email, health, platformData);
+    const aiAffirmation = await generateAIAffirmation(context);
+
+    if (aiAffirmation) {
+      logger.info('Using AI-generated affirmation', { email });
+      return aiAffirmation;
+    }
+  } catch (error) {
+    logger.warn('AI affirmation generation failed, using fallback', { error, email });
+  }
+
+  // Fallback to static recommendations with deduplication
+  return generateStaticRecommendation(health, email);
+}
+
+/**
+ * Generate a static recommendation (fallback when AI fails)
+ */
+async function generateStaticRecommendation(
+  health: HealthContext | null,
+  email: string
+): Promise<string> {
+  // Get recently shown recommendations to avoid repetition
+  const recentRecommendations = await getRecentRecommendations(email);
+
   if (!health) {
-    return getRandomDefaultRecommendation();
+    return pickUnseenRecommendation(DEFAULT_RECOMMENDATIONS, recentRecommendations);
   }
 
-  const { recovery, hrv, sleepHours, energyLevel } = health;
+  // Determine health state category
+  const healthState = determineHealthState(health);
 
-  // Low recovery/HRV - suggest easy morning
-  if (recovery !== undefined && recovery < 50) {
-    return "Your recovery is on the lower side today. Consider a gentle start - a short walk and some deep breaths before diving into tasks.";
-  }
+  // Get the appropriate recommendation pool
+  const pool = RECOMMENDATIONS_BY_STATE[healthState] || RECOMMENDATIONS_BY_STATE.moderate;
 
-  if (hrv !== undefined && hrv < 40) {
-    return "Your HRV suggests some stress. A 10-minute walk or light stretch before opening Slack could help you focus.";
-  }
+  // Pick a recommendation that hasn't been shown recently
+  const recommendation = pickUnseenRecommendation(pool, recentRecommendations);
 
-  // Sleep-based recommendations
-  if (sleepHours !== undefined && sleepHours < 6) {
-    return "You had a shorter night. Be kind to yourself - tackle your most important task first while energy is fresh.";
-  }
+  logger.info('Generated static recommendation (fallback)', {
+    email,
+    healthState,
+    poolSize: pool.length,
+    recentCount: recentRecommendations.length,
+  });
 
-  // High recovery - great day ahead
-  if (recovery !== undefined && recovery >= 70) {
-    return "Great recovery! You're primed for a productive day. Perfect time to tackle challenging tasks.";
-  }
-
-  if (energyLevel === 'high') {
-    return "Your body is well-rested. A brief energizing stretch will have you ready to crush your tasks.";
-  }
-
-  if (energyLevel === 'low') {
-    return "Take it easy this morning. A gentle walk and some water will help you find your rhythm.";
-  }
-
-  // Default moderate energy
-  return "A quick 5-10 minute walk before work can boost your focus and set a productive tone.";
+  return recommendation;
 }
 
 // ============================================================================
@@ -248,8 +708,8 @@ class MorningBriefingServiceClass {
       aggregateAllPlatforms(email),
     ]);
 
-    // Generate wellness recommendation
-    const recommendation = generateWellnessRecommendation(healthContext);
+    // Generate personalized AI affirmation (with fallback to static recommendations)
+    const recommendation = await generatePersonalizedAffirmation(healthContext, email, platformData);
 
     const briefing: MorningBriefing = {
       wellness: {
@@ -388,6 +848,7 @@ class MorningBriefingServiceClass {
         .insert({
           user_email: email,
           wellness_data: briefing.wellness,
+          wellness_recommendation: briefing.wellness.recommendation, // Store separately for deduplication
           slack_summary: briefing.slack || {},
           linear_summary: briefing.linear || {},
           notion_summary: briefing.notion || {},

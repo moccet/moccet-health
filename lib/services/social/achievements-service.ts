@@ -3,12 +3,17 @@
  *
  * Handles auto-generated achievements based on user milestones
  *
+ * NOTE: This service uses the NotificationCoordinator for sending notifications,
+ * which handles global rate limiting (max 2 achievement notifications/day).
+ * Achievements are still granted but notifications may be suppressed.
+ *
  * @module lib/services/social/achievements-service
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import { OneSignalService } from '../onesignal-service';
+import { NotificationCoordinator } from '../notification-coordinator';
 
 const logger = createLogger('AchievementsService');
 
@@ -211,13 +216,37 @@ class AchievementsServiceClass {
         return { success: true, achievementId: undefined }; // Already earned
       }
 
-      // Send notification
+      // Send notification through the NotificationCoordinator
+      // This enforces the 2/day limit for achievement notifications
       try {
-        await OneSignalService.sendPushNotification(email, {
+        const notifResult = await NotificationCoordinator.send({
+          userEmail: email,
+          sourceService: 'achievements',
+          notificationType: 'achievement',
+          theme: 'achievement',
+          category: 'SOCIAL',
+          severity: 'high', // Achievements are important but not critical
           title: `${definition.emoji} Achievement Unlocked!`,
           body: `You earned: ${definition.title}`,
-          data: { type: 'achievement_earned', achievementId },
+          data: {
+            type: 'achievement_earned',
+            achievement_id: achievementId,
+            achievement_type: type,
+            title: definition.title,
+            description: definition.description,
+            emoji: definition.emoji,
+          },
+          relatedEntityType: 'achievement',
+          relatedEntityId: achievementId,
         });
+
+        if (notifResult.suppressed) {
+          logger.info('Achievement notification suppressed (rate limited)', {
+            email,
+            achievementId,
+            reason: notifResult.suppressionReason,
+          });
+        }
       } catch (notifError) {
         logger.warn('Failed to send achievement notification', { error: notifError });
       }

@@ -10,19 +10,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PreferenceLearner } from '@/lib/services/preference-learner';
 import { createLogger } from '@/lib/utils/logger';
+import { isValidCronRequest } from '@/lib/utils/cron-auth';
 
 const logger = createLogger('DecayPreferencesCron');
 
-const CRON_SECRET = process.env.CRON_SECRET || 'moccet-cron-secret';
-
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = request.headers.get('x-cron-secret');
-    const isDev = process.env.NODE_ENV === 'development';
-
-    if (authHeader !== `Bearer ${CRON_SECRET}` && cronSecret !== CRON_SECRET && !isDev) {
+    // Verify cron request
+    if (!isValidCronRequest(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

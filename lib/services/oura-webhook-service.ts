@@ -10,6 +10,15 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendInsightNotification } from './onesignal-service';
 import { createLogger } from '@/lib/utils/logger';
+import {
+  transformOuraSleep,
+  transformOuraReadiness,
+  transformOuraActivity,
+  dualWriteUnifiedRecords,
+  OuraSleepRecord,
+  OuraReadinessRecord,
+  OuraActivityRecord,
+} from './unified-data';
 
 const logger = createLogger('OuraWebhookService');
 
@@ -82,6 +91,9 @@ export async function processOuraWebhookEvent(
       logger.warn('No fresh data available', { email, data_type: payload.data_type });
       return { insights_generated: 0, notification_sent: false, insights: [] };
     }
+
+    // Dual-write to unified health data table
+    await writeOuraToUnified(email, freshData, payload.data_type);
 
     // Generate insights based on data type
     switch (payload.data_type) {
@@ -181,6 +193,71 @@ async function fetchOuraDataForEvent(
       return { workout: data.workout_data, raw: data };
     default:
       return data;
+  }
+}
+
+/**
+ * Write Oura data to unified health data table (dual-write)
+ */
+async function writeOuraToUnified(
+  email: string,
+  freshData: Record<string, unknown>,
+  dataType: OuraDataType
+): Promise<void> {
+  try {
+    const unifiedRecords = [];
+
+    switch (dataType) {
+      case 'daily_sleep':
+      case 'sleep': {
+        const sleepData = (freshData.sleep as OuraSleepRecord[]) || [];
+        for (const record of sleepData.slice(-7)) { // Last 7 records
+          unifiedRecords.push(transformOuraSleep(email, record));
+        }
+        break;
+      }
+
+      case 'daily_readiness': {
+        const readinessData = (freshData.readiness as OuraReadinessRecord[]) || [];
+        for (const record of readinessData.slice(-7)) {
+          unifiedRecords.push(transformOuraReadiness(email, record));
+        }
+        break;
+      }
+
+      case 'daily_activity': {
+        const activityData = (freshData.activity as OuraActivityRecord[]) || [];
+        for (const record of activityData.slice(-7)) {
+          unifiedRecords.push(transformOuraActivity(email, record));
+        }
+        break;
+      }
+
+      default:
+        logger.debug('No unified transform for data type', { dataType });
+        return;
+    }
+
+    if (unifiedRecords.length > 0) {
+      const result = await dualWriteUnifiedRecords(unifiedRecords, {
+        skipOnError: true,
+        logPrefix: 'OuraWebhook',
+      });
+
+      logger.debug('Oura dual-write complete', {
+        email,
+        dataType,
+        written: result.written,
+        failed: result.failed,
+      });
+    }
+  } catch (error) {
+    // Log but don't fail the main webhook processing
+    logger.warn('Oura dual-write error', {
+      email,
+      dataType,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 }
 

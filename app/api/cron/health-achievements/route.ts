@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendPushNotification, markThemeNotified } from '@/lib/services/onesignal-service';
+import { isValidCronRequest, requireCronSecret } from '@/lib/utils/cron-auth';
 
 /**
  * Health Achievements Cron Job
@@ -50,18 +51,6 @@ const HEALTH_ACHIEVEMENTS = {
   meal_streak_30: { title: 'Meal Master', emoji: '👑', description: 'Logged meals for a full month' },
 };
 
-function isVercelCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret) {
-    return authHeader === `Bearer ${cronSecret}`;
-  }
-
-  const vercelCron = request.headers.get('x-vercel-cron');
-  return vercelCron === '1';
-}
-
 interface UserHealthData {
   email: string;
   daily_steps: number | null;
@@ -70,7 +59,7 @@ interface UserHealthData {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isVercelCronRequest(request)) {
+  if (!isValidCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -470,10 +459,7 @@ async function generateFeedForFriends(
 
 // Manual trigger
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!requireCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

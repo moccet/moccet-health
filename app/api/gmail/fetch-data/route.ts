@@ -14,6 +14,10 @@ import {
   analyzeGmailDeepContent,
   storeDeepContentAnalysis,
 } from '@/lib/services/deep-content-analyzer';
+import {
+  transformGmailPatterns,
+  dualWriteUnifiedRecords,
+} from '@/lib/services/unified-data';
 
 // Validation function to test if Gmail token is valid
 async function validateGmailToken(token: string): Promise<boolean> {
@@ -1083,6 +1087,31 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('[Gmail Fetch] Stored new pattern in database');
       }
+    }
+
+    // =====================================================
+    // DUAL-WRITE TO UNIFIED HEALTH DATA TABLE
+    // =====================================================
+    try {
+      const unifiedRecord = transformGmailPatterns(email, {
+        sync_date: new Date().toISOString(),
+        patterns: {
+          metrics: { stressScore: metrics.stressScore * 10 }, // Convert 0-10 to 0-100
+          meetingDensity: patterns.meetingDensity,
+          emailVolume: {
+            total: emailData.length,
+            afterHoursPercentage: patterns.emailVolume.afterHoursPercentage,
+          },
+          focusTime: patterns.focusTime,
+        },
+      });
+      const dualWriteResult = await dualWriteUnifiedRecords([unifiedRecord], { logPrefix: 'Gmail' });
+      if (dualWriteResult.success) {
+        console.log(`[Gmail Fetch] Dual-write: ${dualWriteResult.written} unified records written`);
+      }
+    } catch (dualWriteError) {
+      // Don't fail the request if dual-write fails
+      console.error('[Gmail Fetch] Dual-write error (non-fatal):', dualWriteError);
     }
 
     console.log(`[Gmail Fetch] Successfully completed for ${email}`);

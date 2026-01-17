@@ -3,6 +3,10 @@ import { getAccessToken } from '@/lib/services/token-manager';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SlackPatterns } from '@/lib/services/ecosystem-fetcher';
 import { analyzeSlackForLifeContext, mergeAndStoreLifeContext } from '@/lib/services/content-sentiment-analyzer';
+import {
+  transformTeamsPatterns,
+  dualWriteUnifiedRecords,
+} from '@/lib/services/unified-data';
 
 // Reuse SlackPatterns type since Teams chat patterns are structurally identical
 type TeamsPatterns = SlackPatterns;
@@ -480,6 +484,30 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('[Teams Fetch] Stored new pattern in database');
       }
+    }
+
+    // =====================================================
+    // DUAL-WRITE TO UNIFIED HEALTH DATA TABLE
+    // =====================================================
+    try {
+      const unifiedRecord = transformTeamsPatterns(email, {
+        sync_date: new Date().toISOString(),
+        patterns: {
+          metrics: { stressScore: metrics.stressScore * 10 }, // Convert 0-10 to 0-100
+          messageVolume: {
+            total: messageData.length,
+            afterHoursPercentage: patterns.messageVolume.afterHoursPercentage,
+          },
+          collaborationIntensity: patterns.collaborationIntensity,
+        },
+      });
+      const dualWriteResult = await dualWriteUnifiedRecords([unifiedRecord], { logPrefix: 'Teams' });
+      if (dualWriteResult.success) {
+        console.log(`[Teams Fetch] Dual-write: ${dualWriteResult.written} unified records written`);
+      }
+    } catch (dualWriteError) {
+      // Don't fail the request if dual-write fails
+      console.error('[Teams Fetch] Dual-write error (non-fatal):', dualWriteError);
     }
 
     console.log(`[Teams Fetch] Successfully completed for ${email}`);

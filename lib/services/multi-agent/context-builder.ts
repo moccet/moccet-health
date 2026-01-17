@@ -5,9 +5,11 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { DataSource, UserContext, UserPreferences, LearnedPattern, PatternType, DeepContentContext, InsightHistoryContext } from './types';
 import { getCombinedDeepAnalysis } from '@/lib/services/deep-content-analyzer';
+import { getUnifiedHealthDaily, UnifiedHealthDaily } from '@/lib/services/unified-data';
 
 /**
  * Build UserContext by fetching all available data for a user
+ * Tries unified health data first, falls back to legacy queries if not available
  */
 export async function buildUserContext(email: string, userId?: string): Promise<UserContext> {
   const supabase = createAdminClient();
@@ -17,9 +19,71 @@ export async function buildUserContext(email: string, userId?: string): Promise<
     email,
     userId,
     availableDataSources: [],
+    dataSource: 'legacy' as 'unified' | 'legacy', // Track which data source was used
   };
 
-  // Fetch Whoop data
+  // =====================================================
+  // TRY UNIFIED HEALTH DATA FIRST (single query approach)
+  // =====================================================
+  let usedUnifiedData = false;
+  try {
+    const unifiedHealth = await buildUnifiedHealthContext(email);
+
+    if (unifiedHealth && unifiedHealth.providers.length > 0) {
+      console.log(`[ContextBuilder] Using unified health data from ${unifiedHealth.providers.length} providers`);
+      usedUnifiedData = true;
+      context.dataSource = 'unified';
+
+      // Map unified health data to expected context format
+      if (unifiedHealth.whoop) {
+        context.whoop = {
+          avgRecoveryScore: unifiedHealth.whoop.avgRecoveryScore,
+          avgHRV: unifiedHealth.whoop.avgHRV,
+          avgRestingHR: unifiedHealth.whoop.avgRestingHR,
+          recoveryTrend: unifiedHealth.whoop.trend,
+        };
+        availableDataSources.push('whoop');
+      }
+
+      if (unifiedHealth.oura) {
+        context.oura = {
+          avgSleepScore: unifiedHealth.oura.avgSleepScore,
+          avgReadinessScore: unifiedHealth.oura.avgReadinessScore,
+          avgHRV: unifiedHealth.whoop?.avgHRV, // Use recovery HRV if available
+        };
+        availableDataSources.push('oura');
+      }
+
+      if (unifiedHealth.glucose) {
+        context.dexcom = {
+          avgGlucose: unifiedHealth.glucose.avgGlucose,
+          timeInRange: unifiedHealth.glucose.timeInRange,
+        };
+        availableDataSources.push('dexcom');
+      }
+
+      // Add behavioral data if available
+      if (unifiedHealth.stress) {
+        context.gmail = {
+          metrics: {
+            stressScore: unifiedHealth.stress.avgStressScore,
+          },
+          meetingDensity: {
+            avgMeetingsPerDay: unifiedHealth.stress.avgMeetingsPerDay,
+          },
+        };
+        availableDataSources.push('gmail');
+      }
+    }
+  } catch (e) {
+    console.log('[ContextBuilder] Unified health data not available, using legacy queries:', e);
+  }
+
+  // =====================================================
+  // FALLBACK TO LEGACY QUERIES IF UNIFIED NOT AVAILABLE
+  // =====================================================
+  if (!usedUnifiedData) {
+    // Fetch Whoop data
   try {
     const { data: whoopData } = await supabase
       .from('forge_training_data')
@@ -161,6 +225,12 @@ export async function buildUserContext(email: string, userId?: string): Promise<
   } catch (e) {
     console.log('[ContextBuilder] No Dexcom data:', e);
   }
+  } // End of legacy health data fetching
+
+  // =====================================================
+  // FETCH NON-HEALTH CONTEXT (always from legacy sources)
+  // These are not in unified tables yet
+  // =====================================================
 
   // Fetch Blood biomarkers
   try {
@@ -565,4 +635,311 @@ async function fetchInsightHistory(
   }
 
   return { recent, categoryCounts };
+}
+
+/**
+ * Build health context from unified tables (single query)
+ * This is a more efficient alternative to the N+1 queries above
+ * Returns null if unified data is not yet populated
+ */
+export async function buildUnifiedHealthContext(email: string): Promise<{
+  whoop?: {
+    avgRecoveryScore?: number;
+    avgHRV?: number;
+    avgRestingHR?: number;
+    trend?: string;
+  };
+  oura?: {
+    avgSleepScore?: number;
+    avgReadinessScore?: number;
+    avgSleepHours?: number;
+  };
+  activity?: {
+    avgSteps?: number;
+    avgActiveCalories?: number;
+    workoutsPerWeek?: number;
+  };
+  glucose?: {
+    avgGlucose?: number;
+    timeInRange?: number;
+  };
+  stress?: {
+    avgStressScore?: number;
+    avgMeetingsPerDay?: number;
+  };
+  overallStatus?: string;
+  providers: string[];
+} | null> {
+  try {
+    // Fetch last 30 days of unified daily data (single query)
+    const dailyData = await getUnifiedHealthDaily(email, { days: 30 });
+
+    if (!dailyData || dailyData.length === 0) {
+      console.log('[ContextBuilder] No unified health data available yet');
+      return null;
+    }
+
+    // Aggregate the data
+    const allProviders = new Set<string>();
+    let totalRecovery = 0, recoveryCount = 0;
+    let totalHRV = 0, hrvCount = 0;
+    let totalRestingHR = 0, restingHRCount = 0;
+    let totalSleepScore = 0, sleepScoreCount = 0;
+    let totalReadinessScore = 0, readinessCount = 0;
+    let totalSleepHours = 0, sleepHoursCount = 0;
+    let totalSteps = 0, stepsCount = 0;
+    let totalActiveCalories = 0, caloriesCount = 0;
+    let totalWorkouts = 0;
+    let totalGlucose = 0, glucoseCount = 0;
+    let totalTimeInRange = 0, tirCount = 0;
+    let totalStressScore = 0, stressCount = 0;
+    let totalMeetings = 0, meetingsCount = 0;
+
+    for (const day of dailyData) {
+      // Track providers
+      if (day.providers_reporting) {
+        day.providers_reporting.forEach((p: string) => allProviders.add(p));
+      }
+
+      // Recovery metrics (Whoop)
+      if (day.recovery_score != null) {
+        totalRecovery += day.recovery_score;
+        recoveryCount++;
+      }
+      if (day.hrv_avg != null) {
+        totalHRV += day.hrv_avg;
+        hrvCount++;
+      }
+      if (day.resting_hr != null) {
+        totalRestingHR += day.resting_hr;
+        restingHRCount++;
+      }
+
+      // Sleep metrics (Oura/Whoop/Apple Health)
+      if (day.sleep_score != null) {
+        totalSleepScore += day.sleep_score;
+        sleepScoreCount++;
+      }
+      if (day.readiness_score != null) {
+        totalReadinessScore += day.readiness_score;
+        readinessCount++;
+      }
+      if (day.sleep_hours != null) {
+        totalSleepHours += day.sleep_hours;
+        sleepHoursCount++;
+      }
+
+      // Activity metrics
+      if (day.steps != null) {
+        totalSteps += day.steps;
+        stepsCount++;
+      }
+      if (day.active_calories != null) {
+        totalActiveCalories += day.active_calories;
+        caloriesCount++;
+      }
+      if (day.workout_count != null) {
+        totalWorkouts += day.workout_count;
+      }
+
+      // Glucose metrics
+      if (day.glucose_avg != null) {
+        totalGlucose += day.glucose_avg;
+        glucoseCount++;
+      }
+      if (day.time_in_range_percent != null) {
+        totalTimeInRange += day.time_in_range_percent;
+        tirCount++;
+      }
+
+      // Stress/behavioral metrics
+      if (day.stress_score != null) {
+        totalStressScore += day.stress_score;
+        stressCount++;
+      }
+      if (day.meeting_count != null) {
+        totalMeetings += day.meeting_count;
+        meetingsCount++;
+      }
+    }
+
+    const providers = Array.from(allProviders);
+    const latestStatus = dailyData[0]?.overall_status;
+
+    // Build the context object
+    const healthContext: {
+      whoop?: {
+        avgRecoveryScore?: number;
+        avgHRV?: number;
+        avgRestingHR?: number;
+        trend?: string;
+      };
+      oura?: {
+        avgSleepScore?: number;
+        avgReadinessScore?: number;
+        avgSleepHours?: number;
+      };
+      activity?: {
+        avgSteps?: number;
+        avgActiveCalories?: number;
+        workoutsPerWeek?: number;
+      };
+      glucose?: {
+        avgGlucose?: number;
+        timeInRange?: number;
+      };
+      stress?: {
+        avgStressScore?: number;
+        avgMeetingsPerDay?: number;
+      };
+      overallStatus?: string;
+      providers: string[];
+    } = {
+      providers,
+      overallStatus: latestStatus,
+    };
+
+    // Add Whoop/recovery context if available
+    if (recoveryCount > 0 || hrvCount > 0) {
+      healthContext.whoop = {
+        avgRecoveryScore: recoveryCount > 0 ? Math.round(totalRecovery / recoveryCount) : undefined,
+        avgHRV: hrvCount > 0 ? Math.round(totalHRV / hrvCount) : undefined,
+        avgRestingHR: restingHRCount > 0 ? Math.round(totalRestingHR / restingHRCount) : undefined,
+      };
+    }
+
+    // Add Oura/sleep context if available
+    if (sleepScoreCount > 0 || sleepHoursCount > 0) {
+      healthContext.oura = {
+        avgSleepScore: sleepScoreCount > 0 ? Math.round(totalSleepScore / sleepScoreCount) : undefined,
+        avgReadinessScore: readinessCount > 0 ? Math.round(totalReadinessScore / readinessCount) : undefined,
+        avgSleepHours: sleepHoursCount > 0 ? Number((totalSleepHours / sleepHoursCount).toFixed(1)) : undefined,
+      };
+    }
+
+    // Add activity context if available
+    if (stepsCount > 0 || caloriesCount > 0) {
+      healthContext.activity = {
+        avgSteps: stepsCount > 0 ? Math.round(totalSteps / stepsCount) : undefined,
+        avgActiveCalories: caloriesCount > 0 ? Math.round(totalActiveCalories / caloriesCount) : undefined,
+        workoutsPerWeek: dailyData.length >= 7 ? Math.round((totalWorkouts / dailyData.length) * 7) : undefined,
+      };
+    }
+
+    // Add glucose context if available
+    if (glucoseCount > 0) {
+      healthContext.glucose = {
+        avgGlucose: Math.round(totalGlucose / glucoseCount),
+        timeInRange: tirCount > 0 ? Math.round(totalTimeInRange / tirCount) : undefined,
+      };
+    }
+
+    // Add stress context if available
+    if (stressCount > 0 || meetingsCount > 0) {
+      healthContext.stress = {
+        avgStressScore: stressCount > 0 ? Math.round(totalStressScore / stressCount) : undefined,
+        avgMeetingsPerDay: meetingsCount > 0 ? Number((totalMeetings / meetingsCount).toFixed(1)) : undefined,
+      };
+    }
+
+    console.log(`[ContextBuilder] Built unified health context from ${dailyData.length} days, ${providers.length} providers`);
+    return healthContext;
+  } catch (error) {
+    console.error('[ContextBuilder] Error building unified health context:', error);
+    return null;
+  }
+}
+
+/**
+ * Build UserContext using unified tables (optimized, 1-2 queries instead of N+1)
+ * Falls back to legacy queries if unified data is not available
+ */
+export async function buildUserContextOptimized(email: string, userId?: string): Promise<UserContext> {
+  // Try unified health context first
+  const unifiedHealth = await buildUnifiedHealthContext(email);
+
+  // If we have unified data, use it to bootstrap the context
+  if (unifiedHealth && unifiedHealth.providers.length > 0) {
+    const context: UserContext = {
+      email,
+      userId,
+      availableDataSources: [],
+    };
+
+    const availableDataSources: DataSource[] = [];
+
+    // Map unified health data to expected context format
+    if (unifiedHealth.whoop) {
+      context.whoop = {
+        avgRecoveryScore: unifiedHealth.whoop.avgRecoveryScore,
+        avgHRV: unifiedHealth.whoop.avgHRV,
+        avgRestingHR: unifiedHealth.whoop.avgRestingHR,
+        recoveryTrend: unifiedHealth.whoop.trend,
+      };
+      availableDataSources.push('whoop');
+    }
+
+    if (unifiedHealth.oura) {
+      context.oura = {
+        avgSleepScore: unifiedHealth.oura.avgSleepScore,
+        avgReadinessScore: unifiedHealth.oura.avgReadinessScore,
+        avgHRV: unifiedHealth.whoop?.avgHRV, // Use recovery HRV if available
+      };
+      availableDataSources.push('oura');
+    }
+
+    if (unifiedHealth.glucose) {
+      context.dexcom = {
+        avgGlucose: unifiedHealth.glucose.avgGlucose,
+        timeInRange: unifiedHealth.glucose.timeInRange,
+      };
+      availableDataSources.push('dexcom');
+    }
+
+    // Add behavioral data if available
+    if (unifiedHealth.stress) {
+      // Store in gmail context for compatibility
+      context.gmail = {
+        metrics: {
+          stressScore: unifiedHealth.stress.avgStressScore,
+        },
+        meetingDensity: {
+          avgMeetingsPerDay: unifiedHealth.stress.avgMeetingsPerDay,
+        },
+      };
+      availableDataSources.push('gmail');
+    }
+
+    context.availableDataSources = availableDataSources;
+
+    // Still fetch non-health data from legacy sources
+    const supabase = createAdminClient();
+
+    // Fetch user preferences (not in unified tables)
+    try {
+      const userPreferences = await fetchUserPreferences(supabase, email);
+      if (userPreferences) {
+        context.userPreferences = userPreferences;
+      }
+    } catch (e) {
+      console.log('[ContextBuilder] No user preferences:', e);
+    }
+
+    // Fetch insight history (not in unified tables)
+    try {
+      const insightHistory = await fetchInsightHistory(supabase, email);
+      if (insightHistory) {
+        context.insightHistory = insightHistory;
+      }
+    } catch (e) {
+      console.log('[ContextBuilder] No insight history:', e);
+    }
+
+    console.log(`[ContextBuilder] Built optimized context with ${availableDataSources.length} unified data sources`);
+    return context;
+  }
+
+  // Fall back to legacy context building
+  console.log('[ContextBuilder] Unified data not available, falling back to legacy context building');
+  return buildUserContext(email, userId);
 }

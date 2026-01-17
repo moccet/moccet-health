@@ -4,6 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/server';
 import { runHealthAnalysis } from '@/lib/services/health-pattern-analyzer';
 import { circuitBreakers, CircuitOpenError } from '@/lib/utils/circuit-breaker';
+import {
+  transformDexcomGlucose,
+  dualWriteUnifiedRecords,
+} from '@/lib/services/unified-data';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -112,6 +116,39 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Dexcom Sync] Successfully synced and stored data for ${email}`);
+
+    // =====================================================
+    // DUAL-WRITE TO UNIFIED HEALTH DATA TABLE
+    // =====================================================
+    try {
+      // Calculate glucose metrics for unified record
+      const egvs = (allData.egvs || []) as Array<{ value: number; systemTime?: string; displayTime?: string; trend?: string }>;
+      if (egvs.length > 0) {
+        const glucoseValues = egvs.map(e => e.value).filter(v => v > 0);
+        const avgGlucose = glucoseValues.length > 0
+          ? glucoseValues.reduce((a, b) => a + b, 0) / glucoseValues.length
+          : 0;
+        const inRangeCount = glucoseValues.filter(v => v >= 70 && v <= 180).length;
+        const timeInRange = glucoseValues.length > 0
+          ? (inRangeCount / glucoseValues.length) * 100
+          : 0;
+
+        const unifiedRecord = transformDexcomGlucose(email, {
+          sync_date: new Date().toISOString(),
+          avg_glucose: Math.round(avgGlucose),
+          time_in_range: Math.round(timeInRange),
+          glucose_readings: egvs.length,
+          raw_data: allData,
+        });
+        const dualWriteResult = await dualWriteUnifiedRecords([unifiedRecord], { logPrefix: 'Dexcom' });
+        if (dualWriteResult.success) {
+          console.log(`[Dexcom Sync] Dual-write: ${dualWriteResult.written} unified records written`);
+        }
+      }
+    } catch (dualWriteError) {
+      // Don't fail the request if dual-write fails
+      console.error('[Dexcom Sync] Dual-write error (non-fatal):', dualWriteError);
+    }
 
     // =====================================================
     // TRIGGER HEALTH PATTERN ANALYSIS (Pro/Max feature)

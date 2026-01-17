@@ -82,9 +82,10 @@ export interface DigestDeliveryResult {
  * Analyze ecosystem data and determine health context + recommended wisdom category
  * Exported for use by morning briefing service
  */
-export async function analyzeHealthContext(email: string): Promise<HealthContext | null> {
+export async function analyzeHealthContext(email: string, options?: { useUnified?: boolean }): Promise<HealthContext | null> {
   try {
-    const ecosystemData = await fetchAllEcosystemData(email);
+    // Use unified data by default for efficiency (single query)
+    const ecosystemData = await fetchAllEcosystemData(email, 'sage', { useUnified: options?.useUnified ?? true });
     const dataPoints: string[] = [];
     let recovery: number | undefined;
     let strain: number | undefined;

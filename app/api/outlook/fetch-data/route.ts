@@ -8,6 +8,10 @@ import {
   analyzeEmailsForLifeContext,
   mergeAndStoreLifeContext,
 } from '@/lib/services/content-sentiment-analyzer';
+import {
+  transformOutlookPatterns,
+  dualWriteUnifiedRecords,
+} from '@/lib/services/unified-data';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -688,6 +692,31 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('[Outlook Fetch] Stored new pattern in database');
       }
+    }
+
+    // =====================================================
+    // DUAL-WRITE TO UNIFIED HEALTH DATA TABLE
+    // =====================================================
+    try {
+      const unifiedRecord = transformOutlookPatterns(email, {
+        sync_date: new Date().toISOString(),
+        patterns: {
+          metrics: { stressScore: metrics.stressScore * 10 }, // Convert 0-10 to 0-100
+          meetingDensity: patterns.meetingDensity,
+          emailVolume: {
+            total: emailData.length,
+            afterHoursPercentage: patterns.emailVolume.afterHoursPercentage,
+          },
+          focusTime: patterns.focusTime,
+        },
+      });
+      const dualWriteResult = await dualWriteUnifiedRecords([unifiedRecord], { logPrefix: 'Outlook' });
+      if (dualWriteResult.success) {
+        console.log(`[Outlook Fetch] Dual-write: ${dualWriteResult.written} unified records written`);
+      }
+    } catch (dualWriteError) {
+      // Don't fail the request if dual-write fails
+      console.error('[Outlook Fetch] Dual-write error (non-fatal):', dualWriteError);
     }
 
     console.log(`[Outlook Fetch] Successfully completed for ${email}`);

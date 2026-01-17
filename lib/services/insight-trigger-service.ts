@@ -18,6 +18,7 @@ import {
   fetchSpotifyData,
   fetchAppleHealthData,
   fetchDeepContentData,
+  fetchAllEcosystemData,
   OuraData,
   DexcomData,
   WhoopData,
@@ -27,16 +28,23 @@ import {
   DeepContentData,
 } from './ecosystem-fetcher';
 import {
+  getUnifiedHealthData,
+  groupByProvider,
+  UnifiedHealthRecord,
+} from './unified-data';
+import {
   sendInsightNotification,
   canSendNotification,
   wasThemeNotifiedToday,
   markThemeNotified,
   getInsightTheme,
 } from './onesignal-service';
-import { getUserContext, UserContext, getUserSubscriptionTier } from './user-context-service';
+import { getUserContext, UserContext, getUserSubscriptionTier, LocationProfile } from './user-context-service';
 import { getCompactedHistory, formatHistoryForPrompt } from './conversation-compactor';
 import { formatSentimentForPrompt } from './content-sentiment-analyzer';
 import { createLogger } from '@/lib/utils/logger';
+import { inferUserActivities, ActivityInference } from './activity-inference-service';
+import { searchLocalRecommendations, formatRecommendationsForInsight } from './local-recommendations-service';
 
 const openai = new OpenAI();
 const logger = createLogger('InsightTriggerService');
@@ -1654,7 +1662,18 @@ export async function generateWeeklyAnalysis(email: string): Promise<GeneratedIn
   }
 
   logger.info('Generated weekly analysis insights', { email, insightCount: insights.length });
-  return insights;
+
+  // Enhance insights with local recommendations if location data available
+  let locationProfile = null;
+  try {
+    const userContext = await getUserContext(email, 'weekly analysis', { subscriptionTier: 'pro' });
+    locationProfile = userContext?.locationProfile || null;
+  } catch (error) {
+    logger.error('Error fetching location profile for weekly analysis', error);
+  }
+
+  const enhancedInsights = await enhanceGeneratedInsights(email, insights, locationProfile);
+  return enhancedInsights;
 }
 
 // ============================================================================
@@ -3086,12 +3105,12 @@ async function storeInsight(email: string, insight: GeneratedInsight): Promise<s
 /**
  * Process all providers for a user and generate insights
  */
-export async function processAllProviders(email: string): Promise<{
+export async function processAllProviders(email: string, options?: { useUnified?: boolean }): Promise<{
   insights_generated: number;
   insights: GeneratedInsight[];
   errors: string[];
 }> {
-  logger.info('Processing all providers', { email });
+  logger.info('Processing all providers', { email, useUnified: options?.useUnified });
 
   const allInsights: GeneratedInsight[] = [];
   const errors: string[] = [];
@@ -3099,6 +3118,83 @@ export async function processAllProviders(email: string): Promise<{
   // Get user's subscription tier first (determines insight depth)
   const subscriptionTier = await getUserSubscriptionTier(email);
   logger.info('User subscription tier determined', { email, tier: subscriptionTier });
+
+  // =====================================================
+  // OPTION 1: USE UNIFIED DATA (single efficient query)
+  // =====================================================
+  if (options?.useUnified) {
+    logger.info('Using unified data for insight generation', { email });
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    try {
+      const [ecosystemData, deepContentResult, userContext] = await Promise.all([
+        fetchAllEcosystemData(email, 'sage', { useUnified: true, startDate: sevenDaysAgo }),
+        fetchDeepContentData(email).catch((e) => {
+          logger.warn('Failed to fetch deep content', { email, error: e.message });
+          return { slack: null, gmail: null, available: false };
+        }),
+        getUserContext(email, 'generate health insights', {
+          subscriptionTier: 'max',
+          includeConversation: true,
+          useAISelection: false,
+        }).catch((e) => {
+          logger.error('Error fetching user context', e, { email });
+          return null;
+        }),
+      ]);
+
+      logger.info('Unified data fetched', { email, successCount: ecosystemData.successCount });
+
+      // Generate insights from available data
+      if (ecosystemData.oura?.available && ecosystemData.oura.data) {
+        const ouraInsights = await generateSleepInsights(email, ecosystemData.oura.data as OuraData);
+        allInsights.push(...ouraInsights);
+      }
+
+      if (ecosystemData.dexcom?.available && ecosystemData.dexcom.data) {
+        const dexcomInsights = await generateGlucoseInsights(email, ecosystemData.dexcom.data as DexcomData);
+        allInsights.push(...dexcomInsights);
+      }
+
+      if (ecosystemData.whoop?.available && ecosystemData.whoop.data) {
+        const whoopInsights = await generateRecoveryInsights(email, ecosystemData.whoop.data as WhoopData);
+        allInsights.push(...whoopInsights);
+      }
+
+      if (ecosystemData.gmail?.available && ecosystemData.gmail.data) {
+        const gmailInsights = await generateWorkPatternInsights(email, ecosystemData.gmail.data as GmailPatterns);
+        allInsights.push(...gmailInsights);
+      }
+
+      if (ecosystemData.slack?.available && ecosystemData.slack.data) {
+        const slackInsights = await generateSlackInsights(email, ecosystemData.slack.data as SlackPatterns);
+        allInsights.push(...slackInsights);
+      }
+
+      if (ecosystemData.spotify?.available && ecosystemData.spotify.data) {
+        const spotifyInsights = await generateMoodInsights(email, ecosystemData.spotify.data as SpotifyData);
+        allInsights.push(...spotifyInsights);
+      }
+
+      logger.info('Unified insight generation complete', { email, insightCount: allInsights.length });
+
+      return {
+        insights_generated: allInsights.length,
+        insights: allInsights,
+        errors,
+      };
+    } catch (error) {
+      logger.error('Error processing unified data', { email, error });
+      errors.push(`Unified data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Fall through to legacy approach
+      logger.info('Falling back to legacy fetch approach', { email });
+    }
+  }
+
+  // =====================================================
+  // OPTION 2: LEGACY APPROACH (N parallel queries)
+  // =====================================================
 
   // Fetch data from all providers AND user context in parallel
   const [ouraResult, dexcomResult, whoopResult, gmailResult, slackResult, spotifyResult, appleHealthResult, deepContentResult, userContext] = await Promise.all([
@@ -3234,9 +3330,12 @@ export async function processAllProviders(email: string): Promise<{
   const aiInsights = await generateAIInsights(email, ecosystemData, userContext, subscriptionTier);
   allInsights.push(...aiInsights);
 
+  // NEW: Enhance insights with local recommendations (if location data available)
+  const enhancedInsights = await enhanceGeneratedInsights(email, allInsights, userContext?.locationProfile || null);
+
   // Store all generated insights
   let stored_count = 0;
-  for (const insight of allInsights) {
+  for (const insight of enhancedInsights) {
     const id = await storeInsight(email, insight);
     if (id) stored_count++;
   }
@@ -3244,12 +3343,13 @@ export async function processAllProviders(email: string): Promise<{
   logger.info('Insights generated and stored', {
     email,
     generated: allInsights.length,
+    enhanced: enhancedInsights.filter(i => (i.context_data as Record<string, unknown>)?.enhanced).length,
     stored: stored_count,
   });
 
   return {
     insights_generated: stored_count,
-    insights: allInsights,
+    insights: enhancedInsights,
     errors,
   };
 }
@@ -3355,4 +3455,140 @@ export async function getUsersWithIntegrations(): Promise<string[]> {
   // Get unique emails
   const emails = [...new Set(data?.map((row) => row.user_email).filter(Boolean) as string[])];
   return emails;
+}
+
+// ============================================================================
+// INSIGHT ENHANCEMENT WITH LOCAL RECOMMENDATIONS
+// ============================================================================
+
+// Keywords that indicate an action-oriented insight eligible for enhancement
+const ACTION_KEYWORDS = ['join', 'try', 'visit', 'find', 'explore', 'attend', 'sign up', 'participate', 'consider', 'look for'];
+const ACTIVITY_KEYWORDS = ['running', 'run', 'cycling', 'bike', 'swimming', 'swim', 'gym', 'workout', 'yoga', 'pilates', 'crossfit', 'boxing', 'climbing', 'tennis', 'club', 'group', 'class', 'fitness'];
+
+/**
+ * Enhance generated insights with local recommendations
+ */
+async function enhanceGeneratedInsights(
+  email: string,
+  insights: GeneratedInsight[],
+  locationProfile: LocationProfile | null
+): Promise<GeneratedInsight[]> {
+  // Skip if no location data
+  if (!locationProfile?.city) {
+    return insights;
+  }
+
+  logger.info('Enhancing insights with local recommendations', { email, insightCount: insights.length });
+
+  // Get activity inference for user
+  let activityInference: ActivityInference | null = null;
+  try {
+    activityInference = await inferUserActivities(email);
+  } catch (error) {
+    logger.error('Error inferring activities', error);
+  }
+
+  const enhancedInsights: GeneratedInsight[] = [];
+
+  for (const insight of insights) {
+    // Check if insight is eligible for enhancement
+    const textToCheck = `${insight.title} ${insight.message} ${insight.actionable_recommendation}`.toLowerCase();
+
+    const hasActionKeyword = ACTION_KEYWORDS.some(kw => textToCheck.includes(kw));
+    const hasActivityKeyword = ACTIVITY_KEYWORDS.some(kw => textToCheck.includes(kw));
+
+    if (!hasActionKeyword || !hasActivityKeyword) {
+      enhancedInsights.push(insight);
+      continue;
+    }
+
+    // Detect activity from insight
+    let detectedActivity = 'fitness';
+    for (const kw of ACTIVITY_KEYWORDS) {
+      if (textToCheck.includes(kw)) {
+        detectedActivity = normalizeActivityKeyword(kw);
+        break;
+      }
+    }
+
+    // If user has primary activity, prefer that
+    if (activityInference?.primaryActivity && detectedActivity === 'fitness') {
+      detectedActivity = activityInference.primaryActivity;
+    }
+
+    try {
+      // Get local recommendations
+      const searchResult = await searchLocalRecommendations({
+        activity: detectedActivity,
+        city: locationProfile.city,
+        neighborhood: locationProfile.neighborhood || undefined,
+        latitude: locationProfile.homeLatitude || undefined,
+        longitude: locationProfile.homeLongitude || undefined,
+        radiusKm: locationProfile.preferredRadiusKm,
+        limit: 3,
+      });
+
+      if (searchResult.recommendations.length > 0) {
+        // Enhance the actionable recommendation with specific venues
+        const venueList = formatRecommendationsForInsight(searchResult.recommendations, detectedActivity);
+        const enhancedRecommendation = `${insight.actionable_recommendation}\n\nNearby options:\n${venueList.map(v => `- ${v}`).join('\n')}`;
+
+        // Add activity context to message if available
+        let enhancedMessage = insight.message;
+        if (activityInference?.primaryActivity && activityInference.activityStats.length > 0) {
+          const stats = activityInference.activityStats.find(s => s.activity === activityInference.primaryActivity);
+          if (stats && stats.count >= 5) {
+            const activityContext = `Based on your ${stats.activity.replace(/_/g, ' ')} patterns (${stats.count} sessions), `;
+            if (!enhancedMessage.toLowerCase().startsWith('based on')) {
+              enhancedMessage = activityContext + enhancedMessage.charAt(0).toLowerCase() + enhancedMessage.slice(1);
+            }
+          }
+        }
+
+        enhancedInsights.push({
+          ...insight,
+          message: enhancedMessage,
+          actionable_recommendation: enhancedRecommendation,
+          context_data: {
+            ...insight.context_data,
+            enhanced: true,
+            detected_activity: detectedActivity,
+            local_venues: searchResult.recommendations.map(r => ({
+              name: r.name,
+              distance_km: r.distanceKm,
+              rating: r.rating,
+            })),
+          },
+        });
+      } else {
+        enhancedInsights.push(insight);
+      }
+    } catch (error) {
+      logger.error('Error enhancing insight', error);
+      enhancedInsights.push(insight);
+    }
+  }
+
+  const enhancedCount = enhancedInsights.filter(i => (i.context_data as Record<string, unknown>)?.enhanced).length;
+  logger.info('Insight enhancement complete', { email, enhancedCount, total: insights.length });
+
+  return enhancedInsights;
+}
+
+/**
+ * Normalize activity keyword to activity name
+ */
+function normalizeActivityKeyword(keyword: string): string {
+  const keywordMap: Record<string, string> = {
+    run: 'running', running: 'running',
+    bike: 'cycling', cycling: 'cycling',
+    swim: 'swimming', swimming: 'swimming',
+    gym: 'strength_training', workout: 'strength_training',
+    yoga: 'yoga', pilates: 'pilates',
+    crossfit: 'crossfit', boxing: 'boxing',
+    climbing: 'rock_climbing', tennis: 'tennis',
+    club: 'fitness', group: 'fitness',
+    class: 'fitness', fitness: 'fitness',
+  };
+  return keywordMap[keyword.toLowerCase()] || 'fitness';
 }

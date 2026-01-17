@@ -236,6 +236,9 @@ export interface UserContext {
 
   // Available data sources
   availableDataSources: DataSource[];
+
+  // Data source type (unified or legacy)
+  dataSource?: 'unified' | 'legacy';
 }
 
 // ============================================================

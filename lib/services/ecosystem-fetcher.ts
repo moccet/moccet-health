@@ -24,6 +24,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/utils/logger';
 import { cacheService, CACHE_KEYS } from './cache-service';
+import { getUnifiedHealthData, groupByProvider, UnifiedHealthRecord } from './unified-data';
 
 const logger = createLogger('EcosystemFetcher');
 
@@ -2295,6 +2296,448 @@ export async function fetchEcosystemData(
 }
 
 /**
+ * Fetch ecosystem data from unified_health_data table (single query)
+ * This is a more efficient alternative to fetching from multiple legacy tables
+ */
+async function fetchFromUnifiedTable(
+  email: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<EcosystemFetchResult> {
+  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+  const end = endDate || new Date();
+
+  logger.info('Fetching from unified health data table', { email, startDate: start, endDate: end });
+
+  try {
+    const unifiedRecords = await getUnifiedHealthData(email, { startDate: start, endDate: end });
+
+    if (!unifiedRecords || unifiedRecords.length === 0) {
+      logger.info('No unified health data found, returning empty result', { email });
+      return createEmptyResult();
+    }
+
+    // Group records by provider
+    const groupedData = groupByProvider(unifiedRecords);
+    const providers = Object.keys(groupedData);
+
+    logger.info('Unified data grouped by provider', { email, providers, totalRecords: unifiedRecords.length });
+
+    // Transform unified data back to EcosystemFetchResult format
+    const result: EcosystemFetchResult = {
+      bloodBiomarkers: createEmptySource('bloodBiomarkers'),
+      oura: transformUnifiedToOura(groupedData['oura'] || []),
+      dexcom: transformUnifiedToDexcom(groupedData['dexcom'] || []),
+      vital: createEmptySource('vital'),
+      gmail: transformUnifiedToGmail(groupedData['gmail'] || []),
+      slack: transformUnifiedToSlack(groupedData['slack'] || []),
+      outlook: transformUnifiedToGmail(groupedData['outlook'] || []), // Same structure as Gmail
+      teams: transformUnifiedToSlack(groupedData['teams'] || []), // Same structure as Slack
+      whoop: transformUnifiedToWhoop(groupedData['whoop'] || []),
+      spotify: transformUnifiedToSpotify(groupedData['spotify'] || []),
+      notion: transformUnifiedToNotion(groupedData['notion'] || []),
+      linear: transformUnifiedToLinear(groupedData['linear'] || []),
+      appleHealth: transformUnifiedToAppleHealth(groupedData['apple_health'] || []),
+      fetchTimestamp: new Date().toISOString(),
+      successCount: providers.length,
+      totalSources: 13,
+    };
+
+    logger.info('Unified fetch completed', {
+      email,
+      successCount: result.successCount,
+      providers,
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('Error fetching unified data', { email, error });
+    return createEmptyResult();
+  }
+}
+
+/**
+ * Create an empty EcosystemFetchResult
+ */
+function createEmptyResult(): EcosystemFetchResult {
+  return {
+    bloodBiomarkers: createEmptySource('bloodBiomarkers'),
+    oura: createEmptySource('oura'),
+    dexcom: createEmptySource('dexcom'),
+    vital: createEmptySource('vital'),
+    gmail: createEmptySource('gmail'),
+    slack: createEmptySource('slack'),
+    outlook: createEmptySource('outlook'),
+    teams: createEmptySource('teams'),
+    whoop: createEmptySource('whoop'),
+    spotify: createEmptySource('spotify'),
+    notion: createEmptySource('notion'),
+    linear: createEmptySource('linear'),
+    appleHealth: createEmptySource('appleHealth'),
+    fetchTimestamp: new Date().toISOString(),
+    successCount: 0,
+    totalSources: 13,
+  };
+}
+
+/**
+ * Create an empty data source
+ */
+function createEmptySource(source: string): EcosystemDataSource {
+  return {
+    source,
+    available: false,
+    data: null,
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Transform unified Oura records to OuraData format
+ */
+function transformUnifiedToOura(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('oura');
+
+  const avgSleepHours = records
+    .filter(r => r.sleep_hours != null)
+    .reduce((sum, r, _, arr) => sum + (r.sleep_hours || 0) / arr.length, 0);
+
+  const avgReadinessScore = records
+    .filter(r => r.readiness_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.readiness_score || 0) / arr.length, 0);
+
+  const avgHRV = records
+    .filter(r => r.hrv_avg != null)
+    .reduce((sum, r, _, arr) => sum + (r.hrv_avg || 0) / arr.length, 0);
+
+  return {
+    source: 'oura',
+    available: true,
+    data: {
+      avgSleepHours,
+      avgReadinessScore,
+      avgHRV,
+      sleepQuality: avgReadinessScore >= 80 ? 'excellent' : avgReadinessScore >= 60 ? 'good' : avgReadinessScore >= 40 ? 'fair' : 'poor',
+      hrvTrend: 'stable',
+      activityLevel: 'moderate',
+      insights: [],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Whoop records to WhoopData format
+ */
+function transformUnifiedToWhoop(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('whoop');
+
+  const avgRecoveryScore = records
+    .filter(r => r.recovery_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.recovery_score || 0) / arr.length, 0);
+
+  const avgStrainScore = records
+    .filter(r => r.strain_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.strain_score || 0) / arr.length, 0);
+
+  const avgHRV = records
+    .filter(r => r.hrv_avg != null)
+    .reduce((sum, r, _, arr) => sum + (r.hrv_avg || 0) / arr.length, 0);
+
+  const avgRestingHR = records
+    .filter(r => r.resting_hr != null)
+    .reduce((sum, r, _, arr) => sum + (r.resting_hr || 0) / arr.length, 0);
+
+  return {
+    source: 'whoop',
+    available: true,
+    data: {
+      avgRecoveryScore,
+      avgStrainScore,
+      avgHRV,
+      avgRestingHR,
+      recoveryTrend: 'stable',
+      strainTrend: 'moderate',
+      sleepPerformance: 80,
+      cyclesAnalyzed: records.length,
+      insights: [],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Dexcom records to DexcomData format
+ */
+function transformUnifiedToDexcom(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('dexcom');
+
+  const avgGlucose = records
+    .filter(r => r.glucose_avg != null)
+    .reduce((sum, r, _, arr) => sum + (r.glucose_avg || 0) / arr.length, 0);
+
+  const timeInRange = records
+    .filter(r => r.time_in_range != null)
+    .reduce((sum, r, _, arr) => sum + (r.time_in_range || 0) / arr.length, 0);
+
+  return {
+    source: 'dexcom',
+    available: true,
+    data: {
+      avgGlucose: Math.round(avgGlucose),
+      avgFastingGlucose: null,
+      glucoseVariability: 0,
+      timeInRange,
+      spikeTimes: [],
+      spikeEvents: [],
+      trends: [],
+      insights: [],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Gmail/Outlook records to GmailPatterns format
+ */
+function transformUnifiedToGmail(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('gmail');
+
+  const avgStressScore = records
+    .filter(r => r.stress_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.stress_score || 0) / arr.length, 0);
+
+  const avgMeetings = records
+    .filter(r => r.meeting_count != null)
+    .reduce((sum, r, _, arr) => sum + (r.meeting_count || 0) / arr.length, 0);
+
+  return {
+    source: 'gmail',
+    available: true,
+    data: {
+      meetingDensity: {
+        peakHours: [],
+        avgMeetingsPerDay: avgMeetings,
+        backToBackPercentage: 0,
+      },
+      emailVolume: {
+        avgPerDay: 0,
+        peakHours: [],
+        afterHoursPercentage: 0,
+      },
+      workHours: {
+        start: '09:00',
+        end: '17:00',
+        weekendActivity: false,
+      },
+      optimalMealWindows: [],
+      stressIndicators: {
+        highEmailVolume: avgStressScore > 60,
+        frequentAfterHoursWork: false,
+        shortMeetingBreaks: false,
+      },
+      insights: [],
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Slack/Teams records to SlackPatterns format
+ */
+function transformUnifiedToSlack(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('slack');
+
+  const avgStressScore = records
+    .filter(r => r.stress_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.stress_score || 0) / arr.length, 0);
+
+  return {
+    source: 'slack',
+    available: true,
+    data: {
+      messageVolume: {
+        avgPerDay: 0,
+        peakHours: [],
+        afterHoursPercentage: 0,
+      },
+      workHours: {
+        start: '09:00',
+        end: '17:00',
+        weekendActivity: false,
+      },
+      collaborationIntensity: avgStressScore > 60 ? 'high' : avgStressScore > 30 ? 'moderate' : 'low',
+      stressIndicators: {
+        constantAvailability: false,
+        lateNightMessages: false,
+        noBreakPeriods: false,
+      },
+      insights: [],
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Spotify records
+ */
+function transformUnifiedToSpotify(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('spotify');
+
+  const avgMoodScore = records
+    .filter(r => r.mood_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.mood_score || 0) / arr.length, 0);
+
+  return {
+    source: 'spotify',
+    available: true,
+    data: {
+      recentTracks: [],
+      avgEnergy: 0.5,
+      avgValence: avgMoodScore / 100, // Convert 0-100 to 0-1
+      avgTempo: 120,
+      avgDanceability: 0.5,
+      inferredMood: avgMoodScore >= 70 ? 'happy' : avgMoodScore >= 40 ? 'calm' : 'melancholy',
+      moodConfidence: 0.5,
+      listeningHours: [],
+      avgTracksPerDay: 0,
+      topGenres: [],
+      moodTrend: 'stable',
+      lateNightListening: false,
+      emotionalVolatility: 'low',
+      insights: [],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Notion records
+ */
+function transformUnifiedToNotion(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('notion');
+
+  const avgProductivityScore = records
+    .filter(r => r.productivity_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.productivity_score || 0) / arr.length, 0);
+
+  return {
+    source: 'notion',
+    available: true,
+    data: {
+      workspaceName: '',
+      totalDatabases: 0,
+      totalTasks: 0,
+      openTasks: 0,
+      overdueTasks: 0,
+      tasksDueSoon: 0,
+      tasksByStatus: {},
+      tasksByPriority: {},
+      recentActivity: [],
+      insights: [`Average productivity score: ${Math.round(avgProductivityScore)}`],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Linear records
+ */
+function transformUnifiedToLinear(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('linear');
+
+  const avgProductivityScore = records
+    .filter(r => r.productivity_score != null)
+    .reduce((sum, r, _, arr) => sum + (r.productivity_score || 0) / arr.length, 0);
+
+  return {
+    source: 'linear',
+    available: true,
+    data: {
+      organizationName: '',
+      totalIssues: 0,
+      openIssues: 0,
+      urgentIssues: 0,
+      highPriorityIssues: 0,
+      overdueIssues: 0,
+      issuesDueSoon: 0,
+      issuesByState: {},
+      issuesByPriority: {},
+      projectSummary: [],
+      recentActivity: [],
+      insights: [`Average productivity score: ${Math.round(avgProductivityScore)}`],
+      rawData: records,
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
+ * Transform unified Apple Health records
+ */
+function transformUnifiedToAppleHealth(records: UnifiedHealthRecord[]): EcosystemDataSource {
+  if (records.length === 0) return createEmptySource('appleHealth');
+
+  const avgSteps = records
+    .filter(r => r.steps != null)
+    .reduce((sum, r, _, arr) => sum + (r.steps || 0) / arr.length, 0);
+
+  const avgActiveCalories = records
+    .filter(r => r.active_calories != null)
+    .reduce((sum, r, _, arr) => sum + (r.active_calories || 0) / arr.length, 0);
+
+  return {
+    source: 'appleHealth',
+    available: true,
+    data: {
+      dailySteps: Math.round(avgSteps),
+      activeCalories: Math.round(avgActiveCalories),
+      restingHeartRate: 0,
+      hrv: 0,
+      sleepHours: 0,
+      deepSleepMinutes: 0,
+      remSleepMinutes: 0,
+      strainScore: 0,
+      lastSynced: new Date().toISOString(),
+    },
+    insights: [],
+    fetchedAt: new Date().toISOString(),
+    recordCount: records.length,
+    daysOfData: records.length,
+  };
+}
+
+/**
  * Fetch all available ecosystem data for a user
  * Runs all fetches in parallel for optimal performance
  * Uses L1+L2 caching to avoid redundant API calls
@@ -2306,8 +2749,16 @@ export async function fetchAllEcosystemData(
     startDate?: Date;
     endDate?: Date;
     forceRefresh?: boolean;
+    useUnified?: boolean; // Use unified_health_data table instead of legacy tables
   }
 ): Promise<EcosystemFetchResult> {
+  // =====================================================
+  // USE UNIFIED DATA IF REQUESTED
+  // =====================================================
+  if (options?.useUnified) {
+    return fetchFromUnifiedTable(email, options.startDate, options.endDate);
+  }
+
   const cacheKey = `ecosystem:${email}:${planType}`;
 
   // Check cache first (unless forceRefresh is true)

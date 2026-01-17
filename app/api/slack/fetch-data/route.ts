@@ -12,6 +12,10 @@ import {
   analyzeSlackDeepContent,
   storeDeepContentAnalysis,
 } from '@/lib/services/deep-content-analyzer';
+import {
+  transformSlackPatterns,
+  dualWriteUnifiedRecords,
+} from '@/lib/services/unified-data';
 
 // Helper function to look up user's unique code from onboarding data
 async function getUserCode(email: string): Promise<string | null> {
@@ -974,6 +978,31 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('[Slack Fetch] Stored new pattern in database');
       }
+    }
+
+    // =====================================================
+    // DUAL-WRITE TO UNIFIED HEALTH DATA TABLE
+    // =====================================================
+    try {
+      const unifiedRecord = transformSlackPatterns(email, {
+        sync_date: new Date().toISOString(),
+        patterns: {
+          metrics: { stressScore: metrics.stressScore * 10 }, // Convert 0-10 to 0-100
+          messageVolume: {
+            total: messageData.length,
+            afterHoursPercentage: patterns.messageVolume.afterHoursPercentage,
+          },
+          focusMetrics: patterns.focusMetrics,
+          collaborationIntensity: patterns.collaborationIntensity,
+        },
+      });
+      const dualWriteResult = await dualWriteUnifiedRecords([unifiedRecord], { logPrefix: 'Slack' });
+      if (dualWriteResult.success) {
+        console.log(`[Slack Fetch] Dual-write: ${dualWriteResult.written} unified records written`);
+      }
+    } catch (dualWriteError) {
+      // Don't fail the request if dual-write fails
+      console.error('[Slack Fetch] Dual-write error (non-fatal):', dualWriteError);
     }
 
     console.log(`[Slack Fetch] Successfully completed for ${email}`);

@@ -18,6 +18,11 @@ import {
 import { sendInsightNotification } from './onesignal-service';
 import { getUserContext, UserContext } from './user-context-service';
 import { getCombinedDeepAnalysis, DeepContentAnalysis } from './deep-content-analyzer';
+import {
+  NotificationCoordinator,
+  extractTheme,
+  NotificationSeverity,
+} from './notification-coordinator';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -1143,7 +1148,8 @@ Example tone: "Your body got ${context.sleepHours || 7} hours of rest and recove
 // ============================================================================
 
 /**
- * Store and send a proactive notification
+ * Store and send a proactive notification through the NotificationCoordinator
+ * The coordinator handles rate limiting, deduplication, and cross-system awareness
  */
 async function sendProactiveNotification(
   email: string,
@@ -1151,7 +1157,7 @@ async function sendProactiveNotification(
 ): Promise<boolean> {
   const supabase = createAdminClient();
 
-  // Store in real_time_insights
+  // Store in real_time_insights for record-keeping
   const { data, error } = await supabase
     .from('real_time_insights')
     .insert({
@@ -1174,35 +1180,54 @@ async function sendProactiveNotification(
     return false;
   }
 
-  // Send push notification
-  try {
-    const sentCount = await sendInsightNotification(email, {
-      id: data.id,
-      title: notification.title,
-      message: notification.message,
+  // Send through NotificationCoordinator - it handles rate limiting, deduplication, etc.
+  const result = await NotificationCoordinator.send({
+    userEmail: email,
+    sourceService: 'proactive_engagement',
+    notificationType: notification.type,
+    category: notification.category,
+    theme: extractTheme(notification.title, notification.message),
+    severity: 'medium' as NotificationSeverity, // Proactive notifications are medium severity
+    title: notification.title,
+    body: notification.message,
+    data: {
+      insight_id: data.id,
       insight_type: notification.type,
       severity: 'info',
-      // Rich content for notification detail screen
-      category: notification.category,
+      category: notification.category || notification.type,
       data_quote: notification.data_quote,
       recommendation: notification.recommendation,
       science_explanation: notification.science_explanation,
       action_steps: notification.action_steps,
-    });
+      ...notification.context_data,
+    },
+    relatedEntityType: 'insight',
+    relatedEntityId: data.id,
+  });
 
-    if (sentCount > 0) {
-      await supabase
-        .from('real_time_insights')
-        .update({
-          notification_sent: true,
-          notification_sent_at: new Date().toISOString(),
-          notification_channel: 'push',
-        })
-        .eq('id', data.id);
-      return true;
-    }
-  } catch (pushError) {
-    console.error('[Proactive Engagement] Error sending push:', pushError);
+  if (result.success) {
+    await supabase
+      .from('real_time_insights')
+      .update({
+        notification_sent: true,
+        notification_sent_at: new Date().toISOString(),
+        notification_channel: 'push',
+      })
+      .eq('id', data.id);
+    return true;
+  } else if (result.suppressed) {
+    console.log(`[Proactive Engagement] Notification suppressed: ${result.suppressionReason}`);
+    // Mark as suppressed in insights table
+    await supabase
+      .from('real_time_insights')
+      .update({
+        notification_sent: false,
+        context_data: {
+          ...notification.context_data,
+          suppression_reason: result.suppressionReason,
+        },
+      })
+      .eq('id', data.id);
   }
 
   return false;
@@ -1210,6 +1235,10 @@ async function sendProactiveNotification(
 
 /**
  * Check when the last notification of a type was sent to avoid spamming
+ *
+ * NOTE: The NotificationCoordinator now handles rate limiting globally.
+ * This function is kept for backward compatibility but the coordinator
+ * provides more comprehensive cross-system rate limiting.
  */
 async function canSendNotificationType(
   email: string,
@@ -1234,22 +1263,14 @@ async function canSendNotificationType(
 
 /**
  * Check daily notification limit to avoid overwhelming users
- * Max 2 proactive notifications per day
+ *
+ * NOTE: The NotificationCoordinator now handles rate limiting globally.
+ * This checks the proactive_engagement service limit (2/day) through the coordinator.
  */
 async function canSendMoreToday(email: string): Promise<boolean> {
-  const supabase = createAdminClient();
-
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const { data } = await supabase
-    .from('real_time_insights')
-    .select('id')
-    .eq('email', email)
-    .eq('source_provider', 'proactive_engagement')
-    .gte('created_at', todayStart.toISOString());
-
-  return !data || data.length < 2; // Max 2 per day
+  // Use the coordinator to check global and service-specific limits
+  const count = await NotificationCoordinator.getTodayCount(email, 'proactive_engagement');
+  return count < 2; // Service limit is 2 per day
 }
 
 /**
@@ -1328,8 +1349,8 @@ export async function processProactiveEngagement(
       return 0;
     }
 
-    // Fetch ecosystem data
-    const ecosystemData = await fetchAllEcosystemData(email);
+    // Fetch ecosystem data (using unified table for efficiency)
+    const ecosystemData = await fetchAllEcosystemData(email, 'sage', { useUnified: true });
 
     // Don't send anything if user has no data connected
     if (!hasEnoughData(ecosystemData)) {

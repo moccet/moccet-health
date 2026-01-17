@@ -1494,25 +1494,77 @@ function formatBehavioralData(
 
   if (behavioral.gmail?.available && behavioral.gmail.data) {
     const gmail = behavioral.gmail.data as any;
+    parts.push('### Gmail Activity');
+
+    // Show stress score if available (from unified data)
+    if (gmail.stressIndicators?.workloadStressScore !== undefined) {
+      const score = gmail.stressIndicators.workloadStressScore;
+      const level = score >= 70 ? 'high' : score >= 40 ? 'moderate' : 'low';
+      parts.push(`- Workload stress score: ${score}/100 (${level})`);
+    }
+
+    // Show email volume
+    if (gmail.emailVolume?.total) {
+      parts.push(`- Recent emails analyzed: ${gmail.emailVolume.total}`);
+      if (gmail.emailVolume.afterHoursPercentage > 20) {
+        parts.push(`- After-hours email activity: ${gmail.emailVolume.afterHoursPercentage}%`);
+      }
+    }
+
+    // Show work hours if available
     if (gmail.workHours) {
-      parts.push(`Work hours: ${gmail.workHours.start} - ${gmail.workHours.end}`);
+      parts.push(`- Work hours: ${gmail.workHours.start} - ${gmail.workHours.end}`);
     }
+
+    // Show meeting density
     if (gmail.meetingDensity?.avgMeetingsPerDay) {
-      parts.push(`Avg meetings/day: ${gmail.meetingDensity.avgMeetingsPerDay}`);
+      parts.push(`- Avg meetings/day: ${gmail.meetingDensity.avgMeetingsPerDay}`);
     }
+
+    // Show focus time
+    if (gmail.focusTime?.avgFocusMinutesPerDay) {
+      parts.push(`- Avg focus time: ${gmail.focusTime.avgFocusMinutesPerDay} min/day`);
+    }
+
+    // Legacy stress indicators (boolean flags)
     if (gmail.stressIndicators) {
       const stressors: string[] = [];
       if (gmail.stressIndicators.highEmailVolume) stressors.push('high email volume');
       if (gmail.stressIndicators.frequentAfterHoursWork) stressors.push('after-hours work');
-      if (stressors.length) parts.push(`Stress indicators: ${stressors.join(', ')}`);
+      if (stressors.length) parts.push(`- Stress patterns: ${stressors.join(', ')}`);
     }
   }
 
   if (behavioral.slack?.available && behavioral.slack.data) {
     const slack = behavioral.slack.data as any;
-    if (slack.collaborationIntensity) {
-      parts.push(`Collaboration intensity: ${slack.collaborationIntensity}`);
+    parts.push('### Slack Activity');
+
+    // Show stress score if available (from unified data)
+    if (slack.metrics?.stressScore !== undefined) {
+      const score = slack.metrics.stressScore;
+      const level = score >= 70 ? 'high' : score >= 40 ? 'moderate' : 'low';
+      parts.push(`- Communication stress score: ${score}/100 (${level})`);
     }
+
+    // Show message volume
+    if (slack.messageVolume?.total) {
+      parts.push(`- Recent messages: ${slack.messageVolume.total}`);
+    }
+
+    // Show focus metrics
+    if (slack.focusMetrics?.longestFocusPeriod) {
+      const mins = Math.round(slack.focusMetrics.longestFocusPeriod / 60);
+      parts.push(`- Longest focus period: ${mins} min`);
+    }
+
+    // Legacy fields
+    if (slack.collaborationIntensity) {
+      parts.push(`- Collaboration intensity: ${slack.collaborationIntensity}`);
+    }
+  }
+
+  if (parts.length === 0) {
+    return 'No work pattern data available';
   }
 
   return truncateToTokens(parts.join('\n'), maxTokens);

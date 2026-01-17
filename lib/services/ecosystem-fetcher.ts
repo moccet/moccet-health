@@ -1107,12 +1107,53 @@ export async function fetchVitalData(
 }
 
 /**
- * Fetch Gmail patterns from behavioral_patterns table
+ * Fetch Gmail patterns - tries unified_health_data first, falls back to behavioral_patterns
  */
 export async function fetchGmailPatterns(email: string): Promise<EcosystemDataSource> {
   try {
     const supabase = createAdminClient();
 
+    // Try unified_health_data first (Phase 7)
+    const { data: unifiedData } = await supabase
+      .from('unified_health_data')
+      .select('*')
+      .eq('email', email)
+      .eq('provider', 'gmail')
+      .order('recorded_at', { ascending: false })
+      .limit(1);
+
+    if (unifiedData && unifiedData.length > 0) {
+      const record = unifiedData[0];
+      const providerData = record.provider_data as Record<string, unknown> || {};
+      const patterns = providerData.patterns as GmailPatterns || {};
+
+      // Build response from unified data
+      return {
+        source: 'gmail',
+        available: true,
+        data: {
+          ...patterns,
+          // Include metrics from unified columns
+          stressIndicators: {
+            ...patterns.stressIndicators,
+            workloadStressScore: record.stress_score,
+          },
+          emailVolume: {
+            ...patterns.emailVolume,
+            total: record.email_count || patterns.emailVolume?.total,
+          },
+          focusTime: {
+            ...patterns.focusTime,
+            avgFocusMinutesPerDay: record.focus_time_minutes,
+          },
+        },
+        insights: patterns.insights || [],
+        fetchedAt: new Date().toISOString(),
+        recordCount: record.email_count || 0,
+      };
+    }
+
+    // Fall back to legacy behavioral_patterns table
     const { data, error } = await supabase
       .from('behavioral_patterns')
       .select('*')
@@ -1157,12 +1198,53 @@ export async function fetchGmailPatterns(email: string): Promise<EcosystemDataSo
 }
 
 /**
- * Fetch Slack patterns from behavioral_patterns table
+ * Fetch Slack patterns - tries unified_health_data first, falls back to behavioral_patterns
  */
 export async function fetchSlackPatterns(email: string): Promise<EcosystemDataSource> {
   try {
     const supabase = createAdminClient();
 
+    // Try unified_health_data first (Phase 7)
+    const { data: unifiedData } = await supabase
+      .from('unified_health_data')
+      .select('*')
+      .eq('email', email)
+      .eq('provider', 'slack')
+      .order('recorded_at', { ascending: false })
+      .limit(1);
+
+    if (unifiedData && unifiedData.length > 0) {
+      const record = unifiedData[0];
+      const providerData = record.provider_data as Record<string, unknown> || {};
+      const patterns = providerData.patterns as SlackPatterns || {};
+
+      // Build response from unified data
+      return {
+        source: 'slack',
+        available: true,
+        data: {
+          ...patterns,
+          // Include metrics from unified columns
+          metrics: {
+            ...patterns.metrics,
+            stressScore: record.stress_score,
+          },
+          messageVolume: {
+            ...patterns.messageVolume,
+            total: record.email_count || patterns.messageVolume?.total, // email_count used for message count
+          },
+          focusMetrics: {
+            ...patterns.focusMetrics,
+            longestFocusPeriod: record.focus_time_minutes ? record.focus_time_minutes * 60 : patterns.focusMetrics?.longestFocusPeriod,
+          },
+        },
+        insights: patterns.insights || [],
+        fetchedAt: new Date().toISOString(),
+        recordCount: record.email_count || 0,
+      };
+    }
+
+    // Fall back to legacy behavioral_patterns table
     const { data, error } = await supabase
       .from('behavioral_patterns')
       .select('*')

@@ -279,21 +279,35 @@ export function transformSlackPatterns(
   data: {
     sync_date: string;
     patterns?: {
-      messageCount?: number;
-      afterHoursMessages?: number;
-      channelActivity?: number;
-      respondTime?: number;
+      metrics?: { stressScore?: number };
+      messageVolume?: {
+        total?: number;
+        afterHoursPercentage?: number;
+      };
+      focusMetrics?: {
+        deepWorkWindows?: number;
+        longestFocusPeriod?: number;
+      };
+      collaborationIntensity?: string;
     };
   }
 ): UnifiedHealthRecord {
+  const patterns = data.patterns;
+
   return {
     email,
     provider: 'slack',
     data_type: 'behavioral',
     recorded_at: new Date(data.sync_date),
 
-    after_hours_activity: data.patterns?.afterHoursMessages
-      ? data.patterns.afterHoursMessages > 10
+    stress_score: patterns?.metrics?.stressScore,
+    email_count: patterns?.messageVolume?.total, // message count stored in email_count field
+    after_hours_activity:
+      patterns?.messageVolume?.afterHoursPercentage !== undefined
+        ? patterns.messageVolume.afterHoursPercentage > 20
+        : undefined,
+    focus_time_minutes: patterns?.focusMetrics?.longestFocusPeriod
+      ? Math.round(patterns.focusMetrics.longestFocusPeriod / 60)
       : undefined,
 
     provider_data: data as unknown as Record<string, unknown>,
@@ -350,16 +364,20 @@ export function transformTeamsPatterns(
     };
   }
 ): UnifiedHealthRecord {
+  const patterns = data.patterns;
+
   return {
     email,
     provider: 'teams',
     data_type: 'behavioral',
     recorded_at: new Date(data.sync_date),
 
-    stress_score: data.patterns?.metrics?.stressScore,
-    after_hours_activity: data.patterns?.messageVolume?.afterHoursPercentage
-      ? data.patterns.messageVolume.afterHoursPercentage > 20
-      : undefined,
+    stress_score: patterns?.metrics?.stressScore,
+    email_count: patterns?.messageVolume?.total, // message count stored in email_count field
+    after_hours_activity:
+      patterns?.messageVolume?.afterHoursPercentage !== undefined
+        ? patterns.messageVolume.afterHoursPercentage > 20
+        : undefined,
 
     provider_data: data as unknown as Record<string, unknown>,
   };

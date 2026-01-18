@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       source_data_type: 'test',
       context_data: { test: true, timestamp: new Date().toISOString() },
       notification_sent: false,
+      design_category: 'PROACTIVE', // Use proactive design for notification cards with studio images
     };
 
     // Store the insight

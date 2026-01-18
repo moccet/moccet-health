@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         message: testInsight.message,
         insight_type: testInsight.insight_type,
         severity: testInsight.severity,
+        design_category: 'PROACTIVE', // Use proactive design for notification cards
       });
 
       // Mark as sent if successful

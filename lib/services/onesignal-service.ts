@@ -328,6 +328,7 @@ export async function sendInsightNotification(
     severity: string;
     // Rich content for notification detail screen
     category?: string;
+    design_category?: string;
     data_quote?: string;
     recommendation?: string;
     science_explanation?: string;
@@ -343,6 +344,7 @@ export async function sendInsightNotification(
       severity: insight.severity,
       // Rich content for full-screen detail view
       category: insight.category || insight.insight_type,
+      design_category: insight.design_category,
       data_quote: insight.data_quote,
       recommendation: insight.recommendation,
       science_explanation: insight.science_explanation,

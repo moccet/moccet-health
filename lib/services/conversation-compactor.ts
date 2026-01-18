@@ -59,11 +59,19 @@ export async function getCompactedHistory(
   const limits = COMPACTION_LIMITS[subscriptionTier] || COMPACTION_LIMITS.free;
 
   // Get recent non-compacted messages
-  const { data: recentMessages, error: recentError } = await supabase
+  // Build query with optional threadId filter to ensure thread isolation
+  let recentQuery = supabase
     .from('conversation_history')
     .select('id, role, content, agent, created_at')
     .eq('user_email', email)
-    .eq('is_compacted', false)
+    .eq('is_compacted', false);
+
+  // Filter by threadId if provided to prevent cross-thread context bleed
+  if (threadId) {
+    recentQuery = recentQuery.eq('thread_id', threadId);
+  }
+
+  const { data: recentMessages, error: recentError } = await recentQuery
     .order('created_at', { ascending: false })
     .limit(limits.keepFullCount);
 
